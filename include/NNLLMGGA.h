@@ -9,32 +9,34 @@ namespace dftfe
   class NNLLMGGA
   {
   public:
-    NNLLMGGA(std::string                          modelFileName,
+    NNLLMGGA(std::string                         modelFileName,
             const bool                           isSpinPolarized = false,
             const excDensityPositivityCheckTypes densityPositivityCheckType =
-                    excDensityPositivityCheckTypes::MAKE_POSITIVE,
-            const double rhoTol = 1.0e-8);
+                    excDensityPositivityCheckTypes::MAKE_POSITIVE
+            );
     ~NNLLMGGA();
 
    void
-   evaluate_exc_vxc(const std::vector<double>& rho,
-                    const std::vector<double>& modDRhoTotal,
-                    const std::vector<double>& rhoTotalLap,
-                    const std::vector<double>& w_vec,
-                    const std::vector<double>& drhoTotal,
-                    const std::vector<double>& rhoStencilData,
-                    const std::vector<double>& FDSpacing,
-                    const int stencilOrder1D,
-                    const int numPoints,
-                    std::vector<double>& exc,
-                    std::vector<double>& vxc);
-
+    evaluateexc(const double *     rho,
+                const double *     sigma,
+                const double *     laprho,
+                const unsigned int numPoints,
+                double *           exc);
+    void
+    evaluatevxc(const double *     rho,
+                const double *     sigma,
+                const double *     laprho,
+                const unsigned int numPoints,
+                double *           exc,
+                double *           dexc);
 
   private:
-    std::string                          d_modelFileName;
+    std::string                          d_modelFilename;
+    std::string                          d_ptcFilename;
     torch::jit::script::Module *         d_model;
     const bool                           d_isSpinPolarized;
-    const double                         d_rhoTol;
+    double                               d_rhoTol;
+    double                               d_sThreshold;
     const excDensityPositivityCheckTypes d_densityPositivityCheckType;
   };
 } // namespace dftfe

@@ -181,9 +181,9 @@ namespace dftfe
 
       std::vector<double> lapRhoTotal(numPoints, 0.0);
       for (unsigned int i = 0; i < numPoints; ++i)
-      {
+        {
           lapRhoTotal[i] = laprho[2 * i] + laprho[2 * i + 1];
-      }
+        }
 
 
       std::vector<float> rhoFloat(4 * numPoints);
@@ -198,8 +198,10 @@ namespace dftfe
                  1,
                  &rhoFloat[0]);
 
-      auto options = torch::TensorOptions().dtype(torch::kFloat32).requires_grad(true);
-      torch::Tensor rhoTensor = torch::from_blob(&rhoFloat[0], {numPoints, 4}, options).clone();
+      auto options =
+        torch::TensorOptions().dtype(torch::kFloat32).requires_grad(true);
+      torch::Tensor rhoTensor =
+        torch::from_blob(&rhoFloat[0], {numPoints, 4}, options).clone();
       rhoTensor += rhoTol;
       std::vector<torch::jit::IValue> input(0);
       input.push_back(rhoTensor);
@@ -262,9 +264,9 @@ namespace dftfe
 
       std::vector<double> lapRhoTotal(numPoints, 0.0);
       for (unsigned int i = 0; i < numPoints; ++i)
-      {
+        {
           lapRhoTotal[i] = laprho[2 * i] + laprho[2 * i + 1];
-      }
+        }
 
       std::vector<float> rhoFloat(4 * numPoints);
       interleave(&rhoModified[0],
@@ -278,8 +280,10 @@ namespace dftfe
                  1,
                  &rhoFloat[0]);
 
-      auto options = torch::TensorOptions().dtype(torch::kFloat32).requires_grad(true);
-      torch::Tensor rhoTensor = torch::from_blob(&rhoFloat[0], {numPoints, 3}, options).clone();
+      auto options =
+        torch::TensorOptions().dtype(torch::kFloat32).requires_grad(true);
+      torch::Tensor rhoTensor =
+        torch::from_blob(&rhoFloat[0], {numPoints, 3}, options).clone();
       rhoTensor += rhoTol;
       std::vector<torch::jit::IValue> input(0);
       input.push_back(rhoTensor);
@@ -304,26 +308,26 @@ namespace dftfe
 
           dexc[7 * i + 5] = static_cast<double>(vxcTensor[i][3].item<float>());
           dexc[7 * i + 6] = static_cast<double>(vxcTensor[i][3].item<float>());
-
         }
     }
 
 
   } // namespace
 
-  NNLLMGGA::NNLLMGGA(std::string                          modelFileName,
-                     const bool                           isSpinPolarized /*=false*/,
-                     const excDensityPositivityCheckTypes densityPositivityCheckType)
-    : d_modelFileName(modelFileName),
-      d_isSpinPolarized(isSpinPolarized),
-      d_densityPositivityCheckType(densityPositivityCheckType)
+  NNLLMGGA::NNLLMGGA(
+    std::string                          modelFileName,
+    const bool                           isSpinPolarized /*=false*/,
+    const excDensityPositivityCheckTypes densityPositivityCheckType)
+    : d_modelFileName(modelFileName)
+    , d_isSpinPolarized(isSpinPolarized)
+    , d_densityPositivityCheckType(densityPositivityCheckType)
   {
     std::map<std::string, std::string> modelKeyValues =
-    getKeyValuePairs(d_modelFilename, "=");
+      getKeyValuePairs(d_modelFilename, "=");
 
     std::vector<std::string> keysToFind = {"PTC_FILE",
-                                            "RHO_TOL",
-                                            "S_THRESHOLD"};
+                                           "RHO_TOL",
+                                           "S_THRESHOLD"};
 
     // check if all required keys are found
     for (unsigned int i = 0; i < keysToFind.size(); ++i)

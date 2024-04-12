@@ -11,21 +11,28 @@
 #include "AtomInfo.h"
 #include "SlaterPrimitive.h"
 
-class SlaterBasisSet {
+class SlaterBasisSet
+{
 private:
-    std::unordered_map<std::string, std::vector<SlaterPrimitive>> basisSets;
-    std::unordered_map<std::string, std::vector<SlaterPrimitive>> basisSize;
+  std::unordered_map<std::string, std::vector<SlaterPrimitive>> basisSets;
+  std::unordered_map<std::string, std::vector<SlaterPrimitive>> basisSize;
 
 public:
-    // SlaterBasisSet(const std::vector<Atom>& atoms);
-    void constructBasisSet(const std::vector<Atom>& atoms);
-    static std::vector<SlaterPrimitive> readSlaterBasisFile(const std::string &filename);
-    std::vector<SlaterPrimitive> getBasisSet(const std::string& basisFileName) const;
-    static void displayBasisSetInfo(const std::vector<SlaterPrimitive> &basisList);
-    static int getBasisSize(const std::vector<SlaterPrimitive> &basisList);
-    int getTotalBasisSize(const std::vector<Atom>& atoms);
+  // SlaterBasisSet(const std::vector<Atom>& atoms);
+  void
+  constructBasisSet(const std::vector<Atom> &atoms);
+  static std::vector<SlaterPrimitive>
+  readSlaterBasisFile(const std::string &filename);
+  std::vector<SlaterPrimitive>
+  getBasisSet(const std::string &basisFileName) const;
+  static void
+  displayBasisSetInfo(const std::vector<SlaterPrimitive> &basisList);
+  static int
+  getBasisSize(const std::vector<SlaterPrimitive> &basisList);
+  int
+  getTotalBasisSize(const std::vector<Atom> &atoms);
 };
 
 
 
-#endif //SLATER2_SLATERBASISSET_H
+#endif // SLATER2_SLATERBASISSET_H

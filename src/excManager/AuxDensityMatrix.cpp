@@ -4,10 +4,12 @@
 
 #include "../include/AuxDensityMatrix.h"
 
-AuxDensityMatrix::AuxDensityMatrix() {
-    // Constructor implementation
+AuxDensityMatrix::AuxDensityMatrix()
+{
+  // Constructor implementation
 }
 
-AuxDensityMatrix::~AuxDensityMatrix() {
-    // Destructor implementation
+AuxDensityMatrix::~AuxDensityMatrix()
+{
+  // Destructor implementation
 }

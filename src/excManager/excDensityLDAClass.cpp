@@ -14,25 +14,24 @@
 //
 // ---------------------------------------------------------------------
 //
-// @author Vishal Subramanian
+// @author Vishal Subramanian, Sambit Das
 //
 
 #include <excDensityLDAClass.h>
 #include <NNLDA.h>
+#include <Exceptions.h>
 
 namespace dftfe
 {
   excDensityLDAClass::excDensityLDAClass(xc_func_type *funcXPtr,
-                                         xc_func_type *funcCPtr,
-                                         bool          isSpinPolarized,
-                                         bool          scaleExchange,
-                                         bool          computeCorrelation,
-                                         double        scaleExchangeFactor)
-    : excDensityBaseClass(isSpinPolarized)
+                                         xc_func_type *funcCPtr)
+    : excDensityBaseClass(densityFamilyType::LDA,
+                          std::vector<DensityDescriptorDataAttributes>{
+                            DensityDescriptorDataAttributes::valuesSpinUp,
+                            DensityDescriptorDataAttributes::valuesSpinDown})
   {
-    d_familyType = densityFamilyType::LDA;
-    d_funcXPtr   = funcXPtr;
-    d_funcCPtr   = funcCPtr;
+    d_funcXPtr = funcXPtr;
+    d_funcCPtr = funcCPtr;
 #ifdef DFTFE_WITH_TORCH
     d_NNLDAPtr = nullptr;
 #endif
@@ -40,16 +39,14 @@ namespace dftfe
 
   excDensityLDAClass::excDensityLDAClass(xc_func_type *funcXPtr,
                                          xc_func_type *funcCPtr,
-                                         bool          isSpinPolarized,
-                                         std::string   modelXCInputFile,
-                                         bool          scaleExchange,
-                                         bool          computeCorrelation,
-                                         double        scaleExchangeFactor)
-    : excDensityBaseClass(isSpinPolarized)
+                                         std::string   modelXCInputFile)
+    : excDensityBaseClass(densityFamilyType::LDA,
+                          std::vector<DensityDescriptorDataAttributes>{
+                            DensityDescriptorDataAttributes::valuesSpinUp,
+                            DensityDescriptorDataAttributes::valuesSpinDown})
   {
-    d_familyType = densityFamilyType::LDA;
-    d_funcXPtr   = funcXPtr;
-    d_funcCPtr   = funcCPtr;
+    d_funcXPtr = funcXPtr;
+    d_funcCPtr = funcCPtr;
 #ifdef DFTFE_WITH_TORCH
     d_NNLDAPtr = new NNLDA(modelXCInputFile, true);
 #endif
@@ -62,155 +59,172 @@ namespace dftfe
   }
 
   void
-  excDensityLDAClass::computeDensityBasedEnergyDensity(
-    unsigned int                                                    sizeInput,
-    const std::map<rhoDataAttributes, const std::vector<double> *> &rhoData,
-    std::vector<double> &outputExchangeEnergyDensity,
-    std::vector<double> &outputCorrEnergyDensity) const
+  excDensityLDAClass::checkInputOutputDataAttributesConsistency(
+    const std::vector<xcOutputDataAttributes> &outputDataAttributes)
   {
-    auto rhoValues = rhoData.find(rhoDataAttributes::values)->second;
+    const std::vector<xcOutputDataAttributes> allowedOutputDataAttributes =
+    { xcOutputDataAttributes::e,
+      xcOutputDataAttributes::vSpinUp,
+      xcOutputDataAttributes::vSpinDown,
+      xcOutputDataAttributes::pdeDensitySpinUp,
+      xcOutputDataAttributes::pdeDensitySpinDown }
 
-    xc_lda_exc(d_funcXPtr,
-               sizeInput,
-               &(*rhoValues)[0],
-               &outputExchangeEnergyDensity[0]);
-    xc_lda_exc(d_funcCPtr,
-               sizeInput,
-               &(*rhoValues)[0],
-               &outputCorrEnergyDensity[0]);
+    for (size_type i = 0; i < outputDataAttributes.size(); i++)
+    {
+      bool isFound = false;
+      for (size_type j = 0; j < allowedOutputDataAttributes.size(); j++)
+        {
+          if (outputDataAttributes[i] == allowedOutputDataAttributes[j])
+            isFound = true;
+        }
 
-#ifdef DFTFE_WITH_TORCH
-    if (d_NNLDAPtr != nullptr)
-      {
-        std::vector<double> rhoValuesForNN(2 * sizeInput, 0);
-        if (d_isSpinPolarized)
-          {
-            for (unsigned int i = 0; i < 2 * sizeInput; i++)
-              {
-                rhoValuesForNN[i] = (*rhoValues)[i];
-              }
-          }
-        else
-          {
-            for (unsigned int i = 0; i < sizeInput; i++)
-              {
-                rhoValuesForNN[2 * i]     = 0.5 * (*rhoValues)[i];
-                rhoValuesForNN[2 * i + 1] = 0.5 * (*rhoValues)[i];
-              }
-          }
 
-        std::vector<double> excValuesFromNN(sizeInput, 0);
-        d_NNLDAPtr->evaluateexc(&(rhoValuesForNN[0]),
-                                sizeInput,
-                                &excValuesFromNN[0]);
-        for (unsigned int i = 0; i < sizeInput; i++)
-          outputExchangeEnergyDensity[i] += excValuesFromNN[i];
-      }
-#endif
+      std::string errMsg =
+        "xcOutputDataAttributes do not matched allowed choices for the family type.";
+      throwException(isFound, errMsg);
+    }
   }
 
   void
-  excDensityLDAClass::computeDensityBasedVxc(
-    unsigned int                                                    sizeInput,
-    const std::map<rhoDataAttributes, const std::vector<double> *> &rhoData,
-    std::map<VeffOutputDataAttributes, std::vector<double> *>
-      &outputDerExchangeEnergy,
-    std::map<VeffOutputDataAttributes, std::vector<double> *>
-      &outputDerCorrEnergy) const
+  excDensityLDAClass::computeExcVxcFxc(
+    AuxDensityMatrix &                                     auxDensityMatrix,
+    const double *                                         quadPoints,
+    const double *                                         quadWeights,
+    const unsigned int                                     numQuadPoints,
+    std::map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
+    std::map<xcOutputDataAttributes, std::vector<double>> &cDataout) const;
   {
-    auto rhoValues = rhoData.find(rhoDataAttributes::values)->second;
+    std::vector<xcOutputDataAttributes> outputDataAttributes;
+    for (const auto &element : xDataOut)
+      outputDataAttributes.push_back(element.first);
 
-    auto exchangePotentialVal =
-      outputDerExchangeEnergy
-        .find(VeffOutputDataAttributes::derEnergyWithDensity)
+    checkInputOutputDataAttributesConsistency(outputDataAttributes);
+
+
+    std::map<DensityDescriptorDataAttributes, std::vector<double>>
+      densityDescriptorData;
+
+    for (size_type i = 0; i < d_densityDescriptorAttributesList.size(); i++)
+      {
+        densityDescriptorData[d_densityDescriptorAttributesList[i]] =
+          std::vector<double>(quadGrid.getLocalSize(), 0);
+      }
+
+    auxDensityRepContainer.applyLocalOperations(quadGrid,
+                                                densityDescriptorData);
+
+
+    auto &densityValuesSpinUp =
+      densityDescriptorData.find(DensityDescriptorDataAttributes::valuesSpinUp)
+        ->second;
+    auto &densityValuesSpinDown =
+      densityDescriptorData
+        .find(DensityDescriptorDataAttributes::valuesSpinDown)
         ->second;
 
-    auto corrPotentialVal =
-      outputDerCorrEnergy.find(VeffOutputDataAttributes::derEnergyWithDensity)
-        ->second;
 
-    xc_lda_vxc(d_funcXPtr,
-               sizeInput,
-               &(*rhoValues)[0],
-               &(*exchangePotentialVal)[0]);
-    xc_lda_vxc(d_funcCPtr,
-               sizeInput,
-               &(*rhoValues)[0],
-               &(*corrPotentialVal)[0]);
+
+    std::vector<double> densityValues(2 * quadGrid.getLocalSize(), 0);
+
+    std::vector<double> exValues(quadGrid.getLocalSize(), 0);
+    std::vector<double> ecValues(quadGrid.getLocalSize(), 0);
+    std::vector<double> pdexDensityValuesNonNN(2 * quadGrid.getLocalSize(), 0);
+    std::vector<double> pdecDensityValuesNonNN(2 * quadGrid.getLocalSize(), 0);
+    std::vector<double> pdexDensitySpinUpValues(quadGrid.getLocalSize(), 0);
+    std::vector<double> pdexDensitySpinDownValues(quadGrid.getLocalSize(), 0);
+    std::vector<double> pdecDensitySpinUpValues(quadGrid.getLocalSize(), 0);
+    std::vector<double> pdecDensitySpinDownValues(quadGrid.getLocalSize(), 0);
+
+    for (size_type i = 0; i < quadGrid.getLocalSize(); i++)
+      {
+        densityValues[2 * i + 0] = densityValuesSpinUp[i];
+        densityValues[2 * i + 1] = densityValuesSpinDown[i];
+      }
+
+    xc_lda_exc_vxc(d_funcXPtr,
+                   quadGrid.getLocalSize(),
+                   &densityValues[0],
+                   &exValues[0],
+                   &pdexDensityValuesNonNN[0]);
+    xc_lda_exc_vxc(d_funcCPtr,
+                   quadGrid.getLocalSize(),
+                   &densityValues[0],
+                   &ecValues[0],
+                   &pdecDensityValuesNonNN[0]);
+
+    for (size_type i = 0; i < quadGrid.getLocalSize(); i++)
+      {
+        pdexDensitySpinUpValues[i]   = pdexDensityValuesNonNN[2 * i + 0];
+        pdexDensitySpinDownValues[i] = pdexDensityValuesNonNN[2 * i + 1];
+        pdecDensitySpinUpValues[i]   = pdecDensityValuesNonNN[2 * i + 0];
+        pdecDensitySpinDownValues[i] = pdecDensityValuesNonNN[2 * i + 1];
+      }
 
 #ifdef DFTFE_WITH_TORCH
     if (d_NNLDAPtr != nullptr)
       {
-        std::vector<double> rhoValuesForNN(2 * sizeInput, 0);
-        if (d_isSpinPolarized)
-          {
-            for (unsigned int i = 0; i < 2 * sizeInput; i++)
-              {
-                rhoValuesForNN[i] = (*rhoValues)[i];
-              }
-          }
-        else
-          {
-            for (unsigned int i = 0; i < sizeInput; i++)
-              {
-                rhoValuesForNN[2 * i]     = 0.5 * (*rhoValues)[i];
-                rhoValuesForNN[2 * i + 1] = 0.5 * (*rhoValues)[i];
-              }
-          }
-
-        std::vector<double> excValuesFromNN(2 * sizeInput, 0);
-        std::vector<double> vxcValuesFromNN(2 * sizeInput, 0);
-        d_NNLDAPtr->evaluatevxc(&(rhoValuesForNN[0]),
-                                sizeInput,
+        std::vector<double> excValuesFromNN(quadGrid.getLocalSize(), 0);
+        const size_type     numDescriptors =
+          d_densityDescriptorAttributesList.size();
+        std::vector<double> pdexcDescriptorValuesFromNN(
+          numDescriptors * quadGrid.getLocalSize(), 0);
+        d_NNLDAPtr->evaluatevxc(&(densityValues[0]),
+                                quadGrid.getLocalSize(),
                                 &excValuesFromNN[0],
-                                &vxcValuesFromNN[0]);
-        if (d_isSpinPolarized)
+                                &pdexcDescriptorValuesFromNN[0]);
+        for (size_type i = 0; i < quadGrid.getLocalSize(); i++)
           {
-            for (unsigned int i = 0; i < 2 * sizeInput; i++)
-              (*exchangePotentialVal)[i] += vxcValuesFromNN[i];
-          }
-        else
-          {
-            for (unsigned int i = 0; i < sizeInput; i++)
-              (*exchangePotentialVal)[i] += vxcValuesFromNN[2 * i];
+            exValues[i] += excValuesFromNN[i];
+            pdexDensitySpinUpValues[i] +=
+              pdexcDescriptorFromNN[numDescriptors * i + 0];
+            pdexDensitySpinDownValues[i] +=
+              pdexcDescriptorValuesFromNN[numDescriptors * i + 1];
           }
       }
 #endif
+
+    for (size_type i = 0; i < outputDataAttributes.size(); i++)
+      {
+        if (outputDataAttributes[i] == xcOutputDataAttributes::e)
+          {
+            xDataOut.find(outputDataAttributes[i])->second = exValues;
+
+            cDataOut.find(outputDataAttributes[i])->second = ecValues;
+          }
+        else if (outputDataAttributes[i] == xcOutputDataAttributes::vSpinUp)
+          {
+            xDataOut.find(outputDataAttributes[i])->second =
+              pdexDensitySpinUpValues;
+
+            cDataOut.find(outputDataAttributes[i])->second =
+              pdecDensitySpinUpValues;
+          }
+        else if (outputDataAttributes[i] == xcOutputDataAttributes::vSpinDown)
+          {
+            xDataOut.find(outputDataAttributes[i])->second =
+              pdexDensitySpinDownValues;
+
+            cDataOut.find(outputDataAttributes[i])->second =
+              pdecDensitySpinDownValues;
+          }
+        else if (outputDataAttributes[i] ==
+                 xcOutputDataAttributes::pdeDensitySpinUp)
+          {
+            xDataOut.find(outputDataAttributes[i])->second =
+              pdexDensitySpinUpValues;
+
+            cDataOut.find(outputDataAttributes[i])->second =
+              pdecDensitySpinUpValues;
+          }
+        else if (outputDataAttributes[i] ==
+                 xcOutputDataAttributes::pdeDensitySpinDown)
+          {
+            xDataOut.find(outputDataAttributes[i])->second =
+              pdexDensitySpinDownValues;
+
+            cDataOut.find(outputDataAttributes[i])->second =
+              pdecDensitySpinDownValues;
+          }
+      }
   }
-
-  void
-  excDensityLDAClass::computeDensityBasedFxc(
-    unsigned int                                                    sizeInput,
-    const std::map<rhoDataAttributes, const std::vector<double> *> &rhoData,
-    std::map<fxcOutputDataAttributes, std::vector<double> *>
-      &outputDer2ExchangeEnergy,
-    std::map<fxcOutputDataAttributes, std::vector<double> *>
-      &outputDer2CorrEnergy) const
-  {
-    auto rhoValues = rhoData.find(rhoDataAttributes::values)->second;
-
-    auto der2ExchangeEnergyWithDensity =
-      outputDer2ExchangeEnergy
-        .find(fxcOutputDataAttributes::der2EnergyWithDensity)
-        ->second;
-
-    auto der2CorrEnergyWithDensity =
-      outputDer2CorrEnergy.find(fxcOutputDataAttributes::der2EnergyWithDensity)
-        ->second;
-
-
-
-    xc_lda_fxc(d_funcXPtr,
-               sizeInput,
-               &(*rhoValues)[0],
-               &(*der2ExchangeEnergyWithDensity)[0]);
-
-    xc_lda_fxc(d_funcCPtr,
-               sizeInput,
-               &(*rhoValues)[0],
-               &(*der2CorrEnergyWithDensity)[0]);
-  }
-
-
-
 } // namespace dftfe

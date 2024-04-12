@@ -57,9 +57,10 @@ namespace dftfe
      */
     virtual void
     computeExcVxcFxc(
-      AuxDensityMatrix &auxDensityMatrix,
-      const double * quadPoints,
-      const double * quadWeights,
+      AuxDensityMatrix &                                     auxDensityMatrix,
+      const double *                                         quadPoints,
+      const double *                                         quadWeights,
+      const unsigned int                                     numQuadPoints,
       std::map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
       std::map<xcOutputDataAttributes, std::vector<double>> &cDataout)
       const = 0;

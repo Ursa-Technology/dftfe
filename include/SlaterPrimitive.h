@@ -8,17 +8,21 @@
 #include <vector>
 #include <string>
 
-class SlaterPrimitive {
+class SlaterPrimitive
+{
 public:
-    SlaterPrimitive(int n, int l, int m, double a);
+  SlaterPrimitive(int n, int l, int m, double a);
 
-    double alpha() const;
-    void nlm(int& n, int& l, int& m) const;
-    double normConst() const;
+  double
+  alpha() const;
+  void
+  nlm(int &n, int &l, int &m) const;
+  double
+  normConst() const;
 
 private:
-    int n, l, m;
-    double a, nrm;
+  int    n, l, m;
+  double a, nrm;
 };
 
-#endif //SLATER2_SLATERPRIMITIVE_H
+#endif // SLATER2_SLATERPRIMITIVE_H

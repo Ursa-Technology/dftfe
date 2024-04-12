@@ -25,31 +25,33 @@ namespace dftfe
   class excDensityGGAClass : public excDensityBaseClass
   {
   public:
-    excDensityGGAClass(xc_func_type *     funcXPtr,
-                       xc_func_type *     funcCPtr);
+    excDensityGGAClass(xc_func_type *funcXPtr, xc_func_type *funcCPtr);
 
 
-    excDensityGGAClass(xc_func_type *     funcXPtr,
-                       xc_func_type *     funcCPtr,
-                       std::string        modelXCInputFile);
+    excDensityGGAClass(xc_func_type *funcXPtr,
+                       xc_func_type *funcCPtr,
+                       std::string   modelXCInputFile);
 
 
     ~excDensityGGAClass();
 
     void
     computeExcVxcFxc(
-      AuxDensityMatrix &auxDensityMatrix,
-      const double * quadPoints,
-      const double * quadWeights,
+      AuxDensityMatrix &                                     auxDensityMatrix,
+      const double *                                         quadPoints,
+      const double *                                         quadWeights,
+      const unsigned int                                     numQuadPoints,
       std::map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
       std::map<xcOutputDataAttributes, std::vector<double>> &cDataout)
       const override;
 
 
   private:
-    NNGGA *            d_NNGGAPtr;
-    xc_func_type *     d_funcXPtr;
-    xc_func_type *     d_funcCPtr;
+    NNGGA *             d_NNGGAPtr;
+    xc_func_type *      d_funcXPtr;
+    xc_func_type *      d_funcCPtr;
+    std::vector<double> d_spacingFDStencil;
+    unsigned int        d_vxcDivergenceTermFDStencilSize;
   };
 } // namespace dftfe
 #endif // DFTFE_EXCDENSITYGGACLASS_H

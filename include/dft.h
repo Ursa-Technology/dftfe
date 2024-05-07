@@ -35,7 +35,6 @@
 
 #ifdef DFTFE_WITH_DEVICE
 #  include <chebyshevOrthogonalizedSubspaceIterationSolverDevice.h>
-#  include <constraintMatrixInfoDevice.h>
 #  include "deviceKernelsGeneric.h"
 #  include <poissonSolverProblemDevice.h>
 #  include <kerkerSolverProblemDevice.h>
@@ -262,10 +261,10 @@ namespace dftfe
     double
     getFreeEnergy() const;
 
-    distributedCPUVec<double>
+    const distributedCPUVec<double> &
     getRhoNodalOut() const;
 
-    distributedCPUVec<double>
+    const distributedCPUVec<double> &
     getRhoNodalSplitOut() const;
 
     double
@@ -389,14 +388,28 @@ namespace dftfe
      * @brief Gets the current atom Locations in cartesian form
      * (origin at center of domain) from dftClass
      */
-    std::vector<std::vector<double>>
+    const std::vector<std::vector<double>> &
     getAtomLocationsCart() const;
+
+
+    /**
+     * @brief Gets the current image atom Locations in cartesian form
+     * (origin at center of domain) from dftClass
+     */
+    const std::vector<std::vector<double>> &
+    getImageAtomLocationsCart() const;
+
+    /**
+     * @brief Gets the current image atom ids from dftClass
+     */
+    const std::vector<int> &
+    getImageAtomIDs() const;
 
     /**
      * @brief Gets the current atom Locations in fractional form
      * from dftClass (only applicable for periodic and semi-periodic BCs)
      */
-    std::vector<std::vector<double>>
+    const std::vector<std::vector<double>> &
     getAtomLocationsFrac() const;
 
 
@@ -407,7 +420,7 @@ namespace dftfe
      *  @return std::vector<std::vector<double>> 3 \times 3 matrix,lattice[i][j]
      *  corresponds to jth component of ith lattice vector
      */
-    std::vector<std::vector<double>>
+    const std::vector<std::vector<double>> &
     getCell() const;
 
     /**
@@ -420,19 +433,19 @@ namespace dftfe
     /**
      * @brief Gets the current atom types from dftClass
      */
-    std::set<unsigned int>
+    const std::set<unsigned int> &
     getAtomTypes() const;
 
     /**
      * @brief Gets the current atomic forces from dftClass
      */
-    std::vector<double>
+    const std::vector<double> &
     getForceonAtoms() const;
 
     /**
      * @brief Gets the current cell stress from dftClass
      */
-    dealii::Tensor<2, 3, double>
+    const dealii::Tensor<2, 3, double> &
     getCellStress() const;
 
     /**
@@ -1322,7 +1335,8 @@ namespace dftfe
      *has hanging node constraints and periodic constraints(for periodic
      *problems) used in eigen solve
      */
-    dftUtils::constraintMatrixInfo constraintsNoneEigenDataInfo;
+    dftUtils::constraintMatrixInfo<dftfe::utils::MemorySpace::HOST>
+      constraintsNoneEigenDataInfo;
 
 
     /**
@@ -1331,11 +1345,13 @@ namespace dftfe
      *has hanging node constraints used in Poisson problem solution
      *
      */
-    dftUtils::constraintMatrixInfo constraintsNoneDataInfo;
+    dftUtils::constraintMatrixInfo<dftfe::utils::MemorySpace::HOST>
+      constraintsNoneDataInfo;
 
 
 #ifdef DFTFE_WITH_DEVICE
-    dftUtils::constraintMatrixInfoDevice d_constraintsNoneDataInfoDevice;
+    dftUtils::constraintMatrixInfo<dftfe::utils::MemorySpace::DEVICE>
+      d_constraintsNoneDataInfoDevice;
 #endif
 
 
@@ -1356,7 +1372,8 @@ namespace dftfe
 
     dealii::AffineConstraints<double> d_constraintsRhoNodalOnlyHanging;
 
-    dftUtils::constraintMatrixInfo d_constraintsRhoNodalInfo;
+    dftUtils::constraintMatrixInfo<dftfe::utils::MemorySpace::HOST>
+      d_constraintsRhoNodalInfo;
 
     /**
      * data storage for Kohn-Sham wavefunctions

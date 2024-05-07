@@ -567,6 +567,58 @@ namespace dftfe
       d_invJacderExcWithSigmaTimesGradRhoJxWHost);
 #endif
   }
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  void
+  KohnShamHamiltonianOperator<memorySpace>::computeVEff(
+    const std::vector<
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+      &vKS_quadValues,
+    const unsigned int                                   spinIndex)
+  {
+
+    const unsigned int spinPolarizedFactor = 1 + d_dftParamsPtr->spinPolarized;
+    d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
+    const unsigned int totalLocallyOwnedCells =
+      d_basisOperationsPtrHost->nCells();
+    const unsigned int numberQuadraturePoints =
+      d_basisOperationsPtrHost->nQuadsPerCell();
+#if defined(DFTFE_WITH_DEVICE)
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      d_VeffJxWHost;
+
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      d_invJacderExcWithSigmaTimesGradRhoJxWHost;
+#else
+    auto &d_VeffJxWHost = d_VeffJxW;
+
+    auto &d_invJacderExcWithSigmaTimesGradRhoJxWHost =
+      d_invJacderExcWithSigmaTimesGradRhoJxW;
+#endif
+    d_VeffJxWHost.resize(totalLocallyOwnedCells * numberQuadraturePoints, 0.0);
+    d_invJacderExcWithSigmaTimesGradRhoJxWHost.resize(0, 0.0);
+
+    for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells; ++iCell)
+      {
+        auto cellJxWPtr = d_basisOperationsPtrHost->JxWBasisData().data() +
+                          iCell * numberQuadraturePoints;
+        for (unsigned int qPoint = 0; qPoint < numberQuadraturePoints; ++qPoint)
+          {
+            d_vEffJxW[qPoint + iCell*numberQuadraturePoints] =
+              tempPot[qPoint] * cellJxWPtr[qPoint];
+          }
+      }
+#if defined(DFTFE_WITH_DEVICE)
+    d_VeffJxW.resize(d_VeffJxWHost.size());
+    d_VeffJxW.copyFrom(d_VeffJxWHost);
+    d_invJacderExcWithSigmaTimesGradRhoJxW.resize(
+      d_invJacderExcWithSigmaTimesGradRhoJxWHost.size());
+    d_invJacderExcWithSigmaTimesGradRhoJxW.copyFrom(
+      d_invJacderExcWithSigmaTimesGradRhoJxWHost);
+#endif
+  }
+
+
   template <dftfe::utils::MemorySpace memorySpace>
   void
   KohnShamHamiltonianOperator<memorySpace>::computeVEffExternalPotCorr(

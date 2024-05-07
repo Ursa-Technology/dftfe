@@ -709,6 +709,148 @@ namespace dftfe
     }
 
     void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+      MultiVectorXDot(const unsigned int contiguousBlockSize,
+                    const unsigned int numContiguousBlocks,
+                    const double *     X,
+                    const double *     Y,
+                    const double * onesVec,
+                    double * tempVector,
+                    double * tempResults,
+                    double *           result) const
+    {
+      hadamardProduct<<<
+        (contiguousBlockSize * numContiguousBlocks) /
+            dftfe::utils::DEVICE_BLOCK_SIZE +
+          1,
+        dftfe::utils::DEVICE_BLOCK_SIZE>>>(
+        contiguousBlockSize*numContiguousBlocks,,
+        dftfe::utils::makeDataTypeDeviceCompatible(X),
+        dftfe::utils::makeDataTypeDeviceCompatible(Y),
+        dftfe::utils::makeDataTypeDeviceCompatible(tempVector));
+
+      xgemm(
+        dftfe::utils::DEVICEBLAS_OP_N,
+        dftfe::utils::DEVICEBLAS_OP_T,
+        1,
+        contiguousBlockSize,
+        numContiguousBlocks,
+        1.0,
+        onesVec,
+        1,
+        tempVector,
+        contiguousBlockSize,
+        0.0,
+        tempResults,
+        1);
+
+      dftfe::utils::deviceMemcpyD2H(dftfe::utils::makeDataTypeDeviceCompatible(
+                                      result.data()),
+                                    tempVector.data(),
+                                    numContiguousBlocks * sizeof(double));
+    }
+
+    void
+    MultiVectorXDot(const unsigned int contiguousBlockSize,
+                    const unsigned int numContiguousBlocks,
+                    const double *     X,
+                    const double *     Y,
+                    const double * onesVec,
+                    double * tempVector,
+                    double * tempResults,
+                    const MPI_Comm &   mpi_communicator,
+                    double *           result) const
+
+    {
+      MultiVectorXDot(contiguousBlockSize,
+                      numContiguousBlocks,
+                      X,
+                      Y,
+                      onesVec,
+                      tempVector,
+                      tempResults,
+                      result);
+
+      MPI_Allreduce(MPI_IN_PLACE,
+                    &result[0],
+                    numContiguousBlocks,
+                    MPI_DOUBLE,
+                    MPI_SUM,
+                    mpi_communicator);
+    }
+
+    void
+    MultiVectorXDot(const unsigned int contiguousBlockSize,
+                    const unsigned int numContiguousBlocks,
+                    const std::complex<double> *X,
+                    const std::complex<double> *Y,
+                    const std::complex<double> * onesVec,
+                    std::complex<double> * tempVector,
+                    std::complex<double> * tempResults,
+                    std::complex<double> *      result) const
+    {
+      hadamardProduct<<<
+        (contiguousBlockSize * numContiguousBlocks) /
+            dftfe::utils::DEVICE_BLOCK_SIZE +
+          1,
+        dftfe::utils::DEVICE_BLOCK_SIZE>>>(
+        contiguousBlockSize*numContiguousBlocks,,
+        dftfe::utils::makeDataTypeDeviceCompatible(X),
+        dftfe::utils::makeDataTypeDeviceCompatible(Y),
+        dftfe::utils::makeDataTypeDeviceCompatible(tempVector));
+
+      xgemm(
+        dftfe::utils::DEVICEBLAS_OP_N,
+        dftfe::utils::DEVICEBLAS_OP_T,
+        1,
+        contiguousBlockSize,
+        numContiguousBlocks,
+        1.0,
+        onesVec,
+        1,
+        tempVector,
+        contiguousBlockSize,
+        0.0,
+        tempResults,
+        1);
+
+      dftfe::utils::deviceMemcpyD2H(dftfe::utils::makeDataTypeDeviceCompatible(
+                                      result.data()),
+                                    tempVector.data(),
+                                    numContiguousBlocks * sizeof(std::complex<double>));
+    }
+
+    void
+    MultiVectorXDot(const unsigned int contiguousBlockSize,
+                    const unsigned int numContiguousBlocks,
+                    const std::complex<double> *X,
+                    const std::complex<double> *Y,
+                    const std::complex<double> * onesVec,
+                    std::complex<double> * tempVector,
+                    std::complex<double> * tempResults,
+                    const MPI_Comm &            mpi_communicator,
+                    std::complex<double> *      result) const
+    {
+        MultiVectorXDot(contiguousBlockSize,
+                        numContiguousBlocks,
+                        X,
+                        Y,
+                        onesVec,
+                        tempVector,
+                        tempResults,
+                        result);
+
+        MPI_Allreduce(MPI_IN_PLACE,
+                      &result[0],
+                      numContiguousBlocks,
+                      MPI_C_DOUBLE_COMPLEX,
+                      MPI_SUM,
+                      mpi_communicator);
+    }
+
+
+
+    void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::xgemmStridedBatched(
       const char         transA,
       const char         transB,
@@ -1489,6 +1631,72 @@ namespace dftfe
         dftfe::utils::makeDataTypeDeviceCompatible(s),
         dftfe::utils::makeDataTypeDeviceCompatible(x));
     }
+
+
+    template <typename ValueType>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleColumnWise(
+      const dftfe::size_type         contiguousBlockSize,
+      const dftfe::size_type         numContiguousBlocks,
+      const ValueType *            beta,
+      ValueType *       x)
+    {
+      stridedBlockScaleColumnWiseKernel<<<(contiguousBlockSize *
+                                           numContiguousBlocks) /
+                                              dftfe::utils::DEVICE_BLOCK_SIZE +
+                                            1,
+                                          dftfe::utils::DEVICE_BLOCK_SIZE>>>(
+        contiguousBlockSize,
+        numContiguousBlocks,
+        dftfe::utils::makeDataTypeDeviceCompatible(beta),
+        dftfe::utils::makeDataTypeDeviceCompatible(x));
+    }
+    template <typename ValueType1, typename ValueType2>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type         contiguousBlockSize,
+      const dftfe::size_type         numContiguousBlocks,
+      const ValueType1 *            x,
+      const ValueType2 *       beta,
+      ValueType1 *            y)
+    {
+      stridedBlockScaleAndAddColumnWiseKernel<<<(contiguousBlockSize *
+                                       numContiguousBlocks) /
+                                          dftfe::utils::DEVICE_BLOCK_SIZE +
+                                        1,
+                                      dftfe::utils::DEVICE_BLOCK_SIZE>>>(
+        contiguousBlockSize,
+        numContiguousBlocks,
+        dftfe::utils::makeDataTypeDeviceCompatible(x),
+        dftfe::utils::makeDataTypeDeviceCompatible(beta),
+        dftfe::utils::makeDataTypeDeviceCompatible(y));
+    }
+
+    template <typename ValueType1, typename ValueType2>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type         contiguousBlockSize,
+      const dftfe::size_type         numContiguousBlocks,
+      const ValueType1 *            x,
+      const ValueType1 *            alpha,
+      const ValueType2 *       y,
+      const ValueType2 *       beta,
+      ValueType2 *            z)
+    {
+      stridedBlockScaleAndAddTwoVecColumnWiseKernel<<<(contiguousBlockSize *
+                                                 numContiguousBlocks) /
+                                                    dftfe::utils::DEVICE_BLOCK_SIZE +
+                                                  1,
+                                                dftfe::utils::DEVICE_BLOCK_SIZE>>>(
+        contiguousBlockSize,
+        numContiguousBlocks,
+        dftfe::utils::makeDataTypeDeviceCompatible(x),
+        dftfe::utils::makeDataTypeDeviceCompatible(alpha),
+        dftfe::utils::makeDataTypeDeviceCompatible(y),
+        dftfe::utils::makeDataTypeDeviceCompatible(alpha),
+        dftfe::utils::makeDataTypeDeviceCompatible(z));
+    }
+
     // for stridedBlockScale
     template void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScale(
@@ -1569,6 +1777,220 @@ namespace dftfe
       const double           a,
       const double *         s,
       std::complex<float> *  x);
+
+    // stridedBlockScaleColumnWise
+
+    template void
+      BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleColumnWise(
+      const dftfe::size_type         contiguousBlockSize,
+      const dftfe::size_type         numContiguousBlocks,
+      const double *            beta,
+      double *       x);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleColumnWise(
+      const dftfe::size_type         contiguousBlockSize,
+      const dftfe::size_type         numContiguousBlocks,
+      const float *            beta,
+      float *       x);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleColumnWise(
+      const dftfe::size_type         contiguousBlockSize,
+      const dftfe::size_type         numContiguousBlocks,
+      const std::complex<float> *            beta,
+      std::complex<float> *       x);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleColumnWise(
+      const dftfe::size_type         contiguousBlockSize,
+      const dftfe::size_type         numContiguousBlocks,
+      const std::complex<double> *            beta,
+      std::complex<double> *       x);
+
+    // for stridedBlockScaleAndAddColumnWise
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const double *          x,
+      const double *         beta,
+      double *               y);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const float *          x,
+      const float *          beta,
+      float *                y);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type      contiguousBlockSize,
+      const dftfe::size_type      numContiguousBlocks,
+      const std::complex<double> *x,
+      const std::complex<double> *beta,
+      std::complex<double> *      y);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type     contiguousBlockSize,
+      const dftfe::size_type     numContiguousBlocks,
+      const std::complex<float> *x,
+      const std::complex<float> *beta,
+      std::complex<float> *      y);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const double *         x,
+      const double *         beta,
+      float *                y);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const float *          x,
+      const float *          beta,
+      double *               y);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type      contiguousBlockSize,
+      const dftfe::size_type      numContiguousBlocks,
+      const std::complex<double> *x,
+      const std::complex<double> *beta,
+      std::complex<float> *       y);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type     contiguousBlockSize,
+      const dftfe::size_type     numContiguousBlocks,
+      const std::complex<float> *x,
+      const std::complex<float> *beta,
+      std::complex<double> *     y);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const double *         x,
+      const double *         beta,
+      std::complex<double> * y);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const double *         x,
+      const double *         beta,
+      std::complex<float> *  y);
+
+
+
+    // for stridedBlockScaleAndAddTwoVecColumnWise
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const double *          x,
+      const double *         alpha,
+      const double *         y,
+      const double *         beta,
+      double *               z);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const float *          x,
+      const float *          alpha,
+      const float *          y,
+      const float *          beta,
+      float *                z);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type      contiguousBlockSize,
+      const dftfe::size_type      numContiguousBlocks,
+      const std::complex<double> *x,
+      const std::complex<double> *alpha,
+      const std::complex<double> *      y,
+      const std::complex<double> *      beta,
+      std::complex<double> *      z);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type     contiguousBlockSize,
+      const dftfe::size_type     numContiguousBlocks,
+      const std::complex<float> *x,
+      const std::complex<float> *alpha,
+      const std::complex<float> *      y,
+      const std::complex<float> *      beta,
+      std::complex<float> *      z);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const double *         x,
+      const double *         alpha,
+      const float *                y,
+      const float *                beta,
+      float *                z);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const float *          x,
+      const float *          alpha,
+      const double *       y,
+      const double *               beta,
+      double *               z);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type      contiguousBlockSize,
+      const dftfe::size_type      numContiguousBlocks,
+      const std::complex<double> *x,
+      const std::complex<double> *alpha,
+      const std::complex<float> *       y,
+      const std::complex<float> *      beta,
+      std::complex<float> *       z);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type     contiguousBlockSize,
+      const dftfe::size_type     numContiguousBlocks,
+      const std::complex<float> *x,
+      const std::complex<float> *alpha,
+      const std::complex<double> *     y,
+      const std::complex<double> *     beta,
+        std::complex<double> *     z);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const double *         x,
+      const double *         alpha,
+      const std::complex<double> * y,
+      const std::complex<double> * beta,
+      std::complex<double> * z);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const double *         x,
+      const double *         alpha,
+      const std::complex<float> *  y,
+      const std::complex<float> *  beta,
+      std::complex<float> *  z);
 
     // axpyStridedBlockAtomicAdd
     template void

@@ -232,6 +232,18 @@ main(int argc, char *argv[])
                                        runParams.useDevice);
       dftfeWrapped.run();
     }
+  else if (runParams.solvermode == "UNIT_TEST")
+    {
+      dftfe::dftfeWrapper dftfeWrapped(parameter_file,
+                                       MPI_COMM_WORLD,
+                                       true,
+                                       true,
+                                       "UNIT_TEST",
+                                       runParams.restartFilesPath,
+                                       runParams.verbosity,
+                                       runParams.useDevice);
+      dftfeWrapped.run();
+    }
 
   else
     {

@@ -1800,7 +1800,11 @@ namespace dftfe
         mkdir(d_dftParamsPtr->restartFolder.c_str(), ACCESSPERMS);
       }
 
-    if (d_dftParamsPtr->solverMode == "GS")
+    if (d_dftParamsPtr->solverMode == "UNIT_TEST")
+      {
+        runUnitTest();
+      }
+    else if (d_dftParamsPtr->solverMode == "GS")
       {
         solve(true, true, d_isRestartGroundStateCalcFromChk);
       }

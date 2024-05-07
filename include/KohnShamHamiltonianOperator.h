@@ -99,6 +99,9 @@ namespace dftfe
       const unsigned int                                   spinIndex = 0);
 
     void
+    computeVEff(const std::vector<std::vector<double>> &potValues);
+
+    void
     computeVEffExternalPotCorr(
       const std::map<dealii::CellId, std::vector<double>>
         &externalPotCorrValues);

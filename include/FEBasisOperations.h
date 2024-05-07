@@ -250,6 +250,10 @@ namespace dftfe
       computeInverseSqrtMassVector(const bool basisType = true,
                                    const bool ceoffType = false);
 
+      void
+      computeStiffnessVector(const bool basisType = true,
+                                        const bool ceoffType = false);
+
       /**
        * @brief Resizes the internal temp storage to be sufficient for the vector and cell block sizes provided in reinit.
        */
@@ -667,6 +671,30 @@ namespace dftfe
       massVectorBasisData() const;
 
       /**
+       * @brief diagonal stiffness matrix in ValueTypeBasisData
+       */
+      const dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace> &
+        stiffnessVectorBasisData() const;
+
+      /**
+       * @brief diagonal inverse stiffness matrix in ValueTypeBasisData
+       */
+      const dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace> &
+        inverseStiffnessVectorBasisData() const;
+
+      /**
+       * @brief diagonal inverse sqrt stiffness matrix in ValueTypeBasisData
+       */
+      const dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace> &
+        inverseSqrtStiffnessVectorBasisData() const;
+
+      /**
+       * @brief diagonal sqrt stiffness matrix in ValueTypeBasisData
+       */
+      const dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace> &
+        sqrtStiffnessVectorBasisData() const;
+
+      /**
        * @brief returns 2 if all cells on current processor are Cartesian,
        * 1 if all cells on current processor are affine and 0 otherwise.
        */
@@ -852,6 +880,42 @@ namespace dftfe
         std::vector<
           dftfe::linearAlgebra::MultiVector<ValueTypeBasisCoeff, memorySpace>>>
         scratchMultiVectors;
+
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_cellStiffnessVectorBasisType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_cellInverseStiffnessVectorBasisType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_cellSqrtStiffnessVectorBasisType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_cellInverseSqrtStiffnessVectorBasisType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_inverseSqrtStiffnessVectorBasisType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_sqrtStiffnessVectorBasisType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_inverseStiffnessVectorBasisType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_stiffnessVectorBasisType;
+
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_cellInverseStiffnessVectorCoeffType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_cellInverseSqrtStiffnessVectorCoeffType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_cellStiffnessVectorCoeffType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_cellSqrtStiffnessVectorCoeffType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_inverseSqrtStiffnessVectorCoeffType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_sqrtStiffnessVectorCoeffType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_stiffnessVectorCoeffType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_inverseStiffnessVectorCoeffType;
+
+
 
       std::vector<unsigned int> d_quadratureIDsVector;
       unsigned int              d_quadratureID;

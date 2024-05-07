@@ -298,6 +298,91 @@ namespace dftfe
         }
     }
 
+    // x[iblock*blocksize+intrablockindex]= beta[intrablockindex]*x[iblock*blocksize+intrablockindex]
+    // strided block wise
+    template <typename ValueType>
+    __global__ void
+    stridedBlockScaleColumnWiseKernel(const dftfe::size_type contiguousBlockSize,
+                                            const dftfe::size_type numContiguousBlocks,
+                                            const ValueType *      beta,
+                                            const ValueType *       x)
+    {
+      const dftfe::size_type globalThreadId =
+        blockIdx.x * blockDim.x + threadIdx.x;
+      const dftfe::size_type numberEntries =
+        numContiguousBlocks * contiguousBlockSize;
+
+      for (dftfe::size_type index = globalThreadId; index < numberEntries;
+           index += blockDim.x * gridDim.x)
+        {
+          dftfe::size_type blockIndex = index / contiguousBlockSize;
+          dftfe::size_type intrablockindex = index - blockIndex*contiguousBlockSize;
+          dftfe::utils::copyValue(
+            x + index,
+            dftfe::utils::mult(beta[intrablockindex], x[index])
+          );
+        }
+    }
+
+    // y[iblock*blocksize+intrablockindex]= y[iblock*blocksize+intrablockindex] +
+    //                                      beta[intrablockindex]*x[iblock*blocksize+intrablockindex]
+    // strided block wise
+    template <typename ValueType1, typename ValueType2>
+    __global__ void
+    stridedBlockScaleAndAddColumnWiseKernel(const dftfe::size_type contiguousBlockSize,
+                                  const dftfe::size_type numContiguousBlocks,
+                                const ValueType1 *            x,
+                                const ValueType2 *       beta,
+                                ValueType1 *            y)
+    {
+      const dftfe::size_type globalThreadId =
+        blockIdx.x * blockDim.x + threadIdx.x;
+      const dftfe::size_type numberEntries =
+        numContiguousBlocks * contiguousBlockSize;
+
+      for (dftfe::size_type index = globalThreadId; index < numberEntries;
+           index += blockDim.x * gridDim.x)
+        {
+          dftfe::size_type blockIndex = index / contiguousBlockSize;
+          dftfe::size_type intrablockindex = index - blockIndex*contiguousBlockSize;
+          dftfe::utils::copyValue(
+            y + index,
+            dftfe::utils::add( y[index] ,dftfe::utils::mult(beta[intrablockindex], x[index]))
+            );
+        }
+    }
+
+    // z[iblock*blocksize+intrablockindex]= alpha[intrablockindex]*x[iblock*blocksize+intrablockindex] +
+    //                                      beta[intrablockindex]*y[iblock*blocksize+intrablockindex]
+    // strided block wise
+    template <typename ValueType1, typename ValueType2>
+    __global__ void
+    stridedBlockScaleAndAddTwoVecColumnWiseKernel(const dftfe::size_type contiguousBlockSize,
+                                            const dftfe::size_type numContiguousBlocks,
+                                            const ValueType1 *            x,
+                                            const ValueType1 *       alpha,
+                                            const ValueType2 *            y,
+                                            const ValueType2 *            beta,
+                                            ValueType2 *            z)
+    {
+      const dftfe::size_type globalThreadId =
+        blockIdx.x * blockDim.x + threadIdx.x;
+      const dftfe::size_type numberEntries =
+        numContiguousBlocks * contiguousBlockSize;
+
+      for (dftfe::size_type index = globalThreadId; index < numberEntries;
+           index += blockDim.x * gridDim.x)
+        {
+          dftfe::size_type blockIndex = index / contiguousBlockSize;
+          dftfe::size_type intrablockindex = index - blockIndex*contiguousBlockSize;
+          dftfe::utils::copyValue(
+            z + index,
+            dftfe::utils::add(dftfe::utils::mult(alpha[intrablockindex], x[index]),
+                              dftfe::utils::mult(beta[intrablockindex], y[index]))
+          );
+        }
+    }
+
     // y=a*x+b*y, with inc=1
     template <typename ValueType1, typename ValueType2>
     __global__ void
@@ -485,6 +570,38 @@ namespace dftfe
                           intraBlockIndex],
             addFromVec[index].y);
         }
+    }
+
+    __global__ void
+    hadamardProduct(
+      const dftfe::size_type                   vecSize,
+      const double *                           xVec,
+      const double *                           yVec,
+      double *                                 outputVec)
+    {
+      for (int i = blockIdx.x * blockDim.x + threadIdx.x;
+           i < vecSize;
+           i += blockDim.x * gridDim.x)
+        {
+          outputVec[i] = yVec[i] * xVec[i];
+        }
+
+    }
+
+    __global__ void
+    hadamardProduct(
+      const dftfe::size_type                   vecSize,
+      const dftfe::utils::deviceDoubleComplex *                           xVec,
+      const dftfe::utils::deviceDoubleComplex *                           yVec,
+      dftfe::utils::deviceDoubleComplex *                                 outputVec)
+    {
+      for (int i = blockIdx.x * blockDim.x + threadIdx.x;
+           i < vecSize;
+           i += blockDim.x * gridDim.x)
+        {
+          outputVec[i] = yVec[i] * xVec[i];
+        }
+
     }
 
   } // namespace

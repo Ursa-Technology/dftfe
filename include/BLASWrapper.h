@@ -218,6 +218,53 @@ namespace dftfe
            std::complex<double> *      result) const;
 
 
+      // MultiVector Real dot product
+      void
+      MultiVectorXDot(const unsigned int contiguousBlockSize,
+                      const unsigned int numContiguousBlocks,
+           const double *     X,
+           const double *     Y,
+           const double * onesVec,
+           double * tempVector,
+           double * tempResults,
+           double *           result) const;
+
+      // MultiVector Real dot product with all Reduce call
+      void
+      MultiVectorXDot(const unsigned int contiguousBlockSize,
+           const unsigned int numContiguousBlocks,
+           const double *     X,
+           const double *     Y,
+           const double * onesVec,
+           double * tempVector,
+           double * tempResults,
+           const MPI_Comm &   mpi_communicator,
+           double *           result) const;
+
+      // MultiVector Complex dot product
+      void
+      MultiVectorXDot(const unsigned int contiguousBlockSize,
+                      const unsigned int numContiguousBlocks,
+           const std::complex<double> *X,
+           const std::complex<double> *Y,
+           const std::complex<double> * onesVec,
+           std::complex<double> * tempVector,
+           std::complex<double> * tempResults,
+           std::complex<double> *      result) const;
+
+      // MultiVector Complex dot product with all Reduce call
+      void
+      MultiVectorXDot(const unsigned int contiguousBlockSize,
+                      const unsigned int numContiguousBlocks,
+           const std::complex<double> *X,
+           const std::complex<double> *Y,
+           const std::complex<double> * onesVec,
+           std::complex<double> * tempVector,
+           std::complex<double> * tempResults,
+           const MPI_Comm &            mpi_communicator,
+           std::complex<double> *      result) const;
+
+
       // Real double Ax+y
       void
       xaxpy(const unsigned int n,
@@ -555,6 +602,34 @@ namespace dftfe
            ValueType *            x,
            const ValueType        beta,
            const dftfe::size_type size);
+
+      template <typename ValueType>
+      void
+      stridedBlockScaleColumnWise(
+        const dftfe::size_type         contiguousBlockSize,
+        const dftfe::size_type         numContiguousBlocks,
+        const ValueType *            beta,
+        ValueType *       x);
+
+      template <typename ValueType1, typename ValueType2>
+      void
+      stridedBlockScaleAndAddColumnWise(
+        const dftfe::size_type         contiguousBlockSize,
+        const dftfe::size_type         numContiguousBlocks,
+        const ValueType1 *            x,
+        const ValueType2 *       beta,
+        ValueType1 *            y);
+
+      template <typename ValueType1, typename ValueType2>
+      void
+      stridedBlockScaleAndAddTwoVecColumnWise(
+        const dftfe::size_type         contiguousBlockSize,
+        const dftfe::size_type         numContiguousBlocks,
+        const ValueType1 *            x,
+        const ValueType1 *            alpha,
+        const ValueType2 *       y,
+        const ValueType2 *       beta,
+        ValueType2 *            z);
 
     private:
     };
@@ -747,6 +822,53 @@ namespace dftfe
            const MPI_Comm &            mpi_communicator,
            std::complex<double> *      result) const;
 
+
+      // MultiVector Real dot product
+      void
+      MultiVectorXDot(const unsigned int contiguousBlockSize,
+                      const unsigned int numContiguousBlocks,
+                      const double *     X,
+                      const double *     Y,
+                      const double * onesVec,
+                      double * tempVector,
+                      double * tempResults,
+                      double *           result) const;
+
+      // MultiVector Real dot product with all Reduce call
+      void
+      MultiVectorXDot(const unsigned int contiguousBlockSize,
+                      const unsigned int numContiguousBlocks,
+                      const double *     X,
+                      const double *     Y,
+                      const double * onesVec,
+                      double * tempVector,
+                      double * tempResults,
+                      const MPI_Comm &   mpi_communicator,
+                      double *           result) const;
+
+      // MultiVector Complex dot product
+      void
+      MultiVectorXDot(const unsigned int contiguousBlockSize,
+                      const unsigned int numContiguousBlocks,
+                      const std::complex<double> *X,
+                      const std::complex<double> *Y,
+                      const std::complex<double> * onesVec,
+                      std::complex<double> * tempVector,
+                      std::complex<double> * tempResults,
+                      std::complex<double> *      result) const;
+
+      // MultiVector Complex dot product with all Reduce call
+      void
+      MultiVectorXDot(const unsigned int contiguousBlockSize,
+                      const unsigned int numContiguousBlocks,
+                      const std::complex<double> *X,
+                      const std::complex<double> *Y,
+                      const std::complex<double> * onesVec,
+                      std::complex<double> * tempVector,
+                      std::complex<double> * tempResults,
+                      const MPI_Comm &            mpi_communicator,
+                      std::complex<double> *      result) const;
+
       // Real double Ax+y
       void
       xaxpy(const unsigned int n,
@@ -1080,6 +1202,34 @@ namespace dftfe
            ValueType *            x,
            const ValueType        beta,
            const dftfe::size_type size);
+
+      template <typename ValueType>
+      void
+      stridedBlockScaleColumnWise(
+        const dftfe::size_type         contiguousBlockSize,
+        const dftfe::size_type         numContiguousBlocks,
+        const ValueType *            beta,
+        ValueType *       x);
+
+      template <typename ValueType1, typename ValueType2>
+      void
+      stridedBlockScaleAndAddColumnWise(
+        const dftfe::size_type         contiguousBlockSize,
+        const dftfe::size_type         numContiguousBlocks,
+        const ValueType1 *            x,
+        const ValueType2 *       beta,
+        ValueType1 *            y);
+
+      template <typename ValueType1, typename ValueType2>
+      void
+      stridedBlockScaleAndAddTwoVecColumnWise(
+        const dftfe::size_type         contiguousBlockSize,
+        const dftfe::size_type         numContiguousBlocks,
+        const ValueType1 *            x,
+        const ValueType1 *            alpha,
+        const ValueType2 *       y,
+        const ValueType2 *       beta,
+        ValueType2 *            z);
 
       dftfe::utils::deviceBlasHandle_t &
       getDeviceBlasHandle();

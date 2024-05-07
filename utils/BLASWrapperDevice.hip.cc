@@ -1599,6 +1599,9 @@ namespace dftfe
                          dftfe::utils::makeDataTypeDeviceCompatible(s),
                          dftfe::utils::makeDataTypeDeviceCompatible(x));
     }
+
+
+
     // for stridedBlockScale
     template void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScale(

@@ -80,22 +80,14 @@ namespace dftfe
 
     /**
      * @brief Computes effective potential involving exchange-correlation functionals
-     * @param rhoValues electron-density
+     * @param auxDensityMatrixRepresentation core plus valence electron-density
      * @param phiValues electrostatic potential arising both from electron-density and nuclear charge
-     * @param rhoCoreValues quadrature data of sum{Vext} minus sum{Vnu}
      */
     void
     computeVEff(
-      const std::vector<
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &rhoValues,
-      const std::vector<
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &gradRhoValues,
+      AuxDensityMatrix & auxDensityRepresentation,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
         &                                                  phiValues,
-      const std::map<dealii::CellId, std::vector<double>> &rhoCoreValues,
-      const std::map<dealii::CellId, std::vector<double>> &gradRhoCoreValues,
       const unsigned int                                   spinIndex = 0);
 
     void
@@ -105,22 +97,15 @@ namespace dftfe
 
     void
     computeVEffPrime(
-      const std::vector<
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &rhoValues,
+      AuxDensityMatrix auxDensityRepresentation,
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &rhoPrimeValues,
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &gradRhoValues,
-      const std::vector<
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &gradRhoPrimeValues,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
         &                                                  phiPrimeValues,
-      const std::map<dealii::CellId, std::vector<double>> &rhoCoreValues,
-      const std::map<dealii::CellId, std::vector<double>> &gradRhoCoreValues,
       const unsigned int                                   spinIndex);
 
     /**

@@ -1,12 +1,10 @@
 //
 // Created by Arghadwip Paul.
 //
-
+#ifdef DFTFE_WITH_TORCH
 #include <iostream>
 #include <torch/torch.h>
 #include <typeinfo>
-
-#include <Accelerate/Accelerate.h>
 #include "../include/SlaterBasisData.h"
 
 void
@@ -433,3 +431,4 @@ SlaterBasisData::getBasisValuesAll()
 {
   return basisValues;
 }
+#endif

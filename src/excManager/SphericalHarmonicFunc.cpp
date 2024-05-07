@@ -2,6 +2,7 @@
 // Created by Arghadwip Paul.
 //
 
+#ifdef DFTFE_WITH_TORCH
 #include <cmath>
 #include <vector>
 #include <cassert>
@@ -95,3 +96,4 @@ associatedLegendre(const int l, const int absm, const torch::Tensor &x)
 
   return (pow(-1.0, absm) * cx);
 }
+#endif

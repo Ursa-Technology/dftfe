@@ -2,47 +2,40 @@
 // Created by Arghadwip Paul.
 //
 
-#ifndef LLMGGA_EXCDENSITYLLMGGACLASS_H
-#define LLMGGA_EXCDENSITYLLMGGACLASS_H
-
+#ifndef DFTFE_EXCDENSITYLLMGGACLASS_H
+#define DFTFE_EXCDENSITYLLMGGACLASS_H
 
 #include <xc.h>
 #include <excDensityBaseClass.h>
 namespace dftfe
 {
-  class NNLLMGGA;
-  class excDensityLLMGGAClass : public excDensityBaseClass
-  {
-  public:
-    excDensityLLMGGAClass(xc_func_type *funcXPtr,
-                          xc_func_type *funcCPtr,
-                          bool          isSpinPolarized,
-                          bool          scaleExchange,
-                          bool          computeCorrelation,
-                          double        scaleExchangeFactor);
+    class NNLLMGGA;
+    class excDensityLLMGGAClass : public excDensityBaseClass
+    {
+    public:
+        excDensityLLMGGAClass(xc_func_type *funcXPtr, xc_func_type *funcCPtr);
 
-    excDensityLLMGGAClass(xc_func_type *funcXPtr,
-                          xc_func_type *funcCPtr,
-                          bool          isSpinPolarized,
-                          std::string   modelXCInputFile,
-                          bool          scaleExchange,
-                          bool          computeCorrelation,
-                          double        scaleExchangeFactor);
+        excDensityLLMGGAClass(xc_func_type *funcXPtr,
+                              xc_func_type *funcCPtr,
+                              std::string   modelXCInputFile);
 
-    ~excDensityLLMGGAClass();
+        ~excDensityLLMGGAClass();
 
-    void
-    computeDensityBased_exc_vxc_FD(const AuxDensityMatrixSlater &auxDM,
-                                   const int                     numPoints,
-                                   const int                     stencilOrder1D,
-                                   std::vector<double> &         exc,
-                                   std::vector<double> &         vxc);
+        void
+        computeExcVxcFxc(
+                AuxDensityMatrixSlater &              auxDensityMatrix,
+                const double *                        quadPoints,
+                const double *                        quadWeights,
+                const unsigned int                    numQuadPoints,
+                std::map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
+                std::map<xcOutputDataAttributes, std::vector<double>> &cDataout) const override;
 
-  private:
-    NNLLMGGA *    d_NNLLMGGAPtr;
-    xc_func_type *d_funcXPtr;
-    xc_func_type *d_funcCPtr;
-  };
+    private:
+        NNLLMGGA *          d_NNLLMGGAPtr;
+        xc_func_type *      d_funcXPtr;
+        xc_func_type *      d_funcCPtr;
+        std::vector<double> d_spacingFDStencil;
+        unsigned int        d_vxcDivergenceTermFDStencilSize;
+    };
 } // namespace dftfe
-
-#endif // LLMGGA_EXCDENSITYLLMGGACLASS_H
+#endif //DFTFE_EXCDENSITYLLMGGACLASS_H

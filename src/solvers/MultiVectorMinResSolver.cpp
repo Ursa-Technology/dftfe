@@ -219,7 +219,7 @@ namespace dftfe
     std::vector<double> gbarHost(blockSize, 0.0);
     std::vector<double> rnormHost(blockSize, 0.0);
 
-    scale(r1.data(), oneMemSpace.begin(), nLocallyOwned, blockSize, r2.data());
+    scale(r1MemSpace.data(), oneMemSpace.begin(), nLocallyOwned, blockSize, r2.data());
 
 
     BLASWrapperPtr->axpby(locallyOwned*blockSize,
@@ -267,7 +267,7 @@ namespace dftfe
                                                                                              negBetaByBetaOldMemSpace.begin(),
                                                                                              negBetaByBetaOldHost.begin());
 
-            BLASWrapperPtr->stridedBlockScaleAndAddColumnWise(blockSize,locallyOwned, r1, negBetaByBetaOldMemSpace, y.begin());
+            BLASWrapperPtr->stridedBlockScaleAndAddColumnWise(blockSize,locallyOwned, r1MemSpace, negBetaByBetaOldMemSpace, y.begin());
 
           }
         computing_timer.leave_subsection("MINRES vmult MPI");
@@ -392,7 +392,7 @@ namespace dftfe
             denomMemSpace,
             w);
 
-          BLASWrapperPtr->stridedBlockScaleAndAddColumnWise(blockSize,locallyOwned, wMemSpace, phiDeviceMemSpace, xTmpMemSpace.begin());
+          BLASWrapperPtr->AnstridedBlockScaledAddColumnWise(blockSize,locallyOwned, wMemSpace, phiDeviceMemSpace, xTmpMemSpace.begin());
 
         for (unsigned int i = 0; i < blockSize; ++i)
           {

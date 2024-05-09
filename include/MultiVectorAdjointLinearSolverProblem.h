@@ -87,15 +87,11 @@ namespace dftfe
      */
     template <typename T>
     void
-    precondition_JacobiSqrt(ddftfe::linearAlgebra::MultiVector<T,
+    precondition_JacobiSqrt(dftfe::linearAlgebra::MultiVector<T,
                                                                memorySpace> &      dst,
                             const dftfe::linearAlgebra::MultiVector<T,
                                                                     memorySpace> &src,
                             const double omega) const override ;
-
-    template <typename T>
-    void
-    setDataForRhsVec(dftfe::utils::MemoryStorage<T, memorySpace>& inputQuadData);
 
     void reinit(
       std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
@@ -108,8 +104,14 @@ namespace dftfe
       const dealii::AffineConstraints<double> &constraintMatrix,
       const unsigned int                       matrixFreeVectorComponent,
       const unsigned int matrixFreeQuadratureComponentRhs,
-      const bool              isComputeDiagonalA,
-      const bool              isComputeShapeFunction);
+      const bool              isComputeDiagonalA);
+
+    void multiVectorDotProdQuadWise(const dftfe::linearAlgebra::MultiVector<T,
+                                                                 memorySpace> &      vec1,
+                               const dftfe::linearAlgebra::MultiVector<T,
+                                                                       memorySpace> &vec2,
+                               dftfe::utils::MemoryStorage<T, dftfe::utils::MemorySpace::HOST>&
+                                 dotProductOutputHost);
 
   private :
 
@@ -125,11 +127,8 @@ namespace dftfe
     /// the vector that stores the output obtained by solving the poisson
     /// problem
     dftfe::linearAlgebra::MultiVector<T,
-                                      memorySpace> *d_blockedXPtr,
-      d_psiWithFarFieldBC, *d_psi;
+                                      memorySpace> *d_blockedXPtr, *d_psiMemSpace;
 
-    dftfe::linearAlgebra::MultiVector<T,
-                                      memorySpace> *d_psiDevice;
 
     dftfe::linearAlgebra::MultiVector<double,
                                       memorySpace> d_diagonalSqrtA;
@@ -150,14 +149,46 @@ namespace dftfe
     unsigned int d_matrixFreeQuadratureComponentRhs;
     unsigned int d_matrixFreeVectorComponent;
     unsigned int d_blockSize;
+    unsigned int d_locallyOwnedSize,d_numberDofsPerElement,d_numCells,d_numQuadsPerCell;
 
     KohnShamHamiltonianOperator<memorySpace> d_ksOperatorPtr;
     dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
       d_mapNodeIdToProcId;
+    dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
+      d_mapQuadIdToProcId;
+
+    dftfe::utils::MemoryStorage<double, memorySpace> tempOutputDotProdMemSpace, oneBlockSizeMemSpace;
 
     dftfe::linearAlgebra::MultiVector<double,
-                                      memorySpace> d_onesDevice;
+                                      memorySpace> d_onesDevice,d_onesQuadDevice;
+ dftfe::linearAlgebra::MultiVector<double,
+                                       memorySpace> d_rhsMemSpace;
+    dftfe::utils::MemoryStorage<T, memorySpace> vec1QuadValues, vec2QuadValues,vecOutputQuadValues;
 
+    dftfe::utils::MemoryStorage<double, memorySpace>
+      d_RMatrixMemSpace, d_MuMatrixMemSpace;
+
+    dftfe::utils::MemoryStorage<double, memorySpace>
+      d_effectiveOrbitalOccupancyMemSpace;
+
+    std::vector<std::vector<unsigned int>> d_degenerateState;
+    std::vector<double>       d_eigenValues;
+
+    std::vector<unsigned int> d_vectorList;
+
+    dftfe::utils::MemoryStorage<unsigned int, memorySpace>
+      d_vectorListMemSpace;
+
+    dftfe::utils::MemoryStorage<unsigned int, memorySpace>
+    d_4xeffectiveOrbitalOccupancyMemSpace;
+
+    dftfe::utils::MemoryStorage<double , memorySpace> d_inputJxWMemSpace;
+
+    dftfe::utils::MemoryStorage<double , memorySpace>
+    d_cellWaveFunctionQuadMatrixMemSpace;
+    dftfe::utils::MemoryStorage<double , memorySpace>
+    d_MuMatrixMemSpaceCellWise;
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> d_MuMatrixHost;
   };
 }
 

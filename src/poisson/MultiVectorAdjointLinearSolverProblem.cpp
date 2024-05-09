@@ -7,6 +7,316 @@
 namespace dftfe
 {
 
+  namespace
+  {
+
+#ifdef DFTFE_WITH_DEVICE
+    template <typename ValueType1, typename ValueType2>
+    __global__ void
+    rMatrixDeviceKernel(const dftfe::size_type numLocalCells,
+                        const dftfe::size_type numDofsPerElem,
+                        const dftfe::size_type numQuadPoints,
+                        const ValueType1      *shapeFuncTranspose,
+                        const ValueType2      *inputJxW,
+                        ValueType2            *rMatrix)
+    {
+      const dftfe::size_type globalThreadId =
+        blockIdx.x * blockDim.x + threadIdx.x;
+      const dftfe::size_type numberEntries =
+        numLocalCells * numDofsPerElem * numDofsPerElem;
+
+      for (dftfe::size_type index = globalThreadId; index < numberEntries;
+           index += blockDim.x * gridDim.x)
+        {
+          dftfe::size_type iElem = index / (numDofsPerElem * numDofsPerElem);
+          dftfe::size_type nodeIndex =
+            index % (numDofsPerElem * numDofsPerElem);
+          dftfe::size_type iNode = nodeIndex / (numDofsPerElem);
+          dftfe::size_type jNode = nodeIndex % (numDofsPerElem);
+
+          dftfe::size_type elemRIndex = iElem * numDofsPerElem * numDofsPerElem;
+          dftfe::size_type nodeRIndex = iNode * numDofsPerElem + jNode;
+
+          dftfe::size_type iNodeQuadIndex = iNode * numQuadPoints;
+          dftfe::size_type jNodeQuadIndex = jNode * numQuadPoints;
+
+          dftfe::size_type elemQuadIndex = iElem * numQuadPoints;
+          for (dftfe::size_type iQuad = 0; iQuad < numQuadPoints; iQuad++)
+            {
+              dftfe::utils::copyValue(
+                rMatrix + elemRIndex + nodeRIndex,
+                dftfe::utils::add(
+                  rMatrix[elemRIndex + nodeRIndex],
+                  dftfe::utils::mult(
+                    shapeFuncTranspose[iNodeQuadIndex + iQuad],
+                    dftfe::utils::mult(
+                      shapeFuncTranspose[jNodeQuadIndex + iQuad],
+                      inputJxW[elemQuadIndex + iQuad]))));
+            }
+        }
+    }
+
+    template <typename ValueType1, typename ValueType2>
+    void
+    rMatrixMemSpaceKernel(
+      const dftfe::size_type numLocalCells,
+      const dftfe::size_type numDofsPerElem,
+      const dftfe::size_type numQuadPoints,
+      const std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &BLASWrapperPtr,
+      const dftfe::utils::MemoryStorage<ValueType2,
+                                        dftfe::utils::MemorySpace::DEVICE>
+        &shapeFuncTranspose,
+      const dftfe::utils::MemoryStorage<ValueType1,
+                                        dftfe::utils::MemorySpace::DEVICE>
+                                                                     &inputJxW,
+      dftfe::utils::MemoryStorage<ValueType1,
+                                  dftfe::utils::MemorySpace::DEVICE> &rMatrix)
+    {
+#ifdef DFTFE_WITH_DEVICE_LANG_CUDA
+      rMatrixDeviceKernel<<<(numLocalCells * numDofsPerElem * numDofsPerElem) /
+                                dftfe::utils::DEVICE_BLOCK_SIZE +
+                              1,
+                            dftfe::utils::DEVICE_BLOCK_SIZE>>>(
+        numLocalCells,
+        numDofsPerElem,
+        numQuadPoints,
+        dftfe::utils::makeDataTypeDeviceCompatible(shapeFuncTranspose.begin()),
+        dftfe::utils::makeDataTypeDeviceCompatible(inputJxW.begin()),
+        dftfe::utils::makeDataTypeDeviceCompatible(rMatrix.begin()));
+#elif DFTFE_WITH_DEVICE_LANG_HIP
+      hipLaunchKernelGGL(
+        rMatrixDeviceKernel,
+        (numLocalCells * numDofsPerElem * numDofsPerElem) /
+            dftfe::utils::DEVICE_BLOCK_SIZE +
+          1,
+        dftfe::utils::DEVICE_BLOCK_SIZE,
+        0,
+        0,
+        numLocalCells,
+        numDofsPerElem,
+        numQuadPoints,
+        dftfe::utils::makeDataTypeDeviceCompatible(shapeFuncTranspose.begin()),
+        dftfe::utils::makeDataTypeDeviceCompatible(inputJxW.begin()),
+        dftfe::utils::makeDataTypeDeviceCompatible(rMatrix.begin()));
+#endif
+    }
+
+    template <typename ValueType1, typename ValueType2>
+    __global__ void
+    muMatrixDeviceKernel(const dftfe::size_type numLocalCells,
+                         const dftfe::size_type numVec,
+                         const dftfe::size_type numQuadPoints,
+                         const dftfe::size_type blockSize,
+                         const ValueType1 *     orbitalOccupancy,
+                         const ValueType2 *     vecList,
+                         const ValueType1 *     cellLevelQuadValues,
+                         const ValueType1 *     inputJxW,
+                         ValueType1 *           muMatrixCellWise)
+    {
+      const dftfe::size_type globalThreadId =
+        blockIdx.x * blockDim.x + threadIdx.x;
+      const dftfe::size_type numberEntries = numLocalCells * numVec;
+
+      for (dftfe::size_type index = globalThreadId; index < numberEntries;
+           index += blockDim.x * gridDim.x)
+        {
+          dftfe::size_type iElem        = index / (numVec);
+          dftfe::size_type vecIndex     = index % numVec;
+          dftfe::size_type vecId        = vecList[2 * vecIndex];
+          dftfe::size_type degenerateId = vecList[2 * vecIndex + 1];
+
+          dftfe::size_type elemQuadIndex = iElem * numQuadPoints * blockSize;
+          dftfe::size_type elemInputQuadIndex = iElem * numQuadPoints;
+          for (dftfe::size_type iQuad = 0; iQuad < numQuadPoints; iQuad++)
+            {
+              dftfe::utils::copyValue(
+                muMatrixCellWise + iElem * numVec + vecIndex,
+                dftfe::utils::add(
+                  muMatrixCellWise[iElem * numVec + vecIndex],
+                  dftfe::utils::mult(
+                    dftfe::utils::mult(2.0, orbitalOccupancy[vecId]),
+                    dftfe::utils::mult(
+                      cellLevelQuadValues[elemQuadIndex + vecId +
+                                          iQuad * blockSize],
+                      dftfe::utils::mult(
+                        cellLevelQuadValues[elemQuadIndex + degenerateId +
+                                            iQuad * blockSize],
+                        inputJxW[elemInputQuadIndex + iQuad])))));
+            }
+        }
+    }
+
+    template <typename ValueType1, typename ValueType2>
+    void
+    muMatrixMemSpaceKernel(
+      const dftfe::size_type numLocalCells,
+      const dftfe::size_type numVec,
+      const dftfe::size_type numQuadPoints,
+      const dftfe::size_type blockSize,
+      const dftfe::utils::MemoryStorage < ValueType1,
+                                        dftfe::utils::MemorySpace::DEVICE> &orbitalOccupancy,
+      const dftfe::utils::MemoryStorage < ValueType2,
+                                        dftfe::utils::MemorySpace::DEVICE> & vecList,
+      const dftfe::utils::MemoryStorage < ValueType1,
+                                        dftfe::utils::MemorySpace::DEVICE> &cellLevelQuadValues,
+      const dftfe::utils::MemoryStorage<ValueType1,
+                                        dftfe::utils::MemorySpace::DEVICE>
+                                                                     &inputJxW,
+      dftfe::utils::MemoryStorage<ValueType2,
+                                  dftfe::utils::MemorySpace::DEVICE> &muMatrixCellWise)
+    {
+#ifdef DFTFE_WITH_DEVICE_LANG_CUDA
+      muMatrixDeviceKernel<<<
+        (numLocalCells * numVec) / dftfe::utils::DEVICE_BLOCK_SIZE + 1,
+        dftfe::utils::DEVICE_BLOCK_SIZE>>>(
+        numLocalCells,
+        numVec,
+        numQuadPoints,
+        blockSize,
+        dftfe::utils::makeDataTypeDeviceCompatible(orbitalOccupancy.begin()),
+        dftfe::utils::makeDataTypeDeviceCompatible(vecList.begin()),
+        dftfe::utils::makeDataTypeDeviceCompatible(cellLevelQuadValues.begin()),
+        dftfe::utils::makeDataTypeDeviceCompatible(inputJxW.begin()),
+        dftfe::utils::makeDataTypeDeviceCompatible(muMatrixCellWise.begin()));
+#elif DFTFE_WITH_DEVICE_LANG_HIP
+      hipLaunchKernelGGL(
+        muMatrixDeviceKernel,
+        (numLocalCells * numVec) / dftfe::utils::DEVICE_BLOCK_SIZE + 1,
+        dftfe::utils::DEVICE_BLOCK_SIZE,
+        0,
+        0,
+        numLocalCells,
+        numVec,
+        numQuadPoints,
+        blockSize,
+        dftfe::utils::makeDataTypeDeviceCompatible(orbitalOccupancy.begin()),
+        dftfe::utils::makeDataTypeDeviceCompatible(vecList.begin()),
+        dftfe::utils::makeDataTypeDeviceCompatible(cellLevelQuadValues.begin()),
+        dftfe::utils::makeDataTypeDeviceCompatible(inputJxW.begin()),
+        dftfe::utils::makeDataTypeDeviceCompatible(muMatrixCellWise.begin()));
+#endif
+    }
+#endif
+
+
+    template <typename ValueType1, typename ValueType2>
+    void
+    rMatrixMemSpaceKernel(
+      const dftfe::size_type numLocalCells,
+      const dftfe::size_type numDofsPerElem,
+      const dftfe::size_type numQuadPoints,
+      const std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
+        &BLASWrapperPtr,
+      const dftfe::utils::MemoryStorage < ValueType1,
+      dftfe::utils::MemorySpace::HOST> &shapeFuncTranspose,
+      const dftfe::utils::MemoryStorage<ValueType2,
+                                        dftfe::utils::MemorySpace::HOST>
+                                                                   &inputJxW,
+      dftfe::utils::MemoryStorage<ValueType2,
+                                  dftfe::utils::MemorySpace::HOST> &rMatrix)
+    {
+      AssertThrow(inputJxW.size() == (numQuadPoints * numLocalCells),
+                  dealii::ExcMessage(
+                    "In inputJxW the inputJxW should have only one component"
+                    "u(r) = w(r)*(rho_target(r) - rho_KS(r))"));
+
+      std::fill(rMatrix.begin(), rMatrix.end(), 0.0);
+      const unsigned int inc = 1;
+
+      std::vector<double> cellLevelJxW, cellLevelShapeFunction,
+        cellLevelRhsInput;
+      cellLevelJxW.resize(numQuadPoints);
+
+      std::vector<double> shapeFuncIJ(numDofsPerElem * numQuadPoints, 0.0);
+      std::vector<double> cellLevelR(numDofsPerElem * totalLocallyOwnedCells,
+                                     0.0);
+
+
+      double beta = 0.0, alpha = 1.0;
+      char   transA = 'N', transB = 'N';
+      for (unsigned int iNode = 0; iNode < numDofsPerElem; iNode++)
+        {
+          for (unsigned int iQuad = 0; iQuad < numQuadPoints; iQuad++)
+            {
+              for (unsigned int jNode = 0; jNode < numDofsPerElem; jNode++)
+                {
+                  shapeFuncIJ[iQuad * numDofsPerElem + jNode] =
+                    d_shapeFunctionValueTransposed[iNode * numQuadPoints +
+                                                   iQuad] *
+                    d_shapeFunctionValue[jNode + iQuad * numDofsPerElem];
+                }
+            }
+          BLASWrapperPtr->xgemm(&transA,
+                                &transB,
+                                &numDofsPerElem,
+                                &numLocalCells,
+                                &numQuadPoints,
+                                &alpha,
+                                &shapeFuncIJ[0],
+                                &numDofsPerElem,
+                                &inputJxW[0],
+                                &numQuadPoints,
+                                &beta,
+                                &cellLevelR[0],
+                                &numDofsPerElem);
+          for (unsigned int elemId = 0; elemId < numLocalCells; elemId++)
+            {
+              dcopy_(&numDofsPerElem,
+                     &cellLevelR[elemId * numDofsPerElem],
+                     &inc,
+                     &rMatrix[elemId * numDofsPerElem * numDofsPerElem +
+                              iNode * numDofsPerElem],
+                     &inc);
+            }
+        }
+    }
+
+    template <typename ValueType1, typename ValueType2>
+    void
+    muMatrixMemSpaceKernel(
+      const dftfe::size_type numLocalCells,
+      const dftfe::size_type numVec,
+      const dftfe::size_type numQuadPoints,
+      const dftfe::size_type blockSize,
+      const std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
+        &BLASWrapperPtr,
+      const dftfe::utils::MemoryStorage < ValueType1,
+                                        dftfe::utils::MemorySpace::HOST> &orbitalOccupancy,
+      const dftfe::utils::MemoryStorage < ValueType2,
+                                        dftfe::utils::MemorySpace::HOST> & vecList,
+      const dftfe::utils::MemoryStorage < ValueType1,
+      dftfe::utils::MemorySpace::HOST> &cellLevelQuadValues,
+      const dftfe::utils::MemoryStorage<ValueType1,
+                                        dftfe::utils::MemorySpace::HOST>
+                                                                   &inputJxW,
+      dftfe::utils::MemoryStorage<ValueType2,
+                                  dftfe::utils::MemorySpace::HOST> &muMatrixCellWise)
+    {
+      for( unsigned int index = 0 ; index < numLocalCells * numVec; index++ )
+        {
+          dftfe::size_type iElem        = index / (numVec);
+          dftfe::size_type vecIndex     = index % numVec;
+          dftfe::size_type vecId        = vecList[2 * vecIndex];
+          dftfe::size_type degenerateId = vecList[2 * vecIndex + 1];
+
+          dftfe::size_type elemQuadIndex = iElem * numQuadPoints * blockSize;
+          dftfe::size_type elemInputQuadIndex = iElem * numQuadPoints;
+          for (dftfe::size_type iQuad = 0; iQuad < numQuadPoints; iQuad++)
+            {
+              muMatrixCellWise[iElem * numVec + vecIndex] +=   2.0*orbitalOccupancy[vecId]*
+                                                                cellLevelQuadValues[elemQuadIndex + vecId +
+                                                                                    iQuad * blockSize]*
+                                                                inputJxW[elemInputQuadIndex + iQuad];
+
+            }
+        }
+    }
+  }
+
 
   // constructor
   template <dftfe::utils::MemorySpace memorySpace>
@@ -60,8 +370,14 @@ namespace dftfe
     d_locallyOwnedSize = d_basisOperationsPtr->nOwnedDofs();
     d_numberDofsPerElement = d_basisOperationsPtr->nDofsPerCell();
     d_numCells       = d_basisOperationsPtr->nCells();
+    d_numQuadsPerCell = d_basisOperationsPtr->nQuadsPerCell();
 
     d_ksOperatorPtr = &ksHamiltonianObj;
+
+    d_constraintsInfo.initialize(
+      d_matrixFreeDataPtr->get_vector_partitioner(
+        matrixFreeVectorComponent),
+      constraintMatrix);
 
     if (isComputeDiagonalA)
       {
@@ -76,6 +392,9 @@ namespace dftfe
 
     d_onesDevice.resize(d_locallyOwnedSize);
     d_onesDevice.setValue(1.0);
+
+    d_onesQuadDevice.resize(d_numCells*d_numQuadsPerCell);
+    d_onesQuadDevice.setValue(1.0);
 
   }
 
@@ -99,7 +418,7 @@ namespace dftfe
 
     dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace> mapNodeIdToProcId;
     mapNodeIdToProcId.resize(d_locallyOwnedSize);
-    mapNodeIdToProcId.copy_from(nodeIds);
+    mapNodeIdToProcId.copyFrom(nodeIds);
 
     auto sqrtMassMat = BLASWrapperPtr->sqrtMassVectorBasisData();
     auto inverseStiffVec = d_basisOperationsPtr->inverseStiffnessVectorBasisData();
@@ -203,106 +522,92 @@ namespace dftfe
                                       memorySpace> &       outputVec,
     unsigned int                      blockSizeInput)
   {
+    d_cellsBlockSizeVmult = 100;
+    d_basisOperationsPtr->reinit(blockSizeInput,
+                                 d_cellsBlockSizeVmult,
+                                 d_matrixFreeQuadratureComponentRhs,
+                                 true, // TODO should this be set to true
+                                 true); // TODO should this be set to true
     if(d_blockSize != blockSizeInput)
       {
         d_blockSize = blockSizeInput;
         dftfe::utils::MemoryStorage<dftfe::global_size_type,
                                     dftfe::utils::MemorySpace::HOST>
-          nodeIds;
+          nodeIds, quadIds;
         nodeIds.resize(d_locallyOwnedSize);
         for(size_type i = 0 ; i < d_locallyOwnedSize;i++)
           {
             nodeIds.data()[i] = i*d_blockSize;
           }
         d_mapNodeIdToProcId.resize(d_locallyOwnedSize);
-        d_mapNodeIdToProcId.copy_from(nodeIds);
+        d_mapNodeIdToProcId.copyFrom(nodeIds);
+
+        quadIds.resize(d_numCells*d_numQuadsPerCell);
+        for(size_type i = 0 ; i < d_numCells*d_numQuadsPerCell;i++)
+          {
+            quadIds.data()[i] = i*d_blockSize;
+          }
+        d_mapQuadIdToProcId.resize(d_numCells*d_numQuadsPerCell);
+        d_mapQuadIdToProcId.copyFrom(quadIds);
 
         d_xCellLLevelNodalData.resize(d_numCells*d_numberDofsPerElement*d_blockSize);
         d_AxCellLLevelNodalData.resize(d_numCells*d_numberDofsPerElement*d_blockSize);
 
-        d_cellsBlockSizeVmult = 100;  // set this correctly
-        d_basisOperationsPtr->reinit(d_blockSize,
-                                     d_cellsBlockSizeVmult,
-                                     d_matrixFreeQuadratureComponentRhs,
-                                     true, // TODO should this be set to true
-                                     true); // TODO should this be set to true
+        d_basisOperationsPtr->createMultiVector(d_blockSize,d_rhsVecMemSpace);
 
-        d_basisOperationsPtr->createMultiVector(d_blockSize,d_rhsVec);
+        vec1QuadValues.resize(d_blockSize*d_numCells*d_numQuadsPerCell);
+        vec2QuadValues.resize(d_blockSize*d_numCells*d_numQuadsPerCell);
+        vecOutputQuadValues.resize(d_blockSize*d_numCells*d_numQuadsPerCell);
+
+        tempOutputDotProdMemSpace.resize(d_blockSize);
+        oneBlockSizeMemSpace.resize(d_blockSize);
+        oneBlockSizeMemSpace.setValue(1.0);
 
       }
     d_blockedXPtr = &outputVec;
-    d_blockedNDBCPtr = &NDBCVec;
 
-    d_blockedXDevicePtr = &outputVecDevice;
 
     // psiTemp = M^{1/2} psi
     // TODO check if this works
     //    computing_timer.leave_subsection("Rhs init  MPI");
     //
     computing_timer.enter_subsection("Rhs init Device MPI");
-    distributedDeviceVec<double> psiTempDevice;
-    psiTempDevice.reinit(*d_psiDevice);
-    dftfe::utils::deviceMemcpyD2D(
-      dftfe::utils::makeDataTypeDeviceCompatible(psiTempDevice.data()),
-      d_psiDevice->data(),
-      d_locallyOwnedDofs * blockSizeInput * sizeof(double));
-    psiTempDevice.updateGhostValues();
+    dftfe::linearAlgebra::MultiVector<double,
+                                      memorySpace> psiTempMemSpace;
+    psiTempMemSpace.reinit(*d_psiMemSpace);
+    psiTempMemSpace.copyFrom(psiTempMemSpace->data());
+    psiTempMemSpace.updateGhostValues();
+    d_constraintsInfo.distribute(psiTempMemSpace, d_blockSize);
 
-    distributedDeviceVec<double> psiTempDevice2;
-    psiTempDevice2.reinit(*d_psiDevice);
+    dftfe::linearAlgebra::MultiVector<double,
+                                      memorySpace> psiTempMemSpace2;
+    psiTempMemSpace2.reinit(*d_psiMemSpace);
 
-    psiTempDevice2.setValue(0.0);
+    psiTempMemSpace2.setValue(0.0);
 
-    const unsigned int totalLocallyOwnedCells =
-      d_matrixFreeDataPtr->n_physical_cells();
-
-    const dealii::Quadrature<3> &quadratureRhs =
-      d_matrixFreeDataPtr->get_quadrature(d_matrixFreeQuadratureComponentRhs);
-    const unsigned int numberDofsPerElement =
-      d_dofHandler->get_fe().dofs_per_cell;
-    const unsigned numberQuadraturePointsRhs = quadratureRhs.size();
-
-
-    std::vector<double> inputJxW(numberQuadraturePointsRhs *
-                                   totalLocallyOwnedCells,
-                                 0.0);
-    d_inputJxWDevice.resize(numberQuadraturePointsRhs * totalLocallyOwnedCells,
-                            0.0);
-    for (unsigned int elemId = 0; elemId < totalLocallyOwnedCells; elemId++)
-      {
-        unsigned int quadStartId = elemId * numberQuadraturePointsRhs;
-        for (unsigned int iQuad = 0; iQuad < numberQuadraturePointsRhs; iQuad++)
-          {
-            inputJxW[quadStartId + iQuad] =
-              d_cellJxW[quadStartId + iQuad] * multiVectorInput[elemId][iQuad];
-          }
-      }
-
-    dftfe::utils::deviceMemcpyH2D(d_inputJxWDevice.begin(),
-                                  &inputJxW[0],
-                                  numberQuadraturePointsRhs *
-                                    totalLocallyOwnedCells * sizeof(double));
 
     computing_timer.leave_subsection("Rhs init Device MPI");
 
     computing_timer.enter_subsection("M^(-1/2) Device MPI");
-    psiTempDevice.updateGhostValues();
-    d_constraintsMatrixInfoDevice.distribute(psiTempDevice, d_blockSize);
 
-    dftfe::utils::deviceKernelsGeneric::stridedBlockScale(
-      d_blockSize,
-      d_locallyOwnedDofs,
+    auto sqrtMassMat = BLASWrapperPtr->sqrtMassVectorBasisData();
+    d_basisOperationsPtr->stridedBlockScaleCopy(
+      1,
+      d_locallyOwnedSize,
       1.0,
-      d_sqrtMassDeviceVec,
-      psiTempDevice.begin());
-    psiTempDevice.updateGhostValues();
+      sqrtMassMat.data(),
+      psiTempMemSpace.data(),
+      psiTempMemSpace.data(),
+      mapNodeIdToProcId.data());
+
+    psiTempMemSpace.updateGhostValues();
     computing_timer.leave_subsection("M^(-1/2) Device MPI");
 
     computing_timer.enter_subsection("computeR Device MPI");
-    computeRMatrixDevice(d_inputJxWDevice);
+    computeRMatrix(d_inputJxWMemSpace);
     computing_timer.leave_subsection("computeR Device MPI");
     computing_timer.enter_subsection("computeMu Device MPI");
-    computeMuMatrixDevice(d_inputJxWDevice, *d_psiDevice);
+    computeMuMatrix(d_inputJxWMemSpace, *d_psiMemSpace);
 
 
 
@@ -311,38 +616,31 @@ namespace dftfe
 
     computing_timer.enter_subsection("Mu*Psi Device MPI");
     //    rhs = 0.0;
-    rhsDevice.setValue(0.0);
+    d_rhsMemSpace.setValue(0.0);
     // Calculating the rhs from the quad points
     // multiVectorInput is stored on the quad points
-    typename dealii::DoFHandler<3>::active_cell_iterator
-      cell             = d_dofHandler->begin_active(),
-      endc             = d_dofHandler->end();
-    unsigned int iElem = 0;
 
     const unsigned int inc  = 1;
     const double       beta = 0.0, alpha = 1.0, alpha_minus_two = -2.0,
                  alpha_minus_one = -1.0;
-    char transposeMat            = 'T';
-    char doNotTransposeMat       = 'N';
 
     // rhs = Psi*Mu. Since blas/lapack assume a column-major format whereas the
     // Psi is stored in a row major format, we do Mu^T*\Psi^T = Mu*\Psi^T
     // (because Mu is symmetric)
 
-    dftfe::utils::deviceBlasWrapper::gemm(
-      d_kohnShamDeviceClassPtr->getDeviceBlasHandle(),
+    BLASWrapperPtr->xgemm(
       dftfe::utils::DEVICEBLAS_OP_N,
       dftfe::utils::DEVICEBLAS_OP_N,
       d_blockSize,
-      d_locallyOwnedDofs,
+      d_locallyOwnedSize,
       d_blockSize,
       &alpha_minus_two,
-      d_MuMatrixDevice.begin(),
+      d_MuMatrixMemSpace,
       d_blockSize,
-      psiTempDevice.begin(),
+      psiTempMemSpace,
       d_blockSize,
       &beta,
-      rhsDevice.begin(),
+      d_rhsVecMemSpace,
       d_blockSize);
 
     computing_timer.leave_subsection("Mu*Psi Device MPI");
@@ -356,26 +654,29 @@ namespace dftfe
     //
 
     computing_timer.enter_subsection("psi*M(-1/2) Device MPI");
-    dftfe::utils::deviceKernelsGeneric::stridedBlockScale(
+
+    auto invSqrtMassMat = BLASWrapperPtr->cellInverseMassVectorBasisData();
+    d_basisOperationsPtr->stridedBlockScaleCopy(
       d_blockSize,
-      d_locallyOwnedDofs,
+      d_locallyOwnedSize,
       1.0,
-      d_invSqrtMassDeviceVec,
-      psiTempDevice.begin());
-    psiTempDevice.updateGhostValues();
-    d_constraintsMatrixInfoDevice.distribute(psiTempDevice, d_blockSize);
+      invSqrtMassMat.data(),
+      psiTempMemSpace.data(),
+      psiTempMemSpace.data(),
+      mapNodeIdToProcId.data());
+
+    psiTempMemSpace.updateGhostValues();
+    d_constraintsInfo.distribute(psiTempMemSpace, d_blockSize);
     computing_timer.leave_subsection("psi*M(-1/2) Device MPI");
 
     computing_timer.enter_subsection("R times psi Device MPI");
 
     // 2. Do PsiTemp2 = R*PsiTemp
     d_cellWaveFunctionMatrixDevice.setValue(0.0);
-    dftfe::utils::deviceKernelsGeneric::stridedCopyToBlock(
-      d_blockSize,
-      totalLocallyOwnedCells * d_numberDofsPerElement,
-      psiTempDevice.data(),
-      d_cellWaveFunctionMatrixDevice.begin(),
-      d_flattenedArrayCellLocalProcIndexIdMapDevice.begin());
+    std::pair<unsigned int, unsigned int> cellRange = std::make_pair(0,d_numCells);
+    d_basisOperationsPtr->extractToCellNodalDataKernel(psiTempMemSpace,
+                                                       d_cellWaveFunctionMatrixMemSpace,
+                                                       cellRange);
 
     const dataTypes::number scalarCoeffAlpha = dataTypes::number(1.0),
                             scalarCoeffBeta  = dataTypes::number(0.0);
@@ -385,37 +686,31 @@ namespace dftfe
     const unsigned int strideC = d_numberDofsPerElement * d_blockSize;
 
 
-    dftfe::utils::deviceBlasWrapper::gemmStridedBatched(
-      d_kohnShamDeviceClassPtr->getDeviceBlasHandle(),
+    d_basisOperationsPtr->xgemmStridedBatched(
       dftfe::utils::DEVICEBLAS_OP_N,
-      std::is_same<dataTypes::number, std::complex<double>>::value ?
-        dftfe::utils::DEVICEBLAS_OP_T :
-        dftfe::utils::DEVICEBLAS_OP_N,
+      dftfe::utils::DEVICEBLAS_OP_N,
       d_blockSize,
       d_numberDofsPerElement,
       d_numberDofsPerElement,
       &scalarCoeffAlpha,
-      d_cellWaveFunctionMatrixDevice.begin(),
+      d_cellWaveFunctionMatrixMemSpace.begin(),
       d_blockSize,
       strideA,
-      d_RMatrixDevice.begin(),
+      d_RMatrixMemSpace.begin(),
       d_numberDofsPerElement,
       strideB,
       &scalarCoeffBeta,
-      d_cellRMatrixTimesWaveMatrixDevice.begin(),
+      d_cellRMatrixTimesWaveMatrixMemSpace.begin(),
       d_blockSize,
       strideC,
-      totalLocallyOwnedCells);
+      d_numCells);
 
-    dftfe::utils::deviceKernelsGeneric::axpyStridedBlockAtomicAdd(
-      d_blockSize,
-      totalLocallyOwnedCells * d_numberDofsPerElement,
-      d_cellRMatrixTimesWaveMatrixDevice.begin(),
-      psiTempDevice2.data(),
-      d_flattenedArrayCellLocalProcIndexIdMapDevice.begin());
-    d_constraintsMatrixInfoDevice.distribute_slave_to_master(psiTempDevice2,
+      d_basisOperationsPtr->accumulateFromCellNodalData(
+      d_cellRMatrixTimesWaveMatrixMemSpace.begin(),
+      psiTempMemSpace2.data());
+    d_constraintsInfo.distribute_slave_to_master(psiTempMemSpace2,
                                                              d_blockSize);
-    psiTempDevice2.accumulateAddLocallyOwned();
+    psiTempMemSpace2.accumulateAddLocallyOwned();
 
     // 3. PsiTemp2 = M^{-1/2}*PsiTemp2
     computing_timer.leave_subsection("R times psi Device MPI");
@@ -423,29 +718,33 @@ namespace dftfe
     computing_timer.enter_subsection("psiTemp M^(-1/2) Device MPI");
 
 
-    psiTempDevice2.updateGhostValues();
-    d_constraintsMatrixInfoDevice.distribute(psiTempDevice2, d_blockSize);
+    psiTempMemSpace2.updateGhostValues();
+    d_constraintsInfo.distribute(psiTempMemSpace2, d_blockSize);
 
-    dftfe::utils::deviceKernelsGeneric::stridedBlockScale(
+    auto invSqrtMassMat = BLASWrapperPtr->cellInverseMassVectorBasisData();
+    d_basisOperationsPtr->stridedBlockScaleCopy(
       d_blockSize,
-      d_locallyOwnedDofs,
+      d_locallyOwnedSize,
       1.0,
-      d_invSqrtMassDeviceVec,
-      psiTempDevice2.begin());
-    psiTempDevice2.updateGhostValues();
-    d_constraintsMatrixInfoDevice.distribute(psiTempDevice2, d_blockSize);
+      invSqrtMassMat.data(),
+      psiTempMemSpace2.data(),
+      psiTempMemSpace2.data(),
+      mapNodeIdToProcId.data());
 
-    stridedBlockScaleForEigen(d_blockSize,
-                              d_locallyOwnedDofs,
-                              4.0,
-                              d_effectiveOrbitalOccupancyDevice.data(),
-                              psiTempDevice2.data(),
-                              rhsDevice.data());
+    psiTempMemSpace2.updateGhostValues();
+    d_constraintsInfo.distribute(psiTempMemSpace2, d_blockSize);
 
-    d_constraintsMatrixInfoDevice.set_zero(rhsDevice, d_blockSize);
+    BLASWrapperPtr->stridedBlockScaledAddColumnWise(d_blockSize,
+                                                      d_locallyOwnedSize,
+                                                       d_4xeffectiveOrbitalOccupancyMemSpace,
+                                                      psiTempMemSpace2,
+                                                      d_rhsMemSpace.begin());
+
+    d_constraintsInfo.set_zero(d_rhsMemSpace, d_blockSize);
 
     computing_timer.leave_subsection("psiTemp M^(-1/2) Device MPI");
 
+    return d_rhsMemSpace;
   }
 
 
@@ -458,38 +757,39 @@ namespace dftfe
   void
   MultiVectorAdjointLinearSolverProblem<memorySpace>::updateInputPsi(
     dftfe::linearAlgebra::MultiVector<T,
-                                      memorySpace>
-      &psiInputVec, // assumes the vector as been distributed with correct
-                                                     // constraints
-    dftfe::linearAlgebra::MultiVector<T,
-                                      memorySpace> &psiInputVecDevice, // need to call distribute
+                                      memorySpace> &psiInputVecMemSpace, // need to call distribute
     std::vector<double>
                                            &effectiveOrbitalOccupancy, // incorporates spin information
+    dftfe::utils::MemoryStorage<double , memorySpace> &differenceInDensity,
     std::vector<std::vector<unsigned int>> &degeneracy,
     std::vector<double> &                   eigenValues,
     unsigned int                            blockSize)
   {
     pcout << " updating psi inside adjoint\n";
-    d_psi       = &psiInputVec;
-    d_psiDevice = &psiInputVecDevice;
-    d_RMatrix.resize(d_totalLocallyOwnedCells * d_numberDofsPerElement *
-                       d_numberDofsPerElement,
-                     0.0);
-    d_RMatrixDevice.resize(d_totalLocallyOwnedCells * d_numberDofsPerElement *
-                             d_numberDofsPerElement,
-                           0.0);
-    d_MuMatrix.resize(blockSize * blockSize, 0.0);
-    d_MuMatrixDevice.resize(blockSize * blockSize, 0.0);
 
-    std::fill(d_MuMatrix.begin(), d_MuMatrix.end(), 0.0);
+    d_psiMemSpace = &psiInputVecMemSpace;
+    d_psiMemSpace->updateGhostValues();
+    d_constraintsInfo.distribute(*d_psiMemSpace, d_blockSize);
 
-    // TODO deep copy not necessary;
-    d_effectiveOrbitalOccupancy = effectiveOrbitalOccupancy;
-    d_effectiveOrbitalOccupancyDevice.resize(blockSize, 0.0);
+    d_RMatrixMemSpace.resize(d_numCells * d_numberDofsPerElement *
+                               d_numberDofsPerElement);
+    d_RMatrixMemSpace.setValue(0.0);
 
-    dftfe::utils::deviceMemcpyH2D(d_effectiveOrbitalOccupancyDevice.begin(),
-                                  &d_effectiveOrbitalOccupancy[0],
-                                  blockSize * sizeof(double));
+    d_MuMatrixMemSpace.resize(blockSize * blockSize);
+    d_MuMatrixMemSpace.setValue(0.0);
+
+    std::vector<double> effectiveOrbitalOccupancyHost;
+    effectiveOrbitalOccupancyHost = effectiveOrbitalOccupancy;
+    d_effectiveOrbitalOccupancyMemSpace.resize(blockSize);
+    d_effectiveOrbitalOccupancyMemSpace.copyFrom(effectiveOrbitalOccupancyHost);
+
+    std::vector<double> 4x_effectiveOrbitalOccupancyHost;
+
+    for( unsigned int i = 0 ; i <blockSize; i++)
+      {
+        4x_effectiveOrbitalOccupancyHost[i] = 4.0*effectiveOrbitalOccupancy[i];
+      }
+    d_4xeffectiveOrbitalOccupancyMemSpace.copyFrom(x_effectiveOrbitalOccupancyHost);
 
 
     d_degenerateState = degeneracy;
@@ -506,151 +806,65 @@ namespace dftfe
           }
       }
 
-    d_MuMatrixDeviceCellWise.resize((d_vectorList.size() / 2) *
+    d_MuMatrixMemSpaceCellWise.resize((d_vectorList.size() / 2) *
                                       d_totalLocallyOwnedCells,
                                     0.0);
-    d_MuMatrixCellWise.resize((d_vectorList.size() / 2) *
+    d_MuMatrixHostCellWise.resize((d_vectorList.size() / 2) *
                                 d_totalLocallyOwnedCells,
                               0.0);
-    d_vectorListDevice.resize(d_vectorList.size());
-    d_vectorListDevice.copyFrom(d_vectorList);
+
+    d_MuMatrixHost.resize(blockSize*blockSize);
+    std::fill(d_MuMatrixHost.begin(),d_MuMatrixHost.end(),0.0);
+    d_vectorListMemSpace.resize(d_vectorList.size());
+    d_vectorListMemSpace.copyFrom(d_vectorList);
     if (blockSize != d_blockSize)
       {
-        dftfe::linearAlgebra::createMultiVectorFromDealiiPartitioner(
-          d_matrixFreeDataPtr->get_vector_partitioner(
-            d_matrixFreeVectorComponent),
-          blockSize,
-          d_psiWithFarFieldBC);
-
         // If the number of vectors in the size is different, then the Map has
         // to be re-initialised. The d_blockSize is set to -1 in the
         // constructor, so that this if condition is satisfied the first time
         // the code is called.
         d_blockSize = blockSize;
 
-        vectorTools::computeCellLocalIndexSetMap(
-          psiInputVec.getMPIPatternP2P(),
-          *d_matrixFreeDataPtr,
-          d_matrixFreeVectorComponent,
-          d_blockSize,
-          d_flattenedArrayCellLocalProcIndexIdMap);
-
-        d_flattenedArrayCellLocalProcIndexIdMapDevice.resize(
-          d_flattenedArrayCellLocalProcIndexIdMap.size());
-        d_flattenedArrayCellLocalProcIndexIdMapDevice.copyFrom(
-          d_flattenedArrayCellLocalProcIndexIdMap);
-
-
-        // Setting up the constraint matrix for distributing the solution vector
-        // efficiently.
-        // d_constraintMatrixPtr stores the homogeneous Dirichlet boundary
-        // conditions, hanging nodes and periodic constraints
-        d_constraintsMatrixInfoHost.initialize(
-          d_matrixFreeDataPtr->get_vector_partitioner(
-            d_matrixFreeVectorComponent),
-          *d_constraintMatrixPtr);
-
-        //        d_constraintsMatrixPsiDataInfo.precomputeMaps(
-        //          d_matrixFreeDataPtr->get_vector_partitioner(
-        //            d_matrixFreePsiVectorComponent),
-        //          psiInputVec.getMPIPatternP2P(),
-        //          d_blockSize);
-
-        d_constraintsMatrixInfoHost.precomputeMaps(
-          psiInputVec.getMPIPatternP2P(), d_blockSize);
-
-
-        //        d_blockedDiagonalA.reinit(rhs);
-        //        calculateBlockDiagonalVec();
-        d_cellLevelX.resize(d_numberDofsPerElement * d_blockSize);
-        d_cellLevelAX.resize(d_numberDofsPerElement * d_blockSize);
-
-        //        dftfe::linearAlgebra::createMultiVectorFromDealiiPartitioner(
-        //           d_matrixFreeDataPtr->get_vector_partitioner(d_matrixFreeVectorComponent),
-        //           blockSize,
-        //	   d_AxDevice);
-        //
-        //        dftfe::linearAlgebra::createMultiVectorFromDealiiPartitioner(
-        //           d_matrixFreeDataPtr->get_vector_partitioner(d_matrixFreeVectorComponent),
-        //           blockSize,
-        //	   d_xDevice);
-
-        d_constraintsMatrixInfoDevice.initialize(
-          d_matrixFreeDataPtr->get_vector_partitioner(
-            d_matrixFreeVectorComponent),
-          *d_constraintMatrixPtr);
-
-        d_constraintsMatrixInfoDevice.precomputeMaps(
-          d_psiWithFarFieldBC.getMPIPatternP2P(), d_blockSize);
 
         d_cellWaveFunctionMatrixDevice.resize(
-          d_totalLocallyOwnedCells * d_numberDofsPerElement * d_blockSize, 0.0);
+          d_numCells * d_numberDofsPerElement * d_blockSize, 0.0);
 
         d_cellRMatrixTimesWaveMatrixDevice.resize(
-          d_totalLocallyOwnedCells * d_numberDofsPerElement * d_blockSize, 0.0);
-
-        d_cellWaveFunctionQuadMatrixDevice.resize(
-          d_totalLocallyOwnedCells * d_numberQuadraturePointsRhs * d_blockSize,
-          0.0);
-        d_cellvec2QuadMatrixDevice.resize(d_totalLocallyOwnedCells *
-                                            d_numberQuadraturePointsRhs *
-                                            d_blockSize,
-                                          0.0);
+          d_numCells * d_numberDofsPerElement * d_blockSize, 0.0);
+        d_cellWaveFunctionQuadMatrixMemSpace.resize(d_numCells*
+                                                      d_numQuadsPerCell *
+                                                      d_blockSize);
+        d_cellWaveFunctionQuadMatrixMemSpace.setValue(0.0);
       }
-    for (unsigned int iNode = 0; iNode < d_locallyOwnedDofs * d_blockSize;
-         iNode++)
-      {
-        d_psiWithFarFieldBC.data()[iNode] = psiInputVec.data()[iNode];
-      }
-    d_constraintsMatrixInfoHost.distribute(d_psiWithFarFieldBC, d_blockSize);
 
-    d_psiDevice->updateGhostValues();
-    d_constraintsMatrixInfoDevice.distribute(*d_psiDevice, d_blockSize);
-
-    // calling constraints distribute on the input vector
-    // TODO change this
-    d_constraintsMatrixInfoHost.distribute(*d_psi, d_blockSize);
-    d_projectorKetTimesVector =
-      &(d_kohnShamDeviceClassPtr
-          ->getParallelProjectorKetTimesBlockVectorDevice());
-
-    d_scalarProdVecDevice.resize(d_blockSize * d_locallyOwnedDofs, 0.0);
-    d_scalarProdVecQuadDevice.resize(d_blockSize * d_numberQuadraturePointsRhs *
-                                       d_totalLocallyOwnedCells,
-                                     0.0);
-    d_eigenValuesMemSpace.resize(d_blockSize, 0.0);
+    d_eigenValuesMemSpace.resize(d_blockSize);
 
     for(signed int iBlock = 0 ; iBlock < d_blockSize; iBlock++)
       {
         eigenValues[iBlock] = -1.0*eigenValues[iBlock];
       }
-    dftfe::utils::deviceMemcpyH2D(d_eigenValuesDevice.begin(),
-                                  &eigenValues[0],
-                                  d_blockSize * sizeof(double));
+    d_eigenValuesMemSpace.copyFrom(eigenValues);
 
     d_dotProdDevice.resize(d_blockSize, 0.0);
+
+    auto cellJxW = d_basisOperationsPtr->JxW();
+    d_inputJxWMemSpace.resize(d_numQuadsPerCell*d_numCells);
+    d_BLASWrapperPtr->hadamardProduct(d_numCells*d_numQuadsPerCell,
+                                      differenceInDensity.data(),
+                                      cellJxW.data(),
+                                      d_inputJxWMemSpace.data());
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  MultiVectorAdjointProblemDevice::computeMuMatrixDevice(
-    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::DEVICE>
-                                 &                           inputJxwDevice,
-    distributedDeviceVec<double> &psiVecDevice)
+  MultiVectorAdjointLinearSolverProblem<memorySpace>::computeMuMatrix(
+    dftfe::utils::MemoryStorage<double, memorySpace>
+                                 &                           inputJxwMemSpace,
+    dftfe::linearAlgebra::MultiVector<T,
+                                      memorySpace> &psiVecMemSpace)
   {
-    const unsigned int totalLocallyOwnedCells =
-      d_matrixFreeDataPtr->n_physical_cells();
 
-    typename dealii::DoFHandler<3>::active_cell_iterator
-      cell = d_dofHandler->begin_active(),
-      endc = d_dofHandler->end();
-
-    const dealii::Quadrature<3> &quadratureRhs =
-      d_matrixFreeDataPtr->get_quadrature(d_matrixFreeQuadratureComponentRhs);
-    const unsigned int numberDofsPerElement =
-      d_dofHandler->get_fe().dofs_per_cell;
-    const unsigned numberQuadraturePointsRhs = quadratureRhs.size();
-
-
+    dftfe::utils::MemoryStorage<unsigned int, dftfe::utils::MemorySpace::HOST>
     const unsigned int inc  = 1;
     const double       beta = 0.0, alpha = 1.0;
     char               transposeMat      = 'T';
@@ -659,14 +873,12 @@ namespace dftfe
     d_MuMatrixDevice.setValue(0.0);
     std::fill(d_MuMatrix.begin(), d_MuMatrix.end(), 0.0);
 
-    d_cellWaveFunctionMatrixDevice.setValue(0.0);
+    d_cellWaveFunctionMatrixMemSpace.setValue(0.0);
 
-    dftfe::utils::deviceKernelsGeneric::stridedCopyToBlock(
-      d_blockSize,
-      totalLocallyOwnedCells * d_numberDofsPerElement,
-      psiVecDevice.data(),
-      d_cellWaveFunctionMatrixDevice.begin(),
-      d_flattenedArrayCellLocalProcIndexIdMapDevice.begin());
+    std::pair<unsigned int, unsigned int> cellRange = std::make_pair(0,d_numCells);
+    d_basisOperationsPtr->extractToCellNodalDataKernel(psiVecMemSpace,
+                                                       d_cellWaveFunctionMatrixMemSpace,
+                                                       cellRange);
 
 
     const dataTypes::number scalarCoeffAlpha = dataTypes::number(1.0),
@@ -675,46 +887,42 @@ namespace dftfe
     const unsigned int strideB = 0;
     const unsigned int strideC = numberQuadraturePointsRhs * d_blockSize;
 
-    dftfe::utils::deviceBlasWrapper::gemmStridedBatched(
+    auto shapeFunctionData = d_basisOperationsPtr->shapeFunctionData(false);
+    d_basisOperationsPtr->xgemmStridedBatched(
       d_kohnShamDeviceClassPtr->getDeviceBlasHandle(),
       dftfe::utils::DEVICEBLAS_OP_N,
-      std::is_same<dataTypes::number, std::complex<double>>::value ?
-        dftfe::utils::DEVICEBLAS_OP_T :
-        dftfe::utils::DEVICEBLAS_OP_N,
+      dftfe::utils::DEVICEBLAS_OP_N,
       d_blockSize,
-      numberQuadraturePointsRhs,
-      numberDofsPerElement,
+      d_numQuadsPerCell,
+      d_numberDofsPerElement,
       &alpha,
-      d_cellWaveFunctionMatrixDevice.begin(),
+      d_cellWaveFunctionMatrixMemSpace.begin(),
       d_blockSize,
       strideA,
-      d_shapeFunctionValueDevice.begin(),
-      numberDofsPerElement,
+      shapeFunctionData.begin(),
+      d_numberDofsPerElement,
       strideB,
       &beta,
-      d_cellWaveFunctionQuadMatrixDevice.begin(),
+      d_cellWaveFunctionQuadMatrixMemSpace.begin(),
       d_blockSize,
       strideC,
-      totalLocallyOwnedCells);
+      d_numCells);
 
     unsigned int numVec = d_vectorList.size() / 2;
-    d_MuMatrixDeviceCellWise.setValue(0.0);
+    d_MuMatrixMemSpaceCellWise.setValue(0.0);
 
-    muMatrixDevice(totalLocallyOwnedCells,
+    muMatrixMemSpaceKernel(d_numCells,
                    numVec,
-                   numberQuadraturePointsRhs,
+                   d_numQuadsPerCell,
                    d_blockSize,
-                   d_effectiveOrbitalOccupancyDevice.begin(),
-                   d_vectorListDevice.begin(),
-                   d_cellWaveFunctionQuadMatrixDevice.begin(),
-                   inputJxwDevice.begin(),
-                   d_MuMatrixDeviceCellWise.data());
+                   d_effectiveOrbitalOccupancy,
+                   d_vectorListMemSpace,
+                   d_cellWaveFunctionQuadMatrixMemSpace,
+                   inputJxwMemSpace,
+                   d_MuMatrixMemSpaceCellWise);
 
 
-    dftfe::utils::deviceMemcpyD2H(
-      dftfe::utils::makeDataTypeDeviceCompatible(d_MuMatrixCellWise.data()),
-      d_MuMatrixDeviceCellWise.data(),
-      numVec * totalLocallyOwnedCells * sizeof(dataTypes::number));
+    d_MuMatrixHostCellWise.copyFrom(d_MuMatrixMemSpaceCellWise);
 
 
     for (unsigned int iVecList = 0; iVecList < numVec; iVecList++)
@@ -723,26 +931,24 @@ namespace dftfe
         unsigned int degenerateVecId = d_vectorList[2 * iVecList + 1];
         for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells; iCell++)
           {
-            d_MuMatrix[iVec * d_blockSize + degenerateVecId] +=
-              d_MuMatrixCellWise[iVecList + iCell * numVec];
+            d_MuMatrixHost[iVec * d_blockSize + degenerateVecId] +=
+              d_MuMatrixHostCellWise[iVecList + iCell * numVec];
           }
       }
     MPI_Allreduce(MPI_IN_PLACE,
-                  &d_MuMatrix[0],
+                  &d_MuMatrixHost[0],
                   d_blockSize * d_blockSize,
                   MPI_DOUBLE,
                   MPI_SUM,
                   mpi_communicator);
 
-    dftfe::utils::deviceMemcpyH2D(d_MuMatrixDevice.begin(),
-                                  &d_MuMatrix[0],
-                                  d_blockSize * d_blockSize * sizeof(double));
+    d_MuMatrixMemSpace.copyFrom(d_MuMatrixHost);
   }
 
-  // template<typename T>
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  MultiVectorAdjointProblemDevice::computeRMatrixDevice(
-    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::DEVICE>
+  MultiVectorAdjointLinearSolverProblem<memorySpace>::computeRMatrix(
+    dftfe::utils::MemoryStorage<double, memorySpace>
       &inputJxwDevice)
   {
     const unsigned int totalLocallyOwnedCells =
@@ -756,63 +962,124 @@ namespace dftfe
       d_matrixFreeDataPtr->get_quadrature(d_matrixFreeQuadratureComponentRhs);
     const unsigned numberQuadraturePointsRhs = quadratureRhs.size();
 
+    auto shapeFunctionDataTranspose = d_basisOperationsPtr->shapeFunctionData(true);
 
-    rMatrixDevice(totalLocallyOwnedCells,
+    rMatrixMemSpaceKernel(d_numCells,
                   d_numberDofsPerElement,
-                  numberQuadraturePointsRhs,
-                  d_shapeFunctionValueTransposedDevice.begin(),
-                  inputJxwDevice.begin(),
-                  d_RMatrixDevice.begin());
+                  d_numQuadsPerCell,
+                  shapeFunctionDataTranspose.begin(),
+                  d_inputJxWMemSpace.begin(),
+                  d_RMatrixMemSpace.begin());
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  MultiVectorAdjointProblemDevice::distributeX()
+  MultiVectorAdjointLinearSolverProblem<memorySpace>::distributeX()
   {
 
     std::vector<double> dotProductHost(blockSize, 0.0);
+
+    auto invSqrtMassMat = BLASWrapperPtr->inverseSqrtMassVectorBasisData();
+
+    d_basisOperationsPtr->stridedBlockScaleCopy(
+      d_blockSize,
+      d_locallyOwnedSize,
+      1.0,
+      invSqrtMassMat.data(),
+      d_blockedXPtr->data(),
+      d_blockedXPtr->data(),
+      d_mapNodeIdToProcId.data());
+
+    d_blockedXPtr->updateGhostValues();
+
+    d_constraintsInfo.distribute(*d_blockedXPtr,d_blockSize);
+
+    multiVectorDotProdQuadWise(*d_blockedXPtr,
+                               *d_psiMemSpace,
+                               dotProductHost);
+
+
     dftfe::utils::MemoryStorage<T, memorySpace>
       dotProductMemSpace(blockSize, 0.0);
-    BLASWrapperPtr->MultiVectorXDot(d_blockSize,
-                                    d_onesDevice,
-                                    d_blockedXPtr.begin(),
-                                    yMemSpace.begin(),
-                                    d_onesDevice.begin(),
-                                    tempVec.begin(),
-                                    dotProductMemSpace.begin(),
-                                    mpi_communicator,
-                                    dotProductHost.begin());
+
+    for( unsigned int i = 0 ; i <b_blockSize; i++)
+      {
+        dotProductHost[i] = -1.0*dotProductHost[i];
+      }
+
+    dftfe::utils::deviceMemcpyH2D(dotProductMemSpace.data(),
+                                  &dotProductHost[0],
+                                  d_blockSize * sizeof(double));
 
 
-    std::vector<double> dotProductsFromDevice;
-    // distributeX for the GPU vector
-    dftfe::utils::deviceKernelsGeneric::stridedBlockScale(
+    BLASWrapperPtr->stridedBlockScaleAndAddColumnWise(d_blockSize,
+                                                      d_locallyOwnedSize,
+                                                      dotProductMemSpace,
+                                                      oneBlockSizeMemSpace,
+                                                      d_blockedXPtr->begin());
+
+    d_blockedXPtr->updateGhostValues();
+  }
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  void
+  MultiVectorAdjointLinearSolverProblem<memorySpace>::multiVectorDotProdQuadWise(const dftfe::linearAlgebra::MultiVector<T,
+                                                                                                                         memorySpace> &      vec1,
+                                                                                 const dftfe::linearAlgebra::MultiVector<T,
+                                                                                                                         memorySpace> &vec2,
+                                                                                 dftfe::utils::MemoryStorage<T, dftfe::utils::MemorySpace::HOST>&
+                                                                                   dotProductOutputHost)
+  {
+    d_basisOperationsPtr->interpolate(vec1,
+                vec1QuadValues.data());
+
+    d_basisOperationsPtr->interpolate(vec2,
+                                      vec2QuadValues.data());
+
+    auto jxwVec = d_basisOperationsPtr->JxW();
+
+
+    d_basisOperationsPtr->stridedBlockScaleCopy(
       d_blockSize,
-      d_locallyOwnedDofs,
+      d_numCells*d_numQuadsPerCell,
       1.0,
-      d_invSqrtMassDeviceVec,
-      d_blockedXDevicePtr->begin());
+      jxwVec.data(),
+      vec1QuadValues.data(),
+      vec1QuadValues.data(),
+      d_mapQuadIdToProcId.data());
 
-    d_blockedXDevicePtr->updateGhostValues();
-    d_constraintsMatrixInfoDevice.distribute(*d_blockedXDevicePtr, d_blockSize);
+    d_BLASWrapperPtr->hadamardProduct(d_blockSize*d_numCells*d_numQuadsPerCell,
+                                      vec1QuadValues.data(),
+                                      vec2QuadValues.data(),
+                                      vecOutputQuadValues.data());
+    xgemm(
+      dftfe::utils::DEVICEBLAS_OP_N,
+      dftfe::utils::DEVICEBLAS_OP_T,
+      1,
+      d_numCells*d_numQuadsPerCell,
+      d_blockSize,
+      1.0,
+      d_onesQuadDevice,
+      1,
+      vecOutputQuadValues,
+      d_blockSize,
+      0.0,
+      tempOutputDotProdMemSpace,
+      1);
 
-    computeDotProductQuadDevice(*d_blockedXDevicePtr,
-                                *d_psiDevice,
-                                dotProductsFromDevice);
+    dotProductOutputHost.resize(d_blockSize);
+    dftfe::utils::deviceMemcpyD2H(dftfe::utils::makeDataTypeDeviceCompatible(
+                                    tempOutputDotProdMemSpace.data()),
+                                  dotProductOutputHost.data(),
+                                  d_blockSize * sizeof(double));
 
-    d_dotProdFinalDevice.resize(d_blockSize, 0.0);
+    MPI_Allreduce(MPI_IN_PLACE,
+                  &dotProductOutputHost[0],
+                  d_blockSize,
+                  MPI_DOUBLE,
+                  MPI_SUM,
+                  mpi_communicator);
 
-    dftfe::utils::deviceMemcpyH2D(d_dotProdFinalDevice.data(),
-                                  &dotProductsFromDevice[0],
-                                  d_blockSize * sizeof(dataTypes::number));
-
-    stridedBlockScaleForEigen(d_blockSize,
-                              d_locallyOwnedDofs,
-                              -1.0,
-                              d_dotProdFinalDevice.data(),
-                              d_psiDevice->data(),
-                              d_blockedXDevicePtr->data());
-
-    d_blockedXDevicePtr->updateGhostValues();
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -832,8 +1099,8 @@ namespace dftfe
                         Ax,
                         false); // onlyHPrimePartForFirstOrderDensityMatResponse
 
-    d_basisOperationsPtr->set_zero(x, d_blockSize);
-    d_basisOperationsPtr->set_zero(Ax, d_blockSize);
+    d_constraintsInfo.set_zero(x, d_blockSize);
+    d_constraintsInfo.set_zero(Ax, d_blockSize);
 
     d_basisOperationsPtr->stridedBlockScaleAndAddColumnWise(
                                d_blockSize,

@@ -270,6 +270,12 @@ namespace dftfe
                                                memorySpace> &       outputVec,
              unsigned int                      blockSizeInput)
   {
+    d_cellsBlockSizeVmult = 100;
+    d_basisOperationsPtr->reinit(blockSizeInput,
+                                 d_cellsBlockSizeVmult,
+                                 d_matrixFreeQuadratureComponentRhs,
+                                 true, // TODO should this be set to true
+                                 true); // TODO should this be set to true
     if(d_blockSize != blockSizeInput)
       {
         d_blockSize = blockSizeInput;

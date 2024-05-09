@@ -2,26 +2,30 @@
 // Created by Arghadwip Paul.
 //
 
-#ifndef SLATER2_ATOMINFO_H
-#define SLATER2_ATOMINFO_H
+#ifndef DFTFE_SLATER_ATOMINFO_H
+#define DFTFE_SLATER_ATOMINFO_H
 
 #include <vector>
 #include <string>
 #include "SlaterPrimitive.h"
 
-const double ANGS_TO_AU =
-  1.889726124; // Conversion factor from Angstroms to atomic units
-const std::string DataDirPath = "../Data/";
+// Conversion factor from Angstroms to atomic units
+const double ANGS_TO_AU = 1.889726124;
 
-class Atom
+// const std::string DataDirPath = "../Data/";
+
+namespace dftfe
 {
-public:
-  std::string         name;
-  std::vector<double> coord;
-  std::string         basisfile;
+  class Atom
+  {
+  public:
+    std::string         name;
+    std::vector<double> coord;
+    std::string         basisfile;
 
-  static std::vector<Atom>
-  readCoordFile(const std::string &coordFile);
-};
+    static std::vector<Atom>
+    readCoordFile(const std::string &coordFile);
+  };
+} // namespace dftfe
 
-#endif // SLATER2_ATOMINFO_H
+#endif // DFTFE_SLATER_ATOMINFO_H

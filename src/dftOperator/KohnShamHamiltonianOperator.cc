@@ -382,24 +382,21 @@ namespace dftfe
                          gradDensityValue.data() + 6 * iQuad + 3);
                 }
           }
-        std::map<rhoDataAttributes, const std::vector<double> *> rhoData;
 
-        std::map<VeffOutputDataAttributes, std::vector<double> *>
-          outputDerExchangeEnergy;
-        std::map<VeffOutputDataAttributes, std::vector<double> *>
-          outputDerCorrEnergy;
+        std::map<xcOutputDataAttributes, std::vector<double> >
+          xDataOut;
+        std::map<xcOutputDataAttributes, std::vector<double> >
+          cDataOut;
 
-        rhoData[rhoDataAttributes::values] = &densityValue;
 
-        outputDerExchangeEnergy
-          [VeffOutputDataAttributes::derEnergyWithDensity] =
+        outputPdeDensitySpinUp
+          [xcOutputDataAttributes::derEnergyWithDensity] =
             &exchangePotentialVal;
 
         outputDerCorrEnergy[VeffOutputDataAttributes::derEnergyWithDensity] =
           &corrPotentialVal;
         if (isGGA)
           {
-            rhoData[rhoDataAttributes::sigmaGradValue] = &sigmaValue;
             outputDerExchangeEnergy
               [VeffOutputDataAttributes::derEnergyWithSigmaGradDensity] =
                 &derExchEnergyWithSigmaVal;

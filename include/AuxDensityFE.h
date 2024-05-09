@@ -41,6 +41,8 @@ namespace dftfe
                    const std::vector<double> &gradDensityVals) override;
 
   private:
+    std::vector<double> d_densityVals;
+    std::vector<double> d_gradDensityVals;
   };
 } // namespace dftfe
 

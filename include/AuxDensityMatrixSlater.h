@@ -76,10 +76,17 @@ namespace dftfe
      * @param QWt The quadrature weights.
      * @param nQ The number of quadrature points.
      * @param psiFunc The SCF wave function or eigen function in FE Basis.
+     *                psiFunc(sigma_index, quad_index, FEBasis_index),
+     *                sigma_index is fastest.
      * @param fValues The SCF eigen values.
-     * @param nPsi The number of wave functions as a pair (number of spin-up, number of spin-down).
-     * @param alpha The scaling factor for existing density matrix d_DM.
-     * @param beta The scaling factor for the newly calculated density matrix DM_dash.
+     *                fValues(sigma_index, FEBasis_index),
+     *                sigma_index is fastest.
+     * @param nPsi The number of wave functions as a pair,
+     *             <number of spin-up, number of spin-down>.
+     * @param alpha The scaling factor for existing density
+     *              matrix d_DM.
+     * @param beta The scaling factor for the newly calculated
+     *             density matrix DM_dash.
      *
      * @par Example
      * @code

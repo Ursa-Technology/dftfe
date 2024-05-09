@@ -43,6 +43,7 @@ namespace dftfe
   private:
     std::vector<double> d_densityVals;
     std::vector<double> d_gradDensityVals;
+    std::vector<double> d_quadPointsForProjection;
   };
 } // namespace dftfe
 

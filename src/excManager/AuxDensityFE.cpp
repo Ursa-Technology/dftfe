@@ -3,6 +3,7 @@
 //
 
 #include "AuxDensityFE.h"
+#include <Exceptions.h>
 
 namespace dftfe
 {
@@ -25,7 +26,10 @@ namespace dftfe
                                      const std::pair<int, int>  nPsi,
                                      double                     alpha,
                                      double                     beta)
-  {}
+  {
+    std::string errMsg = "Not implemented";
+    dftfe::utils::throwException(false, errMsg);
+  }
 
   void
   AuxDensityFE::projectDensity(const std::vector<double> &Qpts,

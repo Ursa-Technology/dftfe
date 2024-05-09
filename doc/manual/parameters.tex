@@ -552,7 +552,7 @@
 {\it Default:} 0
 
 
-{\it Description:} [Standard] Net charge of the system in Hartree units, positive quantity implies addition of electrons. In case of non-periodic boundary conditions, this capability is implemented using multipole Dirichlet inhomogeneous boundary conditions for the electrostatics. In case of periodic and semi-periodic conditions a uniform background charge is used to create a neutral system.
+{\it Description:} [Standard] Net charge of the system in atomic units, positive quantity implies addition of electrons. In case of non-periodic boundary conditions, this capability is implemented using multipole Dirichlet inhomogeneous boundary conditions for the electrostatics. In case of periodic and semi-periodic conditions a uniform background charge is used to create a neutral system.
 
 
 {\it Possible values:}  A floating point number $v$ such that $-\text{MAX\_DOUBLE} \leq v \leq \text{MAX\_DOUBLE}$
@@ -1227,23 +1227,6 @@
 
 
 {\it Description:} [Adavanced] Use GPUDIRECT MPI\_Allreduce. This route will only work if DFT-FE is either compiled with NVIDIA NCCL library or withGPUAwareMPI=ON. Both these routes require GPU Aware MPI library to be available as well relevant hardware. If both NVIDIA NCCL library and withGPUAwareMPI modes are toggled on, the NCCL mode takes precedence. Also note that one MPI rank per GPU can be used when using this option. Default: false.
-
-
-{\it Possible values:} A boolean value (true or false)
-\item {\it Parameter name:} {\tt USE TF32 OP}
-\phantomsection\label{parameters:GPU/USE TF32 OP}
-\label{parameters:GPU/USE_20TF32_20OP}
-
-
-\index[prmindex]{USE TF32 OP}
-\index[prmindexfull]{GPU!USE TF32 OP}
-{\it Value:} false
-
-
-{\it Default:} false
-
-
-{\it Description:} [Advanced] Enables TensorFloat-32 precision for single precision math operations on GPUs, which take advantage of the tensor core hardware. This capability is currently available for certain GPUs like NVIDIA A100. Accuracy of USE TF32 OP has been tested in the case of LRDM preconditioner with USE SINGLE PREC DENSITY RESPONSE mode set to true.
 
 
 {\it Possible values:} A boolean value (true or false)

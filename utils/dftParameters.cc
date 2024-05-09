@@ -60,13 +60,6 @@ namespace dftfe
       prm.enter_subsection("GPU");
       {
         prm.declare_entry(
-          "USE TF32 OP",
-          "false",
-          dealii::Patterns::Bool(),
-          "[Advanced] Enables TensorFloat-32 precision for single precision math operations on GPUs, which take advantage of the tensor core hardware. This capability is currently available for certain GPUs like NVIDIA A100. Accuracy of USE TF32 OP has been tested in the case of LRDM preconditioner with USE SINGLE PREC DENSITY RESPONSE mode set to true.");
-
-
-        prm.declare_entry(
           "AUTO GPU BLOCK SIZES",
           "true",
           dealii::Patterns::Bool(),
@@ -652,7 +645,7 @@ namespace dftfe
           "NET CHARGE",
           "0.0",
           dealii::Patterns::Double(),
-          "[Standard] Net charge of the system in Hartree units, positive quantity implies addition of electrons. In case of non-periodic boundary conditions, this capability is implemented using multipole Dirichlet inhomogeneous boundary conditions for the electrostatics. In case of periodic and semi-periodic conditions a uniform background charge is used to create a neutral system.");
+          "[Standard] Net charge of the system in atomic units, positive quantity implies addition of electrons. In case of non-periodic boundary conditions, this capability is implemented using multipole Dirichlet inhomogeneous boundary conditions for the electrostatics. In case of periodic and semi-periodic conditions a uniform background charge is used to create a neutral system.");
 
         prm.declare_entry(
           "SPIN POLARIZATION",
@@ -1260,7 +1253,7 @@ namespace dftfe
     useMixedPrecXTHXSpectrumSplit                  = false;
     useMixedPrecSubspaceRotRR                      = false;
     useMixedPrecCommunOnlyXTHXCGSO                 = false;
-    spectrumSplitStartingScfIter                   = 1;
+    spectrumSplitStartingScfIter                   = 0;
     useELPA                                        = false;
     constraintsParallelCheck                       = true;
     createConstraintsFromSerialDofhandler          = true;
@@ -1268,7 +1261,6 @@ namespace dftfe
     autoAdaptBaseMeshSize                          = true;
     readWfcForPdosPspFile                          = false;
     useDevice                                      = false;
-    useTF32Device                                  = false;
     deviceFineGrainedTimings                       = false;
     allowFullCPUMemSubspaceRot                     = true;
     useMixedPrecCheby                              = false;
@@ -1370,7 +1362,6 @@ namespace dftfe
 
     prm.enter_subsection("GPU");
     {
-      useTF32Device = useDevice && prm.get_bool("USE TF32 OP");
       deviceFineGrainedTimings =
         useDevice && prm.get_bool("FINE GRAINED GPU TIMINGS");
       allowFullCPUMemSubspaceRot =
@@ -1970,6 +1961,9 @@ namespace dftfe
 #if !defined(DFTFE_WITH_CUDA_NCCL) && !defined(DFTFE_WITH_HIP_RCCL)
     useDCCL = false;
 #endif
+#if !defined(DFTFE_WITH_DEVICE_AWARE_MPI)
+    useDeviceDirectAllReduce = useDCCL && useDeviceDirectAllReduce;
+#endif
 
     if (useMixedPrecCheby)
       AssertThrow(
@@ -2013,6 +2007,9 @@ namespace dftfe
       {
         spinMixingEnhancementFactor = 1.0;
       }
+
+    if (numCoreWfcRR == 0)
+      spectrumSplitStartingScfIter = 10000;
   }
 
 

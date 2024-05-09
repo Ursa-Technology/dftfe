@@ -90,14 +90,14 @@ namespace dftfe
   {
     computing_timer.enter_subsection("KohnShamHamiltonianOperator setup");
     inverseSqrtMassVectorScaledConstraintsNoneDataInfoPtr =
-      std::make_shared<constraintInfoClass>(
+      std::make_shared<dftUtils::constraintMatrixInfo<memorySpace>>(
         d_basisOperationsPtr
           ->d_constraintInfo[d_basisOperationsPtr->d_dofHandlerID]);
     inverseSqrtMassVectorScaledConstraintsNoneDataInfoPtr
       ->initializeScaledConstraints(
         d_basisOperationsPtr->inverseSqrtMassVectorBasisData());
     inverseMassVectorScaledConstraintsNoneDataInfoPtr =
-      std::make_shared<constraintInfoClass>(
+      std::make_shared<dftUtils::constraintMatrixInfo<memorySpace>>(
         d_basisOperationsPtr
           ->d_constraintInfo[d_basisOperationsPtr->d_dofHandlerID]);
     inverseMassVectorScaledConstraintsNoneDataInfoPtr
@@ -208,16 +208,9 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   KohnShamHamiltonianOperator<memorySpace>::computeVEff(
-    const std::vector<
-      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-      &rhoValues,
-    const std::vector<
-      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-      &gradRhoValues,
+      AuxDensityMatrix & auxDensityRepresentation,
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
       &                                                  phiValues,
-    const std::map<dealii::CellId, std::vector<double>> &rhoCoreValues,
-    const std::map<dealii::CellId, std::vector<double>> &gradRhoCoreValues,
     const unsigned int                                   spinIndex)
   {
     const bool isGGA =
@@ -665,7 +658,7 @@ namespace dftfe
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
-  dftUtils::constraintMatrixInfo *
+  dftUtils::constraintMatrixInfo<dftfe::utils::MemorySpace::HOST> *
   KohnShamHamiltonianOperator<memorySpace>::getOverloadedConstraintMatrixHost()
     const
   {

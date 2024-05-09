@@ -2,27 +2,28 @@
 // Created by Sambit Das.
 //
 
-#ifndef DFTFE_AUXDM_AUXDENSITY_H
-#define DFTFE_AUXDM_AUXDENSITY_H
+#ifndef DFTFE_AUXDM_AUXDENSITYFE_H
+#define DFTFE_AUXDM_AUXDENSITYFE_H
 
 #include <vector>
 #include <utility>
 
 namespace dftfe
 {
-  class AuxDensity : public AuxDensityMatrix
+  class AuxDensityFE : public AuxDensity
   {
   public:
     // Constructor
-    AuxDensity();
+    AuxDensityFE();
 
 
-    virtual void
+    void
     applyLocalOperations(const std::vector<double> &    Points,
                          std::map<DensityDescriptorDataAttributes,
-                                  std::vector<double>> &densityData) = 0;
+                                  std::vector<double>> &densityData) override;
 
-    virtual void
+
+    void
     projectDensityMatrix(const std::vector<double> &Qpts,
                          const std::vector<double> &QWt,
                          const int                  nQ,
@@ -30,17 +31,17 @@ namespace dftfe
                          const std::vector<double> &fValues,
                          const std::pair<int, int>  nPsi,
                          double                     alpha,
-                         double                     beta) = 0;
+                         double                     beta) override;
 
-    virtual void
+    void
     projectDensity(const std::vector<double> &Qpts,
                    const std::vector<double> &QWt,
                    const int                  nQ,
                    const std::vector<double> &densityVals,
-                   const std::vector<double> &gradDensityVals) = 0;
+                   const std::vector<double> &gradDensityVals) override;
 
   private:
   };
 } // namespace dftfe
 
-#endif // DFTFE_AUXDM_AUXDENSITY_H
+#endif // DFTFE_AUXDM_AUXDENSITYFE_H

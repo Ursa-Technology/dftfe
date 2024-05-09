@@ -85,10 +85,10 @@ namespace dftfe
      */
     void
     computeVEff(
-      AuxDensityMatrix & auxDensityRepresentation,
+      AuxDensityMatrix &auxDensityRepresentation,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-        &                                                  phiValues,
-      const unsigned int                                   spinIndex = 0);
+        &                phiValues,
+      const unsigned int spinIndex = 0);
 
     void
     computeVEffExternalPotCorr(
@@ -105,8 +105,8 @@ namespace dftfe
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &gradRhoPrimeValues,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-        &                                                  phiPrimeValues,
-      const unsigned int                                   spinIndex);
+        &                phiPrimeValues,
+      const unsigned int spinIndex);
 
     /**
      * @brief sets the data member to appropriate kPoint and spin Index

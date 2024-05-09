@@ -64,8 +64,6 @@ namespace dftfe
   {
     const std::vector<xcOutputDataAttributes> allowedOutputDataAttributes =
     { xcOutputDataAttributes::e,
-      xcOutputDataAttributes::vSpinUp,
-      xcOutputDataAttributes::vSpinDown,
       xcOutputDataAttributes::pdeDensitySpinUp,
       xcOutputDataAttributes::pdeDensitySpinDown }
 
@@ -190,22 +188,6 @@ namespace dftfe
             xDataOut.find(outputDataAttributes[i])->second = exValues;
 
             cDataOut.find(outputDataAttributes[i])->second = ecValues;
-          }
-        else if (outputDataAttributes[i] == xcOutputDataAttributes::vSpinUp)
-          {
-            xDataOut.find(outputDataAttributes[i])->second =
-              pdexDensitySpinUpValues;
-
-            cDataOut.find(outputDataAttributes[i])->second =
-              pdecDensitySpinUpValues;
-          }
-        else if (outputDataAttributes[i] == xcOutputDataAttributes::vSpinDown)
-          {
-            xDataOut.find(outputDataAttributes[i])->second =
-              pdexDensitySpinDownValues;
-
-            cDataOut.find(outputDataAttributes[i])->second =
-              pdecDensitySpinDownValues;
           }
         else if (outputDataAttributes[i] ==
                  xcOutputDataAttributes::pdeDensitySpinUp)

@@ -50,11 +50,12 @@ namespace dftfe
     const unsigned int         matrixFreeDofhandlerIndex,
     const unsigned int         quadratureIndex,
     const std::vector<double> &kPointWeights,
-    AuxDensityMatrix &auxDensityMatrixRepresentation,
-    const MPI_Comm &     mpiCommParent,
-    const MPI_Comm &     interpoolcomm,
-    const MPI_Comm &     interBandGroupComm,
-    const dftParameters &dftParams)
+    AuxDensityMatrix &         auxDensityMatrixRepresentation,
+    const MPI_Comm &           mpiCommParent,
+    const MPI_Comm &           domaincomm,
+    const MPI_Comm &           interpoolcomm,
+    const MPI_Comm &           interBandGroupComm,
+    const dftParameters &      dftParams)
   {
     int this_process;
     MPI_Comm_rank(mpiCommParent, &this_process);
@@ -64,8 +65,8 @@ namespace dftfe
 #endif
     MPI_Barrier(mpiCommParent);
     double             project_time = MPI_Wtime();
-    const unsigned int numKPoints      = kPointWeights.size();
-    const unsigned int numLocalDofs    = basisOperationsPtr->nOwnedDofs();
+    const unsigned int numKPoints   = kPointWeights.size();
+    const unsigned int numLocalDofs = basisOperationsPtr->nOwnedDofs();
     const unsigned int totalLocallyOwnedCells = basisOperationsPtr->nCells();
     const unsigned int numNodesPerElement = basisOperationsPtr->nDofsPerCell();
     // band group parallelization data structures
@@ -86,7 +87,7 @@ namespace dftfe
     const unsigned int numSpinComponents =
       (dftParams.spinPolarized == 1) ? 2 : 1;
 
-    const NumberType zero                    = 0;
+    const NumberType zero = 0;
 
     const unsigned int cellsBlockSize =
       memorySpace == dftfe::utils::MemorySpace::DEVICE ? 50 : 1;
@@ -116,6 +117,36 @@ namespace dftfe
     dftfe::linearAlgebra::MultiVector<NumberType, memorySpace>
       *flattenedArrayBlock;
 
+    basisOperationsPtr->reinit(BVec, cellsBlockSize, quadratureIndex, false);
+
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      allQuadPointsHost = basisOperationsPtr->quadPoints();
+
+    dftfe::utils::MemoryStorage<double, memorySpace> allQuadWeightsMemorySpace =
+      basisOperationsPtr->JxW();
+
+
+    dftfe::utils::MemoryStorage<double, memorySpace> allQuadWeightsHost;
+    allQuadWeightsHost.copyFrom(allQuadWeightsMemorySpace);
+
+    //
+    // compute S matrix of aux basis
+    //
+    for (int iblock = 0; iblock < (numCellBlocks + 1); iblock++)
+      {
+        const unsigned int currentCellsBlockSize =
+          (iblock == numCellBlocks) ? remCellBlockSize : cellsBlockSize;
+        if (currentCellsBlockSize > 0)
+          {
+            const unsigned int startingCellId = iblock * cellsBlockSize;
+
+            auxDensityMatrixRepresentation.computeSStart(quadPointsBatch,
+                                                         quadWeightsBatch);
+          } // non-trivial cell block check
+      }     // cells block loop
+
+    auxDensityMatrixRepresentation.computeSEnd(domaincomm);
+
     for (unsigned int kPoint = 0; kPoint < kPointWeights.size(); ++kPoint)
       for (unsigned int spinIndex = 0; spinIndex < numSpinComponents;
            ++spinIndex)
@@ -134,42 +165,41 @@ namespace dftfe
                   (jvec + currentBlockSize) >
                     bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId])
                 {
-
-                    if (dftParams.constraintMagnetization)
-                      {
-                        const double fermiEnergyConstraintMag =
-                          spinIndex == 0 ? fermiEnergyUp : fermiEnergyDown;
-                        for (unsigned int iEigenVec = 0;
-                             iEigenVec < currentBlockSize;
-                             ++iEigenVec)
-                          {
-                            if (eigenValues[kPoint][totalNumWaveFunctions *
-                                                      spinIndex +
-                                                    jvec + iEigenVec] >
-                                fermiEnergyConstraintMag)
-                              *(partialOccupVecHost.begin() + iEigenVec) = 0;
-                            else
-                              *(partialOccupVecHost.begin() + iEigenVec) =
-                                kPointWeights[kPoint] * spinPolarizedFactor;
-                          }
-                      }
-                    else
-                      {
-                        for (unsigned int iEigenVec = 0;
-                             iEigenVec < currentBlockSize;
-                             ++iEigenVec)
-                          {
+                  if (dftParams.constraintMagnetization)
+                    {
+                      const double fermiEnergyConstraintMag =
+                        spinIndex == 0 ? fermiEnergyUp : fermiEnergyDown;
+                      for (unsigned int iEigenVec = 0;
+                           iEigenVec < currentBlockSize;
+                           ++iEigenVec)
+                        {
+                          if (eigenValues[kPoint]
+                                         [totalNumWaveFunctions * spinIndex +
+                                          jvec + iEigenVec] >
+                              fermiEnergyConstraintMag)
+                            *(partialOccupVecHost.begin() + iEigenVec) = 0;
+                          else
                             *(partialOccupVecHost.begin() + iEigenVec) =
-                              dftUtils::getPartialOccupancy(
-                                eigenValues[kPoint][totalNumWaveFunctions *
-                                                      spinIndex +
-                                                    jvec + iEigenVec],
-                                fermiEnergy,
-                                C_kb,
-                                dftParams.TVal) *
                               kPointWeights[kPoint] * spinPolarizedFactor;
-                          }
-                      }
+                        }
+                    }
+                  else
+                    {
+                      for (unsigned int iEigenVec = 0;
+                           iEigenVec < currentBlockSize;
+                           ++iEigenVec)
+                        {
+                          *(partialOccupVecHost.begin() + iEigenVec) =
+                            dftUtils::getPartialOccupancy(
+                              eigenValues[kPoint]
+                                         [totalNumWaveFunctions * spinIndex +
+                                          jvec + iEigenVec],
+                              fermiEnergy,
+                              C_kb,
+                              dftParams.TVal) *
+                            kPointWeights[kPoint] * spinPolarizedFactor;
+                        }
+                    }
 #if defined(DFTFE_WITH_DEVICE)
                   partialOccupVec.copyFrom(partialOccupVecHost);
 #endif
@@ -223,58 +253,35 @@ namespace dftfe
                               startingCellId,
                               startingCellId + currentCellsBlockSize));
 
+                          wfcQuadPointDataHost.copyFrom(wfcQuadPointData);
+
+                          auxDensityMatrixRepresentation.projectStart(
+                            quadPtsBatch,
+                            quadWeightsBatch,
+                            wfcQuadPointDataHost,
+                            partialOccupVecHost,
+                            spinIndex);
+
                         } // non-trivial cell block check
                     }     // cells block loop
                 }
             }
-
         }
-#if defined(DFTFE_WITH_DEVICE)
-    rhoHost.resize(rho.size());
 
-    rhoHost.copyFrom(rho);
-#endif
+
 
     int size;
     MPI_Comm_size(interpoolcomm, &size);
     if (size > 1)
       {
-        MPI_Allreduce(MPI_IN_PLACE,
-                      rhoHost.data(),
-                      totalLocallyOwnedCells * numQuadPoints *
-                        numSpinComponents,
-                      dataTypes::mpi_type_id(rhoHost.data()),
-                      MPI_SUM,
-                      interpoolcomm);
-        if (isEvaluateGradRho)
-          MPI_Allreduce(MPI_IN_PLACE,
-                        gradRhoHost.data(),
-                        totalLocallyOwnedCells * numQuadPoints *
-                          numSpinComponents * 3,
-                        dataTypes::mpi_type_id(gradRhoHost.data()),
-                        MPI_SUM,
-                        interpoolcomm);
+        auxDensityMatrixRepresentation.projectEnd(interpoolcomm);
       }
     MPI_Comm_size(interBandGroupComm, &size);
     if (size > 1)
       {
-        MPI_Allreduce(MPI_IN_PLACE,
-                      rhoHost.data(),
-                      totalLocallyOwnedCells * numQuadPoints *
-                        numSpinComponents,
-                      dataTypes::mpi_type_id(rhoHost.data()),
-                      MPI_SUM,
-                      interBandGroupComm);
-        if (isEvaluateGradRho)
-          MPI_Allreduce(MPI_IN_PLACE,
-                        gradRhoHost.data(),
-                        totalLocallyOwnedCells * numQuadPoints *
-                          numSpinComponents * 3,
-                        dataTypes::mpi_type_id(gradRhoHost.data()),
-                        MPI_SUM,
-                        interBandGroupComm);
+        auxDensityMatrixRepresentation.projectEnd(interBandGroupComm);
       }
-
+    auxDensityMatrixRepresentation.projectEnd(domainComm);
 
 #if defined(DFTFE_WITH_DEVICE)
     if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
@@ -285,8 +292,7 @@ namespace dftfe
 
     if (this_process == 0 && dftParams.verbosity >= 2)
       if (memorySpace == dftfe::utils::MemorySpace::HOST)
-        std::cout << "Time for project on CPU: " << project_time
-                  << std::endl;
+        std::cout << "Time for project on CPU: " << project_time << std::endl;
       else if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
         std::cout << "Time for project on Device: " << project_time
                   << std::endl;
@@ -310,9 +316,10 @@ namespace dftfe
     const unsigned int         matrixFreeDofhandlerIndex,
     const unsigned int         quadratureIndex,
     const std::vector<double> &kPointWeights,
-    AuxDensityMatrix &auxDensityMatrixRepresentation,
-    const MPI_Comm &     mpiCommParent,
-    const MPI_Comm &     interpoolcomm,
-    const MPI_Comm &     interBandGroupComm,
-    const dftParameters &dftParams);
+    AuxDensityMatrix &         auxDensityMatrixRepresentation,
+    const MPI_Comm &           mpiCommParent,
+    const MPI_Comm &           domaincomm,
+    const MPI_Comm &           interpoolcomm,
+    const MPI_Comm &           interBandGroupComm,
+    const dftParameters &      dftParams);
 } // namespace dftfe

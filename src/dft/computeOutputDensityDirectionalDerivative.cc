@@ -259,6 +259,7 @@ namespace dftfe
 #ifdef DFTFE_WITH_DEVICE
                                d_eigenVectorsFlattenedDevice,
 #endif
+                               eigenValues,
                                d_auxDensityMatrixInPtr);
 
         kohnShamDFTEigenOperator.computeVEffPrime(d_auxDensityMatrixInPtr,

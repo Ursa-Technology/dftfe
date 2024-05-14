@@ -1028,10 +1028,10 @@ namespace dftfe
     updateAuxDensityMatrix(
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &densityInQuadValues,
+        &densityQuadValues,
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &gradDensityInQuadValues,
+        &gradDensityQuadValues,
       const std::map<dealii::CellId, std::vector<double>> &rhoCore,
       const std::map<dealii::CellId, std::vector<double>> &gradRhoCore,
       const dftfe::utils::MemoryStorage<dataTypes::number,
@@ -1042,7 +1042,8 @@ namespace dftfe
                                         dftfe::utils::MemorySpace::DEVICE>
         &eigenVectorsFlattenedDevice,
 #endif
-      std::shared_ptr<AuxDensityMatrix> auxDensityMatrixInPtr);
+      const std::vector<std::vector<double>> &eigenValues,
+      std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixInPtr);
 
     std::shared_ptr<excManager> d_excManagerPtr;
     dispersionCorrection        d_dispersionCorr;

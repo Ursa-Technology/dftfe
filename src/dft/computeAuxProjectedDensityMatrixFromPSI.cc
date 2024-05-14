@@ -302,16 +302,19 @@ namespace dftfe
 
   template void
   computeAuxProjectedDensityMatrixFromPSI(
-    const dftfe::utils::MemoryStorage<NumberType, memorySpace> *X,
+    const dftfe::utils::MemoryStorage<NumberType,
+                                      dftfe::utils::MemorySpace::HOST> *X,
     const unsigned int                      totalNumWaveFunctions,
     const std::vector<std::vector<double>> &eigenValues,
     const double                            fermiEnergy,
     const double                            fermiEnergyUp,
     const double                            fermiEnergyDown,
     std::shared_ptr<
-      dftfe::basis::FEBasisOperations<NumberType, double, memorySpace>>
+      dftfe::basis::
+        FEBasisOperations<NumberType, double, dftfe::utils::MemorySpace::HOST>>
       &basisOperationsPtr,
-    std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
+    std::shared_ptr<
+      dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
       &                        BLASWrapperPtr,
     const unsigned int         matrixFreeDofhandlerIndex,
     const unsigned int         quadratureIndex,

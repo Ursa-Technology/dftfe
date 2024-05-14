@@ -1024,6 +1024,25 @@ namespace dftfe
     applyPeriodicBCHigherOrderNodes();
 
 
+    void
+    updateAuxDensityMatrix(
+      const std::vector<
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+        &densityInQuadValues,
+      const std::vector<
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+        &gradDensityInQuadValues,
+      const std::map<dealii::CellId, std::vector<double>> &rhoCore,
+      const std::map<dealii::CellId, std::vector<double>> &gradRhoCore,
+      const dftfe::utils::MemoryStorage<dataTypes::number,
+                                        dftfe::utils::MemorySpace::HOST>
+        &eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+      const dftfe::utils::MemoryStorage<dataTypes::number,
+                                        dftfe::utils::MemorySpace::DEVICE>
+        &eigenVectorsFlattenedDevice,
+#endif
+      std::shared_ptr<AuxDensityMatrix> auxDensityMatrixInPtr);
 
     std::shared_ptr<excManager> d_excManagerPtr;
     dispersionCorrection        d_dispersionCorr;

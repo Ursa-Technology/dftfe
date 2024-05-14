@@ -36,8 +36,7 @@ namespace dftfe
     projectDensity(const std::vector<double> &Qpts,
                    const std::vector<double> &QWt,
                    const int                  nQ,
-                   const std::vector<double> &densityVals,
-                   const std::vector<double> &gradDensityVals) = 0;
+                   const std::vector<double> &densityVals) = 0;
 
   private:
   };

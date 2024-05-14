@@ -88,17 +88,14 @@ namespace dftfe
      * @param Qpts The quadrature points.
      * @param QWt The quadrature weights.
      * @param nQ The number of quadrature points.
-     * @param densityVals density values at quad points with spin index the
-     * slowest index followed by the quad index
-     * @param gradDensityVals gradient density values at quad points with spin index the
-     * slowest index, followed by quad index, and finally the dimension index
+     * @param densityVals density values at quad points with spin index
+     * the slowest index followed by the quad index. nspin=2 assumed
      */
     virtual void
     projectDensity(const std::vector<double> &Qpts,
                    const std::vector<double> &QWt,
                    const int                  nQ,
-                   const std::vector<double> &densityVals,
-                   const std::vector<double> &gradDensityVals) = 0;
+                   const std::vector<double> &densityVals) = 0;
   };
 } // namespace dftfe
 

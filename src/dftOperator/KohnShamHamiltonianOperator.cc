@@ -208,7 +208,7 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   KohnShamHamiltonianOperator<memorySpace>::computeVEff(
-    AuxDensityMatrix &auxDensityRepresentation,
+    std::shared_ptr<AuxDensityMatrix> auxDensityRepresentation,
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
       &                phiValues,
     const unsigned int spinIndex)

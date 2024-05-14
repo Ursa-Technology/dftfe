@@ -29,6 +29,8 @@
 #include <dft.h>
 #include <dftUtils.h>
 #include <vectorUtilities.h>
+#include <AuxDensityMatrixFE.h>
+#include <AuxDensityMatrixSlater.h>
 
 namespace dftfe
 {
@@ -309,6 +311,12 @@ namespace dftfe
     d_excManagerPtr->init(d_dftParamsPtr->xc_id,
                           (d_dftParamsPtr->spinPolarized == 1) ? true : false,
                           d_dftParamsPtr->modelXCInputFile);
+
+    if (d_dftParamsPtr->XCAuxBasisType == "FE")
+      d_auxDensityMatrixInPtr = std::make_shared<AuxDensityFE>();
+    else if (d_dftParamsPtr->XCAuxBasisType == "SlaterAE")
+      d_auxDensityMatrixInPtr = std::make_shared<AuxDensityMatrixSlater>();
+
 
     computing_timer.leave_subsection("unmoved setup");
   }

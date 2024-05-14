@@ -16,7 +16,7 @@ namespace dftfe
     // Constructor
     AuxDensityFE();
 
-    //CAUTION: Points have to be a subset of d_quadPointsSet
+    // CAUTION: Points have to be a subset of d_quadPointsSet
     void
     applyLocalOperations(const std::vector<double> &    Points,
                          std::map<DensityDescriptorDataAttributes,

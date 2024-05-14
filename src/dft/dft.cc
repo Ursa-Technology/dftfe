@@ -2749,11 +2749,13 @@ namespace dftfe
             for (unsigned int s = 0; s < 2; ++s)
               {
                 computing_timer.enter_subsection("VEff Computation");
-                kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
-                                                     d_gradDensityInQuadValues,
+
+
+                updateAuxDensity(d_auxDensityMatrixInPtr);
+
+
+                kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixInPtr,
                                                      d_phiInQuadValues,
-                                                     d_rhoCore,
-                                                     d_gradRhoCore,
                                                      s);
                 computing_timer.leave_subsection("VEff Computation");
 
@@ -2898,13 +2900,11 @@ namespace dftfe
                           {
                             computing_timer.enter_subsection(
                               "VEff Computation");
+
+                            updateAuxDensity(d_auxDensityMatrixInPtr);
+
                             kohnShamDFTEigenOperator.computeVEff(
-                              d_densityInQuadValues,
-                              d_gradDensityInQuadValues,
-                              d_phiInQuadValues,
-                              d_rhoCore,
-                              d_gradRhoCore,
-                              s);
+                              d_auxDensityMatrixInPtr, d_phiInQuadValues, s);
                             computing_timer.leave_subsection(
                               "VEff Computation");
                           }
@@ -3031,11 +3031,9 @@ namespace dftfe
                   d_numEigenValuesRR);
 
             computing_timer.enter_subsection("VEff Computation");
-            kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
-                                                 d_gradDensityInQuadValues,
-                                                 d_phiInQuadValues,
-                                                 d_rhoCore,
-                                                 d_gradRhoCore);
+            updateAuxDensity(d_auxDensityMatrixInPtr);
+            kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixInPtr,
+                                                 d_phiInQuadValues);
             computing_timer.leave_subsection("VEff Computation");
 
 

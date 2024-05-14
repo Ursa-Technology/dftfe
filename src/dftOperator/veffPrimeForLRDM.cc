@@ -23,7 +23,7 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   KohnShamHamiltonianOperator<memorySpace>::computeVEffPrime(
-    AuxDensityMatrix auxDensityRepresentation,
+    std::shared_ptr<AuxDensityMatrix> auxDensityRepresentationPtr,
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       &rhoPrimeValues,

@@ -66,6 +66,7 @@
 
 #include <mixingClass.h>
 #include <oncvClass.h>
+#include <AuxDensityMatrix.h>
 
 namespace dftfe
 {
@@ -1451,6 +1452,8 @@ namespace dftfe
     dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
       d_densityTotalOutValuesLpspQuad, d_densityTotalInValuesLpspQuad,
       d_gradDensityTotalOutValuesLpspQuad, d_gradDensityTotalInValuesLpspQuad;
+
+    std::shared_ptr<AuxDensityMatrix> d_auxDensityMatrixInPtr;
 
     // For multipole boundary conditions
     double              d_monopole;

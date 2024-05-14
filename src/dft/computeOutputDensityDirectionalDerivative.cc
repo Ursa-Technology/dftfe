@@ -250,13 +250,10 @@ namespace dftfe
     for (unsigned int s = 0; s < (1 + d_dftParamsPtr->spinPolarized); ++s)
       {
         computing_timer.enter_subsection("VEffPrime Computation");
-        kohnShamDFTEigenOperator.computeVEffPrime(d_densityInQuadValues,
+        kohnShamDFTEigenOperator.computeVEffPrime(d_auxDensityMatrixInPtr,
                                                   rhoPrimeValues,
-                                                  d_gradDensityInQuadValues,
                                                   gradRhoPrimeValues,
                                                   electrostaticPotPrimeValues,
-                                                  d_rhoCore,
-                                                  d_gradRhoCore,
                                                   s);
         computing_timer.leave_subsection("VEffPrime Computation");
 

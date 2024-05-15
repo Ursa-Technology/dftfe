@@ -60,7 +60,6 @@ SET(TARGET_SRC
   ./src/excManager/excDensityGGAClass.cpp
   ./src/excManager/excManager.cpp
   ./src/excManager/excWavefunctionNoneClass.cpp
-  ./src/excManager/AuxDensity.cpp
   ./src/excManager/AuxDensityFE.cpp
   ./src/excManager/NNGGA.cc
   ./src/excManager/NNLDA.cc

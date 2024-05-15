@@ -7,11 +7,11 @@
 
 #include <vector>
 #include <utility>
-#include <AuxDensity>
+#include <AuxDensityMatrix>
 
 namespace dftfe
 {
-  class AuxDensityFE : public AuxDensity
+  class AuxDensityFE : public AuxDensityMatrix
   {
   public:
     // Constructor
@@ -39,42 +39,6 @@ namespace dftfe
                    const std::vector<double> &QWt,
                    const int                  nQ,
                    const std::vector<double> &densityVals) override;
-
-    /**
-     * @brief set values for the quadrature density
-     *
-     *
-     * @param Qpts The quadrature points.
-     * @param QWt The quadrature weights.
-     * @param nQ The number of quadrature points.
-     * @param densityVals density values at quad points with spin index the
-     * slowest index followed by the quad index. nspin=2 assumed
-     */
-    void
-    setQuadVals(const std::vector<double> &Qpts,
-                const std::vector<double> &QWt,
-                const int                  nQ,
-                const std::vector<double> &densityVals);
-
-    /**
-     * @brief set values for the quadrature density
-     *
-     *
-     * @param Qpts The quadrature points.
-     * @param QWt The quadrature weights.
-     * @param nQ The number of quadrature points.
-     * @param densityVals density values at quad points with spin index the
-     * slowest index followed by the quad index. nspin=2 assumed
-     * @param gradDensityVals gradient density values at quad points
-     * with spin index the slowest index, followed by quad index,
-     * and finally the dimension index. nspin=2 assumed
-     */
-    void
-    setQuadVals(const std::vector<double> &Qpts,
-                const std::vector<double> &QWt,
-                const int                  nQ,
-                const std::vector<double> &densityVals,
-                const std::vector<double> &gradDensityVals);
 
 
   private:

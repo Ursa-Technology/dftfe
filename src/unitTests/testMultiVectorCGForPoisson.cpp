@@ -15,85 +15,128 @@
 // ---------------------------------------------------------------------
 //
 
-#include "unitTest.h"
+#include "unitTests.h"
+#include "MultiVectorPoissonLinearSolverProblem.h"
+#include "MultiVectorMinResSolver.h"
+#include "MultiVectorCGSolver.h"
+#include "poissonSolverProblem.h"
+#include <dealiiLinearSolver.h>
+#include "vectorUtilities.h"
 
 
 
 namespace unitTest
 {
+  //template <dftfe::utils::MemorySpace memorySpace>
   void
   testMultiVectorPoissonSolver(
-    const dealii::MatrixFree<3, double> &          matrixFreeData,
-    const dealii::AffineConstraints<double> &      constraintMatrix,
-    std::map<dealii::CellId, std::vector<double>> &inputVec,
+    const std::shared_ptr<
+      dftfe::basis::
+        FEBasisOperations<double, double, dftfe::utils::MemorySpace::HOST>> &basisOperationsPtr,
+    dealii::MatrixFree<3, double> &matrixFreeData,
+    std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
+                                                                                BLASWrapperPtr,
+    std::vector<const dealii::AffineConstraints<double> *> &      constraintMatrixVec,
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &inputVec,
     const unsigned int                             matrixFreeVectorComponent,
     const unsigned int matrixFreeQuadratureComponentRhsDensity,
     const unsigned int matrixFreeQuadratureComponentAX,
     const MPI_Comm &   mpi_comm_parent,
     const MPI_Comm &   mpi_comm_domain)
   {
-    //        int this_process;
-    //        MPI_Comm_rank(mpi_comm, &this_process);
-    //        if(this_process == 0)
-    //        {
 
-    //        }
-
-    //    MultiVectorLinearCGSolver
-    //    linearSolver(mpi_comm_parent,mpi_comm_domain);
-    MultiVectorLinearMINRESSolver   linearSolver(mpi_comm_parent,
+    dftfe::MultiVectorMinResSolver   linearSolver(mpi_comm_parent,
                                                mpi_comm_domain);
-    MultiVectorPoissonSolverProblem multiPoissonSolver(mpi_comm_parent,
+    dftfe::MultiVectorPoissonLinearSolverProblem<dftfe::utils::MemorySpace::HOST> multiPoissonSolver(mpi_comm_parent,
                                                        mpi_comm_domain);
-    const dealii::DoFHandler<3> *   d_dofHandler;
-    d_dofHandler = &matrixFreeData.get_dof_handler(matrixFreeVectorComponent);
 
     unsigned int blockSizeInput = 5;
     std::cout << " Changing block Size to " << blockSizeInput << "\n";
 
-    std::vector<std::vector<double>> rhoQuadInputValues;
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> rhoQuadInputValuesHost;
 
-    unsigned int totalLocallyOwnedCells = matrixFreeData.n_physical_cells();
-    rhoQuadInputValues.resize(totalLocallyOwnedCells);
+    basisOperationsPtr->reinit(blockSizeInput,
+                                 100,
+                               matrixFreeQuadratureComponentRhsDensity,
+                                 true, // TODO should this be set to true
+                                 true); // TODO should this be set to true
+    unsigned int totalLocallyOwnedCells = basisOperationsPtr->nCells();
+    unsigned int  numQuadsPerCell = basisOperationsPtr->nQuadsPerCell();
+
+    std::cout<<" numCells = "<<totalLocallyOwnedCells<<"\n";
+
+    const dealii::DoFHandler<3> *   d_dofHandler;
+    d_dofHandler = &(matrixFreeData.get_dof_handler(matrixFreeVectorComponent));
+    rhoQuadInputValuesHost.resize(totalLocallyOwnedCells*numQuadsPerCell*blockSizeInput);
+
+    std::shared_ptr<
+      dftfe::basis::FEBasisOperations<dftfe::dataTypes::number,
+                                      double,
+                                      dftfe::utils::MemorySpace::HOST>>
+      basisOpHost = std::make_shared<dftfe::basis::FEBasisOperations<dftfe::dataTypes::number,
+      double,
+      dftfe::utils::MemorySpace::HOST>>(BLASWrapperPtr);
+
+    std::vector<dftfe::basis::UpdateFlags>   updateFlags;
+    updateFlags.resize(2);
+    updateFlags[0] = dftfe::basis::update_jxw | dftfe::basis::update_values |
+                     dftfe::basis::update_gradients | dftfe::basis::update_quadpoints | dftfe::basis::update_transpose;
+
+    updateFlags[1] = dftfe::basis::update_jxw | dftfe::basis::update_values |
+                     dftfe::basis::update_gradients | dftfe::basis::update_quadpoints | dftfe::basis::update_transpose;
+
+    std::vector<unsigned int> quadVec;
+    quadVec.resize(2);
+    quadVec[0] = matrixFreeQuadratureComponentRhsDensity;
+    quadVec[1] = matrixFreeQuadratureComponentAX;
+
+    std::cout<<" matrixFreeQuadratureComponentRhsDensity = "<<matrixFreeQuadratureComponentRhsDensity
+    <<" matrixFreeQuadratureComponentAX = "<<matrixFreeQuadratureComponentAX<<"\n";
+
+    basisOpHost->init(matrixFreeData,
+                      constraintMatrixVec,
+                      matrixFreeVectorComponent,
+                      quadVec,
+                      updateFlags);
 
     // set up solver functions for Poisson
-    poissonSolverProblem<6, 8> phiTotalSolverProblem(mpi_comm_domain);
+    dftfe::poissonSolverProblem<2,2> phiTotalSolverProblem(mpi_comm_domain);
     std::cout
-      << " testing multiVector Poisson Solve with FeOrder = 6, FeOrderElectro = 8\n";
+      << " testing multiVector Poisson Solve with FeOrder = 2, FeOrderElectro = 2\n";
     // Reinit poisson solver problem to not include atoms
-    dealii::AffineConstraints<double> d_constraintMatrixSingleHangingPeriodic,
-      d_constraintMatrixSingleHangingPeriodicHomogeneous,
-      d_constraintMatrixSingleHangingPeriodicInhomogeneous;
-    d_constraintMatrixSingleHangingPeriodic.clear();
-    dealii::DoFTools::make_hanging_node_constraints(
-      *d_dofHandler, d_constraintMatrixSingleHangingPeriodic);
-    d_constraintMatrixSingleHangingPeriodic.close();
-    d_constraintMatrixSingleHangingPeriodicHomogeneous.clear();
-    dealii::DoFTools::make_hanging_node_constraints(
-      *d_dofHandler, d_constraintMatrixSingleHangingPeriodicHomogeneous);
+//    dealii::AffineConstraints<double> d_constraintMatrixSingleHangingPeriodic,
+//      d_constraintMatrixSingleHangingPeriodicHomogeneous,
+//      d_constraintMatrixSingleHangingPeriodicInhomogeneous;
+//    d_constraintMatrixSingleHangingPeriodic.clear();
+//    dealii::DoFTools::make_hanging_node_constraints(
+//      *d_dofHandler, d_constraintMatrixSingleHangingPeriodic);
+//    d_constraintMatrixSingleHangingPeriodic.close();
+//    d_constraintMatrixSingleHangingPeriodicHomogeneous.clear();
+//    dealii::DoFTools::make_hanging_node_constraints(
+//      *d_dofHandler, d_constraintMatrixSingleHangingPeriodicHomogeneous);
 
 
-    dealii::VectorTools::interpolate_boundary_values(
-      *d_dofHandler,
-      0,
-      dealii::Functions::ZeroFunction<3>(),
-      d_constraintMatrixSingleHangingPeriodicHomogeneous);
-    d_constraintMatrixSingleHangingPeriodicHomogeneous.close();
+//    dealii::VectorTools::interpolate_boundary_values(
+//      *d_dofHandler,
+//      0,
+//      dealii::Functions::ZeroFunction<3>(),
+//      d_constraintMatrixSingleHangingPeriodicHomogeneous);
+//    d_constraintMatrixSingleHangingPeriodicHomogeneous.close();
+//
+//    d_constraintMatrixSingleHangingPeriodic.clear();
+//    dealii::DoFTools::make_hanging_node_constraints(
+//      *d_dofHandler, d_constraintMatrixSingleHangingPeriodic);
+//    d_constraintMatrixSingleHangingPeriodic.close();
 
-    d_constraintMatrixSingleHangingPeriodic.clear();
-    dealii::DoFTools::make_hanging_node_constraints(
-      *d_dofHandler, d_constraintMatrixSingleHangingPeriodic);
-    d_constraintMatrixSingleHangingPeriodic.close();
-
-    distributedCPUVec<double>      expectedOutput;
-    distributedCPUMultiVec<double> multiExpectedOutput;
+    dftfe::distributedCPUVec<double>      expectedOutput;
+    dftfe::distributedCPUMultiVec<double> multiExpectedOutput;
     // set up linear solver
-    dealiiLinearSolver dealiiCGSolver(mpi_comm_parent,
+    dftfe::dealiiLinearSolver dealiiCGSolver(mpi_comm_parent,
                                       mpi_comm_domain,
-                                      dealiiLinearSolver::CG);
+                                      dftfe::dealiiLinearSolver::CG);
     std::map<dealii::types::global_dof_index, double> atoms;
     std::map<dealii::CellId, std::vector<double>>     smearedChargeValues;
-    vectorTools::createDealiiVector<double>(
+    dftfe::vectorTools::createDealiiVector<double>(
       matrixFreeData.get_vector_partitioner(matrixFreeVectorComponent),
       1,
       expectedOutput);
@@ -102,76 +145,80 @@ namespace unitTest
       blockSizeInput,
       multiExpectedOutput);
 
-    distributedCPUMultiVec<double> multiVectorOutput;
-    distributedCPUMultiVec<double> boundaryValues;
+    dftfe::distributedCPUMultiVec<double> multiVectorOutput;
+    dftfe::distributedCPUMultiVec<double> boundaryValues;
     multiVectorOutput.reinit(multiExpectedOutput);
     boundaryValues.reinit(multiExpectedOutput);
     //    boundaryValues = 0.0;
     boundaryValues.setValue(0.0);
 
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> scaledInputVec;
+    scaledInputVec.resize(inputVec.size());
     for (unsigned int iBlockId = 0; iBlockId < blockSizeInput; iBlockId++)
       {
-        distributedCPUVec<double> singleBoundaryCond;
+        dftfe::distributedCPUVec<double> singleBoundaryCond;
         singleBoundaryCond.reinit(expectedOutput);
         singleBoundaryCond = 0.0;
-        d_constraintMatrixSingleHangingPeriodicInhomogeneous.clear();
-        dealii::DoFTools::make_hanging_node_constraints(
-          *d_dofHandler, d_constraintMatrixSingleHangingPeriodicInhomogeneous);
+//        d_constraintMatrixSingleHangingPeriodicInhomogeneous.clear();
+//        dealii::DoFTools::make_hanging_node_constraints(
+//          *d_dofHandler, d_constraintMatrixSingleHangingPeriodicInhomogeneous);
+//
+//        const unsigned int vertices_per_cell =
+//          dealii::GeometryInfo<3>::vertices_per_cell;
+//        const unsigned int dofs_per_cell = d_dofHandler->get_fe().dofs_per_cell;
+//        const unsigned int faces_per_cell =
+//          dealii::GeometryInfo<3>::faces_per_cell;
+//        const unsigned int dofs_per_face = d_dofHandler->get_fe().dofs_per_face;
+//
+//        std::vector<dealii::types::global_dof_index> cellGlobalDofIndices(
+//          dofs_per_cell);
+//        std::vector<dealii::types::global_dof_index> iFaceGlobalDofIndices(
+//          dofs_per_face);
 
-        const unsigned int vertices_per_cell =
-          dealii::GeometryInfo<3>::vertices_per_cell;
-        const unsigned int dofs_per_cell = d_dofHandler->get_fe().dofs_per_cell;
-        const unsigned int faces_per_cell =
-          dealii::GeometryInfo<3>::faces_per_cell;
-        const unsigned int dofs_per_face = d_dofHandler->get_fe().dofs_per_face;
-
-        std::vector<dealii::types::global_dof_index> cellGlobalDofIndices(
-          dofs_per_cell);
-        std::vector<dealii::types::global_dof_index> iFaceGlobalDofIndices(
-          dofs_per_face);
-
-        std::vector<bool> dofs_touched(d_dofHandler->n_dofs(), false);
-        dealii::DoFHandler<3>::active_cell_iterator cell = d_dofHandler
-                                                             ->begin_active(),
-                                                    endc = d_dofHandler->end();
-        for (; cell != endc; ++cell)
-          if (cell->is_locally_owned() || cell->is_ghost())
-            {
-              cell->get_dof_indices(cellGlobalDofIndices);
-              for (unsigned int iFace = 0; iFace < faces_per_cell; ++iFace)
-                {
-                  const unsigned int boundaryId =
-                    cell->face(iFace)->boundary_id();
-                  if (boundaryId == 0)
-                    {
-                      cell->face(iFace)->get_dof_indices(iFaceGlobalDofIndices);
-                      for (unsigned int iFaceDof = 0; iFaceDof < dofs_per_face;
-                           ++iFaceDof)
-                        {
-                          const dealii::types::global_dof_index nodeId =
-                            iFaceGlobalDofIndices[iFaceDof];
-                          if (dofs_touched[nodeId])
-                            continue;
-                          dofs_touched[nodeId] = true;
-                          if (
-                            !d_constraintMatrixSingleHangingPeriodicInhomogeneous
-                               .is_constrained(nodeId))
-                            {
-                              d_constraintMatrixSingleHangingPeriodicInhomogeneous
-                                .add_line(nodeId);
-                              d_constraintMatrixSingleHangingPeriodicInhomogeneous
-                                .set_inhomogeneity(nodeId, iBlockId + 2);
-                              //                                d_constraintMatrixSingleHangingPeriodicInhomogeneous.set_inhomogeneity(nodeId,
-                              //                                0);
-                            } // non-hanging node check
-
-                        } // Face dof loop
-                    }     // non-periodic boundary id
-                }         // Face loop
-            }             // cell locally owned
-        d_constraintMatrixSingleHangingPeriodicInhomogeneous.close();
-        d_constraintMatrixSingleHangingPeriodicInhomogeneous.distribute(
-          singleBoundaryCond);
+//        std::vector<bool> dofs_touched(d_dofHandler->n_dofs(), false);
+//        dealii::DoFHandler<3>::active_cell_iterator cell = d_dofHandler
+//                                                             ->begin_active(),
+//                                                    endc = d_dofHandler->end();
+//        for (; cell != endc; ++cell)
+//          if (cell->is_locally_owned() || cell->is_ghost())
+//            {
+//              cell->get_dof_indices(cellGlobalDofIndices);
+//              for (unsigned int iFace = 0; iFace < faces_per_cell; ++iFace)
+//                {
+//                  const unsigned int boundaryId =
+//                    cell->face(iFace)->boundary_id();
+//                  if (boundaryId == 0)
+//                    {
+//                      cell->face(iFace)->get_dof_indices(iFaceGlobalDofIndices);
+//                      for (unsigned int iFaceDof = 0; iFaceDof < dofs_per_face;
+//                           ++iFaceDof)
+//                        {
+//                          const dealii::types::global_dof_index nodeId =
+//                            iFaceGlobalDofIndices[iFaceDof];
+//                          if (dofs_touched[nodeId])
+//                            continue;
+//                          dofs_touched[nodeId] = true;
+//                          if (
+//                            !d_constraintMatrixSingleHangingPeriodicInhomogeneous
+//                               .is_constrained(nodeId))
+//                            {
+//                              d_constraintMatrixSingleHangingPeriodicInhomogeneous
+//                                .add_line(nodeId);
+////                              d_constraintMatrixSingleHangingPeriodicInhomogeneous
+////                                .set_inhomogeneity(nodeId, iBlockId + 2);
+//                                                             d_constraintMatrixSingleHangingPeriodicInhomogeneous.set_inhomogeneity(nodeId,
+//                                                             0);
+//                            } // non-hanging node check
+//
+//                        } // Face dof loop
+//                    }     // non-periodic boundary id
+//                }         // Face loop
+//            }             // cell locally owned
+//        d_constraintMatrixSingleHangingPeriodicInhomogeneous.close();
+//        singleBoundaryCond.update_ghost_values();
+//        d_constraintMatrixSingleHangingPeriodicInhomogeneous.distribute(
+//          singleBoundaryCond);
+        singleBoundaryCond.update_ghost_values();
         for (unsigned int iNodeId = 0;
              iNodeId < singleBoundaryCond.local_size();
              iNodeId++)
@@ -190,16 +237,12 @@ namespace unitTest
     for (; cell != endc; ++cell)
       if (cell->is_locally_owned())
         {
-          std::vector<double> &cellLevelQuadInput =
-            inputVec.find(cell->id())->second;
-          rhoQuadInputValues[iElem].resize(cellLevelQuadInput.size() *
-                                           blockSizeInput);
-          for (unsigned int i = 0; i < cellLevelQuadInput.size(); i++)
+          for (unsigned int i = 0; i < numQuadsPerCell; i++)
             {
               for (unsigned int k = 0; k < blockSizeInput; k++)
                 {
-                  rhoQuadInputValues[iElem][i * blockSizeInput + k] =
-                    cellLevelQuadInput[i] * (k + 1);
+                  rhoQuadInputValuesHost[iElem*blockSizeInput*numQuadsPerCell + i*blockSizeInput + k]=
+                    inputVec.data()[iElem*numQuadsPerCell + i] * (k + 1);
                 }
             }
           iElem++;
@@ -208,89 +251,81 @@ namespace unitTest
     for (unsigned int k = 0; k < blockSizeInput; k++)
       {
         expectedOutput = 0;
-        d_constraintMatrixSingleHangingPeriodicInhomogeneous.clear();
-        dealii::DoFTools::make_hanging_node_constraints(
-          *d_dofHandler, d_constraintMatrixSingleHangingPeriodicInhomogeneous);
+//        d_constraintMatrixSingleHangingPeriodicInhomogeneous.clear();
+//        dealii::DoFTools::make_hanging_node_constraints(
+//          *d_dofHandler, d_constraintMatrixSingleHangingPeriodicInhomogeneous);
 
-        const unsigned int vertices_per_cell =
-          dealii::GeometryInfo<3>::vertices_per_cell;
-        const unsigned int dofs_per_cell = d_dofHandler->get_fe().dofs_per_cell;
-        const unsigned int faces_per_cell =
-          dealii::GeometryInfo<3>::faces_per_cell;
-        const unsigned int dofs_per_face = d_dofHandler->get_fe().dofs_per_face;
+//        const unsigned int vertices_per_cell =
+//          dealii::GeometryInfo<3>::vertices_per_cell;
+//        const unsigned int dofs_per_cell = d_dofHandler->get_fe().dofs_per_cell;
+//        const unsigned int faces_per_cell =
+//          dealii::GeometryInfo<3>::faces_per_cell;
+//        const unsigned int dofs_per_face = d_dofHandler->get_fe().dofs_per_face;
+//
+//        std::vector<dealii::types::global_dof_index> cellGlobalDofIndices(
+//          dofs_per_cell);
+//        std::vector<dealii::types::global_dof_index> iFaceGlobalDofIndices(
+//          dofs_per_face);
 
-        std::vector<dealii::types::global_dof_index> cellGlobalDofIndices(
-          dofs_per_cell);
-        std::vector<dealii::types::global_dof_index> iFaceGlobalDofIndices(
-          dofs_per_face);
+//        std::vector<bool> dofs_touched(d_dofHandler->n_dofs(), false);
+//        dealii::DoFHandler<3>::active_cell_iterator cell = d_dofHandler
+//                                                             ->begin_active(),
+//                                                    endc = d_dofHandler->end();
+//        for (; cell != endc; ++cell)
+//          if (cell->is_locally_owned() || cell->is_ghost())
+//            {
+//              cell->get_dof_indices(cellGlobalDofIndices);
+//              for (unsigned int iFace = 0; iFace < faces_per_cell; ++iFace)
+//                {
+//                  const unsigned int boundaryId =
+//                    cell->face(iFace)->boundary_id();
+//                  if (boundaryId == 0)
+//                    {
+//                      cell->face(iFace)->get_dof_indices(iFaceGlobalDofIndices);
+//                      for (unsigned int iFaceDof = 0; iFaceDof < dofs_per_face;
+//                           ++iFaceDof)
+//                        {
+//                          const dealii::types::global_dof_index nodeId =
+//                            iFaceGlobalDofIndices[iFaceDof];
+//                          if (dofs_touched[nodeId])
+//                            continue;
+//                          dofs_touched[nodeId] = true;
+//                          if (
+//                            !d_constraintMatrixSingleHangingPeriodicInhomogeneous
+//                               .is_constrained(nodeId))
+//                            {
+//                              d_constraintMatrixSingleHangingPeriodicInhomogeneous
+//                                .add_line(nodeId);
+////                              d_constraintMatrixSingleHangingPeriodicInhomogeneous
+////                                .set_inhomogeneity(nodeId, k + 2);
+//                                                                d_constraintMatrixSingleHangingPeriodicInhomogeneous.set_inhomogeneity(nodeId,
+//                                                                0);
+//                            } // non-hanging node check
+//
+//                        } // Face dof loop
+//                    }     // non-periodic boundary id
+//                }         // Face loop
+//            }             // cell locally owned
+//        d_constraintMatrixSingleHangingPeriodicInhomogeneous.close();
 
-        std::vector<bool> dofs_touched(d_dofHandler->n_dofs(), false);
-        dealii::DoFHandler<3>::active_cell_iterator cell = d_dofHandler
-                                                             ->begin_active(),
-                                                    endc = d_dofHandler->end();
-        for (; cell != endc; ++cell)
-          if (cell->is_locally_owned() || cell->is_ghost())
-            {
-              cell->get_dof_indices(cellGlobalDofIndices);
-              for (unsigned int iFace = 0; iFace < faces_per_cell; ++iFace)
-                {
-                  const unsigned int boundaryId =
-                    cell->face(iFace)->boundary_id();
-                  if (boundaryId == 0)
-                    {
-                      cell->face(iFace)->get_dof_indices(iFaceGlobalDofIndices);
-                      for (unsigned int iFaceDof = 0; iFaceDof < dofs_per_face;
-                           ++iFaceDof)
-                        {
-                          const dealii::types::global_dof_index nodeId =
-                            iFaceGlobalDofIndices[iFaceDof];
-                          if (dofs_touched[nodeId])
-                            continue;
-                          dofs_touched[nodeId] = true;
-                          if (
-                            !d_constraintMatrixSingleHangingPeriodicInhomogeneous
-                               .is_constrained(nodeId))
-                            {
-                              d_constraintMatrixSingleHangingPeriodicInhomogeneous
-                                .add_line(nodeId);
-                              d_constraintMatrixSingleHangingPeriodicInhomogeneous
-                                .set_inhomogeneity(nodeId, k + 2);
-                              //                                  d_constraintMatrixSingleHangingPeriodicInhomogeneous.set_inhomogeneity(nodeId,
-                              //                                  0);
-                            } // non-hanging node check
+        double multFac = k+1;
+        BLASWrapperPtr->axpby(numQuadsPerCell*totalLocallyOwnedCells,
+                              multFac,
+                              inputVec.begin(),
+                              0.0,
+                              scaledInputVec.begin());
 
-                        } // Face dof loop
-                    }     // non-periodic boundary id
-                }         // Face loop
-            }             // cell locally owned
-        d_constraintMatrixSingleHangingPeriodicInhomogeneous.close();
-        for (std::map<dealii::CellId, std::vector<double>>::iterator it =
-               inputVec.begin();
-             it != inputVec.end();
-             it++)
-          {
-            std::vector<double> &cellLevelQuadInput = it->second;
-
-            for (unsigned int i = 0; i < cellLevelQuadInput.size(); i++)
-              {
-                //                cellLevelQuadInput[i]  = 0.0;
-                if ((k != 0) && (k != 1))
-                  cellLevelQuadInput[i] = cellLevelQuadInput[i] * (k + 1) / (k);
-                else
-                  cellLevelQuadInput[i] = cellLevelQuadInput[i] * (k + 1);
-              }
-          }
         phiTotalSolverProblem.reinit(
-          matrixFreeData,
+          basisOpHost,
           expectedOutput,
-          d_constraintMatrixSingleHangingPeriodicInhomogeneous,
+          *constraintMatrixVec[matrixFreeVectorComponent],
           matrixFreeVectorComponent,
           matrixFreeQuadratureComponentRhsDensity,
           matrixFreeQuadratureComponentAX,
           atoms,
           smearedChargeValues,
           matrixFreeQuadratureComponentAX,
-          inputVec,
+          scaledInputVec,
           true,  // isComputeDiagonalA
           false, // isComputeMeanValueConstraint
           false, // smearedNuclearCharges
@@ -303,17 +338,16 @@ namespace unitTest
 
         dealiiCGSolver.solve(phiTotalSolverProblem, 1e-10, 10000, 4);
 
-        //        std::cout<<" norm expected =
-        //        "<<expectedOutput.l2_norm()<<"\n";
-        //        dealii::types::global_dof_index indexVec;
-        //        for (dealii::types::global_dof_index i = 0; i <
-        //        expectedOutput.size();
-        //             i++)
-        //          {
-        //            indexVec = i * blockSizeInput + k;
-        //            if (expectedOutput.in_local_range(i))
-        //              multiExpectedOutput(indexVec) = expectedOutput(i);
-        //          }
+                std::cout<<" norm expected ="
+                  <<expectedOutput.l2_norm()<<"\n";
+                dealii::types::global_dof_index indexVec;
+                for (unsigned  int i = 0; i <
+                expectedOutput.local_size();
+                     i++)
+                  {
+                    indexVec = i * blockSizeInput + k;
+                    multiExpectedOutput.data()[indexVec] = expectedOutput.local_element(i);
+                  }
       }
 
 
@@ -329,15 +363,14 @@ namespace unitTest
               << "\n";
 
 
-
     multiPoissonSolver.reinit(
-      matrixFreeData,
-      d_constraintMatrixSingleHangingPeriodicHomogeneous,
+  BLASWrapperPtr,
+      basisOpHost,
+      *constraintMatrixVec[matrixFreeVectorComponent],
       matrixFreeVectorComponent,
       matrixFreeQuadratureComponentRhsDensity,
       matrixFreeQuadratureComponentAX,
-      true,
-      true);
+      false);
 
     //        if(this_process == 0) {
     //      boundaryValues = 0.0;
@@ -351,7 +384,7 @@ namespace unitTest
     //        }
 
     //    linearSolver.solve(multiPoissonSolver,
-    //                   rhoQuadInputValues,
+    //                   rhoQuadInputValuesHost,
     //                   multiVectorOutput,
     //                   boundaryValues,
     //                   blockSizeInput,
@@ -361,32 +394,67 @@ namespace unitTest
     //                   true);
 
 
+    multiPoissonSolver.setDataForRhsVec(rhoQuadInputValuesHost);
+
+    unsigned int locallyOwnedSize = basisOpHost->nOwnedDofs();
+
     linearSolver.solve(multiPoissonSolver,
-                       rhoQuadInputValues,
+                         BLASWrapperPtr,
                        multiVectorOutput,
                        boundaryValues,
+                         locallyOwnedSize,
                        blockSizeInput,
                        1e-10,
                        10000,
                        4,
                        true);
 
-    //    std::cout << "Norm of expected input = " <<
-    //    multiExpectedOutput.l2Norm()
-    //              << "\n";
-    //    std::cout<<"Norm of output from multiPoisson =
-    //    "<<multiVectorOutput.l2Norm()<<"\n";
 
-    //    multiVectorOutput -= multiExpectedOutput;
-    //      std::cout << "Vector L2 norm of the difference is : "
-    //                << multiVectorOutput.l2Norm() << "\n";
+    double multiExpectedOutputNorm = 0.0;
+    BLASWrapperPtr->xdot(locallyOwnedSize*blockSizeInput,
+                        multiExpectedOutput.begin(),
+                        1,
+                        multiExpectedOutput.begin(),
+                        1,
+                        mpi_comm_domain,
+                        &multiExpectedOutputNorm);
+
+    double multiVectorOutputNorm = 0.0;
+    BLASWrapperPtr->xdot(locallyOwnedSize*blockSizeInput,
+                        multiVectorOutput.begin(),
+                        1,
+                        multiVectorOutput.begin(),
+                        1,
+                        mpi_comm_domain,
+                        &multiVectorOutputNorm);
+        std::cout << "Norm of expected input = " <<multiExpectedOutputNorm<< "\n";
+        std::cout<<"Norm of output from multiPoisson ="<<multiVectorOutputNorm<<"\n";
+
+        BLASWrapperPtr->axpby(locallyOwnedSize*blockSizeInput,
+                              -1.0,
+                              multiExpectedOutput.begin(),
+                              1.0,
+                              multiVectorOutput.begin());
+
+        multiVectorOutputNorm = 0.0;
+        BLASWrapperPtr->xdot(locallyOwnedSize*blockSizeInput,
+                            multiVectorOutput.begin(),
+                            1,
+                            multiVectorOutput.begin(),
+                            1,
+                            mpi_comm_domain,
+                            &multiVectorOutputNorm);
+
+          std::cout << "Vector L2 norm of the difference is : "
+                    << multiVectorOutputNorm << "\n";
+
 
     //
     //      // Changing the block size
     //      blockSizeInput = 3;
     //      std::cout<<" Changing block Size to "<<blockSizeInput<<"\n";
     //
-    //      vectorTools::createDealiiVector<double>(
+    //      dftfe::vectorTools::createDealiiVector<double>(
     //              matrixFreeData.get_vector_partitioner(matrixFreeVectorComponent),
     //              1,
     //              expectedOutput);
@@ -478,13 +546,13 @@ namespace unitTest
     //          {
     //              std::vector<double> &cellLevelQuadInput =
     //              inputVec.find(cell->id())->second;
-    //              rhoQuadInputValues[iElem].resize(cellLevelQuadInput.size() *
+    //              rhoQuadInputValuesHost[iElem].resize(cellLevelQuadInput.size() *
     //              blockSizeInput); for (unsigned int i = 0; i <
     //              cellLevelQuadInput.size(); i++)
     //              {
     //                  for (unsigned int k = 0; k < blockSizeInput; k++)
     //                  {
-    //                      rhoQuadInputValues[iElem][i * blockSizeInput + k] =
+    //                      rhoQuadInputValuesHost[iElem][i * blockSizeInput + k] =
     //                              cellLevelQuadInput[i] * (k + 1);
     //                  }
     //              }
@@ -664,7 +732,7 @@ namespace unitTest
     //      std::cout<<" Changing block Size to "<<blockSizeInput<<"\n";
     //
     //
-    //      vectorTools::createDealiiVector<double>(
+    //      dftfe::vectorTools::createDealiiVector<double>(
     //              matrixFreeData.get_vector_partitioner(matrixFreeVectorComponent),
     //              1,
     //              expectedOutput);
@@ -935,4 +1003,5 @@ namespace unitTest
     //      std::cout << "Vector L2 norm of the difference is : "
     //                << multiVectorOutput.l2Norm() << "\n";
   }
+
 } // end of namespace unitTest

@@ -2,7 +2,7 @@
 // Created by VISHAL SUBRAMANIAN on 4/30/24.
 //
 
-#include "include/MultiVectorAdjointLinearSolverProblem.h"
+#include "MultiVectorAdjointLinearSolverProblem.h"
 
 namespace dftfe
 {
@@ -16,6 +16,7 @@ namespace dftfe
     rMatrixDeviceKernel(const dftfe::size_type numLocalCells,
                         const dftfe::size_type numDofsPerElem,
                         const dftfe::size_type numQuadPoints,
+                        const ValueType1      *shapeFunc,
                         const ValueType1      *shapeFuncTranspose,
                         const ValueType2      *inputJxW,
                         ValueType2            *rMatrix)
@@ -65,6 +66,8 @@ namespace dftfe
       const std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &BLASWrapperPtr,
+      const dftfe::utils::MemoryStorage < ValueType1,
+                                        dftfe::utils::MemorySpace::DEVICE> &shapeFunc,
       const dftfe::utils::MemoryStorage<ValueType2,
                                         dftfe::utils::MemorySpace::DEVICE>
         &shapeFuncTranspose,
@@ -82,6 +85,7 @@ namespace dftfe
         numLocalCells,
         numDofsPerElem,
         numQuadPoints,
+        dftfe::utils::makeDataTypeDeviceCompatible(shapeFunc.begin()),
         dftfe::utils::makeDataTypeDeviceCompatible(shapeFuncTranspose.begin()),
         dftfe::utils::makeDataTypeDeviceCompatible(inputJxW.begin()),
         dftfe::utils::makeDataTypeDeviceCompatible(rMatrix.begin()));
@@ -97,23 +101,24 @@ namespace dftfe
         numLocalCells,
         numDofsPerElem,
         numQuadPoints,
+        dftfe::utils::makeDataTypeDeviceCompatible(shapeFunc.begin()),
         dftfe::utils::makeDataTypeDeviceCompatible(shapeFuncTranspose.begin()),
         dftfe::utils::makeDataTypeDeviceCompatible(inputJxW.begin()),
         dftfe::utils::makeDataTypeDeviceCompatible(rMatrix.begin()));
 #endif
     }
 
-    template <typename ValueType1, typename ValueType2>
+    template <typename ValueType>
     __global__ void
     muMatrixDeviceKernel(const dftfe::size_type numLocalCells,
                          const dftfe::size_type numVec,
                          const dftfe::size_type numQuadPoints,
                          const dftfe::size_type blockSize,
-                         const ValueType1 *     orbitalOccupancy,
-                         const ValueType2 *     vecList,
-                         const ValueType1 *     cellLevelQuadValues,
-                         const ValueType1 *     inputJxW,
-                         ValueType1 *           muMatrixCellWise)
+                         const ValueType *     orbitalOccupancy,
+                         const unsigned int *     vecList,
+                         const ValueType *     cellLevelQuadValues,
+                         const ValueType *     inputJxW,
+                         ValueType *           muMatrixCellWise)
     {
       const dftfe::size_type globalThreadId =
         blockIdx.x * blockDim.x + threadIdx.x;
@@ -148,23 +153,23 @@ namespace dftfe
         }
     }
 
-    template <typename ValueType1, typename ValueType2>
+    template <typename ValueType>
     void
     muMatrixMemSpaceKernel(
       const dftfe::size_type numLocalCells,
       const dftfe::size_type numVec,
       const dftfe::size_type numQuadPoints,
       const dftfe::size_type blockSize,
-      const dftfe::utils::MemoryStorage < ValueType1,
+      const dftfe::utils::MemoryStorage < ValueType,
                                         dftfe::utils::MemorySpace::DEVICE> &orbitalOccupancy,
-      const dftfe::utils::MemoryStorage < ValueType2,
+      const dftfe::utils::MemoryStorage < unsigned int,
                                         dftfe::utils::MemorySpace::DEVICE> & vecList,
-      const dftfe::utils::MemoryStorage < ValueType1,
+      const dftfe::utils::MemoryStorage < ValueType,
                                         dftfe::utils::MemorySpace::DEVICE> &cellLevelQuadValues,
-      const dftfe::utils::MemoryStorage<ValueType1,
+      const dftfe::utils::MemoryStorage<ValueType,
                                         dftfe::utils::MemorySpace::DEVICE>
                                                                      &inputJxW,
-      dftfe::utils::MemoryStorage<ValueType2,
+      dftfe::utils::MemoryStorage<ValueType,
                                   dftfe::utils::MemorySpace::DEVICE> &muMatrixCellWise)
     {
 #ifdef DFTFE_WITH_DEVICE_LANG_CUDA
@@ -211,6 +216,8 @@ namespace dftfe
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
         &BLASWrapperPtr,
       const dftfe::utils::MemoryStorage < ValueType1,
+                                        dftfe::utils::MemorySpace::HOST> &shapeFunc,
+      const dftfe::utils::MemoryStorage < ValueType1,
       dftfe::utils::MemorySpace::HOST> &shapeFuncTranspose,
       const dftfe::utils::MemoryStorage<ValueType2,
                                         dftfe::utils::MemorySpace::HOST>
@@ -231,7 +238,7 @@ namespace dftfe
       cellLevelJxW.resize(numQuadPoints);
 
       std::vector<double> shapeFuncIJ(numDofsPerElem * numQuadPoints, 0.0);
-      std::vector<double> cellLevelR(numDofsPerElem * totalLocallyOwnedCells,
+      std::vector<double> cellLevelR(numDofsPerElem * numLocalCells,
                                      0.0);
 
 
@@ -244,24 +251,24 @@ namespace dftfe
               for (unsigned int jNode = 0; jNode < numDofsPerElem; jNode++)
                 {
                   shapeFuncIJ[iQuad * numDofsPerElem + jNode] =
-                    d_shapeFunctionValueTransposed[iNode * numQuadPoints +
+                    shapeFuncTranspose[iNode * numQuadPoints +
                                                    iQuad] *
-                    d_shapeFunctionValue[jNode + iQuad * numDofsPerElem];
+                    shapeFunc[jNode + iQuad * numDofsPerElem];
                 }
             }
-          BLASWrapperPtr->xgemm(&transA,
-                                &transB,
-                                &numDofsPerElem,
-                                &numLocalCells,
-                                &numQuadPoints,
+          BLASWrapperPtr->xgemm(transA,
+                                transB,
+                                numDofsPerElem,
+                                numLocalCells,
+                                numQuadPoints,
                                 &alpha,
                                 &shapeFuncIJ[0],
-                                &numDofsPerElem,
+                                numDofsPerElem,
                                 &inputJxW[0],
-                                &numQuadPoints,
+                                numQuadPoints,
                                 &beta,
                                 &cellLevelR[0],
-                                &numDofsPerElem);
+                                numDofsPerElem);
           for (unsigned int elemId = 0; elemId < numLocalCells; elemId++)
             {
               dcopy_(&numDofsPerElem,
@@ -274,7 +281,7 @@ namespace dftfe
         }
     }
 
-    template <typename ValueType1, typename ValueType2>
+    template <typename ValueType>
     void
     muMatrixMemSpaceKernel(
       const dftfe::size_type numLocalCells,
@@ -284,16 +291,16 @@ namespace dftfe
       const std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
         &BLASWrapperPtr,
-      const dftfe::utils::MemoryStorage < ValueType1,
+      const dftfe::utils::MemoryStorage < ValueType,
                                         dftfe::utils::MemorySpace::HOST> &orbitalOccupancy,
-      const dftfe::utils::MemoryStorage < ValueType2,
+      const dftfe::utils::MemoryStorage < unsigned int,
                                         dftfe::utils::MemorySpace::HOST> & vecList,
-      const dftfe::utils::MemoryStorage < ValueType1,
+      const dftfe::utils::MemoryStorage < ValueType,
       dftfe::utils::MemorySpace::HOST> &cellLevelQuadValues,
-      const dftfe::utils::MemoryStorage<ValueType1,
+      const dftfe::utils::MemoryStorage<ValueType,
                                         dftfe::utils::MemorySpace::HOST>
                                                                    &inputJxW,
-      dftfe::utils::MemoryStorage<ValueType2,
+      dftfe::utils::MemoryStorage<ValueType,
                                   dftfe::utils::MemorySpace::HOST> &muMatrixCellWise)
     {
       for( unsigned int index = 0 ; index < numLocalCells * numVec; index++ )
@@ -330,7 +337,6 @@ namespace dftfe
     , pcout(std::cout,
             (dealii::Utilities::MPI::this_mpi_process(mpi_comm_parent) == 0))
   {
-    d_isComputeShapeFunction           = true;
     d_isComputeDiagonalA               = true;
     d_constraintMatrixPtr              = NULL;
     d_blockedXPtr                      = NULL;
@@ -352,8 +358,7 @@ namespace dftfe
     const dealii::AffineConstraints<double> &constraintMatrix,
     const unsigned int                       matrixFreeVectorComponent,
     const unsigned int matrixFreeQuadratureComponentRhs,
-    const bool              isComputeDiagonalA,
-    const bool              isComputeShapeFunction)
+    const bool              isComputeDiagonalA)
   {
     int this_process;
     MPI_Comm_rank(mpi_communicator, &this_process);
@@ -367,17 +372,24 @@ namespace dftfe
     d_matrixFreeQuadratureComponentRhs =
       matrixFreeQuadratureComponentRhs;
 
+    d_numCells       = d_basisOperationsPtr->nCells();
+
+    d_basisOperationsPtr->reinit(1,
+                                 d_numCells,
+                                 d_matrixFreeQuadratureComponentRhs,
+                                 true, // TODO should this be set to true
+                                 true); // TODO should this be set to true
+
     d_locallyOwnedSize = d_basisOperationsPtr->nOwnedDofs();
     d_numberDofsPerElement = d_basisOperationsPtr->nDofsPerCell();
-    d_numCells       = d_basisOperationsPtr->nCells();
+
     d_numQuadsPerCell = d_basisOperationsPtr->nQuadsPerCell();
 
     d_ksOperatorPtr = &ksHamiltonianObj;
 
-    d_constraintsInfo.initialize(
-      d_matrixFreeDataPtr->get_vector_partitioner(
-        matrixFreeVectorComponent),
-      constraintMatrix);
+
+
+    std::cout<<" local size in adjoint = "<<d_locallyOwnedSize<<"\n";
 
     if (isComputeDiagonalA)
       {
@@ -390,11 +402,12 @@ namespace dftfe
         matrixFreeVectorComponent),
       constraintMatrix);
 
-    d_onesDevice.resize(d_locallyOwnedSize);
-    d_onesDevice.setValue(1.0);
 
-    d_onesQuadDevice.resize(d_numCells*d_numQuadsPerCell);
-    d_onesQuadDevice.setValue(1.0);
+    d_onesMemSpace.resize(d_locallyOwnedSize);
+    d_onesMemSpace.setValue(1.0);
+
+    d_onesQuadMemSpace.resize(d_numCells*d_numQuadsPerCell);
+    d_onesQuadMemSpace.setValue(1.0);
 
   }
 
@@ -402,10 +415,8 @@ namespace dftfe
   void
     MultiVectorAdjointLinearSolverProblem<memorySpace>::computeDiagonalA()
   {
-    d_basisOperationsPtr->computeStiffnessVector();
+    d_basisOperationsPtr->computeStiffnessVector(true, true);
     d_basisOperationsPtr->computeInverseSqrtMassVector();
-
-    d_diagonalA.setValue(1.0);
 
     dftfe::utils::MemoryStorage<dftfe::global_size_type,
                                 dftfe::utils::MemorySpace::HOST>
@@ -420,11 +431,13 @@ namespace dftfe
     mapNodeIdToProcId.resize(d_locallyOwnedSize);
     mapNodeIdToProcId.copyFrom(nodeIds);
 
-    auto sqrtMassMat = BLASWrapperPtr->sqrtMassVectorBasisData();
+    auto sqrtMassMat = d_basisOperationsPtr->sqrtMassVectorBasisData();
     auto inverseStiffVec = d_basisOperationsPtr->inverseStiffnessVectorBasisData();
     auto inverseSqrtStiffVec = d_basisOperationsPtr->inverseSqrtStiffnessVectorBasisData();
 
-    d_basisOperationsPtr->stridedBlockScaleCopy(
+    d_basisOperationsPtr->createMultiVector(1,d_diagonalA);
+    d_diagonalA.setValue(1.0);
+    d_BLASWrapperPtr->stridedBlockScaleCopy(
       1,
       d_locallyOwnedSize,
       1.0/0.5,
@@ -433,7 +446,7 @@ namespace dftfe
       d_diagonalA.data(),
       mapNodeIdToProcId.data());
 
-    d_basisOperationsPtr->stridedBlockScaleCopy(
+    d_BLASWrapperPtr->stridedBlockScaleCopy(
       1,
       d_locallyOwnedSize,
       1.0,
@@ -442,7 +455,7 @@ namespace dftfe
       d_diagonalA.data(),
       mapNodeIdToProcId.data());
 
-    d_basisOperationsPtr->stridedBlockScaleCopy(
+    d_BLASWrapperPtr->stridedBlockScaleCopy(
       1,
       d_locallyOwnedSize,
       1.0,
@@ -451,17 +464,18 @@ namespace dftfe
       d_diagonalA.data(),
       mapNodeIdToProcId.data());
 
+    d_basisOperationsPtr->createMultiVector(1,d_diagonalSqrtA);
     d_diagonalSqrtA.setValue(1.0);
-    d_basisOperationsPtr->stridedBlockScaleCopy(
+    d_BLASWrapperPtr->stridedBlockScaleCopy(
       1,
       d_locallyOwnedSize,
       std::sqrt(1.0/0.5),
-      inverseStiffVec.data(),
+      inverseSqrtStiffVec.data(),
       d_diagonalSqrtA.data(),
       d_diagonalSqrtA.data(),
       mapNodeIdToProcId.data());
 
-    d_basisOperationsPtr->stridedBlockScaleCopy(
+    d_BLASWrapperPtr->stridedBlockScaleCopy(
       1,
       d_locallyOwnedSize,
       1.0,
@@ -472,16 +486,15 @@ namespace dftfe
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
-  template <typename T>
   void
     MultiVectorAdjointLinearSolverProblem<memorySpace>::precondition_Jacobi(
-    dftfe::linearAlgebra::MultiVector<T,
+    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                       memorySpace> &      dst,
-    const dftfe::linearAlgebra::MultiVector<T,
+    const dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                             memorySpace> &src,
-    const double                     omega)
+    const double                     omega) const
   {
-    d_basisOperationsPtr->stridedBlockScaleCopy(
+    d_BLASWrapperPtr->stridedBlockScaleCopy(
       d_blockSize,
       d_locallyOwnedSize,
       1.0,
@@ -492,16 +505,15 @@ namespace dftfe
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
-  template <typename T>
   void
   MultiVectorAdjointLinearSolverProblem<memorySpace>::
-    precondition_JacobiSqrt(ddftfe::linearAlgebra::MultiVector<T,
+    precondition_JacobiSqrt(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                                              memorySpace> &      dst,
-                          const dftfe::linearAlgebra::MultiVector<T,
+                          const dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                                                   memorySpace> &src,
                           const double omega) const
   {
-    d_basisOperationsPtr->stridedBlockScaleCopy(
+    d_BLASWrapperPtr->stridedBlockScaleCopy(
       d_blockSize,
       d_locallyOwnedSize,
       1.0,
@@ -512,16 +524,20 @@ namespace dftfe
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
-  template <typename T>
-  dftfe::linearAlgebra::MultiVector<T,
+  dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                     memorySpace> &
     MultiVectorAdjointLinearSolverProblem<memorySpace>::computeRhs(
-    dftfe::linearAlgebra::MultiVector<T,
+    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                       memorySpace> &       NDBCVec,
-    dftfe::linearAlgebra::MultiVector<T,
+    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                       memorySpace> &       outputVec,
     unsigned int                      blockSizeInput)
   {
+    dealii::TimerOutput computing_timer(mpi_communicator,
+                                        pcout,
+                                        dealii::TimerOutput::summary,
+                                        dealii::TimerOutput::wall_times);
+
     d_cellsBlockSizeVmult = 100;
     d_basisOperationsPtr->reinit(blockSizeInput,
                                  d_cellsBlockSizeVmult,
@@ -550,10 +566,7 @@ namespace dftfe
         d_mapQuadIdToProcId.resize(d_numCells*d_numQuadsPerCell);
         d_mapQuadIdToProcId.copyFrom(quadIds);
 
-        d_xCellLLevelNodalData.resize(d_numCells*d_numberDofsPerElement*d_blockSize);
-        d_AxCellLLevelNodalData.resize(d_numCells*d_numberDofsPerElement*d_blockSize);
-
-        d_basisOperationsPtr->createMultiVector(d_blockSize,d_rhsVecMemSpace);
+        d_basisOperationsPtr->createMultiVector(d_blockSize,d_rhsMemSpace);
 
         vec1QuadValues.resize(d_blockSize*d_numCells*d_numQuadsPerCell);
         vec2QuadValues.resize(d_blockSize*d_numCells*d_numQuadsPerCell);
@@ -563,6 +576,14 @@ namespace dftfe
         oneBlockSizeMemSpace.resize(d_blockSize);
         oneBlockSizeMemSpace.setValue(1.0);
 
+
+        d_basisOperationsPtr->computeCellStiffnessMatrix(
+          d_matrixFreeQuadratureComponentRhs, 1, true, false);
+        d_basisOperationsPtr->computeCellMassMatrix(
+          d_matrixFreeQuadratureComponentRhs, 1, true, false);
+
+        d_basisOperationsPtr->computeInverseSqrtMassVector(true, false);
+
       }
     d_blockedXPtr = &outputVec;
 
@@ -571,13 +592,13 @@ namespace dftfe
     // TODO check if this works
     //    computing_timer.leave_subsection("Rhs init  MPI");
     //
-    computing_timer.enter_subsection("Rhs init Device MPI");
+    computing_timer.enter_subsection("Rhs init MemSpace MPI");
     dftfe::linearAlgebra::MultiVector<double,
                                       memorySpace> psiTempMemSpace;
     psiTempMemSpace.reinit(*d_psiMemSpace);
-    psiTempMemSpace.copyFrom(psiTempMemSpace->data());
+    psiTempMemSpace = *d_psiMemSpace;
     psiTempMemSpace.updateGhostValues();
-    d_constraintsInfo.distribute(psiTempMemSpace, d_blockSize);
+    d_constraintsInfo.distribute(psiTempMemSpace);
 
     dftfe::linearAlgebra::MultiVector<double,
                                       memorySpace> psiTempMemSpace2;
@@ -586,35 +607,40 @@ namespace dftfe
     psiTempMemSpace2.setValue(0.0);
 
 
-    computing_timer.leave_subsection("Rhs init Device MPI");
+    computing_timer.leave_subsection("Rhs init MemSpace MPI");
 
-    computing_timer.enter_subsection("M^(-1/2) Device MPI");
+    computing_timer.enter_subsection("M^(-1/2) MemSpace MPI");
 
-    auto sqrtMassMat = BLASWrapperPtr->sqrtMassVectorBasisData();
-    d_basisOperationsPtr->stridedBlockScaleCopy(
+    auto sqrtMassMat = d_basisOperationsPtr->sqrtMassVectorBasisData();
+
+    pcout<<" sqrtMassMat = "<<sqrtMassMat.size()<<"\n";
+    pcout<<" psiTempMemSpace = "<<psiTempMemSpace.locallyOwnedSize()<<"\n";
+    pcout<<" d_mapNodeIdToProcId = "<<d_mapNodeIdToProcId.size()<<"\n";
+
+    d_BLASWrapperPtr->stridedBlockScaleCopy(
       1,
       d_locallyOwnedSize,
       1.0,
       sqrtMassMat.data(),
       psiTempMemSpace.data(),
       psiTempMemSpace.data(),
-      mapNodeIdToProcId.data());
+      d_mapNodeIdToProcId.data());
 
     psiTempMemSpace.updateGhostValues();
-    computing_timer.leave_subsection("M^(-1/2) Device MPI");
+    computing_timer.leave_subsection("M^(-1/2) MemSpace MPI");
 
-    computing_timer.enter_subsection("computeR Device MPI");
+    computing_timer.enter_subsection("computeR MemSpace MPI");
     computeRMatrix(d_inputJxWMemSpace);
-    computing_timer.leave_subsection("computeR Device MPI");
-    computing_timer.enter_subsection("computeMu Device MPI");
+    computing_timer.leave_subsection("computeR MemSpace MPI");
+    computing_timer.enter_subsection("computeMu MemSpace MPI");
     computeMuMatrix(d_inputJxWMemSpace, *d_psiMemSpace);
 
 
 
-    computing_timer.leave_subsection("computeMu Device MPI");
+    computing_timer.leave_subsection("computeMu MemSpace MPI");
 
 
-    computing_timer.enter_subsection("Mu*Psi Device MPI");
+    computing_timer.enter_subsection("Mu*Psi MemSpace MPI");
     //    rhs = 0.0;
     d_rhsMemSpace.setValue(0.0);
     // Calculating the rhs from the quad points
@@ -628,22 +654,22 @@ namespace dftfe
     // Psi is stored in a row major format, we do Mu^T*\Psi^T = Mu*\Psi^T
     // (because Mu is symmetric)
 
-    BLASWrapperPtr->xgemm(
-      dftfe::utils::DEVICEBLAS_OP_N,
-      dftfe::utils::DEVICEBLAS_OP_N,
+    d_BLASWrapperPtr->xgemm(
+      'N',
+      'N',
       d_blockSize,
       d_locallyOwnedSize,
       d_blockSize,
       &alpha_minus_two,
-      d_MuMatrixMemSpace,
+      d_MuMatrixMemSpace.data(),
       d_blockSize,
-      psiTempMemSpace,
+      psiTempMemSpace.data(),
       d_blockSize,
       &beta,
-      d_rhsVecMemSpace,
+      d_rhsMemSpace.data(),
       d_blockSize);
 
-    computing_timer.leave_subsection("Mu*Psi Device MPI");
+    computing_timer.leave_subsection("Mu*Psi MemSpace MPI");
 
 
     //
@@ -653,29 +679,29 @@ namespace dftfe
     // 3. PsiTemp2 = M^{-1/2}*PsiTemp2
     //
 
-    computing_timer.enter_subsection("psi*M(-1/2) Device MPI");
+    computing_timer.enter_subsection("psi*M(-1/2) MemSpace MPI");
 
-    auto invSqrtMassMat = BLASWrapperPtr->cellInverseMassVectorBasisData();
-    d_basisOperationsPtr->stridedBlockScaleCopy(
+    auto invSqrtMassMat = d_basisOperationsPtr->cellInverseMassVectorBasisData();
+    d_BLASWrapperPtr->stridedBlockScaleCopy(
       d_blockSize,
       d_locallyOwnedSize,
       1.0,
       invSqrtMassMat.data(),
       psiTempMemSpace.data(),
       psiTempMemSpace.data(),
-      mapNodeIdToProcId.data());
+      d_mapNodeIdToProcId.data());
 
     psiTempMemSpace.updateGhostValues();
-    d_constraintsInfo.distribute(psiTempMemSpace, d_blockSize);
-    computing_timer.leave_subsection("psi*M(-1/2) Device MPI");
+    d_constraintsInfo.distribute(psiTempMemSpace);
+    computing_timer.leave_subsection("psi*M(-1/2) MemSpace MPI");
 
-    computing_timer.enter_subsection("R times psi Device MPI");
+    computing_timer.enter_subsection("R times psi MemSpace MPI");
 
     // 2. Do PsiTemp2 = R*PsiTemp
-    d_cellWaveFunctionMatrixDevice.setValue(0.0);
+    d_cellWaveFunctionMatrixMemSpace.setValue(0.0);
     std::pair<unsigned int, unsigned int> cellRange = std::make_pair(0,d_numCells);
     d_basisOperationsPtr->extractToCellNodalDataKernel(psiTempMemSpace,
-                                                       d_cellWaveFunctionMatrixMemSpace,
+                                                       d_cellWaveFunctionMatrixMemSpace.data(),
                                                        cellRange);
 
     const dataTypes::number scalarCoeffAlpha = dataTypes::number(1.0),
@@ -686,9 +712,9 @@ namespace dftfe
     const unsigned int strideC = d_numberDofsPerElement * d_blockSize;
 
 
-    d_basisOperationsPtr->xgemmStridedBatched(
-      dftfe::utils::DEVICEBLAS_OP_N,
-      dftfe::utils::DEVICEBLAS_OP_N,
+    d_BLASWrapperPtr->xgemmStridedBatched(
+      'N',
+      'N',
       d_blockSize,
       d_numberDofsPerElement,
       d_numberDofsPerElement,
@@ -707,56 +733,52 @@ namespace dftfe
 
       d_basisOperationsPtr->accumulateFromCellNodalData(
       d_cellRMatrixTimesWaveMatrixMemSpace.begin(),
-      psiTempMemSpace2.data());
-    d_constraintsInfo.distribute_slave_to_master(psiTempMemSpace2,
-                                                             d_blockSize);
+      psiTempMemSpace2);
+    d_constraintsInfo.distribute_slave_to_master(psiTempMemSpace2);
     psiTempMemSpace2.accumulateAddLocallyOwned();
 
     // 3. PsiTemp2 = M^{-1/2}*PsiTemp2
-    computing_timer.leave_subsection("R times psi Device MPI");
+    computing_timer.leave_subsection("R times psi MemSpace MPI");
 
-    computing_timer.enter_subsection("psiTemp M^(-1/2) Device MPI");
+    computing_timer.enter_subsection("psiTemp M^(-1/2) MemSpace MPI");
 
 
     psiTempMemSpace2.updateGhostValues();
-    d_constraintsInfo.distribute(psiTempMemSpace2, d_blockSize);
+    d_constraintsInfo.distribute(psiTempMemSpace2);
 
-    auto invSqrtMassMat = BLASWrapperPtr->cellInverseMassVectorBasisData();
-    d_basisOperationsPtr->stridedBlockScaleCopy(
+    d_BLASWrapperPtr->stridedBlockScaleCopy(
       d_blockSize,
       d_locallyOwnedSize,
       1.0,
       invSqrtMassMat.data(),
       psiTempMemSpace2.data(),
       psiTempMemSpace2.data(),
-      mapNodeIdToProcId.data());
+      d_mapNodeIdToProcId.data());
 
     psiTempMemSpace2.updateGhostValues();
-    d_constraintsInfo.distribute(psiTempMemSpace2, d_blockSize);
+    d_constraintsInfo.distribute(psiTempMemSpace2);
 
-    BLASWrapperPtr->stridedBlockScaledAddColumnWise(d_blockSize,
+    d_BLASWrapperPtr->stridedBlockScaleAndAddColumnWise(d_blockSize,
                                                       d_locallyOwnedSize,
-                                                       d_4xeffectiveOrbitalOccupancyMemSpace,
-                                                      psiTempMemSpace2,
-                                                      d_rhsMemSpace.begin());
+                                                       d_4xeffectiveOrbitalOccupancyMemSpace.data(),
+                                                      psiTempMemSpace2.data(),
+                                                      d_rhsMemSpace.data());
 
-    d_constraintsInfo.set_zero(d_rhsMemSpace, d_blockSize);
+    d_constraintsInfo.set_zero(d_rhsMemSpace);
 
-    computing_timer.leave_subsection("psiTemp M^(-1/2) Device MPI");
+    computing_timer.leave_subsection("psiTemp M^(-1/2) MemSpace MPI");
 
     return d_rhsMemSpace;
   }
 
 
-  // TODO PLease call d_kohnShamDeviceClassPtr->reinitkPointSpinIndex() before
+  // TODO PLease call d_kohnShamClassPtr->reinitkPointSpinIndex() before
   // calling this functions.
-  // template<typename T>
 
   template <dftfe::utils::MemorySpace memorySpace>
-  template <typename T>
   void
   MultiVectorAdjointLinearSolverProblem<memorySpace>::updateInputPsi(
-    dftfe::linearAlgebra::MultiVector<T,
+    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                       memorySpace> &psiInputVecMemSpace, // need to call distribute
     std::vector<double>
                                            &effectiveOrbitalOccupancy, // incorporates spin information
@@ -769,7 +791,7 @@ namespace dftfe
 
     d_psiMemSpace = &psiInputVecMemSpace;
     d_psiMemSpace->updateGhostValues();
-    d_constraintsInfo.distribute(*d_psiMemSpace, d_blockSize);
+    d_constraintsInfo.distribute(*d_psiMemSpace);
 
     d_RMatrixMemSpace.resize(d_numCells * d_numberDofsPerElement *
                                d_numberDofsPerElement);
@@ -783,13 +805,16 @@ namespace dftfe
     d_effectiveOrbitalOccupancyMemSpace.resize(blockSize);
     d_effectiveOrbitalOccupancyMemSpace.copyFrom(effectiveOrbitalOccupancyHost);
 
-    std::vector<double> 4x_effectiveOrbitalOccupancyHost;
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      effectiveOrbitalOccupancyHost_4x;
+    effectiveOrbitalOccupancyHost_4x.resize(blockSize);
 
     for( unsigned int i = 0 ; i <blockSize; i++)
       {
-        4x_effectiveOrbitalOccupancyHost[i] = 4.0*effectiveOrbitalOccupancy[i];
+        effectiveOrbitalOccupancyHost_4x[i] = 4.0*effectiveOrbitalOccupancy[i];
       }
-    d_4xeffectiveOrbitalOccupancyMemSpace.copyFrom(x_effectiveOrbitalOccupancyHost);
+    d_4xeffectiveOrbitalOccupancyMemSpace.resize(blockSize);
+    d_4xeffectiveOrbitalOccupancyMemSpace.copyFrom(effectiveOrbitalOccupancyHost_4x);
 
 
     d_degenerateState = degeneracy;
@@ -807,10 +832,10 @@ namespace dftfe
       }
 
     d_MuMatrixMemSpaceCellWise.resize((d_vectorList.size() / 2) *
-                                      d_totalLocallyOwnedCells,
+                                      d_numCells,
                                     0.0);
     d_MuMatrixHostCellWise.resize((d_vectorList.size() / 2) *
-                                d_totalLocallyOwnedCells,
+                                    d_numCells,
                               0.0);
 
     d_MuMatrixHost.resize(blockSize*blockSize);
@@ -823,29 +848,26 @@ namespace dftfe
         // to be re-initialised. The d_blockSize is set to -1 in the
         // constructor, so that this if condition is satisfied the first time
         // the code is called.
-        d_blockSize = blockSize;
 
+        d_cellWaveFunctionMatrixMemSpace.resize(
+          d_numCells * d_numberDofsPerElement * blockSize, 0.0);
 
-        d_cellWaveFunctionMatrixDevice.resize(
-          d_numCells * d_numberDofsPerElement * d_blockSize, 0.0);
-
-        d_cellRMatrixTimesWaveMatrixDevice.resize(
-          d_numCells * d_numberDofsPerElement * d_blockSize, 0.0);
+        d_cellRMatrixTimesWaveMatrixMemSpace.resize(
+          d_numCells * d_numberDofsPerElement * blockSize, 0.0);
         d_cellWaveFunctionQuadMatrixMemSpace.resize(d_numCells*
                                                       d_numQuadsPerCell *
-                                                      d_blockSize);
+                                                    blockSize);
         d_cellWaveFunctionQuadMatrixMemSpace.setValue(0.0);
       }
 
-    d_eigenValuesMemSpace.resize(d_blockSize);
+    d_negEigenValuesMemSpace.resize(blockSize);
 
-    for(signed int iBlock = 0 ; iBlock < d_blockSize; iBlock++)
+    for(signed int iBlock = 0 ; iBlock < blockSize; iBlock++)
       {
         eigenValues[iBlock] = -1.0*eigenValues[iBlock];
       }
-    d_eigenValuesMemSpace.copyFrom(eigenValues);
+    d_negEigenValuesMemSpace.copyFrom(eigenValues);
 
-    d_dotProdDevice.resize(d_blockSize, 0.0);
 
     auto cellJxW = d_basisOperationsPtr->JxW();
     d_inputJxWMemSpace.resize(d_numQuadsPerCell*d_numCells);
@@ -860,24 +882,23 @@ namespace dftfe
   MultiVectorAdjointLinearSolverProblem<memorySpace>::computeMuMatrix(
     dftfe::utils::MemoryStorage<double, memorySpace>
                                  &                           inputJxwMemSpace,
-    dftfe::linearAlgebra::MultiVector<T,
+    dftfe::linearAlgebra::MultiVector<dataTypes::number,
                                       memorySpace> &psiVecMemSpace)
   {
 
-    dftfe::utils::MemoryStorage<unsigned int, dftfe::utils::MemorySpace::HOST>
     const unsigned int inc  = 1;
     const double       beta = 0.0, alpha = 1.0;
     char               transposeMat      = 'T';
     char               doNotTransposeMat = 'N';
 
-    d_MuMatrixDevice.setValue(0.0);
-    std::fill(d_MuMatrix.begin(), d_MuMatrix.end(), 0.0);
+    d_MuMatrixMemSpace.setValue(0.0);
+    d_MuMatrixHost.setValue(0.0);
 
     d_cellWaveFunctionMatrixMemSpace.setValue(0.0);
 
     std::pair<unsigned int, unsigned int> cellRange = std::make_pair(0,d_numCells);
     d_basisOperationsPtr->extractToCellNodalDataKernel(psiVecMemSpace,
-                                                       d_cellWaveFunctionMatrixMemSpace,
+                                                       d_cellWaveFunctionMatrixMemSpace.data(),
                                                        cellRange);
 
 
@@ -885,13 +906,12 @@ namespace dftfe
                             scalarCoeffBeta  = dataTypes::number(0.0);
     const unsigned int strideA = d_numberDofsPerElement * d_blockSize;
     const unsigned int strideB = 0;
-    const unsigned int strideC = numberQuadraturePointsRhs * d_blockSize;
+    const unsigned int strideC = d_numQuadsPerCell * d_blockSize;
 
     auto shapeFunctionData = d_basisOperationsPtr->shapeFunctionData(false);
-    d_basisOperationsPtr->xgemmStridedBatched(
-      d_kohnShamDeviceClassPtr->getDeviceBlasHandle(),
-      dftfe::utils::DEVICEBLAS_OP_N,
-      dftfe::utils::DEVICEBLAS_OP_N,
+    d_BLASWrapperPtr->xgemmStridedBatched(
+      'N',
+      'N',
       d_blockSize,
       d_numQuadsPerCell,
       d_numberDofsPerElement,
@@ -915,7 +935,8 @@ namespace dftfe
                    numVec,
                    d_numQuadsPerCell,
                    d_blockSize,
-                   d_effectiveOrbitalOccupancy,
+                   d_BLASWrapperPtr,
+                   d_effectiveOrbitalOccupancyMemSpace,
                    d_vectorListMemSpace,
                    d_cellWaveFunctionQuadMatrixMemSpace,
                    inputJxwMemSpace,
@@ -929,7 +950,7 @@ namespace dftfe
       {
         unsigned int iVec            = d_vectorList[2 * iVecList];
         unsigned int degenerateVecId = d_vectorList[2 * iVecList + 1];
-        for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells; iCell++)
+        for (unsigned int iCell = 0; iCell < d_numCells; iCell++)
           {
             d_MuMatrixHost[iVec * d_blockSize + degenerateVecId] +=
               d_MuMatrixHostCellWise[iVecList + iCell * numVec];
@@ -949,27 +970,20 @@ namespace dftfe
   void
   MultiVectorAdjointLinearSolverProblem<memorySpace>::computeRMatrix(
     dftfe::utils::MemoryStorage<double, memorySpace>
-      &inputJxwDevice)
+      &inputJxwMemSpace)
   {
-    const unsigned int totalLocallyOwnedCells =
-      d_matrixFreeDataPtr->n_physical_cells();
-
-    typename dealii::DoFHandler<3>::active_cell_iterator
-      cell = d_dofHandler->begin_active(),
-      endc = d_dofHandler->end();
-
-    const dealii::Quadrature<3> &quadratureRhs =
-      d_matrixFreeDataPtr->get_quadrature(d_matrixFreeQuadratureComponentRhs);
-    const unsigned numberQuadraturePointsRhs = quadratureRhs.size();
 
     auto shapeFunctionDataTranspose = d_basisOperationsPtr->shapeFunctionData(true);
+    auto shapeFunctionData = d_basisOperationsPtr->shapeFunctionData(false);
 
     rMatrixMemSpaceKernel(d_numCells,
                   d_numberDofsPerElement,
                   d_numQuadsPerCell,
-                  shapeFunctionDataTranspose.begin(),
-                  d_inputJxWMemSpace.begin(),
-                  d_RMatrixMemSpace.begin());
+                  d_BLASWrapperPtr,
+                  shapeFunctionData,
+                  shapeFunctionDataTranspose,
+                  d_inputJxWMemSpace,
+                  d_RMatrixMemSpace);
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -977,11 +991,11 @@ namespace dftfe
   MultiVectorAdjointLinearSolverProblem<memorySpace>::distributeX()
   {
 
-    std::vector<double> dotProductHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> dotProductHost(d_blockSize, 0.0);
 
-    auto invSqrtMassMat = BLASWrapperPtr->inverseSqrtMassVectorBasisData();
+    auto invSqrtMassMat = d_basisOperationsPtr->inverseSqrtMassVectorBasisData();
 
-    d_basisOperationsPtr->stridedBlockScaleCopy(
+    d_BLASWrapperPtr->stridedBlockScaleCopy(
       d_blockSize,
       d_locallyOwnedSize,
       1.0,
@@ -992,42 +1006,40 @@ namespace dftfe
 
     d_blockedXPtr->updateGhostValues();
 
-    d_constraintsInfo.distribute(*d_blockedXPtr,d_blockSize);
+    d_constraintsInfo.distribute(*d_blockedXPtr);
 
     multiVectorDotProdQuadWise(*d_blockedXPtr,
                                *d_psiMemSpace,
                                dotProductHost);
 
 
-    dftfe::utils::MemoryStorage<T, memorySpace>
-      dotProductMemSpace(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+      dotProductMemSpace(d_blockSize, 0.0);
 
-    for( unsigned int i = 0 ; i <b_blockSize; i++)
+    for( unsigned int i = 0 ; i <d_blockSize; i++)
       {
         dotProductHost[i] = -1.0*dotProductHost[i];
       }
 
-    dftfe::utils::deviceMemcpyH2D(dotProductMemSpace.data(),
-                                  &dotProductHost[0],
-                                  d_blockSize * sizeof(double));
+    dotProductMemSpace.copyFrom(dotProductHost);
 
 
-    BLASWrapperPtr->stridedBlockScaleAndAddColumnWise(d_blockSize,
+    d_BLASWrapperPtr->stridedBlockScaleAndAddColumnWise(d_blockSize,
                                                       d_locallyOwnedSize,
-                                                      dotProductMemSpace,
-                                                      oneBlockSizeMemSpace,
-                                                      d_blockedXPtr->begin());
+                                                      dotProductMemSpace.data(),
+                                                      oneBlockSizeMemSpace.data(),
+                                                      d_blockedXPtr->data());
 
     d_blockedXPtr->updateGhostValues();
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  MultiVectorAdjointLinearSolverProblem<memorySpace>::multiVectorDotProdQuadWise(const dftfe::linearAlgebra::MultiVector<T,
+  MultiVectorAdjointLinearSolverProblem<memorySpace>::multiVectorDotProdQuadWise(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                                                                                                          memorySpace> &      vec1,
-                                                                                 const dftfe::linearAlgebra::MultiVector<T,
+                                                                                 dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                                                                                                          memorySpace> &vec2,
-                                                                                 dftfe::utils::MemoryStorage<T, dftfe::utils::MemorySpace::HOST>&
+                                                                                 dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST>&
                                                                                    dotProductOutputHost)
   {
     d_basisOperationsPtr->interpolate(vec1,
@@ -1039,7 +1051,7 @@ namespace dftfe
     auto jxwVec = d_basisOperationsPtr->JxW();
 
 
-    d_basisOperationsPtr->stridedBlockScaleCopy(
+    d_BLASWrapperPtr->stridedBlockScaleCopy(
       d_blockSize,
       d_numCells*d_numQuadsPerCell,
       1.0,
@@ -1052,26 +1064,27 @@ namespace dftfe
                                       vec1QuadValues.data(),
                                       vec2QuadValues.data(),
                                       vecOutputQuadValues.data());
-    xgemm(
-      dftfe::utils::DEVICEBLAS_OP_N,
-      dftfe::utils::DEVICEBLAS_OP_T,
-      1,
+
+    unsigned int one = 1;
+    double oneDouble = 1.0;
+    double zeroDouble = 0.0;
+    d_BLASWrapperPtr->xgemm(
+      'N',
+      'T',
+      one,
       d_numCells*d_numQuadsPerCell,
       d_blockSize,
-      1.0,
-      d_onesQuadDevice,
-      1,
-      vecOutputQuadValues,
+      &oneDouble,
+      d_onesQuadMemSpace.data(),
+      one,
+      vecOutputQuadValues.data(),
       d_blockSize,
-      0.0,
-      tempOutputDotProdMemSpace,
-      1);
+      &zeroDouble,
+      tempOutputDotProdMemSpace.data(),
+      one);
 
     dotProductOutputHost.resize(d_blockSize);
-    dftfe::utils::deviceMemcpyD2H(dftfe::utils::makeDataTypeDeviceCompatible(
-                                    tempOutputDotProdMemSpace.data()),
-                                  dotProductOutputHost.data(),
-                                  d_blockSize * sizeof(double));
+    dotProductOutputHost.copyFrom(tempOutputDotProdMemSpace);
 
     MPI_Allreduce(MPI_IN_PLACE,
                   &dotProductOutputHost[0],
@@ -1083,32 +1096,40 @@ namespace dftfe
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
-  template<typename T>
   void
-  MultiVectorAdjointLinearSolverProblem<memorySpace>::vmult(dftfe::linearAlgebra::MultiVector<T,
+  MultiVectorAdjointLinearSolverProblem<memorySpace>::vmult(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                                                            memorySpace> &Ax,
-                                                            dftfe::linearAlgebra::MultiVector<T,
+                                                            dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                                                                               memorySpace> &x,
                                          unsigned int blockSize)
   {
     Ax.setValue(0.0);
     d_ksOperatorPtr->HX(x,
-                        scalarHX,
-                        scalarY,
-                        scalarX
+                        1.0, //scalarHX,
+                        1.0, //scalarY,
+                        0.0, //scalarX
                         Ax,
                         false); // onlyHPrimePartForFirstOrderDensityMatResponse
 
-    d_constraintsInfo.set_zero(x, d_blockSize);
-    d_constraintsInfo.set_zero(Ax, d_blockSize);
+    d_constraintsInfo.set_zero(x);
+    d_constraintsInfo.set_zero(Ax);
 
-    d_basisOperationsPtr->stridedBlockScaleAndAddColumnWise(
+    d_BLASWrapperPtr->stridedBlockScaleAndAddColumnWise(
                                d_blockSize,
-                               d_locallyOwnd,
+      d_locallyOwnedSize,
       x.data(),
-      d_eigenValuesMemSpace.data(),
+      d_negEigenValuesMemSpace.data(),
       Ax.data());
   }
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  MultiVectorAdjointLinearSolverProblem<memorySpace>::~MultiVectorAdjointLinearSolverProblem()
+  {
+
+  }
+
+
+  template class MultiVectorAdjointLinearSolverProblem<dftfe::utils::MemorySpace::HOST>;
 
 
 }

@@ -18,6 +18,11 @@
 #ifndef DFTFE_UNITTESTS_H
 #define DFTFE_UNITTESTS_H
 
+#include "headers.h"
+#include "BLASWrapper.h"
+#include "FEBasisOperations.h"
+#include "dftParameters.h"
+
 namespace unitTest
 {
   void testTransferFromParentToChildIncompatiblePartitioning( const MPI_Comm &                  mpi_comm_parent,
@@ -25,7 +30,7 @@ namespace unitTest
                                                         const MPI_Comm &                        interpoolcomm,
                                                         const MPI_Comm &                        interbandgroup_comm,
                                                         const unsigned int                      FEOrder,
-                                                        const dftParameters &                   dftParams,
+                                                        const dftfe::dftParameters &                   dftParams,
                                                         const std::vector<std::vector<double>> &atomLocations,
                                                         const std::vector<std::vector<double>> &imageAtomLocations,
                                                         const std::vector<int> &                imageIds,
@@ -34,16 +39,24 @@ namespace unitTest
                                                         const bool                              generateSerialTria,
                                                         const bool                              generateElectrostaticsTria);
 
+//template <dftfe::utils::MemorySpace memorySpace>
   void
   testMultiVectorPoissonSolver(
-    const dealii::MatrixFree<3, double> &          matrixFreeData,
-    const dealii::AffineConstraints<double> &      constraintMatrix,
-    std::map<dealii::CellId, std::vector<double>> &inputVec,
-    const unsigned int                             matrixFreeVectorComponent,
-    const unsigned int matrixFreeQuadratureComponentRhsDensity,
-    const unsigned int matrixFreeQuadratureComponentAX,
-    const MPI_Comm &   mpi_comm_parent,
-    const MPI_Comm &   mpi_comm_domain);
+  const std::shared_ptr<
+    dftfe::basis::
+      FEBasisOperations<double, double, dftfe::utils::MemorySpace::HOST>> &basisOperationsPtr,
+    dealii::MatrixFree<3, double> &matrixFreeData,
+  std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
+                                                                              BLASWrapperPtr,
+    std::vector<const dealii::AffineConstraints<double> *> &      constraintMatrixVec,
+  dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &inputVec,
+  const unsigned int                             matrixFreeVectorComponent,
+  const unsigned int matrixFreeQuadratureComponentRhsDensity,
+  const unsigned int matrixFreeQuadratureComponentAX,
+  const MPI_Comm &   mpi_comm_parent,
+  const MPI_Comm &   mpi_comm_domain);
+
+  void testAccumulateInsert(const MPI_Comm & mpiComm);
 
 } // end of namespace unitTest
 

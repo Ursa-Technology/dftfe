@@ -49,6 +49,8 @@ namespace dftfe
 {
   namespace
   {
+    template <typename T>
+    void
     performCellWiseInterpolationToPoints( const dftfe::linearAlgebra::MultiVector<T,
                                                                                  dftfe::utils::MemorySpace::HOST> &inputVec,
                                          const unsigned int                    numberOfVectors,
@@ -63,6 +65,8 @@ namespace dftfe
                                          const dftfe::utils::MemoryStorage<size_type, dftfe::utils::MemorySpace::HOST> &mapPointToCell,
                                          const dftfe::utils::MemoryStorage<size_type, dftfe::utils::MemorySpace::HOST> &mapPointToProcLocal,
                                          const  dftfe::utils::MemoryStorage<size_type, dftfe::utils::MemorySpace::HOST> &mapPointToShapeFuncIndex,
+                                         const std::vector<unsigned int> &cellShapeFuncStartIndex,
+                                         const std::vector<std::vector<unsigned int>> & mapCellLocalToProcLocal,
                                          dftfe::utils::MemoryStorage<T,
                                                                      dftfe::utils::MemorySpace::HOST> &cellLevelParentNodalMemSpace,
                                          dftfe::utils::MemoryStorage<T,
@@ -100,7 +104,7 @@ namespace dftfe
                 &scalarCoeffAlpha,
                 &cellLevelParentNodalMemSpace[0],
                 &numberOfVectors,
-                &shapeFuncValues[d_cellShapeFuncStartIndex[iElemSrc]],
+                &shapeFuncValues[cellShapeFuncStartIndex[iElemSrc]],
                 &numDofsPerElement,
                 &scalarCoeffBeta,
                 &cellLevelOutputPoints[0],
@@ -112,13 +116,15 @@ namespace dftfe
               dcopy_(&numberOfVectors,
                      &cellLevelOutputPoints[iPoint*numberOfVectors],
                      &inc,
-                     &outputData[d_mapCellLocalToProcLocal[iElemSrc][iPoint]*numberOfVectors],
+                     &outputData[mapCellLocalToProcLocal[iElemSrc][iPoint]*numberOfVectors],
                      &inc);
             }
         }
     }
 
 #ifdef DFTFE_WITH_DEVICE
+    template <typename T>
+    void
     performCellWiseInterpolationToPoints( const dftfe::linearAlgebra::MultiVector<T,
                                                                                  dftfe::utils::MemorySpace::DEVICE> &inputVec,
                                          const unsigned int                    numberOfVectors,
@@ -133,6 +139,8 @@ namespace dftfe
                                          const dftfe::utils::MemoryStorage<size_type, dftfe::utils::MemorySpace::DEVICE> &mapPointToCell,
                                          const dftfe::utils::MemoryStorage<size_type, dftfe::utils::MemorySpace::DEVICE> &mapPointToProcLocal,
                                          const  dftfe::utils::MemoryStorage<size_type, dftfe::utils::MemorySpace::DEVICE> &mapPointToShapeFuncIndex,
+                                         const std::vector<unsigned int> &cellShapeFuncStartIndex,
+                                         const std::vector<std::vector<unsigned int>> & mapCellLocalToProcLocal,
                                          dftfe::utils::MemoryStorage<T,
                                                                      dftfe::utils::MemorySpace::DEVICE> &cellLevelParentNodalMemSpace,
                                          dftfe::utils::MemoryStorage<T,
@@ -163,7 +171,7 @@ namespace dftfe
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
-  MeshTransferIncompatiblePartitioning<memorySpace>::MeshTransferIncompatiblePartitioning(const dealii::DoFHandler<3> &doFHandlerSrc,
+  InterpolateCellWiseDataToPoints<memorySpace>::InterpolateCellWiseDataToPoints(const dealii::DoFHandler<3> &doFHandlerSrc,
                                                                              const std::vector<std::vector<double>> & targetPts,
                                                                              const MPI_Comm & mpiComm)
     :d_mapPoints(mpiComm),
@@ -397,13 +405,15 @@ namespace dftfe
 
   }
 
-  void MeshTransferIncompatiblePartitioning::
+  template <dftfe::utils::MemorySpace memorySpace>
+  template <typename T>
+  void InterpolateCellWiseDataToPoints<memorySpace>::
     interpolateSrcDataToTargetPoints(
-      const distributedCPUVec<double> &inputVec,
+      const distributedCPUVec<T> &inputVec,
       const unsigned int                    numberOfVectors,
-      const std::vector<dealii::types::global_dof_index>
-                                                                   &                  mapVecToCells,
-      dftfe::utils::MemoryStorage<dataTypes::number,
+      const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
+                                        dftfe::utils::MemorySpace::HOST>&                  mapVecToCells,
+      dftfe::utils::MemoryStorage<T,
                                   dftfe::utils::MemorySpace::HOST> &outputData, // this is not std::vector
       bool resizeData )
   {
@@ -474,12 +484,12 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   template <typename T>
-  void MeshTransferIncompatiblePartitioning<memorySpace>::
+  void InterpolateCellWiseDataToPoints<memorySpace>::
     interpolateSrcDataToTargetPoints(
       const dftfe::linearAlgebra::MultiVector<T,
                                                     memorySpace> &inputVec,
       const unsigned int                    numberOfVectors,
-      const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
+      const dftfe::utils::MemoryStorage<dealii::types::global_dof_index, memorySpace>
                                                                    &                  mapVecToCells,
       dftfe::utils::MemoryStorage<T,
                                   memorySpace> &outputData, // this is not std::vector
@@ -487,8 +497,9 @@ namespace dftfe
   {
     if(resizeData)
       {
-        d_mpiCommPtrMemSpace = std::make_unique<dftfe::utils::mpi::MPICommunicatorP2P<T,memorySpace>>(d_mpiP2PPtrDevice,numberOfVectors);
+        d_mpiCommPtrMemSpace = std::make_unique<dftfe::utils::mpi::MPICommunicatorP2P<T,memorySpace>>(d_mpiP2PPtrMemSpace,numberOfVectors);
         outputData.resize(d_numPointsLocal*numberOfVectors);
+        d_cellLevelParentNodalMemSpace.resize(numberOfVectors*d_numDofsPerElement);
       }
 
     outputData.setValue(0.0);
@@ -499,20 +510,49 @@ namespace dftfe
                              numberOfVectors);
     cellLevelInputVec.setValue(0.0);
 
-    performCellWiseInterpolationToPoints(inputVec,
+    performCellWiseInterpolationToPoints<T>(inputVec,
                                          numberOfVectors,
                                          d_numCells,
                                          d_numDofsPerElement,
-                                         d_pointsFoundInProc,
-                                         d_cellLevelParentNodalMemSpace,
+                                         d_numPointsInCell,
+                                         mapVecToCells,
                                          d_shapeValuesMemSpace,
                                          d_mapPointToCellIndexMemSpace,
                                          d_mapPointToProcLocalMemSpace,
                                          d_mapPointToShapeFuncIndexMemSpace,
+                                         d_cellShapeFuncStartIndex,
+                                         d_mapCellLocalToProcLocal,
                                          d_cellLevelParentNodalMemSpace,
                                          outputData);
+
+
+
     d_mpiCommPtrMemSpace->accumulateInsertLocallyOwned(outputData);
   }
+
+  template
+  void InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::HOST>::interpolateSrcDataToTargetPoints(
+    const dftfe::linearAlgebra::MultiVector<dataTypes::number,
+                                              dftfe::utils::MemorySpace::HOST> &inputVec,
+    const unsigned int                    numberOfVectors,
+    const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
+                                        dftfe::utils::MemorySpace::HOST> &mapVecToCells,
+    dftfe::utils::MemoryStorage<dataTypes::number,
+                                  dftfe::utils::MemorySpace::HOST> &outputData,
+    bool resizeData) ;
+
+  template
+  void InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::HOST>::interpolateSrcDataToTargetPoints(
+    const distributedCPUVec<dataTypes::number> &inputVec,
+    const unsigned int                    numberOfVectors,
+    const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
+                                      dftfe::utils::MemorySpace::HOST>&                  mapVecToCells,
+    dftfe::utils::MemoryStorage<dataTypes::number,
+                                dftfe::utils::MemorySpace::HOST> &outputData,
+    bool resizeData) ;
+
+  template class InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::HOST>;
+
 
 
 }

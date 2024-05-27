@@ -21,25 +21,24 @@
 #ifndef DFTFE_INVERSEDFTSOLVERFUNCTION_H
 #define DFTFE_INVERSEDFTSOLVERFUNCTION_H
 
-#include <transferDataBetweenMeshesBase.h>
+#include <TransferBetweenMeshesIncompatiblePartitioning.h>
 #include <headers.h>
-#include <multiVectorAdjointProblem.h>
-#include <multiVectorLinearMINRESSolver.h>
-#include <multiVectorAdjointProblemDevice.h>
-#include <multiVectorLinearMINRESSolverDevice.h>
+#include <MultiVectorAdjointLinearSolverProblem.h>
+#include <MultiVectorMinResSolver.h>
 #include <nonlinearSolverFunction.h>
 #include <constraintMatrixInfo.h>
 #include <vectorUtilities.h>
 #include <linearAlgebraOperations.h>
 #include <linearAlgebraOperationsInternal.h>
 #include <dft.h>
+#include "inverseDFTParameters.h"
 namespace dftfe
 {
   /**
    * @brief Class implementing the inverse DFT problem
    *
    */
-  template <typename T, dftfe::utils::MemorySpace memorySpace>
+  template <unsigned int FEOrder, unsigned int FEOrderElectro, dftfe::utils::MemorySpace memorySpace>
   class InverseDFTSolverFunction
   {
   public:
@@ -56,12 +55,10 @@ namespace dftfe
     //
     void
     reinit(
-      const dftfe::utils::MemoryStorage<double , mmeorySpace> &rhoTargetQuadData,
-      const dftfe::utils::MemoryStorage<double , mmeorySpace> &weightQuadData,
-      const dftfe::utils::MemoryStorage<double , mmeorySpace> &potBaseQuadData,
-      dftBase *                                            dft,
-      const dealii::MatrixFree<3, double> &                matrixFreeDataParent,
-      const dealii::MatrixFree<3, double> &                matrixFreeDataChild,
+      const std::vector<dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>> &rhoTargetQuadDataHost,
+      const std::vector<dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST>> &weightQuadDataHost,
+      const std::vector<dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST>> &potBaseQuadDataHost,
+      dftfe::dftClass<FEOrder, FEOrder, memorySpace> &dftClass,
       const dealii::AffineConstraints<double>
         &constraintMatrixHomogeneousPsi, // assumes that the constraint matrix
                                          // has homogenous BC
@@ -69,9 +66,18 @@ namespace dftfe
         &constraintMatrixHomogeneousAdjoint, // assumes that the constraint
                                              // matrix has homogenous BC
       const dealii::AffineConstraints<double> &constraintMatrixPot,
-      KohnShamHamiltonianOperator<
-        memorySpace> & ksHamiltonianObj,
-      std::shared_ptr<TransferDataBetweenMeshesBase> &  inverseDFTDoFManagerObjPtr,
+      std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>> &
+        BLASWrapperPtr,
+      std::vector<std::shared_ptr<
+        dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>>
+        &basisOperationsParentPtr,
+      std::shared_ptr<
+        dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
+        & basisOperationsChildPtr,
+      dftfe::KohnShamHamiltonianOperator<
+        memorySpace> & kohnShamClass,
+      const std::shared_ptr<TransferDataBetweenMeshesIncompatiblePartitioning<memorySpace>>
+                                &  inverseDFTDoFManagerObjPtr,
       const std::vector<double> &kpointWeights,
       const unsigned int         numSpins,
       const unsigned int         numEigenValues,
@@ -82,7 +88,8 @@ namespace dftfe
       const unsigned int         matrixFreeQuadratureComponentPot,
       const bool                 isComputeDiagonalA,
       const bool                 isComputeShapeFunction,
-      const dftParameters &      dftParams);
+      const dftParameters &      dftParams,
+      const inverseDFTParameters & inverseDFTParams);
 
 
     void
@@ -107,60 +114,69 @@ namespace dftfe
     getInitialGuess() const;
 
     void
-    getForceVector(std::vector<dftfe::linearAlgebra::MultiVector<double,
-                                                                 dftfe::utils::MemorySpace::HOST>> &pot,
-                   std::vector<dftfe::linearAlgebra::MultiVector<double,
-                                                                 dftfe::utils::MemorySpace::HOST>> &force,
+    getForceVector(std::vector<distributedCPUVec<double>> &pot,
+                   std::vector<distributedCPUVec<double>> &force,
                    std::vector<double> &                   loss);
 
 
 
     void
-    setSolution(const std::vector<dftfe::linearAlgebra::MultiVector<double,
-                                                                    dftfe::utils::MemorySpace::HOST>> &pot);
+    setSolution(const std::vector<distributedCPUVec<double>> &pot);
 
+    void
+    integrateWithShapeFunctionsForChildData(
+      distributedCPUVec<double> &outputVec,
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &quadInputData);
   private:
-    std::vector<dftfe::linearAlgebra::MultiVector<double,
-                                                  dftfe::utils::MemorySpace::HOST>> d_pot;
+
+    void preComputeChildShapeFunction();
+    void preComputeParentJxW();
+      const dealii::MatrixFree<3, double> *    d_matrixFreeDataParent;
+    const dealii::MatrixFree<3, double> *    d_matrixFreeDataChild;
+    std::vector<distributedCPUVec<double>> d_pot;
     std::vector<dftfe::linearAlgebra::MultiVector<double,
                                                   dftfe::utils::MemorySpace::HOST>>
       d_solutionPotVecForWritingInParentNodes;
-    std::vector<dftfe::linearAlgebra::MultiVector<double,
-                                                  dftfe::utils::MemorySpace::HOST>>
-                                                  d_solutionPotVecForWritingInParentNodesMFVec;
-    std::vector<std::vector<std::vector<double>>> d_rhoTargetQuadData;
-    std::vector<std::vector<std::vector<double>>> d_rhoKSQuadData;
-    std::vector<std::vector<std::vector<double>>> d_weightQuadData;
-    std::vector<std::vector<std::vector<double>>> d_potBaseQuadData;
+//    std::vector<dftfe::linearAlgebra::MultiVector<double,
+//                                                  dftfe::utils::MemorySpace::HOST>>
+//                                                  d_solutionPotVecForWritingInParentNodesMFVec;
+
+    std::vector<dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST>> d_rhoTargetQuadDataHost;
+    std::vector<dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST>> d_rhoKSQuadDataHost;
+    std::vector<dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST>> d_weightQuadDataHost;
+    std::vector<dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST>> d_potBaseQuadDataHost;
     dftfe::linearAlgebra::MultiVector<double,
-      dftfe::utils::MemorySpace::HOST>>                     d_adjointBlock;
+      dftfe::utils::MemorySpace::HOST> d_adjointBlock;
     MultiVectorAdjointLinearSolverProblem<memorySpace> d_multiVectorAdjointProblem;
     MultiVectorMinResSolver d_multiVectorLinearMINRESSolver;
 
-    std::vector<dealii::types::global_dof_index>
-      fullFlattenedArrayCellLocalProcIndexIdMapPsi,
-      fullFlattenedArrayCellLocalProcIndexIdMapAdjoint;
+    dftfe::utils::MemoryStorage<dealii::types::global_dof_index, memorySpace>
+      fullFlattenedArrayCellLocalProcIndexIdMapPsiMemSpace,
+      fullFlattenedArrayCellLocalProcIndexIdMapAdjointMemSpace,
+      d_fullFlattenedMapChild;
+
+    std::vector<dealii::types::global_dof_index> fullFlattenedArrayCellLocalProcIndexIdMapPsiHost,fullFlattenedArrayCellLocalProcIndexIdMapAdjointHost;
+
+    dftfe::utils::MemoryStorage<double,
+                                memorySpace>
+    psiChildQuadDataMemorySpace, adjointChildQuadDataMemorySpace;
 
     // TODO remove this from gerForceVectorCPU
-    distributedCPUMultiVec<double> psiBlockVec,
-      adjointInhomogenousDirichletValues,
-      multiVectorAdjointOutputWithPsiConstraints,
-      multiVectorAdjointOutputWithAdjointConstraints;
-    dftUtils::constraintMatrixInfo constraintsMatrixPsiDataInfo,
+    dftfe::dftUtils::constraintMatrixInfo<memorySpace> constraintsMatrixPsiDataInfo,
       constraintsMatrixAdjointDataInfo;
 
-
-    const dealii::MatrixFree<3, double> *    d_matrixFreeDataParent;
-    const dealii::MatrixFree<3, double> *    d_matrixFreeDataChild;
+    dftfe::linearAlgebra::MultiVector<double, memorySpace> psiBlockVecMemSpace,
+      multiVectorAdjointOutputWithPsiConstraintsMemSpace,
+      adjointInhomogenousDirichletValuesMemSpace, multiVectorAdjointOutputWithAdjointConstraintsMemSpace;
     const dealii::AffineConstraints<double> *d_constraintMatrixHomogeneousPsi;
     const dealii::AffineConstraints<double>
                                             *d_constraintMatrixHomogeneousAdjoint;
     const dealii::AffineConstraints<double> *d_constraintMatrixPot;
-    dftUtils::constraintMatrixInfo           d_constraintsMatrixDataInfoPot;
+    dftfe::dftUtils::constraintMatrixInfo<memorySpace>           d_constraintsMatrixDataInfoPot;
     KohnShamHamiltonianOperator<
       memorySpace> *                       d_kohnShamClass;
 
-    std::shared_ptr<TransferDataBetweenMeshesBase> d_transferDataPtr;
+    std::shared_ptr<TransferDataBetweenMeshesIncompatiblePartitioning<memorySpace>> d_transferDataPtr;
     std::vector<double>   d_kpointWeights;
 
     std::vector<double> d_childCellJxW, d_childCellShapeFunctionValue;
@@ -187,6 +203,7 @@ namespace dftfe
     const dealii::DoFHandler<3> *d_dofHandlerParent;
     const dealii::DoFHandler<3> *d_dofHandlerChild;
     const dftParameters *        d_dftParams;
+    const inverseDFTParameters * d_inverseDFTParams;
 
     distributedCPUVec<double>        d_MInvSqrt;
     distributedCPUVec<double>        d_MSqrt;
@@ -204,7 +221,14 @@ namespace dftfe
     double                                          d_lossPreviousIteration;
     double                                          d_tolForChebFiltering;
     elpaScalaManager *                              d_elpaScala;
+#ifdef DFTFE_WITH_DEVICE
+
+    chebyshevOrthogonalizedSubspaceIterationSolverDevice *d_subspaceIterationSolver;
+
+#else
     chebyshevOrthogonalizedSubspaceIterationSolver *d_subspaceIterationSolver;
+#endif
+
 
     std::vector<std::vector<double>> d_residualNormWaveFunctions;
     std::vector<std::vector<double>> d_eigenValues;
@@ -213,10 +237,27 @@ namespace dftfe
     dealii::ConditionalOStream pcout;
 
     // TODO implemented for debugging purpose
-    std::vector<std::vector<std::vector<double>>>
+    std::vector< dftfe::utils::MemoryStorage<double,
+                                            dftfe::utils::MemorySpace::HOST>>
       d_targetPotValuesParentQuadData;
 
-    bool d_resizeGPUVecDuringInterpolation, d_resizeCPUVecDuringInterpolation;
+    bool d_resizeMemSpaceVecDuringInterpolation;
+
+    dftfe::dftClass<FEOrder, FEOrder, memorySpace> *d_dftClassPtr;
+
+    std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>> d_BLASWrapperPtr;
+
+    std::vector<std::shared_ptr<
+      dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>>
+      d_basisOperationsParentPtr;
+
+      std::shared_ptr<
+        dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
+      d_basisOperationsChildPtr;
+
+      unsigned int d_numCellsParent, d_numCellsChild;
+
+      unsigned int cellBlockSizeLimit;
   };
 } // end of namespace dftfe
 #endif // DFTFE_INVERSEDFTSOLVERFUNCTION_H

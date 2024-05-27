@@ -48,13 +48,21 @@ namespace dftfe
         ValueTypeBasisCoeff *quadratureValues,
         ValueTypeBasisCoeff *quadratureGradients,
         dftfe::linearAlgebra::MultiVector<ValueTypeBasisCoeff, memorySpace>
-          &nodalData) const
+          &nodalData,
+        dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
+          & mapQuadIdToProcId) const
     {
-      integrateWithBasisKernel(quadratureValues,
-                               quadratureGradients,
-                               nodalData,
-                               std::pair<unsigned int, unsigned int>(0,
-                                                                     d_nCells));
+      for ( unsigned int iCell = 0 ; iCell < d_nCells; iCell += d_cellsBlockSize)
+        {
+          unsigned int maxCellId = std::min(iCell + d_cellsBlockSize, d_nCells);
+          std::pair<unsigned int, unsigned int> cellRange =
+            std::make_pair(iCell, maxCellId);
+          integrateWithBasisKernel(quadratureValues,
+                                   quadratureGradients,
+                                   nodalData,
+                                   mapQuadIdToProcId,
+                                   cellRange);
+        }
     }
 
 
@@ -259,124 +267,75 @@ namespace dftfe
         const ValueTypeBasisCoeff *quadratureGradients,
         dftfe::linearAlgebra::MultiVector<ValueTypeBasisCoeff, memorySpace>
           &                                         nodalData,
+        dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
+                                                    & mapQuadIdToProcId,
         const std::pair<unsigned int, unsigned int> cellRange) const
     {
       const ValueTypeBasisCoeff scalarCoeffAlpha = ValueTypeBasisCoeff(1.0),
                                 scalarCoeffBeta  = ValueTypeBasisCoeff(0.0);
       if (quadratureValues != NULL)
         {
-          d_BLASWrapperPtr->xgemmStridedBatched(
+          auto shapePtr = d_shapeFunctionData.find(d_quadratureID)->second;
+
+          std::cout<<"size of shape func = "<<shapePtr.size()<<"\n";
+
+          auto jxwHost = d_JxWData.find(d_quadratureID)->second;
+          std::cout<<" nVec = "<<d_nVectors<<" quads per cell = "<< d_nQuadsPerCell[d_quadratureIndex]<<
+            " jxw size = "<<jxwHost.size()<<" tempCellValuesBlock size = "<<tempCellValuesBlock.size();
+          std::cout<<" mapQuadIdToProcId size = "<<mapQuadIdToProcId.size()<<"\n";
+
+//          for ( unsigned int iQuad = 0; iQuad < d_nQuadsPerCell[d_quadratureIndex]*(cellRange.second - cellRange.first); iQuad++)
+//            {
+//              for (unsigned int iBlock = 0; iBlock< d_nVectors;iBlock++)
+//              {
+//                tempCellValuesBlock.data()[iQuad*d_nVectors+ iBlock] =
+//                  (*(quadratureValues + cellRange.first*d_nQuadsPerCell[d_quadratureIndex]*d_nVectors + iQuad*d_nVectors+ iBlock))*
+//                  (*(d_JxWData.find(d_quadratureID)->second.data() + cellRange.first*d_nQuadsPerCell[d_quadratureIndex] + iQuad));
+//              }
+//            }
+
+          d_BLASWrapperPtr->stridedBlockScaleCopy(
+            d_nVectors,
+            d_nQuadsPerCell[d_quadratureIndex]*(cellRange.second - cellRange.first),
+            1.0,
+            d_JxWData.find(d_quadratureID)->second.data() + cellRange.first*d_nQuadsPerCell[d_quadratureIndex],
+            quadratureValues,
+            tempCellValuesBlock.data(),
+            mapQuadIdToProcId.data() + cellRange.first*d_nQuadsPerCell[d_quadratureIndex]);
+
+//          for( unsigned int iCell = cellRange.first ;iCell < cellRange.second; iCell++)
+//            {
+//              unsigned int cellId = iCell - cellRange.first;
+//
+//              for ( unsigned int iBlock =  0 ; iBlock < d_nVectors;  iBlock++)
+//                {
+//                  for ( unsigned int iNode = 0 ; iNode < d_nDofsPerCell; iNode++ )
+//                    {
+//                      for ( unsigned int jQuad = 0 ; jQuad < d_nQuadsPerCell[d_quadratureIndex]; jQuad++)
+//                        {
+//                          tempCellNodalData.data()[cellId*d_nDofsPerCell*d_nVectors + iNode*d_nVectors + iBlock] +=
+//                            1.0*(*(tempCellValuesBlock.data() + cellId*d_nQuadsPerCell[d_quadratureIndex]*d_nVectors + jQuad*d_nVectors + iBlock))*
+//                            d_shapeFunctionData.find(d_quadratureID)->second.data()[iNode +jQuad*d_nDofsPerCell];
+//                        }
+//                    }
+//                }
+//
+//            }
+
+
+
+            d_BLASWrapperPtr->xgemmStridedBatched(
             'N',
             'T',
             d_nVectors,
             d_nDofsPerCell,
             d_nQuadsPerCell[d_quadratureIndex],
             &scalarCoeffAlpha,
-            quadratureValues,
+            tempCellValuesBlock.data(),
             d_nVectors,
             d_nVectors * d_nQuadsPerCell[d_quadratureIndex],
             d_shapeFunctionData.find(d_quadratureID)->second.data(),
-            d_nQuadsPerCell[d_quadratureIndex],
-            0,
-            &scalarCoeffBeta,
-            tempCellNodalData.data(),
-            d_nVectors,
-            d_nVectors * d_nDofsPerCell,
-            cellRange.second - cellRange.first);
-        }
-      if (quadratureGradients != NULL)
-        {
-          if (areAllCellsCartesian)
-            {
-              tempQuadratureGradientsData.template copyFrom<memorySpace>(
-                quadratureGradients,
-                3 * d_nQuadsPerCell[d_quadratureIndex] * d_nVectors *
-                  (cellRange.second - cellRange.first),
-                3 * d_nQuadsPerCell[d_quadratureIndex] * d_nVectors *
-                  cellRange.first,
-                0);
-              d_BLASWrapperPtr->stridedBlockScale(
-                d_nQuadsPerCell[d_quadratureIndex] * d_nVectors,
-                3 * (cellRange.second - cellRange.first),
-                ValueTypeBasisCoeff(1.0),
-                d_inverseJacobianData.find(0)->second.data() +
-                  cellRange.first * 3,
-                tempQuadratureGradientsData.data());
-            }
-          else if (areAllCellsAffine)
-            {
-              d_BLASWrapperPtr->xgemmStridedBatched(
-                'N',
-                'T',
-                d_nQuadsPerCell[d_quadratureIndex] * d_nVectors,
-                3,
-                3,
-                &scalarCoeffAlpha,
-                quadratureGradients,
-                d_nQuadsPerCell[d_quadratureIndex] * d_nVectors,
-                d_nQuadsPerCell[d_quadratureIndex] * d_nVectors * 3,
-                d_inverseJacobianData.find(0)->second.data() +
-                  9 * cellRange.first,
-                3,
-                9,
-                &scalarCoeffBeta,
-                tempQuadratureGradientsData.data(),
-                d_nQuadsPerCell[d_quadratureIndex] * d_nVectors,
-                d_nVectors * d_nQuadsPerCell[d_quadratureIndex] * 3,
-                cellRange.second - cellRange.first);
-            }
-          else
-            {
-              if (memorySpace == dftfe::utils::MemorySpace::HOST)
-                dftfe::basis::FEBasisOperationsKernelsInternal::
-                  reshapeToNonAffineLayoutHost(
-                    d_nVectors,
-                    d_nQuadsPerCell[d_quadratureIndex],
-                    (cellRange.second - cellRange.first),
-                    quadratureGradients,
-                    tempQuadratureGradientsDataNonAffine.data());
-              else
-                dftfe::basis::FEBasisOperationsKernelsInternal::
-                  reshapeToNonAffineLayoutDevice(
-                    d_nVectors,
-                    d_nQuadsPerCell[d_quadratureIndex],
-                    (cellRange.second - cellRange.first),
-                    quadratureGradients,
-                    tempQuadratureGradientsDataNonAffine.data());
-              d_BLASWrapperPtr->xgemmStridedBatched(
-                'N',
-                'T',
-                d_nVectors,
-                3,
-                3,
-                &scalarCoeffAlpha,
-                tempQuadratureGradientsDataNonAffine.data(),
-                d_nVectors,
-                d_nVectors * 3,
-                d_inverseJacobianData.find(d_quadratureID)->second.data() +
-                  9 * cellRange.first * d_nQuadsPerCell[d_quadratureIndex],
-                3,
-                9,
-                &scalarCoeffBeta,
-                tempQuadratureGradientsData.data(),
-                d_nVectors,
-                d_nVectors * 3,
-                (cellRange.second - cellRange.first) *
-                  d_nQuadsPerCell[d_quadratureIndex]);
-            }
-          d_BLASWrapperPtr->xgemmStridedBatched(
-            'N',
-            'T',
-            d_nVectors,
             d_nDofsPerCell,
-            d_nQuadsPerCell[d_quadratureIndex] * 3,
-            &scalarCoeffAlpha,
-            tempQuadratureGradientsData.data(),
-            d_nVectors,
-            d_nVectors * d_nQuadsPerCell[d_quadratureIndex],
-            d_shapeFunctionGradientDataInternalLayout.find(d_quadratureID)
-              ->second.data(),
-            d_nQuadsPerCell[d_quadratureIndex],
             0,
             &scalarCoeffBeta,
             tempCellNodalData.data(),
@@ -384,6 +343,106 @@ namespace dftfe
             d_nVectors * d_nDofsPerCell,
             cellRange.second - cellRange.first);
         }
+//      if (quadratureGradients != NULL)
+//        {
+//          if (areAllCellsCartesian)
+//            {
+//              tempQuadratureGradientsData.template copyFrom<memorySpace>(
+//                quadratureGradients,
+//                3 * d_nQuadsPerCell[d_quadratureIndex] * d_nVectors *
+//                  (cellRange.second - cellRange.first),
+//                3 * d_nQuadsPerCell[d_quadratureIndex] * d_nVectors *
+//                  cellRange.first,
+//                0);
+//              d_BLASWrapperPtr->stridedBlockScale(
+//                d_nQuadsPerCell[d_quadratureIndex] * d_nVectors,
+//                3 * (cellRange.second - cellRange.first),
+//                ValueTypeBasisCoeff(1.0),
+//                d_inverseJacobianData.find(0)->second.data() +
+//                  cellRange.first * 3,
+//                tempQuadratureGradientsData.data());
+//            }
+//          else if (areAllCellsAffine)
+//            {
+//              d_BLASWrapperPtr->xgemmStridedBatched(
+//                'N',
+//                'T',
+//                d_nQuadsPerCell[d_quadratureIndex] * d_nVectors,
+//                3,
+//                3,
+//                &scalarCoeffAlpha,
+//                quadratureGradients,
+//                d_nQuadsPerCell[d_quadratureIndex] * d_nVectors,
+//                d_nQuadsPerCell[d_quadratureIndex] * d_nVectors * 3,
+//                d_inverseJacobianData.find(0)->second.data() +
+//                  9 * cellRange.first,
+//                3,
+//                9,
+//                &scalarCoeffBeta,
+//                tempQuadratureGradientsData.data(),
+//                d_nQuadsPerCell[d_quadratureIndex] * d_nVectors,
+//                d_nVectors * d_nQuadsPerCell[d_quadratureIndex] * 3,
+//                cellRange.second - cellRange.first);
+//            }
+//          else
+//            {
+//              if (memorySpace == dftfe::utils::MemorySpace::HOST)
+//                dftfe::basis::FEBasisOperationsKernelsInternal::
+//                  reshapeToNonAffineLayoutHost(
+//                    d_nVectors,
+//                    d_nQuadsPerCell[d_quadratureIndex],
+//                    (cellRange.second - cellRange.first),
+//                    quadratureGradients,
+//                    tempQuadratureGradientsDataNonAffine.data());
+//              else
+//                dftfe::basis::FEBasisOperationsKernelsInternal::
+//                  reshapeToNonAffineLayoutDevice(
+//                    d_nVectors,
+//                    d_nQuadsPerCell[d_quadratureIndex],
+//                    (cellRange.second - cellRange.first),
+//                    quadratureGradients,
+//                    tempQuadratureGradientsDataNonAffine.data());
+//              d_BLASWrapperPtr->xgemmStridedBatched(
+//                'N',
+//                'T',
+//                d_nVectors,
+//                3,
+//                3,
+//                &scalarCoeffAlpha,
+//                tempQuadratureGradientsDataNonAffine.data(),
+//                d_nVectors,
+//                d_nVectors * 3,
+//                d_inverseJacobianData.find(d_quadratureID)->second.data() +
+//                  9 * cellRange.first * d_nQuadsPerCell[d_quadratureIndex],
+//                3,
+//                9,
+//                &scalarCoeffBeta,
+//                tempQuadratureGradientsData.data(),
+//                d_nVectors,
+//                d_nVectors * 3,
+//                (cellRange.second - cellRange.first) *
+//                  d_nQuadsPerCell[d_quadratureIndex]);
+//            }
+//          d_BLASWrapperPtr->xgemmStridedBatched(
+//            'N',
+//            'T',
+//            d_nVectors,
+//            d_nDofsPerCell,
+//            d_nQuadsPerCell[d_quadratureIndex] * 3,
+//            &scalarCoeffAlpha,
+//            tempQuadratureGradientsData.data(),
+//            d_nVectors,
+//            d_nVectors * d_nQuadsPerCell[d_quadratureIndex],
+//            d_shapeFunctionGradientDataInternalLayout.find(d_quadratureID)
+//              ->second.data(),
+//            d_nQuadsPerCell[d_quadratureIndex],
+//            0,
+//            &scalarCoeffBeta,
+//            tempCellNodalData.data(),
+//            d_nVectors,
+//            d_nVectors * d_nDofsPerCell,
+//            cellRange.second - cellRange.first);
+//        }
       accumulateFromCellNodalDataKernel(tempCellNodalData.data(),
                                         nodalData,
                                         cellRange);

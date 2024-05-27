@@ -1015,7 +1015,7 @@ namespace dftfe
       for (unsigned int i = 0; i < N; ++i)
         {
           for (unsigned int j = 0; j < dim; ++j)
-            coords[i][j] *= C_angs2Bohr;
+            coords[i][j] *= C_AngToBohr;
         }
     }
 
@@ -1643,13 +1643,13 @@ namespace dftfe
               {
                 const double diff = std::abs(
                   d_SMat[quadIndex][i * numBasis + j] - SMatExternal[i][j]);
-                if (diff > DFTFE_SMAT_DIFF_TOL)
-                  pcout
-                    << "Mismatch in evaluated and external overlap (S) matrix "
-                       " for pairs "
-                    << i << ", " << j << ". Evaluated val: "
-                    << d_SMat[quadIndex][i * numBasis + j]
-                    << " External val: " << SMatExternal[i][j] << std::endl;
+//                if (diff > DFTFE_SMAT_DIFF_TOL)
+//                  pcout
+//                    << "Mismatch in evaluated and external overlap (S) matrix "
+//                       " for pairs "
+//                    << i << ", " << j << ". Evaluated val: "
+//                    << d_SMat[quadIndex][i * numBasis + j]
+//                    << " External val: " << SMatExternal[i][j] << std::endl;
               }
           }
 

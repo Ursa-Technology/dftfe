@@ -20,11 +20,16 @@
 //
 // dft header
 //
+#include "InverseDFT.h"
+#include "inverseDFTParameters.h"
+
 #include "dftfeWrapper.h"
 #include "runParameters.h"
 #include "molecularDynamicsClass.h"
 #include "nudgedElasticBandClass.h"
 #include "geometryOptimizationClass.h"
+
+
 
 //
 // C++ headers
@@ -96,6 +101,8 @@ main(int argc, char *argv[])
                 "mpirun -np nProcs executable parameterfile.prm\n"
                 "\n"));
   const std::string parameter_file = argv[1];
+
+  const std::string inverse_parameter_file = argv[2];
 
   dftfe::runParameters runParams;
   runParams.parse_parameters(parameter_file);
@@ -244,9 +251,49 @@ main(int argc, char *argv[])
                                        runParams.useDevice);
       dftfeWrapped.run();
     }
+  else if (runParams.solvermode == "INVERSE")
+    {
 
+      std::cout<<" running a inverse calc\n";
+      dftfe::dftfeWrapper dftfeWrapped(parameter_file,
+                                       MPI_COMM_WORLD,
+                                       true,
+                                       true,
+                                       "GS",
+                                       runParams.restartFilesPath,
+                                       runParams.verbosity,
+                                       runParams.useDevice);
+
+      auto dftBasePtr = dftfeWrapped.getDftfeBasePtr();
+
+      dftfe::dftParameters dftParams;
+      dftParams.parse_parameters(parameter_file,
+                                 MPI_COMM_WORLD,
+                                 true,
+                                 "GS",
+                                 runParams.restartFilesPath,
+                                 4,
+                                 false);
+
+      dftfe::inverseDFTParameters invParams;
+      invParams.parse_parameters(inverse_parameter_file,
+                                 MPI_COMM_WORLD,
+                                 true);
+
+      dftfe::inverseDFT<2,2,dftfe::utils::MemorySpace::HOST> invDFTObj(*dftBasePtr,
+                                  dftParams,
+                                  invParams,
+                                  dftBasePtr->getMPIParent(),
+                                  dftBasePtr->getMPIDomain(),
+                                  dftBasePtr->getMPIInterBand(),
+                                  dftBasePtr->getMPIInterPool());
+
+      dftfeWrapped.run();
+      invDFTObj.run();
+    }
   else
     {
+      std::cout<<" running a GS\n";
       dftfe::dftfeWrapper dftfeWrapped(parameter_file,
                                        MPI_COMM_WORLD,
                                        true,

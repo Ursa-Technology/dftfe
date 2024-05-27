@@ -259,6 +259,40 @@ namespace dftfe
       }
     }
 
+    template <typename ValueType>
+    __global__ void
+    addVecOverContinuousIndexKernel(const dftfe::size_type numContiguousBlocks,
+                                    const dftfe::size_type contiguousBlockSize,
+                                    const ValueType *      input1,
+                                    const ValueType *      input2,
+                                    ValueType *            output)
+    {
+      const dftfe::size_type globalThreadId =
+        blockIdx.x * blockDim.x + threadIdx.x;
+      const dftfe::size_type numberEntries = numContiguousBlocks;
+
+      for (dftfe::size_type index = globalThreadId; index < numberEntries;
+           index += blockDim.x * gridDim.x)
+        {
+          for (dftfe::size_type iBlock = 0; iBlock < contiguousBlockSize;
+               iBlock++)
+            {
+              //                    output[index] +=
+              //                    input1[index*contiguousBlockSize + iBlock]*
+              //                            input2[index*contiguousBlockSize +
+              //                            iBlock];
+
+              dftfe::utils::copyValue(
+                output + index,
+                dftfe::utils::add(
+                  output[index],
+                  dftfe::utils::mult(
+                    input1[index * contiguousBlockSize + iBlock],
+                    input2[index * contiguousBlockSize + iBlock])));
+            }
+        }
+    }
+
 
     // x=a*x, with inc=1
     template <typename ValueType1, typename ValueType2>

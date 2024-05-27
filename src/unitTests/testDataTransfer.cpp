@@ -15,15 +15,163 @@
 // @author Vishal Subramanian
 //
 
+#include "unitTests.h"
+#include "dftParameters.h"
+#include "triangulationManager.h"
+#include "TransferBetweenMeshesIncompatiblePartitioning.h"
+#include "MPIPatternP2P.h"
+#include "vectorUtilities.h"
 
 namespace unitTest
 {
+  namespace {
+    double
+    value(double x, double y, double z, unsigned int index)
+    {
+      double val = 1;
+      val        = x * x + y * y + z * z;
+      return val;
+    }
+  }
+
+  void testAccumulateInsert(const MPI_Comm & mpiComm)
+  {
+
+    // Works with just two processors.
+    //if you have more. you are screwed.
+
+    std::pair<dftfe::global_size_type,dftfe::global_size_type> localRange;
+    std::vector<dftfe::global_size_type> ghostRange;
+
+    dftfe::utils::MemoryStorage<dftfe::dataTypes::number,
+                                dftfe::utils::MemorySpace::HOST> vecData;
+
+    dftfe::size_type thisRankId = dealii::Utilities::MPI::this_mpi_process(mpiComm);
+
+    dftfe::size_type numMPIRank = dealii::Utilities::MPI::n_mpi_processes(mpiComm);
+
+    if(numMPIRank != 2 )
+      {
+        std::cout<<" Errrorrrr num procs is not equal to 2. This function is specifically written for 2 procs \n";
+      }
+
+    if(thisRankId == 0 )
+      {
+        localRange = std::make_pair<dftfe::global_size_type,dftfe::global_size_type>(0, 10);
+        ghostRange.resize(3,0);
+        ghostRange[0] = 11;
+        ghostRange[1] = 14;
+        ghostRange[2] = 16;
+
+      }
+
+    if(thisRankId == 1 )
+      {
+        localRange = std::make_pair<dftfe::global_size_type,dftfe::global_size_type>(10, 17);
+        ghostRange.resize(0,0);
+      }
+
+    std::cout<<std::flush;
+    MPI_Barrier(mpiComm);
+
+
+    std::shared_ptr<dftfe::utils::mpi::MPIPatternP2P<dftfe::utils::MemorySpace::HOST>> mpiP2PObjPtr =
+      std::make_shared<dftfe::utils::mpi::MPIPatternP2P<dftfe::utils::MemorySpace::HOST>> (localRange, ghostRange, mpiComm);
+
+    dftfe::utils::mpi::MPICommunicatorP2P<dftfe::dataTypes::number,dftfe::utils::MemorySpace::HOST> mpiCommP2PObj(mpiP2PObjPtr,1);
+
+
+    if(thisRankId == 1 )
+      {
+        vecData.resize(7,0.0);
+
+        for( dftfe::size_type iPoint = 0 ;iPoint < 7; iPoint++)
+          {
+            vecData[iPoint] = 2.0;
+          }
+
+      }
+
+    if(thisRankId == 0 )
+      {
+        vecData.resize(13,0.0);
+
+        for( dftfe::size_type iPoint = 0 ;iPoint < 10; iPoint++)
+          {
+            vecData[iPoint] = iPoint;
+          }
+        vecData[10] = 17;
+        vecData[11] = 24;
+        vecData[12] = 12;
+
+      }
+
+    std::cout<<std::flush;
+    MPI_Barrier(mpiComm);
+
+
+    if(thisRankId == 0)
+      {
+        std::cout<<" This rank = 0 \n";
+        std::cout<<" Vec data = ";
+        for (dftfe::size_type iPoint = 0 ;iPoint < 10; iPoint++)
+          std::cout<<vecData[iPoint]<<"  ";
+        std::cout<<"\n";
+      }
+
+    std::cout<<std::flush;
+    MPI_Barrier(mpiComm);
+
+    if(thisRankId == 1)
+      {
+        std::cout<<" This rank = 1 \n";
+        std::cout<<" Vec data = ";
+        for (dftfe::size_type iPoint = 0 ;iPoint < 7; iPoint++)
+          std::cout<<vecData[iPoint]<<"  ";
+        std::cout<<"\n";
+      }
+
+    std::cout<<std::flush;
+    MPI_Barrier(mpiComm);
+
+    mpiCommP2PObj.accumulateInsertLocallyOwned(vecData);
+
+    std::cout<<std::flush;
+    MPI_Barrier(mpiComm);
+
+
+    if(thisRankId == 0)
+      {
+        std::cout<<" This rank = 0 \n";
+        std::cout<<" Vec data = ";
+        for (dftfe::size_type iPoint = 0 ;iPoint < 10; iPoint++)
+          std::cout<<vecData[iPoint]<<"  ";
+        std::cout<<"\n";
+      }
+
+    std::cout<<std::flush;
+    MPI_Barrier(mpiComm);
+
+    if(thisRankId == 1)
+      {
+        std::cout<<" This rank = 1 \n";
+        std::cout<<" Vec data = ";
+        for (dftfe::size_type iPoint = 0 ;iPoint < 7; iPoint++)
+          std::cout<<vecData[iPoint]<<"  ";
+        std::cout<<"\n";
+      }
+
+    std::cout<<std::flush;
+    MPI_Barrier(mpiComm);
+
+  }
+
   void testTransferFromParentToChildIncompatiblePartitioning( const MPI_Comm &                        mpi_comm_parent,
                                                         const MPI_Comm &                        mpi_comm_domain,
                                                         const MPI_Comm &                        interpoolcomm,
                                                         const MPI_Comm &                        interbandgroup_comm,
                                                         const unsigned int                      FEOrder,
-                                                        const dftParameters &                   dftParams,
+                                                        const dftfe::dftParameters &                   dftParams,
                                                         const std::vector<std::vector<double>> &atomLocations,
                                                         const std::vector<std::vector<double>> &imageAtomLocations,
                                                         const std::vector<int> &                imageIds,
@@ -38,22 +186,22 @@ namespace unitTest
     std::cout<<std::flush;
     MPI_Barrier(mpi_comm_domain);
 
-    triangulationManager dftMesh(mpi_comm_parent,
+    dftfe::triangulationManager dftMesh(mpi_comm_parent,
                                  mpi_comm_domain,
                                  interpoolcomm,
                                  interbandgroup_comm,
                                  FEOrder,
                                  dftParams);
 
-    dftParameters dftParamsVxc(dftParams);
+    dftfe::dftParameters dftParamsVxc(dftParams);
 
-    dftParamsVxc.innerAtomBallRadius = dftParams.VxcInnerDomain;
-    dftParamsVxc.meshSizeInnerBall = dftParams.VxcInnerMeshSize;
+    dftParamsVxc.innerAtomBallRadius = dftParams.innerAtomBallRadius*2;
+    dftParamsVxc.meshSizeInnerBall = dftParams.meshSizeInnerBall/2;
     dftParamsVxc.meshSizeOuterDomain = dftParams.meshSizeOuterDomain;
     dftParamsVxc.outerAtomBallRadius = dftParams.outerAtomBallRadius;
     dftParamsVxc.meshSizeOuterBall = dftParams.meshSizeOuterBall;
 
-    triangulationManager VxcMesh(mpi_comm_parent,
+    dftfe::triangulationManager VxcMesh(mpi_comm_parent,
                                  mpi_comm_domain,
                                  interpoolcomm,
                                  interbandgroup_comm,
@@ -66,19 +214,18 @@ namespace unitTest
       imageIds,
       nearestAtomDistances,
       domainBoundingVectors,
-      false,  // generateSerialTria
-      false); // generateElectrostaticsTria
+      false);  // generateSerialTria
 
-    const parallel::distributed::Triangulation<3> &parallelMeshUnmoved =
+    const dealii::parallel::distributed::Triangulation<3> &parallelMeshUnmoved =
       dftMesh.getParallelMeshUnmoved();
-    const parallel::distributed::Triangulation<3> &parallelMeshMoved =
+    const dealii::parallel::distributed::Triangulation<3> &parallelMeshMoved =
       dftMesh.getParallelMeshMoved();
 
     std::cout<<std::flush;
     MPI_Barrier(mpi_comm_domain);
 
 
-    //      triangulationManagerVxc VxcMesh(mpi_comm_parent,
+    //      TriangulationManagerVxc VxcMesh(mpi_comm_parent,
     //                                      mpi_comm_domain,
     //                                      interpoolcomm,
     //                                      interbandgroup_comm,
@@ -110,21 +257,22 @@ namespace unitTest
       imageIds,
       nearestAtomDistances,
       domainBoundingVectors,
-      false,  // generateSerialTria
-      false); // generateElectrostaticsTria
+      false);  // generateSerialTria
 
-    const parallel::distributed::Triangulation<3> &parallelMeshMovedVxc =
+    const dealii::parallel::distributed::Triangulation<3> &parallelMeshMovedVxc =
       VxcMesh.getParallelMeshMoved();
 
-    const parallel::distributed::Triangulation<3> &parallelMeshUnmovedVxc =
+    const dealii::parallel::distributed::Triangulation<3> &parallelMeshUnmovedVxc =
       VxcMesh.getParallelMeshUnmoved();
 
     std::cout<<std::flush;
     MPI_Barrier(mpi_comm_domain);
     // construct dofHandler and constraints matrix
 
-    dealii::DoFHandler<3> dofHandlerTria(parallelMeshMoved),
-      dofHandlerTriaVxc(parallelMeshMovedVxc);
+    dealii::DoFHandler<3> dofHandlerTria(parallelMeshMoved);
+
+    dealii::DoFHandler<3> dofHandlerTriaVxc(parallelMeshMovedVxc);
+//    dealii::DoFHandler<3> dofHandlerTriaVxc(parallelMeshMoved);
     const dealii::FE_Q<3> finite_elementHigh(FEOrder + 2);
     const dealii::FE_Q<3> finite_elementLow(FEOrder);
 
@@ -188,7 +336,7 @@ namespace unitTest
                              constraintMatrixVxc,
                              gaussQuadLow);
 
-    distributedCPUMultiVec<double> parentVec, childVec;
+    dftfe::distributedCPUMultiVec<double> parentVec, childVec;
 
     unsigned int blockSize = 1;
 
@@ -196,14 +344,12 @@ namespace unitTest
     dftfe::linearAlgebra::createMultiVectorFromDealiiPartitioner(
       matrixFreeData.get_vector_partitioner(0), blockSize, parentVec);
 
-    dftUtils::constraintMatrixInfo multiVectorConstraintsParent;
+    dftfe::dftUtils::constraintMatrixInfo<dftfe::utils::MemorySpace::HOST>
+      multiVectorConstraintsParent;
     multiVectorConstraintsParent.initialize(
       matrixFreeData.get_vector_partitioner(0), constraintMatrix);
 
-    multiVectorConstraintsParent.precomputeMaps(parentVec.getMPIPatternP2P(),
-                                                blockSize);
-
-    dftfe::utils::MemoryStorage<dataTypes::number,
+    dftfe::utils::MemoryStorage<dftfe::dataTypes::number,
                                 dftfe::utils::MemorySpace::HOST>
       quadValuesChildAnalytical, quadValuesChildComputed;
 
@@ -224,9 +370,9 @@ namespace unitTest
     dealii::types::global_dof_index numberDofsParent = dofHandlerTria.n_dofs();
 
     std::shared_ptr<
-      const utils::mpi::MPIPatternP2P<dftfe::utils::MemorySpace::HOST>>
+      const dftfe::utils::mpi::MPIPatternP2P<dftfe::utils::MemorySpace::HOST>>
       parentMPIPattern = parentVec.getMPIPatternP2P();
-    const std::pair<global_size_type, global_size_type>
+    const std::pair<dftfe::global_size_type, dftfe::global_size_type>
       &locallyOwnedRangeParent = parentMPIPattern->getLocallyOwnedRange();
 
     for (dealii::types::global_dof_index iNode = locallyOwnedRangeParent.first;
@@ -245,38 +391,35 @@ namespace unitTest
           }
       }
 
-    multiVectorConstraintsParent.distribute(parentVec, blockSize);
+    parentVec.updateGhostValues();
+    multiVectorConstraintsParent.distribute(parentVec);
 
     std::cout<<std::flush;
     MPI_Barrier(mpi_comm_domain);
 
 
-    //    parentVec.update_ghost_values();
 
-
-
-    TransferDataBetweenMeshesIncompatiblePartitioning inverseDftDoFManagerObj(matrixFreeData,
+    dftfe::TransferDataBetweenMeshesIncompatiblePartitioning<dftfe::utils::MemorySpace::HOST> inverseDftDoFManagerObj(matrixFreeData,
                                                                               0,
                                                                               0,
                                                                               matrixFreeDataVxc,
                                                                               0,
                                                                               0,
-                                                                              mpi_comm_domain,
-                                                                              false);
+                                                                              mpi_comm_domain);
 
     std::cout<<std::flush;
     MPI_Barrier(mpi_comm_domain);
 
     std::vector<dealii::types::global_dof_index>
       fullFlattenedArrayCellLocalProcIndexIdMapParent;
-    vectorTools::computeCellLocalIndexSetMap(
+    dftfe::vectorTools::computeCellLocalIndexSetMap(
       parentVec.getMPIPatternP2P(),
       matrixFreeData,
       0,
       blockSize,
       fullFlattenedArrayCellLocalProcIndexIdMapParent);
 
-    global_size_type numPointsChild = (global_size_type)(totalLocallyOwnedCellsVxc *
+    dftfe::global_size_type numPointsChild = (dftfe::global_size_type)(totalLocallyOwnedCellsVxc *
                                                          numQuadPointsLow * blockSize);
 
     MPI_Allreduce(MPI_IN_PLACE,
@@ -291,10 +434,13 @@ namespace unitTest
 
 
     double startTimeMesh1ToMesh2 = MPI_Wtime();
+    dftfe::utils::MemoryStorage<dftfe::global_size_type, dftfe::utils::MemorySpace::HOST> fullFlattenedArrayCellLocalProcIndexIdMapParentMemStorage;
+    fullFlattenedArrayCellLocalProcIndexIdMapParentMemStorage.resize(fullFlattenedArrayCellLocalProcIndexIdMapParent.size());
+    fullFlattenedArrayCellLocalProcIndexIdMapParentMemStorage.copyFrom(fullFlattenedArrayCellLocalProcIndexIdMapParent);
     inverseDftDoFManagerObj.interpolateMesh1DataToMesh2QuadPoints(
       parentVec,
       blockSize,
-      fullFlattenedArrayCellLocalProcIndexIdMapParent,
+      fullFlattenedArrayCellLocalProcIndexIdMapParentMemStorage,
       quadValuesChildComputed,
       true);
 
@@ -366,14 +512,12 @@ namespace unitTest
     dftfe::linearAlgebra::createMultiVectorFromDealiiPartitioner(
       matrixFreeDataVxc.get_vector_partitioner(0), blockSize, childVec);
 
-    dftUtils::constraintMatrixInfo multiVectorConstraintsChild;
+    dftfe::dftUtils::constraintMatrixInfo<dftfe::utils::MemorySpace::HOST>
+      multiVectorConstraintsChild;
     multiVectorConstraintsChild.initialize(
       matrixFreeDataVxc.get_vector_partitioner(0), constraintMatrixVxc);
 
-    multiVectorConstraintsChild.precomputeMaps(childVec.getMPIPatternP2P(),
-                                               blockSize);
-
-    dftfe::utils::MemoryStorage<dataTypes::number,
+    dftfe::utils::MemoryStorage<double,
                                 dftfe::utils::MemorySpace::HOST>
       quadValuesParentAnalytical, quadValuesParentComputed;
 
@@ -395,9 +539,9 @@ namespace unitTest
       dofHandlerTriaVxc.n_dofs();
 
     std::shared_ptr<
-      const utils::mpi::MPIPatternP2P<dftfe::utils::MemorySpace::HOST>>
+      const dftfe::utils::mpi::MPIPatternP2P<dftfe::utils::MemorySpace::HOST>>
       childMPIPattern = childVec.getMPIPatternP2P();
-    const std::pair<global_size_type, global_size_type>
+    const std::pair<dftfe::global_size_type, dftfe::global_size_type>
       &locallyOwnedRangeChild = childMPIPattern->getLocallyOwnedRange();
 
     for (dealii::types::global_dof_index iNode = locallyOwnedRangeChild.first;
@@ -419,10 +563,11 @@ namespace unitTest
           }
       }
 
-    multiVectorConstraintsChild.distribute(childVec, blockSize);
-    //    childVec.updateGhostValues();
+    childVec.updateGhostValues();
+    multiVectorConstraintsChild.distribute(childVec);
+//       childVec.updateGhostValues();
 
-    global_size_type numPointsParent = totalLocallyOwnedCellsParent *
+    dftfe::global_size_type numPointsParent = totalLocallyOwnedCellsParent *
                                        numQuadPointsHigh * blockSize;
 
     MPI_Allreduce(MPI_IN_PLACE,
@@ -434,9 +579,22 @@ namespace unitTest
     std::cout<<std::flush;
     MPI_Barrier(mpi_comm_domain);
 
+    std::vector<dealii::types::global_dof_index>
+      fullFlattenedArrayCellLocalProcIndexIdMapChild;
+    dftfe::vectorTools::computeCellLocalIndexSetMap(
+      childVec.getMPIPatternP2P(),
+      matrixFreeDataVxc,
+      0,
+      blockSize,
+      fullFlattenedArrayCellLocalProcIndexIdMapChild);
+
+    dftfe::utils::MemoryStorage<dftfe::global_size_type, dftfe::utils::MemorySpace::HOST> fullFlattenedArrayCellLocalProcIndexIdMapChildMemStorage;
+    fullFlattenedArrayCellLocalProcIndexIdMapChildMemStorage.resize(fullFlattenedArrayCellLocalProcIndexIdMapChild.size());
+    fullFlattenedArrayCellLocalProcIndexIdMapChildMemStorage.copyFrom(fullFlattenedArrayCellLocalProcIndexIdMapChild);
+
     double startTimeMesh2ToMesh1 = MPI_Wtime();
-    inverseDftDoFManagerObj.interpolateMesh2DataToMesh1QuadPoints(
-      childVec, blockSize, quadValuesParentComputed, true);
+    inverseDftDoFManagerObj.interpolateMesh2DataToMesh1QuadPoints<double>(
+      childVec, blockSize, fullFlattenedArrayCellLocalProcIndexIdMapChildMemStorage, quadValuesParentComputed, true);
 
     std::cout<<std::flush;
     MPI_Barrier(mpi_comm_domain);
@@ -491,12 +649,12 @@ namespace unitTest
 
         l2Error += diff;
 
-        //        if ( diff > 1e-5)
-        //          {
-        //            std::cout<<"iQuad = " <<iQuad<<" anal =
-        //            "<<quadValuesParentAnalytical[iQuad]<<" comp =
-        //            "<<quadValuesParentComputed[iQuad]<<"\n";
-        //          }
+//                if ( diff > 1e-5)
+//                  {
+//                    std::cout<<"iQuad = " <<iQuad<<" anal ="
+//                              <<quadValuesParentAnalytical[iQuad]<<" comp = "
+//                              <<quadValuesParentComputed[iQuad]<<"\n";
+//                  }
       }
     MPI_Allreduce(
       MPI_IN_PLACE, &l2Error, 1, MPI_DOUBLE, MPI_SUM, mpi_comm_domain);

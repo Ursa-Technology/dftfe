@@ -708,6 +708,25 @@ namespace dftfe
                     mpi_communicator);
     }
 
+    template <typename ValueType>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::hadamardProduct(
+      const unsigned int m,
+      const ValueType *           X,
+      const ValueType *       Y,
+      ValueType * output) const
+    {
+      hadamardProduct<<<
+        (contiguousBlockSize * numContiguousBlocks) /
+            dftfe::utils::DEVICE_BLOCK_SIZE +
+          1,
+        dftfe::utils::DEVICE_BLOCK_SIZE>>>(
+        m,
+        dftfe::utils::makeDataTypeDeviceCompatible(X),
+        dftfe::utils::makeDataTypeDeviceCompatible(Y),
+        dftfe::utils::makeDataTypeDeviceCompatible(output));
+    }
+
     void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
       MultiVectorXDot(const unsigned int contiguousBlockSize,
@@ -724,7 +743,7 @@ namespace dftfe
             dftfe::utils::DEVICE_BLOCK_SIZE +
           1,
         dftfe::utils::DEVICE_BLOCK_SIZE>>>(
-        contiguousBlockSize*numContiguousBlocks,,
+        contiguousBlockSize*numContiguousBlocks,
         dftfe::utils::makeDataTypeDeviceCompatible(X),
         dftfe::utils::makeDataTypeDeviceCompatible(Y),
         dftfe::utils::makeDataTypeDeviceCompatible(tempVector));
@@ -1389,6 +1408,24 @@ namespace dftfe
       xaxpy(size, &alpha, x, 1, y, 1);
     }
 
+    template <typename ValueType>
+    void
+    addVecOverContinuousIndex(const dftfe::size_type numContiguousBlocks,
+                              const dftfe::size_type contiguousBlockSize,
+                              const ValueType *      input1,
+                              const ValueType *      input2,
+                              ValueType *            output)
+    {
+      addVecOverContinuousIndexKernel<<<
+        (numContiguousBlocks) / dftfe::utils::DEVICE_BLOCK_SIZE + 1,
+        dftfe::utils::DEVICE_BLOCK_SIZE>>>(
+        numContiguousBlocks,
+        contiguousBlockSize,
+        dftfe::utils::makeDataTypeDeviceCompatible(input1),
+        dftfe::utils::makeDataTypeDeviceCompatible(input2),
+        dftfe::utils::makeDataTypeDeviceCompatible(output));
+    }
+
     template <typename ValueType1, typename ValueType2>
     void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::xscal(
@@ -1657,8 +1694,8 @@ namespace dftfe
       const dftfe::size_type         contiguousBlockSize,
       const dftfe::size_type         numContiguousBlocks,
       const ValueType1 *            x,
-      const ValueType2 *       beta,
-      ValueType1 *            y)
+      const ValueType1 *       beta,
+      ValueType2 *            y)
     {
       stridedBlockScaleAndAddColumnWiseKernel<<<(contiguousBlockSize *
                                        numContiguousBlocks) /
@@ -2075,6 +2112,21 @@ namespace dftfe
       std::complex<double> * x,
       const double           a,
       const dftfe::size_type n) const;
+
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::hadamardProduct(
+      const unsigned int m,
+      const double *           X,
+      const double *       Y,
+      double * output) const;
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::hadamardProduct(
+      const unsigned int m,
+      const float *           X,
+      const float *       Y,
+      double * output) const;
 
     template void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedCopyToBlock(

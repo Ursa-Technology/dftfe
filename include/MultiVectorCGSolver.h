@@ -13,26 +13,35 @@
 #ifndef DFTFE_MULTIVECTORCGSOLVER_H
 #define DFTFE_MULTIVECTORCGSOLVER_H
 
+#include "MultiVectorLinearSolverProblem.h"
+#include "headers.h"
+#include "MultiVectorSolverClass.h"
+#include "BLASWrapper.h"
+
 namespace dftfe
 {
-  class MultiVectorCGSolver : public MultiVectorSolverClass
+  class MultiVectorCGSolver //: public MultiVectorSolverClass
   {
   public :
 
     MultiVectorCGSolver( const MPI_Comm &mpi_comm_parent,
                         const MPI_Comm &mpi_comm_domain);
-    template <dftfe::utils::MemorySpace memorySpace, typename T>
+
+    template <dftfe::utils::MemorySpace memorySpace>
     void
     solve(MultiVectorLinearSolverProblem<memorySpace> &  problem,
-          dftfe::linearAlgebra::MultiVector<T,
+          std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
+                                                          BLASWrapperPtr,
+          dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                             memorySpace> &  x,
-          dftfe::linearAlgebra::MultiVector<T,
+          dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                             memorySpace> &  NDBCVec,
+          unsigned int                      locallyOwned,
           unsigned int                      blockSize,
           const double                      absTolerance,
           const unsigned int                maxNumberIterations,
           const unsigned int                debugLevel     = 0,
-          bool                              distributeFlag = true) override;
+          bool                              distributeFlag = true) ;//override;
 
   private:
     const MPI_Comm             mpi_communicator;

@@ -26,7 +26,7 @@
 #include <dftUtils.h>
 #include <fileReaders.h>
 #include <meshGenUtils.h>
-#include <triangulationManagerVxc.h>
+#include <TriangulationManagerVxc.h>
 
 //#include "generateMesh.cc"
 //#include "restartUtils.cc"
@@ -97,12 +97,13 @@ namespace dftfe
   //
   // constructor
   //
-  triangulationManagerVxc::triangulationManagerVxc(
+  TriangulationManagerVxc::TriangulationManagerVxc(
     const MPI_Comm &     mpi_comm_parent,
     const MPI_Comm &     mpi_comm_domain,
     const MPI_Comm &     interpoolcomm,
     const MPI_Comm &     interbandgroup_comm,
     const dftParameters &dftParams,
+    const inverseDFTParameters & inverseDFTParams,
     const dealii::parallel::distributed::Triangulation<3, 3>::Settings repartitionFlag)
     : d_mpi_comm_parent(mpi_comm_parent)
     , d_mpi_comm_domain(mpi_comm_domain)
@@ -122,6 +123,7 @@ namespace dftfe
     , d_electrostaticsTriangulationDispVxc(mpi_comm_domain)
     , d_electrostaticsTriangulationForceVxc(mpi_comm_domain)
     , d_dftParams(dftParams)
+    , d_inverseDFTParams(inverseDFTParams)
     , pcout(std::cout, (Utilities::MPI::this_mpi_process(mpi_comm_parent) == 0))
     , computing_timer(pcout, TimerOutput::never, TimerOutput::wall_times)
   {}
@@ -129,12 +131,12 @@ namespace dftfe
   //
   // destructor
   //
-  triangulationManagerVxc::~triangulationManagerVxc()
+  TriangulationManagerVxc::~TriangulationManagerVxc()
   {}
 
 
   void
-  triangulationManagerVxc::generateParallelUnmovedMeshVxc(
+  TriangulationManagerVxc::generateParallelUnmovedMeshVxc(
     const double                                   xcut,
     const parallel::distributed::Triangulation<3> &parallelMeshUnmoved,
     const std::vector<std::vector<double>> &       atomPositions,
@@ -142,7 +144,7 @@ namespace dftfe
   {
     std::vector<double> minCoord, maxCoord;
     // TODO var innerDomainSize is hard coded, read it from dftParams
-    double innerDomainSize = d_dftParams.VxcInnerDomain;
+    double innerDomainSize = d_inverseDFTParams.VxcInnerDomain;
     getSystemExtent(atomPositions, 2, innerDomainSize, minCoord, maxCoord);
     d_parallelTriangulationUnmovedVxc.clear();
     // copy the mesh
@@ -151,15 +153,10 @@ namespace dftfe
 
     dftTria.generateMesh(d_parallelTriangulationUnmovedVxc,
                          d_serialTriangulationVxc,
-                         d_serialTriangulationElectrostaticsVxc,
-                         d_electrostaticsTriangulationRhoVxc,
-                         d_electrostaticsTriangulationDispVxc,
-                         d_electrostaticsTriangulationForceVxc,
                          d_parallelTriaCurrentRefinement,
-                         false, // generateElectrostaticsTria
-                         false, // generateSerialTria
-                         true   // enableManualRepartitioning
-    );
+                         d_serialTriaCurrentRefinement,
+                         false,
+                         true);
     /*
         AssertThrow(
           parallelMeshUnmoved.n_active_cells() ==
@@ -263,7 +260,7 @@ namespace dftfe
   }
 
   void
-  triangulationManagerVxc::generateParallelMovedMeshVxc(
+  TriangulationManagerVxc::generateParallelMovedMeshVxc(
     const parallel::distributed::Triangulation<3> &parallelMeshUnmoved,
     const parallel::distributed::Triangulation<3> &parallelMeshMoved)
   {
@@ -416,7 +413,7 @@ namespace dftfe
   }
 
   void
-  triangulationManagerVxc::computeMapBetweenParentAndChildMesh(
+  TriangulationManagerVxc::computeMapBetweenParentAndChildMesh(
     const parallel::distributed::Triangulation<3> &parallelParentMesh,
     const parallel::distributed::Triangulation<3> &parallelChildMesh,
     std::vector<std::vector<unsigned int>> &       mapParentCellToChildCells,
@@ -510,7 +507,7 @@ namespace dftfe
   // get moved parallel mesh
   //
   parallel::distributed::Triangulation<3> &
-  triangulationManagerVxc::getParallelMovedMeshVxc()
+  TriangulationManagerVxc::getParallelMovedMeshVxc()
   {
     return d_parallelTriangulationMovedVxc;
   }
@@ -519,7 +516,7 @@ namespace dftfe
   // get unmoved parallel mesh
   //
   parallel::distributed::Triangulation<3> &
-  triangulationManagerVxc::getParallelUnmovedMeshVxc()
+  TriangulationManagerVxc::getParallelUnmovedMeshVxc()
   {
     return d_parallelTriangulationUnmovedVxc;
   }

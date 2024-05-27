@@ -38,6 +38,13 @@ namespace dftfe
     {
     public:
       BLASWrapper();
+
+      template <typename ValueType>
+      void
+      hadamardProduct(const unsigned int m,
+                      const ValueType *      X,
+                      const ValueType *      Y,
+                      ValueType * output) const ;
       // Real-Single Precision GEMM
       void
       xgemm(const char         transA,
@@ -160,6 +167,14 @@ namespace dftfe
       xscal(ValueType1 *           x,
             const ValueType2       alpha,
             const dftfe::size_type n) const;
+
+      template <typename ValueType>
+      void
+      addVecOverContinuousIndex(const dftfe::size_type numContiguousBlocks,
+                                const dftfe::size_type contiguousBlockSize,
+                                const ValueType *      input1,
+                                const ValueType *      input2,
+                                ValueType *            output) const;
 
       // Real-Float scaling of Real-vector
 
@@ -617,8 +632,8 @@ namespace dftfe
         const dftfe::size_type         contiguousBlockSize,
         const dftfe::size_type         numContiguousBlocks,
         const ValueType1 *            x,
-        const ValueType2 *       beta,
-        ValueType1 *            y);
+        const ValueType1 *       beta,
+        ValueType2 *            y);
 
       template <typename ValueType1, typename ValueType2>
       void
@@ -639,6 +654,15 @@ namespace dftfe
     {
     public:
       BLASWrapper();
+
+      template <typename ValueType>
+      void
+      hadamardProduct(const unsigned int m,
+                      const ValueType *      X,
+                      const ValueType *      Y,
+                      ValueType * output) const ;
+
+
       // Real-Single Precision GEMM
       void
       xgemm(const char         transA,
@@ -755,6 +779,14 @@ namespace dftfe
             const std::complex<float> *beta,
             std::complex<float> *      y,
             const unsigned int         incy) const;
+
+      template <typename ValueType>
+      void
+      addVecOverContinuousIndex(const dftfe::size_type numContiguousBlocks,
+                                const dftfe::size_type contiguousBlockSize,
+                                const ValueType *      input1,
+                                const ValueType *      input2,
+                                ValueType *            output) const;
 
 
 
@@ -1217,8 +1249,8 @@ namespace dftfe
         const dftfe::size_type         contiguousBlockSize,
         const dftfe::size_type         numContiguousBlocks,
         const ValueType1 *            x,
-        const ValueType2 *       beta,
-        ValueType1 *            y);
+        const ValueType1 *       beta,
+        ValueType2 *            y);
 
       template <typename ValueType1, typename ValueType2>
       void

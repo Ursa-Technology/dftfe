@@ -19,7 +19,7 @@
  * @author Vishal Subramanian, Bikash Kanungo
  */
 
-#include "transferDataBetweenMeshesIncompatiblePartitioning.h"
+#include "TransferBetweenMeshesIncompatiblePartitioning.h"
 
 namespace dftfe
 {
@@ -31,10 +31,8 @@ namespace dftfe
                                                       const dealii::MatrixFree<3, double> &matrixFreeMesh2,
                                                       const unsigned int                   matrixFreeMesh2VectorComponent,
                                                       const unsigned int matrixFreeMesh2QuadratureComponent,
-                                                      const MPI_Comm & mpiComm,
-                                                      const bool useDevice):
-    d_mpiComm(mpiComm),
-    d_useDevice(useDevice)
+                                                      const MPI_Comm & mpiComm):
+    d_mpiComm(mpiComm)
   {
 
     d_matrixFreeMesh1Ptr             = &matrixFreeMesh1;
@@ -142,18 +140,16 @@ namespace dftfe
 
     double startMapMesh1To2 = MPI_Wtime();
 
-    d_mesh1toMesh2 = std::make_shared<MeshTransferIncompatiblePartitioning>(*dofHandlerMesh1,
+    d_mesh1toMesh2 = std::make_shared<InterpolateCellWiseDataToPoints<memorySpace>>(*dofHandlerMesh1,
                                                                             quadPointsMesh2,
-                                                                            d_useDevice,
                                                                             d_mpiComm);
 
     std::cout<<std::flush;
     MPI_Barrier(d_mpiComm);
     double endMapMesh1To2 = MPI_Wtime();
 
-    d_mesh2toMesh1 = std::make_shared<MeshTransferIncompatiblePartitioning>(*dofHandlerMesh2,
+    d_mesh2toMesh1 = std::make_shared<InterpolateCellWiseDataToPoints<memorySpace>>(*dofHandlerMesh2,
                                                                             quadPointsMesh1,
-                                                                            d_useDevice,
                                                                             d_mpiComm);
 
     std::cout<<std::flush;
@@ -191,16 +187,15 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   template <typename T>
   void
-  TransferDataBetweenMeshesIncompatiblePartitioning::interpolateMesh2DataToMesh1QuadPoints(
+  TransferDataBetweenMeshesIncompatiblePartitioning<memorySpace>::interpolateMesh2DataToMesh1QuadPoints(
     const dftfe::linearAlgebra::MultiVector<T,
                                             memorySpace> &inputVec,
     const unsigned int                    numberOfVectors,
     const dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace> &fullFlattenedArrayCellLocalProcIndexIdMapMesh2,
-    dftfe::linearAlgebra::MultiVector<T,
-                                      memorySpace> &                 outputQuadData,
+    dftfe::utils::MemoryStorage<T, memorySpace> &                 outputQuadData,
     bool resizeOutputVec)
   {
-    d_mesh1toMesh2->interpolateSrcDataToTargetPoints(
+    d_mesh2toMesh1->interpolateSrcDataToTargetPoints(
       inputVec,
       numberOfVectors,
       fullFlattenedArrayCellLocalProcIndexIdMapMesh2,
@@ -214,17 +209,11 @@ namespace dftfe
   TransferDataBetweenMeshesIncompatiblePartitioning<memorySpace>::interpolateMesh2DataToMesh1QuadPoints(
     const distributedCPUVec<T> &inputVec,
     const unsigned int               numberOfVectors,
+    const dftfe::utils::MemoryStorage<dftfe::global_size_type, dftfe::utils::MemorySpace::HOST> &mapVecToCells,
     dftfe::utils::MemoryStorage<T,
                                 dftfe::utils::MemorySpace::HOST> &            outputQuadData,
     bool resizeOutputVec)
   {
-    std::vector<dealii::types::global_dof_index> mapVecToCells;
-    vectorTools::computeCellLocalIndexSetMap(
-      inputVec.getMPIPatternP2P(),
-      *d_matrixFreeMesh2Ptr,
-      d_matrixFreeMesh2VectorComponent,
-      numberOfVectors,
-      mapVecToCells);
 
     d_mesh2toMesh1->interpolateSrcDataToTargetPoints(
       inputVec,
@@ -240,8 +229,7 @@ namespace dftfe
   TransferDataBetweenMeshesIncompatiblePartitioning<memorySpace>::interpolateMesh1DataToMesh2QuadPoints(
     const distributedCPUVec<T> &inputVec,
     const unsigned int               numberOfVectors,
-    const std::vector<dealii::types::global_dof_index>
-                                                                 &                  fullFlattenedArrayCellLocalProcIndexIdMapParent,
+    const dftfe::utils::MemoryStorage<dftfe::global_size_type, dftfe::utils::MemorySpace::HOST> & fullFlattenedArrayCellLocalProcIndexIdMapParent,
     dftfe::utils::MemoryStorage<T,
                                 dftfe::utils::MemorySpace::HOST> &outputQuadData,
     bool resizeOutputVec)
@@ -253,4 +241,55 @@ namespace dftfe
       outputQuadData,
       resizeOutputVec );
   }
+
+
+  template
+  void
+    TransferDataBetweenMeshesIncompatiblePartitioning<dftfe::utils::MemorySpace::HOST>
+      ::interpolateMesh1DataToMesh2QuadPoints(
+    const dftfe::linearAlgebra::MultiVector<dataTypes::number,
+                                              dftfe::utils::MemorySpace::HOST> &inputVec,
+    const unsigned int                    numberOfVectors,
+    const dftfe::utils::MemoryStorage<dftfe::global_size_type, dftfe::utils::MemorySpace::HOST> &fullFlattenedArrayCellLocalProcIndexIdMapMesh1,
+    dftfe::utils::MemoryStorage<dataTypes::number, dftfe::utils::MemorySpace::HOST> &outputQuadData,
+    bool resizeOutputVec); // override;
+
+  template
+  void
+  TransferDataBetweenMeshesIncompatiblePartitioning<dftfe::utils::MemorySpace::HOST>
+    ::interpolateMesh2DataToMesh1QuadPoints(
+    const dftfe::linearAlgebra::MultiVector<dataTypes::number,
+                                              dftfe::utils::MemorySpace::HOST> &inputVec,
+    const unsigned int                    numberOfVectors,
+    const dftfe::utils::MemoryStorage<dftfe::global_size_type, dftfe::utils::MemorySpace::HOST> &fullFlattenedArrayCellLocalProcIndexIdMapMesh1,
+    dftfe::utils::MemoryStorage<dataTypes::number, dftfe::utils::MemorySpace::HOST> &                 outputQuadData,
+    bool resizeOutputVec); // override;
+
+  template
+  void
+    TransferDataBetweenMeshesIncompatiblePartitioning<dftfe::utils::MemorySpace::HOST>
+      ::interpolateMesh1DataToMesh2QuadPoints(
+    const distributedCPUVec<dataTypes::number> &inputVec,
+    const unsigned int numberOfVectors,
+    const dftfe::utils::MemoryStorage<dealii::types::global_dof_index, dftfe::utils::MemorySpace::HOST>
+                                                                 &fullFlattenedArrayCellLocalProcIndexIdMapParent,
+    dftfe::utils::MemoryStorage<dataTypes::number,
+                                dftfe::utils::MemorySpace::HOST> &outputQuadData,
+    bool resizeOutputVec) ; //override;
+
+  template
+  void
+    TransferDataBetweenMeshesIncompatiblePartitioning<dftfe::utils::MemorySpace::HOST>
+      ::interpolateMesh2DataToMesh1QuadPoints(
+    const distributedCPUVec<dataTypes::number> &inputVec,
+    const unsigned int               numberOfVectors,
+      const dftfe::utils::MemoryStorage<dftfe::global_size_type, dftfe::utils::MemorySpace::HOST> &mapVecToCells,
+    dftfe::utils::MemoryStorage<dataTypes::number,
+                                dftfe::utils::MemorySpace::HOST> &            outputQuadData,
+    bool resizeOutputVec) ; //override;
+
+  template class TransferDataBetweenMeshesIncompatiblePartitioning<dftfe::utils::MemorySpace::HOST>;
+
+
+
 }

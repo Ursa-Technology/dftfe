@@ -20,18 +20,17 @@
 
 
 #include "InterpolateCellWiseDataToPoints.h"
-#include "transferDataBetweenMeshesBase.h"
+//#include "TransferBetweenMeshesBase.h"
 #include "headers.h"
 #include "linearAlgebraOperationsInternal.h"
 #include "linearAlgebraOperations.h"
 #include "vectorUtilities.h"
-#include "triangulationManagerVxc.h"
 
 
 namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
-  class TransferDataBetweenMeshesIncompatiblePartitioning : public TransferDataBetweenMeshesBase<memorySpace>
+  class TransferDataBetweenMeshesIncompatiblePartitioning // : public TransferDataBetweenMeshesBase<memorySpace>
   {
   public:
     TransferDataBetweenMeshesIncompatiblePartitioning(const dealii::MatrixFree<3, double> &matrixFreeMesh1,
@@ -42,45 +41,46 @@ namespace dftfe
                                                       const unsigned int matrixFreeMesh2QuadratureComponent,
                                                       const MPI_Comm & mpiComm);
 
+    template <typename T>
     void
     interpolateMesh1DataToMesh2QuadPoints(
       const dftfe::linearAlgebra::MultiVector<T,
                                               memorySpace> &inputVec,
       const unsigned int                    numberOfVectors,
       const dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace> &fullFlattenedArrayCellLocalProcIndexIdMapMesh1,
-      dftfe::utils::MemoryStorage<T, dftfe::utils::MemorySpace::HOST> &outputQuadData,
-      bool resizeOutputVec) override;
+      dftfe::utils::MemoryStorage<T, memorySpace> &outputQuadData,
+      bool resizeOutputVec); // override;
 
-    void
+    template <typename T>
       void
       interpolateMesh2DataToMesh1QuadPoints(
         const dftfe::linearAlgebra::MultiVector<T,
                                                 memorySpace> &inputVec,
         const unsigned int                    numberOfVectors,
         const dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace> &fullFlattenedArrayCellLocalProcIndexIdMapMesh1,
-        dftfe::linearAlgebra::MultiVector<T,
-                                          memorySpace> &                 outputQuadData,
-        bool resizeOutputVec) override;
+      dftfe::utils::MemoryStorage<T, memorySpace> &                 outputQuadData,
+        bool resizeOutputVec); // override;
 
     template <typename T>
     void
     interpolateMesh1DataToMesh2QuadPoints(
       const distributedCPUVec<T> &inputVec,
       const unsigned int numberOfVectors,
-      const std::vector<dealii::types::global_dof_index>
-                                                                   &fullFlattenedArrayCellLocalProcIndexIdMapParent,
+      const dftfe::utils::MemoryStorage<dftfe::global_size_type,
+                                        dftfe::utils::MemorySpace::HOST> &fullFlattenedArrayCellLocalProcIndexIdMapParent,
       dftfe::utils::MemoryStorage<T,
                                   dftfe::utils::MemorySpace::HOST> &outputQuadData,
-      bool resizeOutputVec) override;
+      bool resizeOutputVec) ; //override;
 
     template <typename T>
     void
     interpolateMesh2DataToMesh1QuadPoints(
-      const distributedCPUVec<double> &inputVec,
+      const distributedCPUVec<T> &inputVec,
       const unsigned int               numberOfVectors,
-      dftfe::utils::MemoryStorage<dataTypes::number,
+      const dftfe::utils::MemoryStorage<dftfe::global_size_type, dftfe::utils::MemorySpace::HOST> &mapVecToCells,
+      dftfe::utils::MemoryStorage<T,
                                   dftfe::utils::MemorySpace::HOST> &            outputQuadData,
-      bool resizeOutputVec) override;
+      bool resizeOutputVec) ; //override;
 
   private:
 
@@ -91,12 +91,11 @@ namespace dftfe
 
     size_type d_matrixFreeMesh2VectorComponent, d_matrixFreeMesh2QuadratureComponent;
 
-    std::shared_ptr<InterpolateCellWiseDataToPoints> d_mesh1toMesh2;
-    std::shared_ptr<InterpolateCellWiseDataToPoints> d_mesh2toMesh1;
+    std::shared_ptr<InterpolateCellWiseDataToPoints<memorySpace>> d_mesh1toMesh2;
+    std::shared_ptr<InterpolateCellWiseDataToPoints<memorySpace>> d_mesh2toMesh1;
 
     const MPI_Comm d_mpiComm;
 
-    bool d_useDevice;
 
   };
 }

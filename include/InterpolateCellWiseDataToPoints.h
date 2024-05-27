@@ -26,7 +26,6 @@
 #include <boost/geometry/index/rtree.hpp>
 #include <boost/range/adaptors.hpp>
 
-#include "meshTransferBase.h"
 #include "MapPointsToCells.h"
 #include "Cell.h"
 
@@ -48,18 +47,18 @@ namespace dftfe
                                               memorySpace> &inputVec,
       const unsigned int                    numberOfVectors,
       const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
-                                        memorySpace>
-                                                                   &mapVecToCells,
+                                        memorySpace> &mapVecToCells,
       dftfe::utils::MemoryStorage<T,
-                                  dftfe::utils::MemorySpace::HOST> &outputData,
+                                  memorySpace> &outputData,
       bool resizeData = false) ;
 
+    template <typename T>
     void interpolateSrcDataToTargetPoints(
-      const distributedCPUVec<double> &inputVec,
+      const distributedCPUVec<T> &inputVec,
       const unsigned int                    numberOfVectors,
       const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
-                                        memorySpace>&                  mapVecToCells,
-      dftfe::utils::MemoryStorage<dataTypes::number,
+                                        dftfe::utils::MemorySpace::HOST>&                  mapVecToCells,
+      dftfe::utils::MemoryStorage<T,
                                   dftfe::utils::MemorySpace::HOST> &outputData,
       bool resizeData = false) ;
 

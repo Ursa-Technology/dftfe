@@ -23,18 +23,18 @@ namespace dftfe
   class MultiVectorSolverClass
   {
   public:
-    template <dftfe::utils::MemorySpace memorySpace, typename T>
-    virtual void
-    solve(MultiVectorLinearSolverProblem<memorySpace> &  problem,
-          dftfe::linearAlgebra::MultiVector<T,
-                                            memorySpace> &  x,
-          dftfe::linearAlgebra::MultiVector<T,
-                                            memorySpace> & NDBCVec,
-          unsigned int                      blockSize,
-          const double                      absTolerance,
-          const unsigned int                maxNumberIterations,
-          const unsigned int                debugLevel     = 0,
-          bool                              distributeFlag = true) = 0;
+//    template <dftfe::utils::MemorySpace memorySpace, typename T>
+//    virtual void
+//    solve(MultiVectorLinearSolverProblem<memorySpace> &  problem,
+//          dftfe::linearAlgebra::MultiVector<T,
+//                                            memorySpace> &  x,
+//          dftfe::linearAlgebra::MultiVector<T,
+//                                            memorySpace> & NDBCVec,
+//          unsigned int                      blockSize,
+//          const double                      absTolerance,
+//          const unsigned int                maxNumberIterations,
+//          const unsigned int                debugLevel     = 0,
+//          bool                              distributeFlag = true) = 0;
   };
 }
 

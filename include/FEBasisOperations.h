@@ -162,6 +162,9 @@ namespace dftfe
              const bool          isResizeTempStorageForInerpolation = true,
              const bool          isResizeTempStorageForCellMatrices = false);
 
+      dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace> &
+      getFlattenedMaps();
+
       // private:
 
 
@@ -967,7 +970,9 @@ namespace dftfe
         ValueTypeBasisCoeff *quadratureValues,
         ValueTypeBasisCoeff *quadratureGradients,
         dftfe::linearAlgebra::MultiVector<ValueTypeBasisCoeff, memorySpace>
-          &nodalData) const;
+          &nodalData,
+        dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
+          & mapQuadIdToProcId) const;
 
       /**
        * @brief Get cell level nodal data from process level nodal data.
@@ -1051,6 +1056,8 @@ namespace dftfe
         const ValueTypeBasisCoeff *quadratureGradients,
         dftfe::linearAlgebra::MultiVector<ValueTypeBasisCoeff, memorySpace>
           &                                         nodalData,
+        dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
+                                                   & mapQuadIdToProcId,
         const std::pair<unsigned int, unsigned int> cellRange) const;
 
 

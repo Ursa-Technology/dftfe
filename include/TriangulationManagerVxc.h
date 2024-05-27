@@ -19,6 +19,7 @@
 #include "headers.h"
 #include "dftParameters.h"
 #include "triangulationManager.h"
+#include "inverseDFTParameters.h"
 
 
 namespace dftfe
@@ -41,7 +42,7 @@ namespace dftfe
    *
    *  @author Bikash Kanungo, Vishal Subramanian
    */
-  class triangulationManagerVxc
+  class TriangulationManagerVxc
   {
   public:
     /** @brief Constructor.
@@ -51,18 +52,19 @@ namespace dftfe
      * @param interpool_comm mpi interpool communicator over k points
      * @param interBandGroupComm mpi interpool communicator over band groups
      */
-    triangulationManagerVxc(const MPI_Comm &     mpi_comm_parent,
+    TriangulationManagerVxc(const MPI_Comm &     mpi_comm_parent,
                             const MPI_Comm &     mpi_comm_domain,
                             const MPI_Comm &     interpoolcomm,
                             const MPI_Comm &     interBandGroupComm,
                             const dftParameters &dftParams,
+                            const inverseDFTParameters & inverseDFTParams,
                             const dealii::parallel::distributed::Triangulation<3, 3>::Settings repartitionFlag =
                               dealii::parallel::distributed::Triangulation<3, 3>::no_automatic_repartitioning);
 
     /**
      * destructor
      */
-    ~triangulationManagerVxc();
+    ~TriangulationManagerVxc();
 
     void
     generateParallelUnmovedMeshVxc(
@@ -148,10 +150,14 @@ namespace dftfe
     std::vector<std::vector<bool>> d_parallelTriaVxcCurrentRefinement;
 
     const dftParameters &d_dftParams;
+    const inverseDFTParameters & d_inverseDFTParams;
 
     dealii::ConditionalOStream pcout;
 
     std::vector<std::vector<bool>> d_parallelTriaCurrentRefinement;
+    std::vector<std::vector<bool>> d_serialTriaCurrentRefinement;
+
+
     //
     // compute-time logger
     //

@@ -52,6 +52,7 @@ SET(TARGET_SRC
   ./src/dft/densityCalculator.cc
   ./src/dft/densityFirstOrderResponseCalculator.cc
   ./src/dft/applyMultipoleDirichletBC.cc
+        ./src/dft/setUnitTests.cpp
   ./src/excManager/excDensityBaseClass.cpp
   ./src/excManager/excDensityLDAClass.cpp
   ./src/excManager/excWavefunctionBaseClass.cpp
@@ -61,6 +62,8 @@ SET(TARGET_SRC
   ./src/excManager/NNGGA.cc
   ./src/excManager/NNLDA.cc
   ./src/poisson/poissonSolverProblem.cc
+        ./src/poisson/MultiVectorAdjointLinearSolverProblem.cpp
+        ./src/poisson/MultiVectorPoissonLinearSolverProblem.cpp
   ./src/helmholtz/kerkerSolverProblem.cc
   ./src/dftOperator/KohnShamHamiltonianOperator.cc
   ./src/dftOperator/veffPrimeForLRDM.cc
@@ -91,6 +94,8 @@ SET(TARGET_SRC
   ./src/linAlg/mixingClass.cc
   ./src/solvers/dealiiLinearSolver.cc
   ./src/solvers/dealiiLinearSolverProblem.cc
+        ./src/solvers/MultiVectorCGSolver.cpp
+        ./src/solvers/MultiVectorMinResSolver.cpp
   ./src/md/molecularDynamicsClass.cc
   ./src/neb/nudgedElasticBandClass.cc
   ./src/geoOpt/geometryOptimizationClass.cc
@@ -171,7 +176,20 @@ SET(TARGET_SRC
   ./src/atom/AtomCenteredSphericalFunctionValenceDensitySpline.cc
   ./src/atom/AtomCenteredSphericalFunctionCoreDensitySpline.cc
   ./src/atom/AtomCenteredSphericalFunctionLocalPotentialSpline.cc
-  ./src/atom/AtomCenteredSphericalFunctionProjectorSpline.cc)
+  ./src/atom/AtomCenteredSphericalFunctionProjectorSpline.cc
+        ./src/inverseSrc/gaussianFunctionContainer.cpp
+        ./src/inverseSrc/gaussianFunctionManager.cpp
+        ./src/TransferBetweenMeshes/TransferBetweenMeshesIncompatiblePartitioning.cpp
+        ./src/TransferBetweenMeshes/InterpolateCellWiseDataToPoints.cpp
+	./utils/NodalData.cpp
+	./utils/CompositeData.cpp
+        ./src/unitTests/testMultiVectorCGForPoisson.cpp
+        ./src/unitTests/testDataTransfer.cpp
+        ./src/inverseSrc/InverseDFTSolverFunction.cpp
+        ./src/inverseSrc/InverseClass.cpp
+        ./src/solvers/BFGSInverseDFTSolver.cpp
+        ./src/inverseSrc/TriangulationManagerVxc.cpp
+        ./src/inverseSrc/inverseDFTParameters.cpp)
 
 IF ("${GPU_LANG}" STREQUAL "cuda")
 

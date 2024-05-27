@@ -99,28 +99,11 @@ namespace dftfe
         const size_type                        ghostSize,
         MemoryStorage<ValueType, memorySpace> &dataArray)
     {
-      if constexpr (std::is_same<ValueType, std::complex<double>>::value ||
-                    std::is_same<ValueType, std::complex<float>>::value)
-        for (size_type i = 0; i < ownedLocalIndicesForTargetProcs.size(); ++i)
-          std::transform(
-            recvBuffer.data() + i * blockSize,
-            recvBuffer.data() + (i + 1) * blockSize,
-            dataArray.data() +
-              ownedLocalIndicesForTargetProcs.data()[i] * blockSize,
-            dataArray.data() +
-              ownedLocalIndicesForTargetProcs.data()[i] * blockSize,
-            std::copy<>{} );
-      else
-        for (size_type i = 0; i < ownedLocalIndicesForTargetProcs.size(); ++i)
-          std::transform(recvBuffer.data() + i * blockSize,
-                         recvBuffer.data() + (i + 1) * blockSize,
-                         dataArray.data() +
-                           ownedLocalIndicesForTargetProcs.data()[i] *
-                             blockSize,
-                         dataArray.data() +
-                           ownedLocalIndicesForTargetProcs.data()[i] *
-                             blockSize,
-                         std::copy<>{});
+      for (size_type i = 0; i < ownedLocalIndicesForTargetProcs.size(); ++i)
+        std::copy(recvBuffer.data() + i * blockSize,
+                  recvBuffer.data() + (i + 1) * blockSize,
+                  dataArray.data() +
+                    ownedLocalIndicesForTargetProcs.data()[i] * blockSize);
     }
 
     template <typename ValueType, dftfe::utils::MemorySpace memorySpace>

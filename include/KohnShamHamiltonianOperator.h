@@ -99,7 +99,10 @@ namespace dftfe
       const unsigned int                                   spinIndex = 0);
 
     void
-    computeVEff(const std::vector<std::vector<double>> &potValues);
+    computeVEff( const std::vector<
+                  dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+                                  &vKS_quadValues,
+                const unsigned int                                   spinIndex);
 
     void
     computeVEffExternalPotCorr(

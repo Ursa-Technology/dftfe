@@ -604,8 +604,9 @@ namespace dftfe
                           iCell * numberQuadraturePoints;
         for (unsigned int qPoint = 0; qPoint < numberQuadraturePoints; ++qPoint)
           {
-            d_vEffJxW[qPoint + iCell*numberQuadraturePoints] =
-              tempPot[qPoint] * cellJxWPtr[qPoint];
+            // TODO extend to spin polarised case
+            d_VeffJxWHost[qPoint + iCell*numberQuadraturePoints] =
+              vKS_quadValues[0][qPoint + iCell*numberQuadraturePoints] * cellJxWPtr[qPoint];
           }
       }
 #if defined(DFTFE_WITH_DEVICE)

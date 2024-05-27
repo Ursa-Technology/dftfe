@@ -17,40 +17,45 @@
 // @author Vishal Subramanian
 //
 
+#include "dft.h"
 
 namespace dftfe
 {
-  dftClass::runUnitTest()
-  {
-    pcout<<" Testing transfer between incompatible meshes in HOST\n";
-
-    unitTest::testTransferFromParentToChildIncompatiblePartitioning(d_mpiCommParent,
-                                  mpi_communicator,
-                                  interpoolcomm,
-                                  interBandGroupComm,
-                                  d_dftParamsPtr->finiteElementPolynomialOrder,
-                                  d_dftParamsPtr->meshSizeOuterBall,
-                                  *d_dftParamsPtr,
-                                  atomLocations,
-                                  d_imagePositionsAutoMesh,
-                                  d_imageIds,
-                                  d_nearestAtomDistances,
-                                  d_domainBoundingVectors,
-                                  false,
-                                  false);
-
-    pcout<<" Testing MultiVector CG for Poisson Poisson problem in HOST\n";
-
-    void
-    testMultiVectorPoissonSolver(
-      const dealii::MatrixFree<3, double> &          matrixFreeData,
-      const dealii::AffineConstraints<double> &      constraintMatrix,
-      std::map<dealii::CellId, std::vector<double>> &inputVec,
-      const unsigned int                             matrixFreeVectorComponent,
-      const unsigned int matrixFreeQuadratureComponentRhsDensity,
-      const unsigned int matrixFreeQuadratureComponentAX,
-      const MPI_Comm &   mpi_comm_parent,
-      const MPI_Comm &   mpi_comm_domain);
-
-  }
+//  template <unsigned int              FEOrder,
+//            unsigned int              FEOrderElectro,
+//            dftfe::utils::MemorySpace memorySpace>
+//  void
+//  dftClass<FEOrder, FEOrderElectro, memorySpace>::runUnitTest()
+//  {
+//    pcout<<" Testing transfer between incompatible meshes in HOST\n";
+//
+////    unitTest::testTransferFromParentToChildIncompatiblePartitioning(d_mpiCommParent,
+////                                  mpi_communicator,
+////                                  interpoolcomm,
+////                                  interBandGroupComm,
+////                                  d_dftParamsPtr->finiteElementPolynomialOrder,
+////                                  d_dftParamsPtr->meshSizeOuterBall,
+////                                  *d_dftParamsPtr,
+////                                  atomLocations,
+////                                  d_imagePositionsAutoMesh,
+////                                  d_imageIds,
+////                                  d_nearestAtomDistances,
+////                                  d_domainBoundingVectors,
+////                                  false,
+////                                  false);
+//
+//    pcout<<" Testing MultiVector CG for Poisson Poisson problem in HOST\n";
+//
+////    void
+////    unitTest::testMultiVectorPoissonSolver(
+////      const dealii::MatrixFree<3, double> &          matrixFreeData,
+////      const dealii::AffineConstraints<double> &      constraintMatrix,
+////      std::map<dealii::CellId, std::vector<double>> &inputVec,
+////      const unsigned int                             matrixFreeVectorComponent,
+////      const unsigned int matrixFreeQuadratureComponentRhsDensity,
+////      const unsigned int matrixFreeQuadratureComponentAX,
+////      const MPI_Comm &   mpi_comm_parent,
+////      const MPI_Comm &   mpi_comm_domain);
+//
+//  }
 }

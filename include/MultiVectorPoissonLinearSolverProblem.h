@@ -15,11 +15,13 @@
 // ---------------------------------------------------------------------
 //
 
-#ifndef DFTFE_MULTIVECTORPOISSONLINEARSOLVER_H
-#define DFTFE_MULTIVECTORPOISSONLINEARSOLVER_H
+#ifndef DFTFE_MULTIVECTORPOISSONLINEARSOLVERPROBLEM_H
+#define DFTFE_MULTIVECTORPOISSONLINEARSOLVERPROBLEM_H
 
 #include "MultiVectorLinearSolverProblem.h"
-
+#include "headers.h"
+#include "BLASWrapper.h"
+#include "FEBasisOperations.h"
 namespace dftfe
 {
 
@@ -34,18 +36,29 @@ namespace dftfe
 
     // Destructor
     ~MultiVectorPoissonLinearSolverProblem();
+
+    void  reinit(
+      std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
+        BLASWrapperPtr,
+        std::shared_ptr<
+          dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
+          basisOperationsPtr,
+        const dealii::AffineConstraints<double> &constraintMatrix,
+        const unsigned int                       matrixFreeVectorComponent,
+        const unsigned int matrixFreeQuadratureComponentRhs,
+        const unsigned int matrixFreeQuadratureComponentAX,
+        bool isComputeMeanValueConstraint);
     /**
      * @brief Compute right hand side vector for the problem Ax = rhs.
      *
      * @param rhs vector for the right hand side values
      */
-    template <typename T>
-    dftfe::linearAlgebra::MultiVector<T,
+    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                       memorySpace> &
     computeRhs(
-               dftfe::linearAlgebra::MultiVector<T,
+               dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                                  memorySpace> &       NDBCVec,
-               dftfe::linearAlgebra::MultiVector<T,
+               dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                                  memorySpace> &       outputVec,
                unsigned int                      blockSizeInput) override;
 
@@ -53,10 +66,9 @@ namespace dftfe
      * @brief Compute A matrix multipled by x.
      *
      */
-    template <typename T>
-    void vmult(dftfe::linearAlgebra::MultiVector<T,
+    void vmult(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                             memorySpace> &Ax,
-          dftfe::linearAlgebra::MultiVector<T,
+          dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                             memorySpace> &x,
           unsigned int               blockSize) override;
 
@@ -71,11 +83,10 @@ namespace dftfe
      * @brief Jacobi preconditioning function.
      *
      */
-    template <typename T>
     void
-    precondition_Jacobi(dftfe::linearAlgebra::MultiVector<T,
+    precondition_Jacobi(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                                           memorySpace> &      dst,
-                        const dftfe::linearAlgebra::MultiVector<T,
+                        const dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                                                 memorySpace> &src,
                         const double                     omega) const  override;
 
@@ -84,21 +95,27 @@ namespace dftfe
      * @brief Apply square-root of the Jacobi preconditioner function.
      *
      */
-    template <typename T>
     void
-    precondition_JacobiSqrt(ddftfe::linearAlgebra::MultiVector<T,
+    precondition_JacobiSqrt(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                                                memorySpace> &      dst,
-                            const dftfe::linearAlgebra::MultiVector<T,
+                            const dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                                                     memorySpace> &src,
                             const double omega) const override ;
 
-    template <typename T>
     void
       setDataForRhsVec(dftfe::utils::MemoryStorage<double, memorySpace>& inputQuadData);
 
 
+    void clear();
 
   private:
+
+    void
+    tempRhsVecCalc(dftfe::linearAlgebra::MultiVector<dataTypes::number ,memorySpace> &      rhs);
+
+    void preComputeShapeFunction();
+
+    void computeDiagonalA();
 
     void computeMeanValueConstraint();
 
@@ -111,14 +128,14 @@ namespace dftfe
 
     /// the vector that stores the output obtained by solving the poisson
     /// problem
-    dftfe::linearAlgebra::MultiVector<T,
+    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                       memorySpace> *d_blockedXPtr, *d_blockedNDBCPtr, d_rhsVec;
 
     unsigned int d_matrixFreeQuadratureComponentRhs;
     unsigned int d_matrixFreeVectorComponent;
     unsigned int d_blockSize;
 
-    dftfe::linearAlgebra::MultiVector<double,
+    dftfe::utils::MemoryStorage<double,
                                       memorySpace> d_diagonalA, d_diagonalSqrtA;
 
     std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
@@ -131,13 +148,13 @@ namespace dftfe
     /// pointer to dealii MatrixFree object
     const dealii::MatrixFree<3, double> *d_matrixFreeDataPtr;
 
-    dftfe::utils::MemoryStorage<double, memorySpace> & d_cellStiffnessMatrix;
+    const dftfe::utils::MemoryStorage<double, memorySpace> * d_cellStiffnessMatrixPtr;
 
-    dftUtils::constraintMatrixInfo<dftfe::utils::MemorySpace::HOST>
+    dftUtils::constraintMatrixInfo<memorySpace>
       d_constraintsInfo;
 
     /// data members for the mpi implementation
-    const MPI_Comm             mpi_communicator;
+    const MPI_Comm             mpi_communicator,d_mpi_parent;
     const unsigned int         n_mpi_processes;
     const unsigned int         this_mpi_process;
     dealii::ConditionalOStream pcout;
@@ -156,7 +173,7 @@ namespace dftfe
 
 
     dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
-      d_mapNodeIdToProcId;
+      d_mapNodeIdToProcId, d_mapQuadIdToProcId;
 
     dftfe::utils::MemoryStorage<double, memorySpace>
       d_xCellLLevelNodalData, d_AxCellLLevelNodalData;
@@ -165,10 +182,34 @@ namespace dftfe
 
     dftfe::utils::MemoryStorage<double, memorySpace> *d_rhsQuadDataPtr;
 
+    unsigned int d_matrixFreeQuadratureComponentAX, d_nQuadsPerCell;
+
+    /// pointer to the dealii::DofHandler object. This is already part of the
+    /// matrixFreeData object.
+    const dealii::DoFHandler<3> *d_dofHandler;
+
+    /**
+     * @brief finite-element cell level matrix to store dot product between shapeFunction gradients (\int(\nabla N_i \cdot \nabla N_j))
+     * with first dimension traversing the macro cell id
+     * and second dimension storing the matrix of size numberNodesPerElement x
+     * numberNodesPerElement in a flattened 1D dealii Vectorized array
+     */
+    std::vector<double> d_cellShapeFunctionGradientIntegral;
+
+    /**
+     * @brief finite-element cell level matrix to store dot product between shapeFunction gradients (\int(\nabla N_i ))
+     * with first dimension traversing the macro cell id
+     * and second dimension storing the matrix of size numberNodesPerElement in
+     * a flattened 1D dealii Vectorized array
+     */
+    std::vector<double> d_cellShapeFunctionJxW;
+
+    /// storage for shapefunctions
+    std::vector<double> d_shapeFunctionValue;
 
   };
 
 }
 
 
-#endif // DFTFE_MULTIVECTORPOISSONLINEARSOLVER_H
+#endif // DFTFE_MULTIVECTORPOISSONLINEARSOLVERPROBLEM_H

@@ -27,14 +27,16 @@
 #include <map>
 #include <vector>
 #include <dftUtils.h>
-#include <triangulationManagerVxc.h>
+#include <TriangulationManagerVxc.h>
 namespace dftfe
 {
+  template<unsigned int FEOrder, unsigned int FEOrderElectro, dftfe::utils::MemorySpace memorySpace>
   class inverseDFT
   {
   public:
     inverseDFT(dftBase &       dft,
                dftParameters & dftParams,
+               inverseDFTParameters & inverseDFTParams,
                const MPI_Comm &mpi_comm_parent,
                const MPI_Comm &mpi_comm_domain,
                const MPI_Comm &mpi_comm_bandgroup,
@@ -55,8 +57,10 @@ namespace dftfe
     //
     void
     setTargetDensity(
-      const std::map<dealii::CellId, std::vector<double>> &rhoOutValues,
-      const std::map<dealii::CellId, std::vector<double>>
+      const std::vector<
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>> &rhoOutValues,
+      const std::vector<
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &rhoOutValuesSpinPolarized);
 
     //      void computeMomentOfInertia(const std::vector<std::vector<double>>
@@ -76,27 +80,26 @@ namespace dftfe
     // 3. interpolate v_slater to child quad points
     // 4. perform L2 projection to get v_slater on child mesh nodes
     //
-    template <typename T>
     void
     setInitialPot();
 
-    template <typename T>
     void
     setInitialPotL2Proj();
 
     void
     setInitialDensityFromGaussian(
-      const std::vector<std::vector<double>> &rhoValuesFeSpin);
+      const std::vector<
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>> &rhoValuesFeSpin);
 
     void
     readVxcDataFromFile(std::vector<distributedCPUVec<double>> &vxcChildNodes);
-    template <typename T>
+
     void
     readVxcInput();
 
     void
     computeHartreePotOnParentQuad(
-      std::map<dealii::CellId, std::vector<double>> &hartreeQuadData);
+      dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST> &hartreeQuadData);
 
     //
     // TODO
@@ -127,11 +130,11 @@ namespace dftfe
     run();
 
   private:
-    std::vector<std::vector<std::vector<double>>> d_rhoTarget;
+    std::vector<dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>> d_rhoTarget;
     std::vector<double> d_sigmaGradRhoTarget;
 
     //triangulationManagerVxc *d_triaManagerVxcPtr;
-    triangulationManagerVxc d_triaManagerVxc;
+    TriangulationManagerVxc d_triaManagerVxc;
     /// data members for the mpi implementation
     const MPI_Comm             d_mpiComm_domain;
     const MPI_Comm             d_mpiComm_parent;
@@ -143,6 +146,7 @@ namespace dftfe
 
     triangulationManager *d_dftTriaManager;
     dftParameters         d_dftParams;
+    inverseDFTParameters d_inverseDFTParams;
 
     dealii::MatrixFree<3, double>     d_matrixFreeDataVxc;
     unsigned int                      d_dofHandlerVxcIndex;
@@ -165,7 +169,7 @@ namespace dftfe
     dealii::AffineConstraints<double> d_constraintMatrixAdjoint;
 
 
-    dftBase *                            d_dftBaseClass;
+    dftfe::dftClass<FEOrder, FEOrderElectro, memorySpace> *                            d_dftBaseClass;
     const dealii::MatrixFree<3, double> *d_dftMatrixFreeData;
     unsigned int d_dftDensityDoFHandlerIndex, d_dftQuadIndex;
 
@@ -178,20 +182,56 @@ namespace dftfe
     const dealii::DoFHandler<3> *d_dofHandlerElectroDFTClass;
 
 
-    //    std::shared_ptr<TransferDataBetweenMeshesCompatiblePartitioning> d_inverseDftDoFManagerObjPtr;
-    std::shared_ptr<TransferDataBetweenMeshesBase> d_inverseDftDoFManagerObjPtr;
+    std::shared_ptr<TransferDataBetweenMeshesIncompatiblePartitioning<memorySpace>> d_inverseDftDoFManagerObjPtr;
+    //std::shared_ptr<TransferDataBetweenMeshesBase> d_inverseDftDoFManagerObjPtr;
 
     double d_rhoTargetTolForConstraints;
 
     unsigned int        d_numSpins, d_numKPoints, d_numEigenValues;
     std::vector<double> d_kpointWeights;
 
-    std::vector<std::vector<std::vector<double>>> d_potBaseQuadData;
+    std::vector<dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>> d_potBaseQuadData;
     std::vector<distributedCPUVec<double>>        d_vxcInitialChildNodes;
 
     // TODO only for debugging purpose
     std::vector<std::vector<std::vector<double>>>
       d_targetPotValuesParentQuadData;
+
+    std::shared_ptr<
+      dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
+      d_basisOperationsChildPtr;
+
+
+    std::shared_ptr<
+      dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> d_blasWrapperHost;
+
+    std::shared_ptr<
+      dftfe::linearAlgebra::BLASWrapper<memorySpace>> d_blasWrapperMemSpace;
+
+    std::shared_ptr<
+      dftfe::basis::FEBasisOperations<dataTypes::number,
+                                      double,
+                                      memorySpace>> d_basisOperationsMemSpace,
+      d_basisOperationsElectroMemSpace, d_basisOperationsChildMemSpacePtr;
+
+    std::shared_ptr<
+      dftfe::basis::FEBasisOperations<dataTypes::number,
+                                      double,
+                                      dftfe::utils::MemorySpace::HOST>>
+    d_basisOperationsHost, d_basisOperationsElectroHost, d_basisOperationsChildHostPtr;
+
+
+    std::vector<std::shared_ptr<
+      dftfe::basis::FEBasisOperations<dataTypes::number,
+                                      double,
+                                      memorySpace>>> d_basisOperationsAdjointMemSpacePtr;
+    std::vector<std::shared_ptr<
+      dftfe::basis::FEBasisOperations<dataTypes::number,
+                                      double,
+                                      dftfe::utils::MemorySpace::HOST>>>d_basisOperationsAdjointHostPtr ;
+
+    std::vector<const dealii::AffineConstraints<double> *>
+      d_constraintsVectorAdjoint;
 
   }; // end of inverseDFT class
 

@@ -13,26 +13,33 @@
 #ifndef DFTFE_MULTIVECTORMINRESSOLVER_H
 #define DFTFE_MULTIVECTORMINRESSOLVER_H
 
+#include "MultiVectorLinearSolverProblem.h"
+#include "headers.h"
+#include "MultiVectorSolverClass.h"
+#include "BLASWrapper.h"
 namespace dftfe
 {
-  class MultiVectorMinResSolver : public MultiVectorSolverClass
+  class MultiVectorMinResSolver //: public MultiVectorSolverClass
   {
   public :
 
     MultiVectorMinResSolver( const MPI_Comm &mpi_comm_parent,
                         const MPI_Comm &mpi_comm_domain);
-    template <dftfe::utils::MemorySpace memorySpace, typename T>
+    template <dftfe::utils::MemorySpace memorySpace>
     void
     solve(MultiVectorLinearSolverProblem<memorySpace> &  problem,
-          dftfe::linearAlgebra::MultiVector<T,
-                                            memorySpace> &  x,
-          dftfe::linearAlgebra::MultiVector<T,
+          std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
+                                                          BLASWrapperPtr,
+          dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                                            memorySpace> &  xMemSpace,
+          dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                             memorySpace> &  NDBCVec,
+          unsigned int                      locallyOwned,
           unsigned int                      blockSize,
           const double                      absTolerance,
           const unsigned int                maxNumberIterations,
-          const unsigned int                debugLevel     = 0,
-          bool                              distributeFlag = true) override;
+          const unsigned int                debugLevel = 0,
+          bool                              distributeFlag = true) ;//override;
 
   private:
     const MPI_Comm             mpi_communicator;

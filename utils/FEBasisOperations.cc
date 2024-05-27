@@ -342,7 +342,7 @@ namespace dftfe
       reinit(const unsigned int &vecBlockSize,
              const unsigned int &cellsBlockSize,
              const unsigned int &quadratureID,
-             const bool          isResizeTempStorageForInerpolation,
+             const bool          isResizeTempStorageForInterpolation,
              const bool          isResizeTempStorageForCellMatrices)
     {
       d_quadratureID = quadratureID;
@@ -361,7 +361,7 @@ namespace dftfe
           d_nVectors = vecBlockSize;
           initializeFlattenedIndexMaps();
         }
-      resizeTempStorage(isResizeTempStorageForInerpolation,
+      resizeTempStorage(isResizeTempStorageForInterpolation,
                         isResizeTempStorageForCellMatrices);
     }
 
@@ -483,6 +483,7 @@ namespace dftfe
     FEBasisOperations<ValueTypeBasisCoeff, ValueTypeBasisData, memorySpace>::
       cellStiffnessMatrixBasisData() const
     {
+//      std::cout<<" size of stiffness vec = "<<d_cellStiffnessMatrixBasisType.size()<<"\n";
       return d_cellStiffnessMatrixBasisType;
     }
 
@@ -676,10 +677,10 @@ namespace dftfe
               dftfe::utils::MemorySpace memorySpace>
     void
     FEBasisOperations<ValueTypeBasisCoeff, ValueTypeBasisData, memorySpace>::
-      resizeTempStorage(const bool isResizeTempStorageForInerpolation,
+      resizeTempStorage(const bool isResizeTempStorageForInterpolation,
                         const bool isResizeTempStorageForCellMatrices)
     {
-      if (isResizeTempStorageForInerpolation)
+      if (isResizeTempStorageForInterpolation)
         {
           tempCellNodalData.resize(d_nVectors * d_nDofsPerCell *
                                    d_cellsBlockSize);
@@ -753,6 +754,15 @@ namespace dftfe
       d_flattenedCellDofIndexToProcessDofIndexMap.copyFrom(
         d_flattenedCellDofIndexToProcessDofIndexMapHost);
 #endif
+    }
+
+    template <typename ValueTypeBasisCoeff,
+              typename ValueTypeBasisData,
+              dftfe::utils::MemorySpace memorySpace>
+    dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace> &
+    FEBasisOperations<ValueTypeBasisCoeff, ValueTypeBasisData, memorySpace>::getFlattenedMaps()
+    {
+      return d_cellDofIndexToProcessDofIndexMap;
     }
 
     template <typename ValueTypeBasisCoeff,
@@ -1110,7 +1120,13 @@ namespace dftfe
           d_shapeFunctionGradientDataTranspose[quadID].copyFrom(
             d_shapeFunctionGradientDataTransposeHost);
 #endif
+          std::cout<<" quad id = "<<quadID<<" size of sha = "<<
+            d_shapeFunctionData.find(quadID)->second.size()
+            <<" size of tra = "<<d_shapeFunctionDataTranspose.find(quadID)->second.size()<<"\n";
+
+
         }
+
     }
 
 
@@ -1327,7 +1343,7 @@ namespace dftfe
                                  const bool         basisType,
                                  const bool         ceoffType)
     {
-      reinit(0, cellsBlockSize, quadratureID, false, true);
+      reinit(1, cellsBlockSize, quadratureID, false, true);
       if (basisType)
         d_cellStiffnessMatrixBasisType.resize(d_nDofsPerCell * d_nDofsPerCell *
                                               d_nCells);
@@ -2152,6 +2168,10 @@ namespace dftfe
       invStiffnessVector     = 0.0;
       invSqrtStiffnessVector = 0.0;
 
+//      std::cout<<" size of stiffnessVector vec = "<<stiffnessVector.size()<<"\n";
+      dealii::types::global_dof_index sizeVectemp = stiffnessVector.size();
+
+//      std::cout<<" dof handler id = "<<d_dofHandlerID<<"\n";
       // FIXME : check for roundoff errors
       dealii::QGauss<3> quadrature(std::cbrt(d_nDofsPerCell) + 1);
       unsigned int             nQuadsPerCell = quadrature.size();
@@ -2164,6 +2184,7 @@ namespace dftfe
       std::vector<dealii::types::global_dof_index> local_dof_indices(
         d_nDofsPerCell);
 
+//      std::cout<<" dofs per cell = "<<d_nDofsPerCell<<"\n";
 
       //
       // parallel loop over all elements
@@ -2185,6 +2206,15 @@ namespace dftfe
                                          fe_values.JxW(iQuad);
 
             cell->get_dof_indices(local_dof_indices);
+
+//            for ( unsigned int iNode = 0 ;iNode < d_nDofsPerCell; iNode++)
+//              {
+//                if (local_dof_indices[iNode] > sizeVectemp)
+//                  {
+//                    std::cout<<" global id greater than max size \n";
+//                  }
+//
+//              }
             (*d_constraintsVector)[d_dofHandlerID]->distribute_local_to_global(
               stiffnessVectorLocal, local_dof_indices, stiffnessVector);
           }
@@ -2504,6 +2534,11 @@ namespace dftfe
     template class FEBasisOperations<double,
                                      double,
                                      dftfe::utils::MemorySpace::HOST>;
+
+    template void
+    FEBasisOperations<double, double, dftfe::utils::MemorySpace::HOST>::init(
+      const FEBasisOperations<double, double, dftfe::utils::MemorySpace::HOST>
+        &basisOperationsSrc);
 #if defined(USE_COMPLEX)
     template class FEBasisOperations<std::complex<double>,
                                      double,

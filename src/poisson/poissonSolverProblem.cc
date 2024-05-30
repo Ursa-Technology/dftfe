@@ -165,6 +165,7 @@ namespace dftfe
     rhs.reinit(*d_xPtr);
     rhs = 0;
 
+    pcout << " norm of rhs first = " << rhs.l2_norm() << "\n";
     if (d_isStoreSmearedChargeRhs)
       {
         d_rhsSmearedCharge.reinit(*d_xPtr);
@@ -188,6 +189,8 @@ namespace dftfe
     tempvec = 0.0;
     tempvec.update_ghost_values();
     d_constraintsInfo.distribute(tempvec);
+
+    pcout << " norm of tempvec norm = " << tempvec.l2_norm() << "\n"; 
 
     dealii::FEEvaluation<3, FEOrderElectro, FEOrderElectro + 1> fe_eval(
       *d_matrixFreeDataPtr,
@@ -217,6 +220,8 @@ namespace dftfe
             fe_eval.distribute_local_to_global(rhs);
           }
       }
+
+    pcout << " norm of rhs second = " << rhs.l2_norm() << "\n";
 
     // rhs contribution from electronic charge
     if (d_rhoValuesPtr)
@@ -266,6 +271,7 @@ namespace dftfe
           }
       }
 
+    pcout << " norm of rhs third = " << rhs.l2_norm() << "\n";
     // rhs contribution from atomic charge at fem nodes
     if (d_atomsPtr != NULL)
       for (std::map<dealii::types::global_dof_index, double>::const_iterator
@@ -392,20 +398,25 @@ namespace dftfe
           }
       }
 
+    pcout << " norm of rhs fourth = " << rhs.l2_norm() << "\n";
     // MPI operation to sync data
     rhs.compress(dealii::VectorOperation::add);
 
     if (d_isReuseSmearedChargeRhs)
       rhs += d_rhsSmearedCharge;
 
+    pcout << " norm of rhs fifth = " << rhs.l2_norm() << "\n";
     if (d_isStoreSmearedChargeRhs)
       d_rhsSmearedCharge.compress(dealii::VectorOperation::add);
 
     if (d_isMeanValueConstraintComputed)
       meanValueConstraintDistributeSlaveToMaster(rhs);
 
+    pcout << " norm of rhs sizth = " << rhs.l2_norm() << "\n";
     // FIXME: check if this is really required
     d_constraintMatrixPtr->set_zero(rhs);
+
+    pcout << " norm of rhs seven = " << rhs.l2_norm() << "\n";
   }
 
   // Matrix-Free Jacobi preconditioner application

@@ -339,7 +339,7 @@ namespace dftfe
     stridedBlockScaleColumnWiseKernel(const dftfe::size_type contiguousBlockSize,
                                             const dftfe::size_type numContiguousBlocks,
                                             const ValueType *      beta,
-                                            const ValueType *       x)
+                                            ValueType *       x)
     {
       const dftfe::size_type globalThreadId =
         blockIdx.x * blockDim.x + threadIdx.x;
@@ -361,13 +361,13 @@ namespace dftfe
     // y[iblock*blocksize+intrablockindex]= y[iblock*blocksize+intrablockindex] +
     //                                      beta[intrablockindex]*x[iblock*blocksize+intrablockindex]
     // strided block wise
-    template <typename ValueType1, typename ValueType2>
+    template <typename ValueType>
     __global__ void
     stridedBlockScaleAndAddColumnWiseKernel(const dftfe::size_type contiguousBlockSize,
                                   const dftfe::size_type numContiguousBlocks,
-                                const ValueType1 *            x,
-                                const ValueType2 *       beta,
-                                ValueType1 *            y)
+                                const ValueType *            x,
+                                const ValueType *       beta,
+                                ValueType *            y)
     {
       const dftfe::size_type globalThreadId =
         blockIdx.x * blockDim.x + threadIdx.x;
@@ -389,15 +389,15 @@ namespace dftfe
     // z[iblock*blocksize+intrablockindex]= alpha[intrablockindex]*x[iblock*blocksize+intrablockindex] +
     //                                      beta[intrablockindex]*y[iblock*blocksize+intrablockindex]
     // strided block wise
-    template <typename ValueType1, typename ValueType2>
+    template <typename ValueType>
     __global__ void
     stridedBlockScaleAndAddTwoVecColumnWiseKernel(const dftfe::size_type contiguousBlockSize,
                                             const dftfe::size_type numContiguousBlocks,
-                                            const ValueType1 *            x,
-                                            const ValueType1 *       alpha,
-                                            const ValueType2 *            y,
-                                            const ValueType2 *            beta,
-                                            ValueType2 *            z)
+                                            const ValueType *            x,
+                                            const ValueType *       alpha,
+                                            const ValueType *            y,
+                                            const ValueType *            beta,
+                                            ValueType *            z)
     {
       const dftfe::size_type globalThreadId =
         blockIdx.x * blockDim.x + threadIdx.x;
@@ -606,8 +606,24 @@ namespace dftfe
         }
     }
 
+        __global__ void
+    hadamardProductKernel(
+      const dftfe::size_type                   vecSize,
+      const float *                           xVec,
+      const float *                           yVec,
+      float *                                 outputVec)
+    {
+      for (int i = blockIdx.x * blockDim.x + threadIdx.x;
+           i < vecSize;
+           i += blockDim.x * gridDim.x)
+        {
+          outputVec[i] = yVec[i] * xVec[i];
+        }
+
+    }
+
     __global__ void
-    hadamardProduct(
+    hadamardProductKernel(
       const dftfe::size_type                   vecSize,
       const double *                           xVec,
       const double *                           yVec,
@@ -623,7 +639,7 @@ namespace dftfe
     }
 
     __global__ void
-    hadamardProduct(
+    hadamardProductKernel(
       const dftfe::size_type                   vecSize,
       const dftfe::utils::deviceDoubleComplex *                           xVec,
       const dftfe::utils::deviceDoubleComplex *                           yVec,
@@ -633,7 +649,8 @@ namespace dftfe
            i < vecSize;
            i += blockDim.x * gridDim.x)
         {
-          outputVec[i] = yVec[i] * xVec[i];
+          outputVec[i].x = yVec[i].x * xVec[i].x - yVec[i].y * xVec[i].y;
+	  outputVec[i].y = yVec[i].x * xVec[i].y + yVec[i].y * xVec[i].x;
         }
 
     }

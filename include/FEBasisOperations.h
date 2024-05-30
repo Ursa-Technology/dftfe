@@ -162,8 +162,8 @@ namespace dftfe
              const bool          isResizeTempStorageForInerpolation = true,
              const bool          isResizeTempStorageForCellMatrices = false);
 
-      dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace> &
-      getFlattenedMaps();
+      dftfe::utils::MemoryStorage<dftfe::global_size_type, dftfe::utils::MemorySpace::HOST> &
+      getFlattenedMapsHost();
 
       // private:
 

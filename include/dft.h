@@ -468,7 +468,7 @@ namespace dftfe
     /**
      * @brief Get reference the host eigen vectors
      */
-    const dftfe::utils::MemoryStorage<dataTypes::number,memorySpace> &
+    const dftfe::utils::MemoryStorage<dataTypes::number, dftfe::utils::MemorySpace::HOST> &
     getEigenVectorsHost() const;
 
     /**
@@ -489,12 +489,10 @@ namespace dftfe
 #ifdef DFTFE_WITH_DEVICE
 
      chebyshevOrthogonalizedSubspaceIterationSolverDevice *
-      getSubspaceIterationSolver() ;
-
-#else
-    chebyshevOrthogonalizedSubspaceIterationSolver *
-    getSubspaceIterationSolver();
+      getSubspaceIterationSolverDevice() ;
 #endif
+    chebyshevOrthogonalizedSubspaceIterationSolver *
+    getSubspaceIterationSolverHost();
 
     void
     kohnShamEigenSpaceCompute(

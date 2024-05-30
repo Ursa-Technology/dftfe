@@ -26,7 +26,6 @@
 
 #ifdef DFTFE_WITH_DEVICE
 #  include "deviceDirectCCLWrapper.h"
-#  include "operatorDevice.h"
 #  include "elpaScalaManager.h"
 #  include "dftParameters.h"
 #  include <chebyshevOrthogonalizedSubspaceIterationSolverDevice.h>
@@ -554,7 +553,31 @@ namespace dftfe
   template class InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::HOST>;
 
 
+#ifdef DFTFE_WITH_DEVICE
 
+    template
+  void InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::DEVICE>::interpolateSrcDataToTargetPoints(
+    const dftfe::linearAlgebra::MultiVector<dataTypes::number,
+                                              dftfe::utils::MemorySpace::DEVICE> &inputVec,
+    const unsigned int                    numberOfVectors,
+    const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
+                                        dftfe::utils::MemorySpace::DEVICE> &mapVecToCells,
+    dftfe::utils::MemoryStorage<dataTypes::number,
+                                  dftfe::utils::MemorySpace::DEVICE> &outputData,
+    bool resizeData) ;
+
+  template
+  void InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::DEVICE>::interpolateSrcDataToTargetPoints(
+    const distributedCPUVec<dataTypes::number> &inputVec,
+    const unsigned int                    numberOfVectors,
+    const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
+                                      dftfe::utils::MemorySpace::HOST>&                  mapVecToCells,
+    dftfe::utils::MemoryStorage<dataTypes::number,
+                                dftfe::utils::MemorySpace::HOST> &outputData,
+    bool resizeData) ;
+
+  template class InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::DEVICE>;
+#endif
 }
 
 //    double errorGhostPoints = 0.0;

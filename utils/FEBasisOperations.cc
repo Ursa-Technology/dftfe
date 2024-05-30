@@ -759,8 +759,8 @@ namespace dftfe
     template <typename ValueTypeBasisCoeff,
               typename ValueTypeBasisData,
               dftfe::utils::MemorySpace memorySpace>
-    dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace> &
-    FEBasisOperations<ValueTypeBasisCoeff, ValueTypeBasisData, memorySpace>::getFlattenedMaps()
+    dftfe::utils::MemoryStorage<dftfe::global_size_type, dftfe::utils::MemorySpace::HOST> &
+    FEBasisOperations<ValueTypeBasisCoeff, ValueTypeBasisData, memorySpace>::getFlattenedMapsHost()
     {
       return d_cellDofIndexToProcessDofIndexMap;
     }
@@ -1120,9 +1120,9 @@ namespace dftfe
           d_shapeFunctionGradientDataTranspose[quadID].copyFrom(
             d_shapeFunctionGradientDataTransposeHost);
 #endif
-          std::cout<<" quad id = "<<quadID<<" size of sha = "<<
-            d_shapeFunctionData.find(quadID)->second.size()
-            <<" size of tra = "<<d_shapeFunctionDataTranspose.find(quadID)->second.size()<<"\n";
+          //std::cout<<" quad id = "<<quadID<<" size of sha = "<<
+          //  d_shapeFunctionData.find(quadID)->second.size()
+          //  <<" size of tra = "<<d_shapeFunctionDataTranspose.find(quadID)->second.size()<<"\n";
 
 
         }

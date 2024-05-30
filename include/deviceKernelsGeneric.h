@@ -175,6 +175,19 @@ namespace dftfe
            const ValueType        beta,
            const dftfe::size_type size);
 
+            template <typename ValueType1, typename ValueType2>
+      void
+      interpolateNodalDataToQuadDevice(
+        const dftfe::size_type numDofsPerElem,
+        const dftfe::size_type numQuadPoints,
+        const dftfe::size_type numVecs,
+        const ValueType2 *     parentShapeFunc,
+        const ValueType1 *     mapPointToCellIndex,
+        const ValueType1 *     mapPointToProcLocal,
+        const ValueType1 *     mapPointToShapeFuncIndex,
+        const ValueType2 *     parentNodalValues,
+        ValueType2 *           quadValues);
+
     } // namespace deviceKernelsGeneric
   }   // namespace utils
 } // namespace dftfe

@@ -4919,7 +4919,7 @@ namespace dftfe
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
-  const dftfe::utils::MemoryStorage<dataTypes::number,memorySpace> &
+  const dftfe::utils::MemoryStorage<dataTypes::number,dftfe::utils::MemorySpace::HOST> &
     dftClass<FEOrder, FEOrderElectro, memorySpace>::getEigenVectorsHost() const
   {
     return d_eigenVectorsFlattenedHost;
@@ -4982,22 +4982,22 @@ namespace dftfe
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
    chebyshevOrthogonalizedSubspaceIterationSolverDevice *
-  dftClass<FEOrder, FEOrderElectro, memorySpace>::getSubspaceIterationSolver()
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getSubspaceIterationSolverDevice()
   {
     return &d_subspaceIterationSolverDevice;
   }
 
-#else
+#endif
 
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
    chebyshevOrthogonalizedSubspaceIterationSolver *
-  dftClass<FEOrder, FEOrderElectro, memorySpace>::getSubspaceIterationSolver()
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getSubspaceIterationSolverHost()
   {
     return &d_subspaceIterationSolver;
   }
-#endif
+
 
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
@@ -5164,7 +5164,13 @@ namespace dftfe
     dftfe::linearAlgebra::BLASWrapper<memorySpace>>
   dftClass<FEOrder, FEOrderElectro, memorySpace>::getBLASWrapperMemSpace()
   {
-    return d_BLASWrapperPtr;
+   if constexpr (memorySpace == dftfe::utils::MemorySpace::HOST)
+      return d_BLASWrapperPtrHost;
+#ifdef DFTFE_WITH_DEVICE
+    if constexpr (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      return d_BLASWrapperPtr;
+#endif
+
   }
 
   template <unsigned int              FEOrder,

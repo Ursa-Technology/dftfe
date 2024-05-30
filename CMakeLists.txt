@@ -62,7 +62,6 @@ SET(TARGET_SRC
   ./src/excManager/NNGGA.cc
   ./src/excManager/NNLDA.cc
   ./src/poisson/poissonSolverProblem.cc
-        ./src/poisson/MultiVectorAdjointLinearSolverProblem.cpp
         ./src/poisson/MultiVectorPoissonLinearSolverProblem.cpp
   ./src/helmholtz/kerkerSolverProblem.cc
   ./src/dftOperator/KohnShamHamiltonianOperator.cc
@@ -214,6 +213,7 @@ SET(DEVICE_SRC
   ./src/solvers/linearSolverCGDevice.cc
   ./src/solvers/linearSolverProblemDevice.cc
   ./src/poisson/poissonSolverProblemDevice.cc
+    ./src/poisson/MultiVectorAdjointLinearSolverProblem.cpp
   ./src/helmholtz/kerkerSolverProblemDevice.cc
   ./utils/FEBasisOperationsKernelsInternalDevice.cc
   ./src/atom/AtomicCenteredNonLocalOperatorKernelsDevice.cc

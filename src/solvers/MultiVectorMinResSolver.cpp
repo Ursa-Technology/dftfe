@@ -18,7 +18,7 @@
 //
 
 #include "MultiVectorMinResSolver.h"
-
+#include "DeviceAPICalls.h"
 namespace dftfe
 {
 
@@ -211,6 +211,7 @@ namespace dftfe
     computing_timer.leave_subsection("MINRES initial MPI");
     while (iter < maxNumberIterations && hasAllConverged == false)
       {
+	       pcout << "iter  = " << iter << "\n";
         computing_timer.enter_subsection("MINRES vmult MPI");
         for (unsigned int i = 0; i < blockSize; ++i)
           sHost[i] = (1.0 / betaHost[i]) - 1.0;
@@ -394,12 +395,13 @@ namespace dftfe
 //            std::cout<<" res = "<<rnormHost[i]<<"\n";
           }
 
-//        pcout << " iter = " << iter << "\n";
+        pcout << " iter = " << iter << "\n";
         bool                updateFlag = false;
         dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> coeffForXMemHost(blockSize, 1.0);
         dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> coeffForXTmpHost(blockSize, 0.0);
         for (unsigned int i = 0; i < blockSize; ++i)
           {
+		  pcout << " res = " << rnormHost[i] << "\n";
             if (rnormHost[i] < absTolerance && hasConvergedHost[i] == false)
               {
                 updateFlag         = true;
@@ -501,4 +503,23 @@ namespace dftfe
                                                                   const unsigned int                maxNumberIterations,
                                                                   const unsigned int                debugLevel,
                                                                   bool                              distributeFlag);
+
+
+#ifdef DFTFE_WITH_DEVICE
+
+   template void MultiVectorMinResSolver::solve<dftfe::utils::MemorySpace::DEVICE>(MultiVectorLinearSolverProblem<dftfe::utils::MemorySpace::DEVICE> &  problem,
+                                                                  std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+                                                                                                                  BLASWrapperPtr,
+                                                                  dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                                                                                                    dftfe::utils::MemorySpace::DEVICE> &  xMemSpace,
+                                                                  dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                                                                                                    dftfe::utils::MemorySpace::DEVICE> &  NDBCVec,
+                                                                  unsigned int                      locallyOwned,
+                                                                  unsigned int                      blockSize,
+                                                                  const double                      absTolerance,
+                                                                  const unsigned int                maxNumberIterations,
+                                                                  const unsigned int                debugLevel,
+                                                                  bool                              distributeFlag);
+
+#endif
 }

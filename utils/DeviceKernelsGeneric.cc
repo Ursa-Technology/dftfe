@@ -388,6 +388,53 @@ namespace dftfe
         }
     }
 
+        template <typename ValueType1, typename ValueType2>
+    __global__ void
+    interpolateNodalDataToQuadDeviceKernel(
+      const dftfe::size_type numDofsPerElem,
+      const dftfe::size_type numQuadPoints,
+      const dftfe::size_type numVecs,
+      const ValueType2 *     parentShapeFunc,
+      const ValueType1 *     mapPointToCellIndex,
+      const ValueType1 *     mapPointToProcLocal,
+      const ValueType1 *     mapPointToShapeFuncIndex,
+      const ValueType2 *     parentNodalValues,
+      ValueType2 *           quadValues)
+    {
+      const dftfe::size_type globalThreadId =
+        blockIdx.x * blockDim.x + threadIdx.x;
+      const dftfe::size_type numberEntries =
+        numQuadPoints * numVecs;
+
+      for (dftfe::size_type index = globalThreadId; index < numberEntries;
+           index += blockDim.x * gridDim.x)
+        {
+          dftfe::size_type pointIndex = index / numVecs;
+          dftfe::size_type iCellIndex = mapPointToCellIndex[pointIndex];
+          dftfe::size_type iShapeFuncIndex = mapPointToShapeFuncIndex[pointIndex];
+          dftfe::size_type iProcLocalIndex = mapPointToProcLocal[pointIndex];
+
+          dftfe::size_type iVec = index - pointIndex*numVecs;
+
+
+          for (dftfe::size_type iParentNode = 0;
+               iParentNode < numDofsPerElem;
+               iParentNode++)
+            {
+
+              dftfe::utils::copyValue(
+                quadValues + iProcLocalIndex*numVecs + iVec,
+                dftfe::utils::add(
+                  quadValues[iProcLocalIndex*numVecs + iVec],
+                  dftfe::utils::mult(
+                    parentShapeFunc[iShapeFuncIndex + iParentNode],
+                    parentNodalValues[iCellIndex*numVecs*numDofsPerElem
+                                      + iParentNode * numVecs +
+                                      iVec])));
+            }
+        }
+    }
+
   } // namespace
 
   namespace utils
@@ -936,6 +983,73 @@ namespace dftfe
         return sum;
       }
 
+
+            template <typename ValueType1, typename ValueType2>
+      void
+      interpolateNodalDataToQuadDevice(
+        const dftfe::size_type numDofsPerElem,
+        const dftfe::size_type numQuadPoints,
+        const dftfe::size_type numVecs,
+        const ValueType2 *     parentShapeFunc,
+        const ValueType1 *     mapPointToCellIndex,
+        const ValueType1 *     mapPointToProcLocal,
+        const ValueType1 *     mapPointToShapeFuncIndex,
+        const ValueType2 *     parentNodalValues,
+        ValueType2 *           quadValues)
+      {
+#ifdef DFTFE_WITH_DEVICE_LANG_CUDA
+        interpolateNodalDataToQuadDeviceKernel<<<
+          (numQuadPoints * numVecs) /
+              dftfe::utils::DEVICE_BLOCK_SIZE +
+            1,
+          dftfe::utils::DEVICE_BLOCK_SIZE>>>(
+          numDofsPerElem,
+          numQuadPoints,
+          numVecs,
+          dftfe::utils::makeDataTypeDeviceCompatible(
+            parentShapeFunc),
+          dftfe::utils::makeDataTypeDeviceCompatible(
+            mapPointToCellIndex),
+          dftfe::utils::makeDataTypeDeviceCompatible(mapPointToProcLocal),
+          dftfe::utils::makeDataTypeDeviceCompatible(mapPointToShapeFuncIndex),
+          dftfe::utils::makeDataTypeDeviceCompatible(parentNodalValues),
+          dftfe::utils::makeDataTypeDeviceCompatible(quadValues));
+#elif DFTFE_WITH_DEVICE_LANG_HIP
+        hipLaunchKernelGGL(
+          interpolateNodalDataToQuadDeviceKernel,
+          (numQuadPoints * numVecs) /
+              dftfe::utils::DEVICE_BLOCK_SIZE +
+            1,
+          dftfe::utils::DEVICE_BLOCK_SIZE,
+          0,
+          0,
+          numDofsPerElem,
+          numQuadPoints,
+          numVecs,
+          dftfe::utils::makeDataTypeDeviceCompatible(
+            parentShapeFunc),
+          dftfe::utils::makeDataTypeDeviceCompatible(
+            mapPointToCellIndex),
+          dftfe::utils::makeDataTypeDeviceCompatible(mapPointToProcLocal),
+          dftfe::utils::makeDataTypeDeviceCompatible(mapPointToShapeFuncIndex),
+          dftfe::utils::makeDataTypeDeviceCompatible(parentNodalValues),
+          dftfe::utils::makeDataTypeDeviceCompatible(quadValues));
+#endif
+      }
+
+
+	          template void
+        interpolateNodalDataToQuadDevice(
+          const dftfe::size_type numDofsPerElem,
+          const dftfe::size_type numQuadPoints,
+          const dftfe::size_type numVecs,
+          const double *     parentShapeFunc,
+          const size_type *     mapPointToCellIndex,
+          const size_type *     mapPointToProcLocal,
+          const size_type *     mapPointToShapeFuncIndex,
+          const double *     parentNodalValues,
+        double *           quadValues
+          );
 
 
       template void

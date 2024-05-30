@@ -4,6 +4,12 @@
 
 #include "MultiVectorAdjointLinearSolverProblem.h"
 
+#include <deviceKernelsGeneric.h>
+#include <DeviceDataTypeOverloads.h>
+#include <DeviceKernelLauncherConstants.h>
+#include <DeviceAPICalls.h>
+#include <DeviceBlasWrapper.h>
+
 namespace dftfe
 {
 
@@ -160,6 +166,9 @@ namespace dftfe
       const dftfe::size_type numVec,
       const dftfe::size_type numQuadPoints,
       const dftfe::size_type blockSize,
+       const std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &BLASWrapperPtr,
       const dftfe::utils::MemoryStorage < ValueType,
                                         dftfe::utils::MemorySpace::DEVICE> &orbitalOccupancy,
       const dftfe::utils::MemoryStorage < unsigned int,
@@ -1130,6 +1139,9 @@ namespace dftfe
 
 
   template class MultiVectorAdjointLinearSolverProblem<dftfe::utils::MemorySpace::HOST>;
-
+  
+#ifdef DFTFE_WITH_DEVICE
+  template class MultiVectorAdjointLinearSolverProblem<dftfe::utils::MemorySpace::DEVICE>;
+#endif 
 
 }

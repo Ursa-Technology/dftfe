@@ -358,7 +358,7 @@ namespace dftfe
     std::vector<const dealii::AffineConstraints<double> *> constraintsVector;
     constraintsVector.resize(1);
     constraintsVector[0] = &d_constraintMatrixVxc;
-    d_basisOperationsChildHostPtr = std::make_shared<dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
+    d_basisOperationsChildHostPtr = std::make_shared<dftfe::basis::FEBasisOperations<dataTypes::number, double, dftfe::utils::MemorySpace::HOST>>
       (d_blasWrapperHost);
 
     std::vector<unsigned int> quadratureIDVec;
@@ -595,7 +595,7 @@ namespace dftfe
                                               false);
 
         fullFlattenedArrayCellLocalProcIndexIdMapVxcParent =
-          d_basisOperationsChildHostPtr->getFlattenedMaps();
+          d_basisOperationsChildHostPtr->getFlattenedMapsHost();
 
 
         vectorTools::createDealiiVector<double>(
@@ -781,28 +781,28 @@ namespace dftfe
 
         std::fill(d_sigmaGradRhoTarget.begin(),d_sigmaGradRhoTarget.end(),0.0);
         //TODO uncomment this after testing
-//        for( unsigned int iCell = 0; iCell < totalLocallyOwnedCellsParent; iCell++)
-//          {
-//            for (unsigned int q_point = 0;
-//                 q_point < numQuadraturePointsPerCellParent;
-//                 ++q_point)
-//              {
-//                unsigned int qPointId = (iCell * numQuadraturePointsPerCellParent) + q_point;
-//                unsigned int qPointCoordIndex = qPointId*3;
-//
-//                qpointCoord[0] = quadCoordinates[qPointCoordIndex + 0];
-//                qpointCoord[1] = quadCoordinates[qPointCoordIndex + 1];
-//                qpointCoord[2] = quadCoordinates[qPointCoordIndex + 2];
-//
-//                gaussianFuncManPrimaryObj.getRhoGradient(&qpointCoord[0],0,gradVal);
-//
-//                d_sigmaGradRhoTarget[qPointId] = 4.0*(gradVal[0]*gradVal[0] + gradVal[1]*gradVal[1] + gradVal[2]*gradVal[2]);
-////                if ( d_sigmaGradRhoTarget[qPointId] > 1e5)
-////                  {
-////                    std::cout<<" Large value of d_sigmaGradRhoTarget found at "<<qpointCoord[0]<<" "<<qpointCoord[1]<<" "<<qpointCoord[2]<<"\n";
-////                  }
-//              }
-//          }
+        for( unsigned int iCell = 0; iCell < totalLocallyOwnedCellsParent; iCell++)
+          {
+            for (unsigned int q_point = 0;
+                 q_point < numQuadraturePointsPerCellParent;
+                 ++q_point)
+              {
+                unsigned int qPointId = (iCell * numQuadraturePointsPerCellParent) + q_point;
+                unsigned int qPointCoordIndex = qPointId*3;
+
+                qpointCoord[0] = quadCoordinates[qPointCoordIndex + 0];
+                qpointCoord[1] = quadCoordinates[qPointCoordIndex + 1];
+                qpointCoord[2] = quadCoordinates[qPointCoordIndex + 2];
+
+                gaussianFuncManPrimaryObj.getRhoGradient(&qpointCoord[0],0,gradVal);
+
+                d_sigmaGradRhoTarget[qPointId] = 4.0*(gradVal[0]*gradVal[0] + gradVal[1]*gradVal[1] + gradVal[2]*gradVal[2]);
+//                if ( d_sigmaGradRhoTarget[qPointId] > 1e8)
+//                  {
+//                    std::cout<<" Large value of d_sigmaGradRhoTarget found at "<<qpointCoord[0]<<" "<<qpointCoord[1]<<" "<<qpointCoord[2]<<"\n";
+//                  }
+              }
+          }
       }
     if (d_numSpins == 2 )
       {
@@ -812,45 +812,45 @@ namespace dftfe
         d_sigmaGradRhoTarget.resize(3*totalLocallyOwnedCellsParent*numQuadraturePointsPerCellParent);
 
         std::fill(d_sigmaGradRhoTarget.begin(),d_sigmaGradRhoTarget.end(),0.0);
-//        for( unsigned int iCell = 0; iCell < totalLocallyOwnedCellsParent; iCell++)
-//          {
-//            for (unsigned int q_point = 0;
-//                 q_point < numQuadraturePointsPerCellParent;
-//                 ++q_point)
-//              {
-//
-//                unsigned int qPointId = (iCell * numQuadraturePointsPerCellParent) + q_point;
-//                unsigned int qPointCoordIndex = qPointId*3;
-//
-//                qpointCoord[0] = quadCoordinates[qPointCoordIndex + 0];
-//                qpointCoord[1] = quadCoordinates[qPointCoordIndex + 1];
-//                qpointCoord[2] = quadCoordinates[qPointCoordIndex + 2];
-//
-//                gaussianFuncManPrimaryObj.getRhoGradient(&qpointCoord[0],0,gradValSpinUp);
-//                gaussianFuncManPrimaryObj.getRhoGradient(&qpointCoord[0],1,gradValSpinDown);
-//
-//                d_sigmaGradRhoTarget[3*qPointId+0] = gradValSpinUp[0]*gradValSpinUp[0] +
-//                                                         gradValSpinUp[1]*gradValSpinUp[1] +
-//                                                         gradValSpinUp[2]*gradValSpinUp[2];
-//
-//                d_sigmaGradRhoTarget[3*qPointId+1] = gradValSpinUp[0]*gradValSpinDown[0] +
-//                                                         gradValSpinUp[1]*gradValSpinDown[1] +
-//                                                         gradValSpinUp[2]*gradValSpinDown[2];
-//
-//                d_sigmaGradRhoTarget[3*qPointId+2] = gradValSpinDown[0]*gradValSpinDown[0] +
-//                                                         gradValSpinDown[1]*gradValSpinDown[1] +
-//                                                         gradValSpinDown[2]*gradValSpinDown[2];
-//              }
-//          }
+        for( unsigned int iCell = 0; iCell < totalLocallyOwnedCellsParent; iCell++)
+          {
+            for (unsigned int q_point = 0;
+                 q_point < numQuadraturePointsPerCellParent;
+                 ++q_point)
+              {
+
+                unsigned int qPointId = (iCell * numQuadraturePointsPerCellParent) + q_point;
+                unsigned int qPointCoordIndex = qPointId*3;
+
+                qpointCoord[0] = quadCoordinates[qPointCoordIndex + 0];
+                qpointCoord[1] = quadCoordinates[qPointCoordIndex + 1];
+                qpointCoord[2] = quadCoordinates[qPointCoordIndex + 2];
+
+                gaussianFuncManPrimaryObj.getRhoGradient(&qpointCoord[0],0,gradValSpinUp);
+                gaussianFuncManPrimaryObj.getRhoGradient(&qpointCoord[0],1,gradValSpinDown);
+
+                d_sigmaGradRhoTarget[3*qPointId+0] = gradValSpinUp[0]*gradValSpinUp[0] +
+                                                         gradValSpinUp[1]*gradValSpinUp[1] +
+                                                         gradValSpinUp[2]*gradValSpinUp[2];
+
+                d_sigmaGradRhoTarget[3*qPointId+1] = gradValSpinUp[0]*gradValSpinDown[0] +
+                                                         gradValSpinUp[1]*gradValSpinDown[1] +
+                                                         gradValSpinUp[2]*gradValSpinDown[2];
+
+                d_sigmaGradRhoTarget[3*qPointId+2] = gradValSpinDown[0]*gradValSpinDown[0] +
+                                                         gradValSpinDown[1]*gradValSpinDown[1] +
+                                                         gradValSpinDown[2]*gradValSpinDown[2];
+              }
+          }
       }
 
-//    auto sigmaGradIt= std::max_element(d_sigmaGradRhoTarget.begin(),d_sigmaGradRhoTarget.end());
-//    double maxSigmaGradVal = *sigmaGradIt;
-//
-//    MPI_Allreduce(
-//      MPI_IN_PLACE, &maxSigmaGradVal, 1, MPI_DOUBLE, MPI_MAX, d_mpiComm_domain);
-//
-//    pcout<<" Max vlaue of sigmaGradVal = "<<maxSigmaGradVal<<"\n";
+    auto sigmaGradIt= std::max_element(d_sigmaGradRhoTarget.begin(),d_sigmaGradRhoTarget.end());
+    double maxSigmaGradVal = *sigmaGradIt;
+
+    MPI_Allreduce(
+      MPI_IN_PLACE, &maxSigmaGradVal, 1, MPI_DOUBLE, MPI_MAX, d_mpiComm_domain);
+
+    pcout<<" Max vlaue of sigmaGradVal = "<<maxSigmaGradVal<<"\n";
     std::vector<std::string> densityMatDFTFileNames;
     densityMatDFTFileNames.push_back(d_inverseDFTParams.densityMatDFTFileNameSpinUp);
     if (d_numSpins == 2)
@@ -928,13 +928,17 @@ namespace dftfe
                 iElem * numQuadraturePointsPerCellParent + iQuad;
               rhoDiffMemStorage[0][index] = rhoGaussianDFT[0][index] - rhoValuesFeSpin[0][index];
 
+	      if (( d_rhoTarget[0][iElem*numQuadraturePointsPerCellParent + iQuad] < 0.0 ) && (d_rhoTarget[0][iElem*numQuadraturePointsPerCellParent + iQuad] > -1e-10))
+	      {
+		      d_rhoTarget[0][iElem*numQuadraturePointsPerCellParent + iQuad] = 1e-15;
+	      }
               if (d_rhoTarget[0][iElem*numQuadraturePointsPerCellParent + iQuad] < 0.0)
                 {
                   unsigned int qPointCoordIndex =
                     ((iElem * numQuadraturePointsPerCellParent) + iQuad) * 3;
-//                  std::cout << " qPoint = ("<<quadCoordinates[qPointCoordIndex + 0]<<","<<quadCoordinates[qPointCoordIndex + 1]<<","<<quadCoordinates[qPointCoordIndex + 2]<<") RHO IS NEGATIVE!!!!!!!!!!\n";
-//                  std::cout<<"primary = "<<rhoGaussianPrimary[0][index]<<" secondary = "<<
-//                    rhoGaussianDFT[0][index]<< " Fe = "<< rhoValuesFeSpin[0][index]<<"\n";
+                  std::cout << " qPoint = ("<<quadCoordinates[qPointCoordIndex + 0]<<","<<quadCoordinates[qPointCoordIndex + 1]<<","<<quadCoordinates[qPointCoordIndex + 2]<<") RHO IS NEGATIVE!!!!!!!!!!\n";
+                  std::cout<<"primary = "<<rhoGaussianPrimary[0][index]<<" secondary = "<<
+                    rhoGaussianDFT[0][index]<< " Fe = "<< rhoValuesFeSpin[0][index]<<"\n";
                 }
               rhoSumGaussian +=
                 d_rhoTarget[0][iElem*numQuadraturePointsPerCellParent+iQuad] *
@@ -1393,7 +1397,7 @@ namespace dftfe
                                       true);
 
         fullFlattenedArrayCellLocalProcIndexIdMapVxcInitialParent =
-          d_basisOperationsHost->getFlattenedMaps();
+          d_basisOperationsHost->getFlattenedMapsHost();
 
         std::vector<dftfe::utils::MemoryStorage<dataTypes::number,
                                                 dftfe::utils::MemorySpace::HOST>> exactPotValuesChildQuad;
@@ -2053,7 +2057,7 @@ namespace dftfe
         }
 
 
-    pcout << " solving possion in the pot base \n";
+    pcout << " solving possion in the compute quad hartree\n";
 
     std::shared_ptr<
       dftfe::basis::FEBasisOperations<dataTypes::number,
@@ -2081,6 +2085,8 @@ namespace dftfe
                               dofHandlerElectroIndex,
                               quadratureVectorId,
                               updateFlags);
+
+    basisOpeElectroHost->reinit(1,0,quadratureElectroAxId);
 
     poissonSolverProblem<FEOrder, FEOrderElectro> poissonSolverObj(d_mpiComm_domain);
     poissonSolverObj.reinit(basisOpeElectroHost,
@@ -2974,6 +2980,12 @@ const unsigned int nLocallyOwnedCells = d_dftMatrixFreeData->n_physical_cells();
   }
 
   template class inverseDFT<2,2,dftfe::utils::MemorySpace::HOST>;
+  template class inverseDFT<4,4,dftfe::utils::MemorySpace::HOST>;
+
+#ifdef DFTFE_WITH_DEVICE
+  template class inverseDFT<2,2,dftfe::utils::MemorySpace::DEVICE>;
+  template class inverseDFT<4,4,dftfe::utils::MemorySpace::DEVICE>;
+#endif
 } // namespace dftfe
 
 /*

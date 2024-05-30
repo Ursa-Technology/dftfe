@@ -1,3 +1,10 @@
+//template class dftClass<2, 2, dftfe::utils::MemorySpace::HOST>;
+///template class dftClass<4, 4, dftfe::utils::MemorySpace::HOST>;
+
+//template class dftClass<2, 2, dftfe::utils::MemorySpace::DEVICE>;
+//template class dftClass<4, 4, dftfe::utils::MemorySpace::DEVICE>;
+
+ 
 #ifdef DFTFE_MINIMAL_COMPILE
 template class dftClass<2, 2, dftfe::utils::MemorySpace::HOST>;
 template class dftClass<3, 3, dftfe::utils::MemorySpace::HOST>;
@@ -111,3 +118,4 @@ template class dftClass<8, 15, dftfe::utils::MemorySpace::DEVICE>;
 template class dftClass<8, 16, dftfe::utils::MemorySpace::DEVICE>;
 #  endif
 #endif
+

@@ -152,7 +152,9 @@ namespace dftfe
 
     dftfe::utils::MemoryStorage<dealii::types::global_dof_index, memorySpace>
       fullFlattenedArrayCellLocalProcIndexIdMapPsiMemSpace,
-      fullFlattenedArrayCellLocalProcIndexIdMapAdjointMemSpace,
+      fullFlattenedArrayCellLocalProcIndexIdMapAdjointMemSpace;
+
+    dftfe::utils::MemoryStorage<dealii::types::global_dof_index, dftfe::utils::MemorySpace::HOST>
       d_fullFlattenedMapChild;
 
     std::vector<dealii::types::global_dof_index> fullFlattenedArrayCellLocalProcIndexIdMapPsiHost,fullFlattenedArrayCellLocalProcIndexIdMapAdjointHost;
@@ -221,13 +223,12 @@ namespace dftfe
     double                                          d_lossPreviousIteration;
     double                                          d_tolForChebFiltering;
     elpaScalaManager *                              d_elpaScala;
+
 #ifdef DFTFE_WITH_DEVICE
-
-    chebyshevOrthogonalizedSubspaceIterationSolverDevice *d_subspaceIterationSolver;
-
-#else
-    chebyshevOrthogonalizedSubspaceIterationSolver *d_subspaceIterationSolver;
+    chebyshevOrthogonalizedSubspaceIterationSolverDevice *d_subspaceIterationSolverDevice;
 #endif
+
+    chebyshevOrthogonalizedSubspaceIterationSolver *d_subspaceIterationSolverHost;
 
 
     std::vector<std::vector<double>> d_residualNormWaveFunctions;

@@ -280,6 +280,8 @@ main(int argc, char *argv[])
                                  MPI_COMM_WORLD,
                                  true);
 
+      if ( runParams.useDevice == false)
+      {
       dftfe::inverseDFT<2,2,dftfe::utils::MemorySpace::HOST> invDFTObj(*dftBasePtr,
                                   dftParams,
                                   invParams,
@@ -290,6 +292,21 @@ main(int argc, char *argv[])
 
       dftfeWrapped.run();
       invDFTObj.run();
+      }
+
+      if ( runParams.useDevice == true)
+      {
+      dftfe::inverseDFT<2,2,dftfe::utils::MemorySpace::DEVICE> invDFTObj(*dftBasePtr,
+                                  dftParams,
+                                  invParams,
+                                  dftBasePtr->getMPIParent(),
+                                  dftBasePtr->getMPIDomain(),
+                                  dftBasePtr->getMPIInterBand(),
+                                  dftBasePtr->getMPIInterPool());
+
+      dftfeWrapped.run();
+      invDFTObj.run();
+      }
     }
   else
     {

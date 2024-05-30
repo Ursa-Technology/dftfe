@@ -174,7 +174,7 @@ namespace dftfe
                                 const dftfe::size_type contiguousBlockSize,
                                 const ValueType *      input1,
                                 const ValueType *      input2,
-                                ValueType *            output) const;
+                                ValueType *            output);
 
       // Real-Float scaling of Real-vector
 
@@ -626,25 +626,25 @@ namespace dftfe
         const ValueType *            beta,
         ValueType *       x);
 
-      template <typename ValueType1, typename ValueType2>
+      template <typename ValueType>
       void
       stridedBlockScaleAndAddColumnWise(
         const dftfe::size_type         contiguousBlockSize,
         const dftfe::size_type         numContiguousBlocks,
-        const ValueType1 *            x,
-        const ValueType1 *       beta,
-        ValueType2 *            y);
+        const ValueType *            x,
+        const ValueType *       beta,
+        ValueType *            y);
 
-      template <typename ValueType1, typename ValueType2>
+      template <typename ValueType>
       void
       stridedBlockScaleAndAddTwoVecColumnWise(
         const dftfe::size_type         contiguousBlockSize,
         const dftfe::size_type         numContiguousBlocks,
-        const ValueType1 *            x,
-        const ValueType1 *            alpha,
-        const ValueType2 *       y,
-        const ValueType2 *       beta,
-        ValueType2 *            z);
+        const ValueType *            x,
+        const ValueType *            alpha,
+        const ValueType *       y,
+        const ValueType *       beta,
+        ValueType *            z);
 
     private:
     };
@@ -786,7 +786,7 @@ namespace dftfe
                                 const dftfe::size_type contiguousBlockSize,
                                 const ValueType *      input1,
                                 const ValueType *      input2,
-                                ValueType *            output) const;
+                                ValueType *            output);
 
 
 
@@ -1243,25 +1243,25 @@ namespace dftfe
         const ValueType *            beta,
         ValueType *       x);
 
-      template <typename ValueType1, typename ValueType2>
+      template <typename ValueType>
       void
       stridedBlockScaleAndAddColumnWise(
         const dftfe::size_type         contiguousBlockSize,
         const dftfe::size_type         numContiguousBlocks,
-        const ValueType1 *            x,
-        const ValueType1 *       beta,
-        ValueType2 *            y);
+        const ValueType *            x,
+        const ValueType *       beta,
+        ValueType *            y);
 
-      template <typename ValueType1, typename ValueType2>
+      template <typename ValueType>
       void
       stridedBlockScaleAndAddTwoVecColumnWise(
         const dftfe::size_type         contiguousBlockSize,
         const dftfe::size_type         numContiguousBlocks,
-        const ValueType1 *            x,
-        const ValueType1 *            alpha,
-        const ValueType2 *       y,
-        const ValueType2 *       beta,
-        ValueType2 *            z);
+        const ValueType *            x,
+        const ValueType *            alpha,
+        const ValueType *       y,
+        const ValueType *       beta,
+        ValueType *            z);
 
       dftfe::utils::deviceBlasHandle_t &
       getDeviceBlasHandle();

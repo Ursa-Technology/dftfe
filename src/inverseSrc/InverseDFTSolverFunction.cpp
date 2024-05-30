@@ -326,8 +326,13 @@ namespace dftfe
     d_numElectrons = d_dftClassPtr->getNumElectrons();
 
     d_elpaScala               = d_dftClassPtr->getElpaScalaManager();
-    d_subspaceIterationSolver = d_dftClassPtr->getSubspaceIterationSolver();
+    
 
+    #ifdef DFTFE_WITH_DEVICE
+        d_subspaceIterationSolverDevice = d_dftClassPtr->getSubspaceIterationSolverDevice();
+    #endif
+
+	d_subspaceIterationSolverHost = d_dftClassPtr->getSubspaceIterationSolverHost();
 
 
 
@@ -397,7 +402,7 @@ namespace dftfe
 
 
 
-    dftfe::linearAlgebra::MultiVector<double, memorySpace> dummyPotVec;
+    dftfe::linearAlgebra::MultiVector<double, dftfe::utils::MemorySpace::HOST> dummyPotVec;
 
 
 
@@ -909,16 +914,25 @@ namespace dftfe
                       *d_constraintMatrixHomogeneousAdjoint);
 
 
+		    std::shared_ptr<dftfe::utils::mpi::MPIPatternP2P<dftfe::utils::MemorySpace::HOST>> psiVecMPIP2P  =
+			    std::make_shared<dftfe::utils::mpi::MPIPatternP2P<dftfe::utils::MemorySpace::HOST>>(psiBlockVecMemSpace.getMPIPatternP2P()->getLocallyOwnedRange(),
+				    psiBlockVecMemSpace.getMPIPatternP2P()->getGhostIndices(),
+				    d_mpi_comm_domain);
+
                     vectorTools::computeCellLocalIndexSetMap(
-                      psiBlockVecMemSpace.getMPIPatternP2P(),
+                      psiVecMPIP2P,
                       *d_matrixFreeDataParent,
                       d_matrixFreePsiVectorComponent,
                       currentBlockSize,
                       fullFlattenedArrayCellLocalProcIndexIdMapPsiHost);
 
+		                        std::shared_ptr<dftfe::utils::mpi::MPIPatternP2P<dftfe::utils::MemorySpace::HOST>> adjVecMPIP2P  =
+                            std::make_shared<dftfe::utils::mpi::MPIPatternP2P<dftfe::utils::MemorySpace::HOST>>(multiVectorAdjointOutputWithAdjointConstraintsMemSpace.getMPIPatternP2P()->getLocallyOwnedRange(),
+                                    multiVectorAdjointOutputWithAdjointConstraintsMemSpace.getMPIPatternP2P()->getGhostIndices(),
+                                    d_mpi_comm_domain);
+
                     vectorTools::computeCellLocalIndexSetMap(
-                      multiVectorAdjointOutputWithAdjointConstraintsMemSpace
-                        .getMPIPatternP2P(),
+                      adjVecMPIP2P,
                       *d_matrixFreeDataParent,
                       d_matrixFreeAdjointVectorComponent,
                       currentBlockSize,
@@ -1301,18 +1315,43 @@ namespace dftfe
 
                 computingTimerStandard.enter_subsection(
                   "kohnShamEigenSpaceCompute inverse on CPU");
-                d_dftClassPtr->kohnShamEigenSpaceCompute(
+
+		if constexpr (memorySpace == dftfe::utils::MemorySpace::HOST)
+		{
+		d_dftClassPtr->kohnShamEigenSpaceCompute(
                   iSpin,
                   iKpoint,
                   *d_kohnShamClass,
                   *d_elpaScala,
-                  *d_subspaceIterationSolver,
+                  *d_subspaceIterationSolverHost,
                   residualNorms[iSpin][iKpoint],
                   true,  // compute residual
                   false, // spectrum splitting
                   false, // mixed precision
                   false  // is first SCF
                 );
+
+		}
+
+#ifdef DFTFE_WITH_DEVICE
+		if constexpr (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+		{
+		 d_dftClassPtr->kohnShamEigenSpaceCompute(
+                  iSpin,
+                  iKpoint,
+                  *d_kohnShamClass,
+                  *d_elpaScala,
+                  *d_subspaceIterationSolverDevice,
+                  residualNorms[iSpin][iKpoint],
+                  true,  // compute residual
+                  false, // spectrum splitting
+                  false, // mixed precision
+                  false  // is first SCF
+                );
+
+
+		}
+#endif
                 computingTimerStandard.leave_subsection(
                   "kohnShamEigenSpaceCompute inverse on CPU");
               }
@@ -1541,6 +1580,11 @@ namespace dftfe
   }
 
   template class InverseDFTSolverFunction<2,2,dftfe::utils::MemorySpace::HOST>;
+  template class InverseDFTSolverFunction<4,4,dftfe::utils::MemorySpace::HOST>;
+#ifdef DFTFE_WITH_DEVICE
+  template class InverseDFTSolverFunction<2,2,dftfe::utils::MemorySpace::DEVICE>;
+  template class InverseDFTSolverFunction<4,4,dftfe::utils::MemorySpace::DEVICE>;
+#endif
   //  template class inverseDFTSolverFunction<float>;
   //  template class inverseDFTSolverFunction<double>;
   //  template class inverseDFTSolverFunction<std::complex<float>>;

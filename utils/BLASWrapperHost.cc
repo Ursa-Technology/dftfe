@@ -86,7 +86,7 @@ namespace dftfe
                               const dftfe::size_type contiguousBlockSize,
                               const ValueType *      input1,
                               const ValueType *      input2,
-                              ValueType *            output) const
+                              ValueType *            output)
     {
 
       for (dftfe::size_type iIndex = 0; iIndex < numContiguousBlocks; iIndex++)
@@ -107,7 +107,7 @@ namespace dftfe
                                 const dftfe::size_type contiguousBlockSize,
                                 const double *      input1,
                                 const double *      input2,
-                                double *            output) const ;
+                                double *            output);
 
     template <typename ValueType1, typename ValueType2>
     void
@@ -921,14 +921,14 @@ namespace dftfe
         }
     }
 
-    template <typename ValueType1, typename ValueType2>
+    template <typename ValueType>
     void
       BLASWrapper<dftfe::utils::MemorySpace::HOST>::stridedBlockScaleAndAddColumnWise(
       const dftfe::size_type         contiguousBlockSize,
       const dftfe::size_type         numContiguousBlocks,
-      const ValueType1 *            x,
-      const ValueType1 *       beta,
-      ValueType2 *            y)
+      const ValueType *            x,
+      const ValueType *       beta,
+      ValueType *            y)
     {
       for(unsigned int i =0 ; i< numContiguousBlocks; i++ )
         {
@@ -939,16 +939,16 @@ namespace dftfe
         }
     }
 
-    template <typename ValueType1, typename ValueType2>
+    template <typename ValueType>
     void
     BLASWrapper<dftfe::utils::MemorySpace::HOST>::stridedBlockScaleAndAddTwoVecColumnWise(
       const dftfe::size_type         contiguousBlockSize,
       const dftfe::size_type         numContiguousBlocks,
-      const ValueType1 *            x,
-      const ValueType1 *            alpha,
-      const ValueType2 *       y,
-      const ValueType2 *       beta,
-      ValueType2 *            z)
+      const ValueType *            x,
+      const ValueType *            alpha,
+      const ValueType *       y,
+      const ValueType *       beta,
+      ValueType *            z)
     {
       for(unsigned int i =0 ; i< numContiguousBlocks; i++ )
         {
@@ -1106,6 +1106,7 @@ namespace dftfe
       const std::complex<float> *beta,
       std::complex<float> *      y);
 
+    /*
     template void
     BLASWrapper<dftfe::utils::MemorySpace::HOST>::stridedBlockScaleAndAddColumnWise(
       const dftfe::size_type contiguousBlockSize,
@@ -1153,7 +1154,7 @@ namespace dftfe
       const double *         x,
       const double *         beta,
       std::complex<float> *  y);
-
+*/
     // for stridedBlockScaleAndAddTwoVecColumnWise
     template void
     BLASWrapper<dftfe::utils::MemorySpace::HOST>::stridedBlockScaleAndAddTwoVecColumnWise(
@@ -1194,7 +1195,7 @@ namespace dftfe
       const std::complex<float> *      y,
       const std::complex<float> *      beta,
       std::complex<float> *      z);
-
+/*
     template void
     BLASWrapper<dftfe::utils::MemorySpace::HOST>::stridedBlockScaleAndAddTwoVecColumnWise(
       const dftfe::size_type contiguousBlockSize,
@@ -1254,7 +1255,8 @@ namespace dftfe
 //      const std::complex<float> *  y,
 //      const std::complex<float> *  beta,
 //      std::complex<float> *  z);
-    // template void
+*/  
+// template void
     // BLASWrapper<dftfe::utils::MemorySpace::HOST>::stridedBlockScale(
     //   const dftfe::size_type      contiguousBlockSize,
     //   const dftfe::size_type      numContiguousBlocks,

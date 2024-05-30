@@ -495,4 +495,9 @@ namespace dftfe
   }
 
  template class BFGSInverseDFTSolver<2,2,dftfe::utils::MemorySpace::HOST>;
+ template class BFGSInverseDFTSolver<4,4,dftfe::utils::MemorySpace::HOST>;
+#ifdef DFTFE_WITH_DEVICE
+ template class BFGSInverseDFTSolver<2,2,dftfe::utils::MemorySpace::DEVICE>;
+ template class BFGSInverseDFTSolver<4,4,dftfe::utils::MemorySpace::DEVICE>;
+#endif
 } // namespace dftfe

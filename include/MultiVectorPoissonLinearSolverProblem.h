@@ -178,7 +178,6 @@ namespace dftfe
     dftfe::utils::MemoryStorage<double, memorySpace>
       d_xCellLLevelNodalData, d_AxCellLLevelNodalData;
 
-    size_type d_cellsBlockSizeVmult;
 
     dftfe::utils::MemoryStorage<double, memorySpace> *d_rhsQuadDataPtr;
 
@@ -207,6 +206,7 @@ namespace dftfe
     /// storage for shapefunctions
     std::vector<double> d_shapeFunctionValue;
 
+    unsigned int d_cellBlockSize;
   };
 
 }

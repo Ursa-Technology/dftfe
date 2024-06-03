@@ -80,8 +80,9 @@ namespace dftfe
     // 3. interpolate v_slater to child quad points
     // 4. perform L2 projection to get v_slater on child mesh nodes
     //
-    void
-    setInitialPot();
+    
+    //void
+    //setInitialPot();
 
     void
     setInitialPotL2Proj();
@@ -129,6 +130,7 @@ namespace dftfe
     void
     run();
 
+    void testAdjoint();
   private:
     std::vector<dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>> d_rhoTarget;
     std::vector<double> d_sigmaGradRhoTarget;

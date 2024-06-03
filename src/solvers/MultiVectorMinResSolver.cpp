@@ -482,7 +482,26 @@ namespace dftfe
           xMemSpace.data());
       }
 
+
+     std::vector<double> l2NormVec(blockSize,0.0);
+
+    xMemSpace.l2Norm(&l2NormVec[0]);
+
+    pcout<<" xMemSpace before dist = \n";
+    for(unsigned int iB = 0; iB  < blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
+
     problem.distributeX();
+
+        xMemSpace.l2Norm(&l2NormVec[0]);
+
+    pcout<<" xMemSpace after dist = \n";
+    for(unsigned int iB = 0; iB  < blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
 #if defined(DFTFE_WITH_DEVICE)
     if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
       dftfe::utils::deviceSynchronize();

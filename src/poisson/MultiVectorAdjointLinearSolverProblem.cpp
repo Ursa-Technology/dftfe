@@ -265,6 +265,17 @@ namespace dftfe
                     shapeFunc[jNode + iQuad * numDofsPerElem];
                 }
             }
+	  //std::cout<<" shapeFuncTranspose = "<<shapeFuncTranspose.size()<<"\n";
+	  //std::cout<<" shapeFunc = "<<shapeFunc.size()<<"\n";
+
+	  if (numLocalCells ==0)
+	  {
+		   std::cout<<" Error in numLocalCells is zero !!!!!!\n";
+	  }
+	  if(inputJxW.size() != numQuadPoints*numLocalCells)
+	  {
+		  std::cout<<" inputJxW error in compute r mat\n"; 
+	  }
           BLASWrapperPtr->xgemm(transA,
                                 transB,
                                 numDofsPerElem,
@@ -326,6 +337,8 @@ namespace dftfe
               muMatrixCellWise[iElem * numVec + vecIndex] +=   2.0*orbitalOccupancy[vecId]*
                                                                 cellLevelQuadValues[elemQuadIndex + vecId +
                                                                                     iQuad * blockSize]*
+							        cellLevelQuadValues[elemQuadIndex + degenerateId +
+                                                                                    iQuad * blockSize]*
                                                                 inputJxW[elemInputQuadIndex + iQuad];
 
             }
@@ -352,6 +365,7 @@ namespace dftfe
     d_matrixFreeQuadratureComponentRhs = -1;
     d_matrixFreeVectorComponent        = -1;
     d_blockSize                        = 0;
+    d_cellBlockSize = 100; // TODO set this based on rum time.
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -383,8 +397,10 @@ namespace dftfe
 
     d_numCells       = d_basisOperationsPtr->nCells();
 
+    d_cellBlockSize = std::min(d_cellBlockSize ,d_numCells);
+
     d_basisOperationsPtr->reinit(1,
-                                 d_numCells,
+                                 d_cellBlockSize,
                                  d_matrixFreeQuadratureComponentRhs,
                                  true, // TODO should this be set to true
                                  true); // TODO should this be set to true
@@ -492,6 +508,14 @@ namespace dftfe
       d_diagonalSqrtA.data(),
       d_diagonalSqrtA.data(),
       mapNodeIdToProcId.data());
+
+    std::vector<double> d_diagonalANorm, d_diagonalSqrtANorm;
+    d_diagonalANorm.resize(1);
+    d_diagonalSqrtANorm.resize(1);
+    d_diagonalA.l2Norm(&d_diagonalANorm[0]);
+    d_diagonalSqrtA.l2Norm(&d_diagonalSqrtANorm[0]);
+    pcout<<" Norm of d_diagonalA = "<<d_diagonalANorm[0]<<"\n";
+    pcout<<" Norm of d_diagonalSqrtA = "<<d_diagonalSqrtANorm[0]<<"\n";
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -503,6 +527,12 @@ namespace dftfe
                                             memorySpace> &src,
     const double                     omega) const
   {
+	          d_BLASWrapperPtr->axpby(d_locallyOwnedSize*d_blockSize,
+                          1.0,
+                          src.begin(),
+                          0.0,
+                          dst.begin());
+		  /*
     d_BLASWrapperPtr->stridedBlockScaleCopy(
       d_blockSize,
       d_locallyOwnedSize,
@@ -511,6 +541,7 @@ namespace dftfe
       src.data(),
       dst.data(),
       d_mapNodeIdToProcId.data());
+      */
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -522,6 +553,12 @@ namespace dftfe
                                                                   memorySpace> &src,
                           const double omega) const
   {
+	   d_BLASWrapperPtr->axpby(d_locallyOwnedSize*d_blockSize,
+                          1.0,
+                          src.begin(),
+                          0.0,
+                          dst.begin());
+	   /*
     d_BLASWrapperPtr->stridedBlockScaleCopy(
       d_blockSize,
       d_locallyOwnedSize,
@@ -530,6 +567,7 @@ namespace dftfe
       src.data(),
       dst.data(),
       d_mapNodeIdToProcId.data());
+      */
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -547,12 +585,12 @@ namespace dftfe
                                         dealii::TimerOutput::summary,
                                         dealii::TimerOutput::wall_times);
 
-    d_cellsBlockSizeVmult = 100;
     d_basisOperationsPtr->reinit(blockSizeInput,
-                                 d_cellsBlockSizeVmult,
+                                 d_cellBlockSize,
                                  d_matrixFreeQuadratureComponentRhs,
                                  true, // TODO should this be set to true
                                  true); // TODO should this be set to true
+
     if(d_blockSize != blockSizeInput)
       {
         d_blockSize = blockSizeInput;
@@ -605,9 +643,26 @@ namespace dftfe
     dftfe::linearAlgebra::MultiVector<double,
                                       memorySpace> psiTempMemSpace;
     psiTempMemSpace.reinit(*d_psiMemSpace);
-    psiTempMemSpace = *d_psiMemSpace;
+    //psiTempMemSpace = *d_psiMemSpace;
+    
+        d_BLASWrapperPtr->axpby(d_locallyOwnedSize*d_blockSize,
+                          1.0,
+                          d_psiMemSpace->begin(),
+                          0.0,
+                          psiTempMemSpace.begin());
     psiTempMemSpace.updateGhostValues();
     d_constraintsInfo.distribute(psiTempMemSpace);
+
+
+    std::vector<double> l2NormVec(d_blockSize,0.0);
+
+    psiTempMemSpace.l2Norm(&l2NormVec[0]);
+
+    pcout<<" psiTempMemSpace = \n";
+    for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
+    {
+	    pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
 
     dftfe::linearAlgebra::MultiVector<double,
                                       memorySpace> psiTempMemSpace2;
@@ -627,7 +682,7 @@ namespace dftfe
     pcout<<" d_mapNodeIdToProcId = "<<d_mapNodeIdToProcId.size()<<"\n";
 
     d_BLASWrapperPtr->stridedBlockScaleCopy(
-      1,
+      d_blockSize,
       d_locallyOwnedSize,
       1.0,
       sqrtMassMat.data(),
@@ -635,9 +690,18 @@ namespace dftfe
       psiTempMemSpace.data(),
       d_mapNodeIdToProcId.data());
 
+    psiTempMemSpace.l2Norm(&l2NormVec[0]);
+
+    pcout<<" psiTempMemSpace  sqrt mass mat = \n";
+    for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
+
     psiTempMemSpace.updateGhostValues();
     computing_timer.leave_subsection("M^(-1/2) MemSpace MPI");
 
+    
     computing_timer.enter_subsection("computeR MemSpace MPI");
     computeRMatrix(d_inputJxWMemSpace);
     computing_timer.leave_subsection("computeR MemSpace MPI");
@@ -678,6 +742,15 @@ namespace dftfe
       d_rhsMemSpace.data(),
       d_blockSize);
 
+
+        d_rhsMemSpace.l2Norm(&l2NormVec[0]);
+
+	    pcout<<" d_rhsMemSpace = \n";
+    for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
+
     computing_timer.leave_subsection("Mu*Psi MemSpace MPI");
 
 
@@ -690,7 +763,7 @@ namespace dftfe
 
     computing_timer.enter_subsection("psi*M(-1/2) MemSpace MPI");
 
-    auto invSqrtMassMat = d_basisOperationsPtr->cellInverseMassVectorBasisData();
+    auto invSqrtMassMat = d_basisOperationsPtr->inverseSqrtMassVectorBasisData();
     d_BLASWrapperPtr->stridedBlockScaleCopy(
       d_blockSize,
       d_locallyOwnedSize,
@@ -699,6 +772,15 @@ namespace dftfe
       psiTempMemSpace.data(),
       psiTempMemSpace.data(),
       d_mapNodeIdToProcId.data());
+
+
+            psiTempMemSpace.l2Norm(&l2NormVec[0]);
+
+    pcout<<" psiTempMemSpace invSqrt = \n";
+    for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
 
     psiTempMemSpace.updateGhostValues();
     d_constraintsInfo.distribute(psiTempMemSpace);
@@ -709,6 +791,12 @@ namespace dftfe
     // 2. Do PsiTemp2 = R*PsiTemp
     d_cellWaveFunctionMatrixMemSpace.setValue(0.0);
     std::pair<unsigned int, unsigned int> cellRange = std::make_pair(0,d_numCells);
+    
+        d_basisOperationsPtr->reinit(d_blockSize,
+                                 d_cellBlockSize,
+                                 d_matrixFreeQuadratureComponentRhs,
+                                 true, // TODO should this be set to true
+                                 false); // TODO should this be set to true
     d_basisOperationsPtr->extractToCellNodalDataKernel(psiTempMemSpace,
                                                        d_cellWaveFunctionMatrixMemSpace.data(),
                                                        cellRange);
@@ -740,12 +828,26 @@ namespace dftfe
       strideC,
       d_numCells);
 
+        d_basisOperationsPtr->reinit(d_blockSize,
+                                 d_cellBlockSize,
+                                 d_matrixFreeQuadratureComponentRhs,
+                                 true, // TODO should this be set to true
+                                 false); // TODO should this be set to true
+					//
       d_basisOperationsPtr->accumulateFromCellNodalData(
       d_cellRMatrixTimesWaveMatrixMemSpace.begin(),
       psiTempMemSpace2);
     d_constraintsInfo.distribute_slave_to_master(psiTempMemSpace2);
     psiTempMemSpace2.accumulateAddLocallyOwned();
 
+
+    psiTempMemSpace2.l2Norm(&l2NormVec[0]);
+
+    pcout<<" psiTempMemSpace2 r mat = \n";
+    for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
     // 3. PsiTemp2 = M^{-1/2}*PsiTemp2
     computing_timer.leave_subsection("R times psi MemSpace MPI");
 
@@ -767,14 +869,40 @@ namespace dftfe
     psiTempMemSpace2.updateGhostValues();
     d_constraintsInfo.distribute(psiTempMemSpace2);
 
+        psiTempMemSpace2.l2Norm(&l2NormVec[0]);
+
+    pcout<<" psiTempMemSpace2 inv mat = \n";
+    for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
+
     d_BLASWrapperPtr->stridedBlockScaleAndAddColumnWise(d_blockSize,
                                                       d_locallyOwnedSize,
-                                                       d_4xeffectiveOrbitalOccupancyMemSpace.data(),
-                                                      psiTempMemSpace2.data(),
+						      psiTempMemSpace2.data(),
+                                                      d_4xeffectiveOrbitalOccupancyMemSpace.data(),
                                                       d_rhsMemSpace.data());
 
+    pcout<<" d_4xeffectiveOrbitalOccupancyMemSpace size = "<<d_4xeffectiveOrbitalOccupancyMemSpace.size()<<"\n";
+    for( unsigned int iBlock = 0 ; iBlock < d_blockSize; iBlock++)
+    {
+pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()[iBlock]<<"\n";
+    }
+    d_rhsMemSpace.l2Norm(&l2NormVec[0]);
+        pcout<<" d_rhsMemSpace before set = \n";
+    for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
     d_constraintsInfo.set_zero(d_rhsMemSpace);
 
+    d_rhsMemSpace.l2Norm(&l2NormVec[0]);
+
+    pcout<<" d_rhsMemSpace final = \n";
+    for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
     computing_timer.leave_subsection("psiTemp M^(-1/2) MemSpace MPI");
 
     return d_rhsMemSpace;
@@ -802,6 +930,15 @@ namespace dftfe
     d_psiMemSpace->updateGhostValues();
     d_constraintsInfo.distribute(*d_psiMemSpace);
 
+            std::vector<double> l2NormVec(blockSize,0.0);
+
+    d_psiMemSpace->l2Norm(&l2NormVec[0]);
+
+    pcout<<" d_psiMemSpace = \n";
+    for(unsigned int iB = 0; iB  < blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
     d_RMatrixMemSpace.resize(d_numCells * d_numberDofsPerElement *
                                d_numberDofsPerElement);
     d_RMatrixMemSpace.setValue(0.0);
@@ -905,11 +1042,46 @@ namespace dftfe
 
     d_cellWaveFunctionMatrixMemSpace.setValue(0.0);
 
+
+ //       std::vector<dealii::types::global_dof_index> fullFlattenedMap;
+ //   vectorTools::computeCellLocalIndexSetMap(
+ //     psiVecMemSpace.getMPIPatternP2P(),
+ //     *d_matrixFreeDataPtr,
+ //     d_matrixFreeVectorComponent,
+ //     d_blockSize,
+ //     fullFlattenedMap);
+
+
+
+
+     d_basisOperationsPtr->reinit(d_blockSize,
+                                 d_cellBlockSize,
+                                 d_matrixFreeQuadratureComponentRhs,
+                                 true, // TODO should this be set to true
+                                 false); // TODO should this be set to true
+                                        //
+
     std::pair<unsigned int, unsigned int> cellRange = std::make_pair(0,d_numCells);
     d_basisOperationsPtr->extractToCellNodalDataKernel(psiVecMemSpace,
                                                        d_cellWaveFunctionMatrixMemSpace.data(),
                                                        cellRange);
 
+    //for( unsigned int iCell = 0; iCell < d_numCells; iCell++)
+    //{
+    //	    for(unsigned int dofId = 0; dofId < d_numberDofsPerElement; dofId++)
+    //
+    //{
+//		    dealii::types::global_dof_index localNodeIdInput =
+     //          fullFlattenedMap[iCell*d_numberDofsPerElement + dofId];
+//
+//              dcopy_(&d_blockSize,
+//                     psiVecMemSpace.data() + localNodeIdInput,
+//                     &inc,
+//                     &d_cellWaveFunctionMatrixMemSpace.data()[iCell*d_numberDofsPerElement*d_blockSize + d_blockSize * dofId],
+//                     &inc);
+//
+//	    }
+//    }
 
     const dataTypes::number scalarCoeffAlpha = dataTypes::number(1.0),
                             scalarCoeffBeta  = dataTypes::number(0.0);
@@ -937,6 +1109,32 @@ namespace dftfe
       strideC,
       d_numCells);
 
+                    double normcellWaveFunction = 0.0;
+     d_BLASWrapperPtr->xnrm2(
+      d_cellWaveFunctionMatrixMemSpace.size(),
+      d_cellWaveFunctionMatrixMemSpace.data(),
+      inc,
+      mpi_communicator,
+      &normcellWaveFunction);
+     pcout<<" normcellWaveFunction = "<<normcellWaveFunction<<"\n";
+
+                double normshapeFunctionData= 0.0;
+     d_BLASWrapperPtr->xnrm2(
+      shapeFunctionData.size(),
+      shapeFunctionData.data(),
+      inc,
+      mpi_communicator,
+      &normshapeFunctionData);
+     pcout<<" normshapeFunctionData = "<<normshapeFunctionData<<"\n";
+
+            double normcellWaveFunctionQuadMatrix = 0.0;
+     d_BLASWrapperPtr->xnrm2(
+      d_cellWaveFunctionQuadMatrixMemSpace.size(),
+      d_cellWaveFunctionQuadMatrixMemSpace.data(),
+      inc,
+      mpi_communicator,
+      &normcellWaveFunctionQuadMatrix);
+     pcout<<" normcellWaveFunctionQuadMatrix = "<<normcellWaveFunctionQuadMatrix<<"\n";
     unsigned int numVec = d_vectorList.size() / 2;
     d_MuMatrixMemSpaceCellWise.setValue(0.0);
 
@@ -952,8 +1150,32 @@ namespace dftfe
                    d_MuMatrixMemSpaceCellWise);
 
 
+    pcout<<" d_numCells = "<< d_numCells <<" numVec = "<<numVec<<" d_numQuadsPerCell = "<<d_numQuadsPerCell<<"  d_blockSize = "<<d_blockSize<<"\n";
+
+    pcout<<" d_effectiveOrbitalOccupancyMemSpace = \n";
+    for( unsigned int iBlock = 0 ; iBlock < d_effectiveOrbitalOccupancyMemSpace.size(); iBlock++)
+    {
+	    pcout<<d_effectiveOrbitalOccupancyMemSpace.data()[iBlock]<<" ";
+    }
+    pcout<<"\n";
+
+    pcout<<" d_vectorListMemSpace = \n";
+        for( unsigned int iBlock = 0 ; iBlock < d_vectorListMemSpace.size(); iBlock++)
+    {
+            pcout<<d_vectorListMemSpace.data()[iBlock]<<" ";
+    }
+	pcout<<"\n";
+        double norminputJxwMemSpace = 0.0;
+     d_BLASWrapperPtr->xnrm2(
+      inputJxwMemSpace.size(),
+      inputJxwMemSpace.data(),
+      inc,
+      mpi_communicator,
+      &norminputJxwMemSpace);
+     pcout<<" norminputJxwMemSpace = "<<norminputJxwMemSpace<<"\n";
     d_MuMatrixHostCellWise.copyFrom(d_MuMatrixMemSpaceCellWise);
 
+    pcout<<"  = numVec = "<<numVec<<"\n";
 
     for (unsigned int iVecList = 0; iVecList < numVec; iVecList++)
       {
@@ -965,6 +1187,15 @@ namespace dftfe
               d_MuMatrixHostCellWise[iVecList + iCell * numVec];
           }
       }
+
+    double normMuMatrixHostCellWise = 0.0;
+     d_BLASWrapperPtr->xnrm2(
+      d_MuMatrixHostCellWise.size(),
+      d_MuMatrixHostCellWise.data(),
+      inc,
+      mpi_communicator,
+      &normMuMatrixHostCellWise);
+    pcout<<" norm of d_MuMatrixHostCellWise = "<<normMuMatrixHostCellWise;
     MPI_Allreduce(MPI_IN_PLACE,
                   &d_MuMatrixHost[0],
                   d_blockSize * d_blockSize,
@@ -973,6 +1204,17 @@ namespace dftfe
                   mpi_communicator);
 
     d_MuMatrixMemSpace.copyFrom(d_MuMatrixHost);
+ 
+   pcout<<" d_MuMatrixMemSpace = \n"; 
+   for( unsigned int iBlock = 0 ; iBlock < d_blockSize; iBlock++)
+    {
+	    for ( unsigned int jBlock = 0; jBlock < d_blockSize; jBlock++)
+	    {
+		    pcout<< d_MuMatrixHost.data()[jBlock + iBlock*d_blockSize] <<" "; 
+	    }
+	    pcout<<"\n";
+    
+    }
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -1035,8 +1277,8 @@ namespace dftfe
 
     d_BLASWrapperPtr->stridedBlockScaleAndAddColumnWise(d_blockSize,
                                                       d_locallyOwnedSize,
-                                                      dotProductMemSpace.data(),
-                                                      oneBlockSizeMemSpace.data(),
+                                                      d_psiMemSpace->data(),
+						      dotProductMemSpace.data(),
                                                       d_blockedXPtr->data());
 
     d_blockedXPtr->updateGhostValues();
@@ -1051,6 +1293,14 @@ namespace dftfe
                                                                                  dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST>&
                                                                                    dotProductOutputHost)
   {
+	   d_basisOperationsPtr->reinit(d_blockSize,
+                                 d_cellBlockSize,
+                                 d_matrixFreeQuadratureComponentRhs,
+                                 true, // TODO should this be set to true
+                                 false); // TODO should this be set to true
+                                        //
+
+
     d_basisOperationsPtr->interpolate(vec1,
                 vec1QuadValues.data());
 
@@ -1081,8 +1331,8 @@ namespace dftfe
       'N',
       'T',
       one,
-      d_numCells*d_numQuadsPerCell,
       d_blockSize,
+      d_numCells*d_numQuadsPerCell,
       &oneDouble,
       d_onesQuadMemSpace.data(),
       one,
@@ -1113,9 +1363,20 @@ namespace dftfe
                                          unsigned int blockSize)
   {
     Ax.setValue(0.0);
+    
+                std::vector<double> l2NormVec(blockSize,0.0);
+
+    x.l2Norm(&l2NormVec[0]);
+
+    pcout<<" x in vmult = \n";
+    for(unsigned int iB = 0; iB  < blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
+
     d_ksOperatorPtr->HX(x,
                         1.0, //scalarHX,
-                        1.0, //scalarY,
+                        0.0, //scalarY,
                         0.0, //scalarX
                         Ax,
                         false); // onlyHPrimePartForFirstOrderDensityMatResponse
@@ -1123,12 +1384,35 @@ namespace dftfe
     d_constraintsInfo.set_zero(x);
     d_constraintsInfo.set_zero(Ax);
 
+        Ax.l2Norm(&l2NormVec[0]);
+
+    pcout<<" Ax in vmult = \n";
+    for(unsigned int iB = 0; iB  < blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
     d_BLASWrapperPtr->stridedBlockScaleAndAddColumnWise(
                                d_blockSize,
       d_locallyOwnedSize,
       x.data(),
       d_negEigenValuesMemSpace.data(),
       Ax.data());
+
+     x.l2Norm(&l2NormVec[0]);
+
+    pcout<<" x after HX in vmult = \n";
+    for(unsigned int iB = 0; iB  < blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
+
+    Ax.l2Norm(&l2NormVec[0]);
+
+    pcout<<" Ax at end in vmult = \n";
+    for(unsigned int iB = 0; iB  < blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
   }
 
   template <dftfe::utils::MemorySpace memorySpace>

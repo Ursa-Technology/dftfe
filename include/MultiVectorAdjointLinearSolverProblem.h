@@ -219,12 +219,12 @@ dftfe::linearAlgebra::MultiVector<dataTypes::number ,
     d_MuMatrixMemSpaceCellWise;
     dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> d_MuMatrixHost, d_MuMatrixHostCellWise;
 
-    unsigned int d_cellsBlockSizeVmult;
     dftfe::utils::MemoryStorage<double, memorySpace> d_onesMemSpace, d_onesQuadMemSpace;
 
     dftfe::utils::MemoryStorage<double, memorySpace>
     d_cellRMatrixTimesWaveMatrixMemSpace;
 
+    unsigned int d_cellBlockSize;
   };
 }
 

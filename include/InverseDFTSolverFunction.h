@@ -256,9 +256,8 @@ namespace dftfe
         dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
       d_basisOperationsChildPtr;
 
-      unsigned int d_numCellsParent, d_numCellsChild;
+      unsigned int d_numCellBlockSizeParent, d_numCellBlockSizeChild;
 
-      unsigned int cellBlockSizeLimit;
   };
 } // end of namespace dftfe
 #endif // DFTFE_INVERSEDFTSOLVERFUNCTION_H

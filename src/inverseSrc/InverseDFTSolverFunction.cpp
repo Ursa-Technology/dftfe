@@ -247,7 +247,9 @@ namespace dftfe
   {
     d_resizeMemSpaceVecDuringInterpolation = true;
     d_lossPreviousIteration = 0.0;
-    cellBlockSizeLimit = 100;
+  
+    d_numCellBlockSizeParent= 100;
+    d_numCellBlockSizeChild = 100;
   }
 
 
@@ -362,13 +364,27 @@ namespace dftfe
     d_numLocallyOwnedCellsChild = d_basisOperationsChildPtr->nCells();
 
 
-    d_numCellsParent = std::min(cellBlockSizeLimit, d_numLocallyOwnedCellsParent);
-    d_numCellsChild = std::min(cellBlockSizeLimit,d_numLocallyOwnedCellsChild);
+     d_numCellBlockSizeParent= std::min(d_numCellBlockSizeParent,d_numLocallyOwnedCellsParent);
+    d_numCellBlockSizeChild = std::min(d_numCellBlockSizeChild, d_numLocallyOwnedCellsChild);
 
-    d_basisOperationsParentPtr[d_matrixFreePsiVectorComponent]->reinit( d_numEigenValues, d_numCellsParent, d_matrixFreeQuadratureComponentAdjointRhs, true, true );
-    d_basisOperationsParentPtr[d_matrixFreeAdjointVectorComponent]->reinit( d_numEigenValues, d_numCellsParent, d_matrixFreeQuadratureComponentAdjointRhs, true , true);
+    d_basisOperationsParentPtr[d_matrixFreePsiVectorComponent]->reinit( 
+		  d_numEigenValues,
+		  d_numCellBlockSizeParent,
+		  d_matrixFreeQuadratureComponentAdjointRhs, 
+		  true, 
+		  false);
+    d_basisOperationsParentPtr[d_matrixFreeAdjointVectorComponent]->reinit( 
+		    d_numEigenValues, 
+		    d_numCellBlockSizeParent, 
+		    d_matrixFreeQuadratureComponentAdjointRhs, 
+		    true , 
+		    false);
 
-    d_basisOperationsChildPtr->reinit( 1, d_numCellsChild, matrixFreeQuadratureComponentPot, true, true);
+    d_basisOperationsChildPtr->reinit( 1,
+		    d_numCellBlockSizeChild,
+		    d_matrixFreeQuadratureComponentPot,
+		    true,
+		    false);
 
 
     std::vector<unsigned int> bandGroupLowHighPlusOneIndices;
@@ -1022,6 +1038,16 @@ namespace dftfe
                   d_dftParams->verbosity,
                   true); // distributeFlag
 
+		    std::vector<double> l2NormVec(currentBlockSize,0.0);
+
+    multiVectorAdjointOutputWithPsiConstraintsMemSpace.l2Norm(&l2NormVec[0]);
+
+    pcout<<" multiVectorAdjointOutputWithPsiConstraintsMemSpace = \n";
+    for(unsigned int iB = 0; iB  < currentBlockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
+
                 d_BLASWrapperPtr->xcopy(
                   currentBlockSize * numLocallyOwnedDofs,
                   multiVectorAdjointOutputWithPsiConstraintsMemSpace.data(),
@@ -1034,7 +1060,24 @@ namespace dftfe
                 constraintsMatrixAdjointDataInfo.distribute(
                   multiVectorAdjointOutputWithAdjointConstraintsMemSpace);
 
-                computingTimerStandard.enter_subsection(
+		    multiVectorAdjointOutputWithAdjointConstraintsMemSpace.l2Norm(&l2NormVec[0]);
+
+    pcout<<" multiVectorAdjointOutputWithAdjointConstraintsMemSpace = \n";
+    for(unsigned int iB = 0; iB  < currentBlockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
+
+
+                    psiBlockVecMemSpace.l2Norm(&l2NormVec[0]);
+
+    pcout<<" psiBlockVecMemSpace = \n";
+    for(unsigned int iB = 0; iB  < currentBlockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
+
+    computingTimerStandard.enter_subsection(
                   "interpolate parent data to child quad on GPU");
                 d_transferDataPtr
                   ->interpolateMesh1DataToMesh2QuadPoints(
@@ -1054,7 +1097,25 @@ namespace dftfe
                 computingTimerStandard.leave_subsection(
                   "interpolate parent data to child quad on GPU");
 
-                sumPsiAdjointChildQuadDataMemorySpace.setValue(0.0);
+		 double normadjointChildQuad = 0.0;
+     d_BLASWrapperPtr->xnrm2(
+      currentBlockSize*numTotalQuadraturePointsChild,
+      adjointChildQuadDataMemorySpace.data(),
+      1,
+      d_mpi_comm_domain,
+      &normadjointChildQuad);
+     pcout<<" normadjointChildQuad = "<<normadjointChildQuad<<"\n";
+
+                   double normpsiChildQuadData = 0.0;
+     d_BLASWrapperPtr->xnrm2(
+      currentBlockSize*numTotalQuadraturePointsChild,
+      psiChildQuadDataMemorySpace.data(),
+      1,
+      d_mpi_comm_domain,
+      &normpsiChildQuadData);
+     pcout<<"  normpsiChildQuadData = "<<normpsiChildQuadData<<"\n";
+      
+     sumPsiAdjointChildQuadDataMemorySpace.setValue(0.0);
                 d_BLASWrapperPtr->addVecOverContinuousIndex(
                   numTotalQuadraturePointsChild,
                   currentBlockSize,
@@ -1083,7 +1144,16 @@ namespace dftfe
 
         integrateWithShapeFunctionsForChildData(force[iSpin],
                                                 sumPsiAdjointChildQuadData);
-        pcout << "force norm = " << force[iSpin].l2_norm() << "\n";
+        
+	 double normsumPsiAdjoint = 0.0;
+     d_BLASWrapperPtr->xnrm2(
+      numTotalQuadraturePointsChild,
+      sumPsiAdjointChildQuadData.data(),
+      1,
+      d_mpi_comm_domain,
+      &normsumPsiAdjoint);
+     pcout<<"  normsumPsiAdjoint = "<<normsumPsiAdjoint<<"\n";
+	pcout << "force norm = " << force[iSpin].l2_norm() << "\n";
         if ((d_getForceCounter % d_inverseDFTParams->writeVxcFrequency == 0) &&
             (d_inverseDFTParams->writeVxcData))
           {
@@ -1093,7 +1163,7 @@ namespace dftfe
             force[iSpin].update_ghost_values();
 
             /*
-            dealii::DataOut<3, dealii::DoFHandler<3>> data_out_force;
+            dealii::DataOut<3> data_out_force;
 
                         data_out_force.attach_dof_handler(*d_dofHandlerChild);
 
@@ -1150,7 +1220,7 @@ namespace dftfe
       {
 
         pcout<<"writing solution";
-        dealii::DataOut<3, dealii::DoFHandler<3>> data_out;
+        dealii::DataOut<3>data_out;
 
         data_out.attach_dof_handler(*d_dofHandlerChild);
 
@@ -1232,7 +1302,7 @@ namespace dftfe
       }
     else
       {
-        d_tolForChebFiltering = chebyTol;
+        d_tolForChebFiltering = 1e-10;
       }
 
     pcout << " Tol for the eigen solve = " << d_tolForChebFiltering << "\n";
@@ -1530,7 +1600,7 @@ namespace dftfe
     //    writeVxcDataToFile(d_pot,1000);
 
     pcout<<"writing solution";
-    dealii::DataOut<3, dealii::DoFHandler<3>> data_out;
+    dealii::DataOut<3> data_out;
 
     data_out.attach_dof_handler(*d_dofHandlerChild);
 

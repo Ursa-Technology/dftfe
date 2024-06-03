@@ -188,7 +188,8 @@ SET(TARGET_SRC
         ./src/inverseSrc/InverseClass.cpp
         ./src/solvers/BFGSInverseDFTSolver.cpp
         ./src/inverseSrc/TriangulationManagerVxc.cpp
-        ./src/inverseSrc/inverseDFTParameters.cpp)
+        ./src/inverseSrc/inverseDFTParameters.cpp
+	./src/poisson/MultiVectorAdjointLinearSolverProblem.cpp)
 
 IF ("${GPU_LANG}" STREQUAL "cuda")
 
@@ -365,7 +366,7 @@ TARGET_LINK_LIBRARIES(${TARGETLIB} PUBLIC ${DFTFE_MPI_LIBRARIES})
 #Dependencies
 #
 
-FIND_PACKAGE(deal.II 9.1.0 REQUIRED
+FIND_PACKAGE(deal.II 9.3.3 REQUIRED
   HINTS ${deal.II_DIR} ${DEAL_II_DIR} ../ ../../ $ENV{DEAL_II_DIR}
   )
 IF(NOT ${deal.II_FOUND})
@@ -402,6 +403,14 @@ ENDIF()
 
 #DEAL_II_INITIALIZE_CACHED_VARIABLES()
 
+
+#FIND_PACKAGE(deal.II 9.3.3 REQUIRED
+#  HINTS $ENV{DEAL_II_DIR}
+#  )
+
+#FIND_PACKAGE(deal.II 9.3.3 REQUIRED
+#  HINTS ${DEAL_II_DIR} 
+#  )
 
 TARGET_INCLUDE_DIRECTORIES(${TARGETLIB} PUBLIC ${DEAL_II_INCLUDE_DIRS})
 IF("${CMAKE_BUILD_TYPE}" STREQUAL "Release")

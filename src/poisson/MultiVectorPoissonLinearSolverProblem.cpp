@@ -67,6 +67,7 @@ namespace dftfe
     d_diagonalA.resize(0);
     d_diagonalSqrtA.resize(0);
     d_isMeanValueConstraintComputed = false;
+    d_cellBlockSize = 100;
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -98,18 +99,19 @@ namespace dftfe
     d_matrixFreeQuadratureComponentAX =
       matrixFreeQuadratureComponentAX;
 
-    d_basisOperationsPtr->reinit(1,
-                                 1,
-                                 d_matrixFreeQuadratureComponentRhs,
-                                 false, // TODO should this be set to true
-                                 false); // TODO should this be set to true
-
 
     d_locallyOwnedSize = d_basisOperationsPtr->nOwnedDofs();
     d_numberDofsPerElement = d_basisOperationsPtr->nDofsPerCell();
     d_numCells       = d_basisOperationsPtr->nCells();
     d_nQuadsPerCell = d_basisOperationsPtr->nQuadsPerCell();
 
+    d_cellBlockSize = std::min(d_cellBlockSize,d_numCells);
+
+     d_basisOperationsPtr->reinit(1,
+                                 d_cellBlockSize,
+                                 d_matrixFreeQuadratureComponentRhs,
+                                 false, // TODO should this be set to true
+                                 false); // TODO should this be set to true
     d_dofHandler =
       &d_matrixFreeDataPtr->get_dof_handler(d_matrixFreeVectorComponent);
 
@@ -296,13 +298,19 @@ namespace dftfe
     x.updateGhostValues();
     d_constraintsInfo.distribute(x);
 
+    d_basisOperationsPtr->reinit(d_blockSize,
+                                 d_cellBlockSize,
+                                 d_matrixFreeQuadratureComponentRhs,
+                                 false, // TODO should this be set to true
+                                 false); // TODO should this be set to true
+					 //
     d_basisOperationsPtr->extractToCellNodalData(x,
                                                  d_xCellLLevelNodalData.data());
 
-    for(size_type iCell = 0; iCell < d_numCells ; iCell += d_cellsBlockSizeVmult)
+    for(size_type iCell = 0; iCell < d_numCells ; iCell += d_cellBlockSize)
       {
         std::pair<unsigned int, unsigned int> cellRange(
-          iCell, std::min(iCell + d_cellsBlockSizeVmult, d_numCells));
+          iCell, std::min(iCell + d_cellBlockSize, d_numCells));
 
         d_BLASWrapperPtr->xgemmStridedBatched(
           'N',
@@ -527,6 +535,13 @@ namespace dftfe
       d_blockSize,
       flattenedArrayCellLocalProcIndexIdMap);
 
+    d_basisOperationsPtr->reinit(d_blockSize,
+                                 d_cellBlockSize,
+                                 d_matrixFreeQuadratureComponentRhs,
+                                 false, // TODO should this be set to true
+                                 false); // TODO should this be set to true
+                                         //
+
     double l2ErrorIndex = 0.0;
     for( unsigned int i = 0 ; i < flattenedArrayCellLocalProcIndexIdMap.size(); i++)
       {
@@ -593,12 +608,15 @@ namespace dftfe
                                                memorySpace> &       outputVec,
              unsigned int                      blockSizeInput)
   {
-    d_cellsBlockSizeVmult = d_numCells;
-    d_basisOperationsPtr->reinit(blockSizeInput,
-                                 d_cellsBlockSizeVmult, //d_numCells,//d_cellsBlockSizeVmult,
+   
+	 d_basisOperationsPtr->reinit(blockSizeInput,
+                                 d_cellBlockSize,
                                  d_matrixFreeQuadratureComponentRhs,
                                  true, // TODO should this be set to true
                                  true); // TODO should this be set to true
+                                         //
+
+
 
     d_basisOperationsPtr->initializeShapeFunctionAndJacobianBasisData();
     d_basisOperationsPtr->initializeFlattenedIndexMaps();
@@ -629,7 +647,6 @@ namespace dftfe
         d_xCellLLevelNodalData.resize(d_numCells*d_numberDofsPerElement*d_blockSize);
         d_AxCellLLevelNodalData.resize(d_numCells*d_numberDofsPerElement*d_blockSize);
 
-        d_cellsBlockSizeVmult = d_numCells;  // set this correctly
 
         d_basisOperationsPtr->createMultiVector(d_blockSize,d_rhsVec);
 
@@ -693,6 +710,15 @@ namespace dftfe
 //      d_rhsVec);
 
     pcout<<" after acumm add \n";
+
+     d_basisOperationsPtr->reinit(d_blockSize,
+                                 d_cellBlockSize,
+                                 d_matrixFreeQuadratureComponentRhs,
+                                 true, // TODO should this be set to true
+                                 false); // TODO should this be set to true
+                                         //
+
+
     std::pair<unsigned int, unsigned int> cellRange = std::make_pair(0,d_numCells);
     d_basisOperationsPtr->integrateWithBasis(d_rhsQuadDataPtr->data(),NULL,d_rhsVec,d_mapQuadIdToProcId);
    d_constraintsInfo.distribute_slave_to_master(d_rhsVec);

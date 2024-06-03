@@ -19,6 +19,7 @@
 
 #include <constants.h>
 #include <poissonSolverProblem.h>
+#include <vectorUtilities.h>
 
 namespace dftfe
 {
@@ -163,7 +164,15 @@ namespace dftfe
   {
     dealii::DoFHandler<3>::active_cell_iterator subCellPtr;
     rhs.reinit(*d_xPtr);
+
+    distributedCPUVec<double> tempvecCheckSize;
+        
+     vectorTools::createDealiiVector<double>(
+          d_matrixFreeDataPtr->get_vector_partitioner(d_matrixFreeVectorComponent),
+          1,
+          tempvecCheckSize);
     rhs = 0;
+    tempvecCheckSize = 0;
 
     pcout << " norm of rhs first = " << rhs.l2_norm() << "\n";
     if (d_isStoreSmearedChargeRhs)
@@ -175,6 +184,19 @@ namespace dftfe
     const dealii::DoFHandler<3> &dofHandler =
       d_matrixFreeDataPtr->get_dof_handler(d_matrixFreeVectorComponent);
 
+    if( dofHandler.n_locally_owned_dofs() != rhs.locally_owned_size())
+    {
+std::cout<<" locally owned size do not match inside compute \n";
+    }
+
+   if (!tempvecCheckSize.partitioners_are_globally_compatible(*(rhs.get_partitioner().get())))
+   {
+	   pcout<<" compute rhs is not compatible with rhs\n";
+   } 
+   else
+   {
+	   pcout<<" compute rhs is compatible with rhs\n";
+   }
     const unsigned int     dofs_per_cell = dofHandler.get_fe().dofs_per_cell;
     dealii::Vector<double> elementalRhs(dofs_per_cell);
     std::vector<dealii::types::global_dof_index> local_dof_indices(
@@ -196,6 +218,22 @@ namespace dftfe
       *d_matrixFreeDataPtr,
       d_matrixFreeVectorComponent,
       d_matrixFreeQuadratureComponentAX);
+
+    const dealii::Quadrature<3> &quadratureRuleAxTemp =
+      d_matrixFreeDataPtr->get_quadrature(d_matrixFreeQuadratureComponentAX);
+    const unsigned int numQuadPointsPerCellAx = quadratureRuleAxTemp.size();
+
+    pcout<<" FEOrderElectro = "<<FEOrderElectro<<"\n";
+    pcout<<" numQuadPointsPerCellAx = "<<numQuadPointsPerCellAx<<"\n";
+    pcout<<" fe_eval.n_q_points = "<<fe_eval.n_q_points<<"\n";
+    if( numQuadPointsPerCellAx == fe_eval.n_q_points)
+    {
+	   pcout<<" quad points in ax match \n";
+    }
+    else 
+    {
+	    pcout<<" quad points in ax dont match \n";
+    }
 
     int isPerformStaticCondensation = (tempvec.linfty_norm() > 1e-10) ? 1 : 0;
 
@@ -234,6 +272,7 @@ namespace dftfe
                           d_matrixFreeVectorComponent,
                           d_matrixFreeQuadratureComponentRhsDensity);
 
+	pcout<<" denisty quad points inside compute rhs = "<<fe_eval_density.n_q_points<<"\n";
         dealii::AlignedVector<dealii::VectorizedArray<double>> rhoQuads(
           fe_eval_density.n_q_points, dealii::make_vectorized_array(0.0));
         for (unsigned int macrocell = 0;
@@ -727,6 +766,7 @@ namespace dftfe
   {
     Ax = 0.0;
 
+    pcout << " norm of x = " << x.l2_norm() << "\n";
     if (d_isMeanValueConstraintComputed)
       {
         meanValueConstraintDistribute(x);
@@ -750,6 +790,7 @@ namespace dftfe
            std::make_pair(0, d_matrixFreeDataPtr->n_cell_batches()));
         Ax.compress(dealii::VectorOperation::add);
       }
+    pcout << " norm of Ax = " << Ax.l2_norm() << "\n";
   }
 
 #include "poissonSolverProblem.inst.cc"

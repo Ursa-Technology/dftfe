@@ -51,6 +51,7 @@ SET(TARGET_SRC
   ./src/dft/vselfBinsManager.cc
   ./src/dft/energyCalculator.cc
   ./src/dft/densityCalculator.cc
+  ./src/dft/computeAuxProjectedDensityMatrixFromPSI.cc
   ./src/dft/densityFirstOrderResponseCalculator.cc
   ./src/dft/applyMultipoleDirichletBC.cc
   ./src/excManager/excDensityBaseClass.cpp
@@ -59,6 +60,7 @@ SET(TARGET_SRC
   ./src/excManager/excDensityGGAClass.cpp
   ./src/excManager/excManager.cpp
   ./src/excManager/excWavefunctionNoneClass.cpp
+  ./src/excManager/AuxDensityFE.cpp
   ./src/excManager/NNGGA.cc
   ./src/excManager/NNLDA.cc
   ./src/poisson/poissonSolverProblem.cc

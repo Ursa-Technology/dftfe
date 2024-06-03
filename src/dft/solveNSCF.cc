@@ -333,6 +333,17 @@ namespace dftfe
         for (unsigned int s = 0; s < 2; ++s)
           {
             computing_timer.enter_subsection("VEff Computation");
+            updateAuxDensityMatrix(d_densityInQuadValues,
+                                   d_gradDensityInQuadValues,
+                                   d_rhoCore,
+                                   d_gradRhoCore,
+                                   d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                                   d_eigenVectorsFlattenedDevice,
+#endif
+                                   eigenValues,
+                                   d_auxDensityMatrixInPtr);
+
             kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
                                                  d_gradDensityInQuadValues,
                                                  d_phiInQuadValues,

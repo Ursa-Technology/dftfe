@@ -7,16 +7,17 @@
 
 #include <vector>
 #include <utility>
+#include <AuxDensityMatrix>
 
 namespace dftfe
 {
-  class AuxDensityFE : public AuxDensity
+  class AuxDensityFE : public AuxDensityMatrix
   {
   public:
     // Constructor
     AuxDensityFE();
 
-
+    // CAUTION: Points have to be a subset of d_quadPointsSet
     void
     applyLocalOperations(const std::vector<double> &    Points,
                          std::map<DensityDescriptorDataAttributes,
@@ -37,12 +38,17 @@ namespace dftfe
     projectDensity(const std::vector<double> &Qpts,
                    const std::vector<double> &QWt,
                    const int                  nQ,
-                   const std::vector<double> &densityVals,
-                   const std::vector<double> &gradDensityVals) override;
+                   const std::vector<double> &densityVals) override;
+
 
   private:
-    std::vector<double> d_densityVals;
-    std::vector<double> d_gradDensityVals;
+    std::vector<double> d_densityValsTotal;
+    std::vector<double> d_densityValsSpinUp;
+    std::vector<double> d_densityValsSpinDown;
+    std::vector<double> d_gradDensityValsSpinUp;
+    std::vector<double> d_gradDensityValsSpinDown;
+    std::vector<double> d_quadPointsSet;
+    std::vector<double> d_quadWeightsSet;
   };
 } // namespace dftfe
 

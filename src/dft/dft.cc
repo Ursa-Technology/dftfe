@@ -40,6 +40,7 @@
 #include <MemoryTransfer.h>
 #include <QuadDataCompositeWrite.h>
 #include <MPIWriteOnFile.h>
+#include <computeAuxProjectedDensityMatrixFromPSI.h>
 
 #include <algorithm>
 #include <cmath>
@@ -2749,11 +2750,22 @@ namespace dftfe
             for (unsigned int s = 0; s < 2; ++s)
               {
                 computing_timer.enter_subsection("VEff Computation");
-                kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
-                                                     d_gradDensityInQuadValues,
+
+
+                updateAuxDensityMatrix(d_densityInQuadValues,
+                                       d_gradDensityInQuadValues,
+                                       d_rhoCore,
+                                       d_gradRhoCore,
+                                       d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                                       d_eigenVectorsFlattenedDevice,
+#endif
+                                       eigenValues,
+                                       d_auxDensityMatrixInPtr);
+
+
+                kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixInPtr,
                                                      d_phiInQuadValues,
-                                                     d_rhoCore,
-                                                     d_gradRhoCore,
                                                      s);
                 computing_timer.leave_subsection("VEff Computation");
 
@@ -2898,13 +2910,21 @@ namespace dftfe
                           {
                             computing_timer.enter_subsection(
                               "VEff Computation");
-                            kohnShamDFTEigenOperator.computeVEff(
+
+                            updateAuxDensityMatrix(
                               d_densityInQuadValues,
                               d_gradDensityInQuadValues,
-                              d_phiInQuadValues,
                               d_rhoCore,
                               d_gradRhoCore,
-                              s);
+                              d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                              d_eigenVectorsFlattenedDevice,
+#endif
+                              eigenValues,
+                              d_auxDensityMatrixInPtr);
+
+                            kohnShamDFTEigenOperator.computeVEff(
+                              d_auxDensityMatrixInPtr, d_phiInQuadValues, s);
                             computing_timer.leave_subsection(
                               "VEff Computation");
                           }
@@ -3031,11 +3051,18 @@ namespace dftfe
                   d_numEigenValuesRR);
 
             computing_timer.enter_subsection("VEff Computation");
-            kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
-                                                 d_gradDensityInQuadValues,
-                                                 d_phiInQuadValues,
-                                                 d_rhoCore,
-                                                 d_gradRhoCore);
+            updateAuxDensityMatrix(d_densityInQuadValues,
+                                   d_gradDensityInQuadValues,
+                                   d_rhoCore,
+                                   d_gradRhoCore,
+                                   d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                                   d_eigenVectorsFlattenedDevice,
+#endif
+                                   eigenValues,
+                                   d_auxDensityMatrixInPtr);
+            kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixInPtr,
+                                                 d_phiInQuadValues);
             computing_timer.leave_subsection("VEff Computation");
 
 
@@ -4816,6 +4843,211 @@ namespace dftfe
       }
   }
 
+
+  void
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::updateAuxDensityMatrix(
+    const std::vector<
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+      &densityQuadValues,
+    const std::vector<
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+      &                                                  gradDensityQuadValues,
+    const std::map<dealii::CellId, std::vector<double>> &rhoCore,
+    const std::map<dealii::CellId, std::vector<double>> &gradRhoCore,
+    const dftfe::utils::MemoryStorage<dataTypes::number,
+                                      dftfe::utils::MemorySpace::HOST>
+      &eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+    const dftfe::utils::MemoryStorage<dataTypes::number,
+                                      dftfe::utils::MemorySpace::DEVICE>
+      &eigenVectorsFlattenedDevice,
+#endif
+    const std::vector<std::vector<double>> &eigenValues,
+    std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixInPtr)
+  {
+    d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
+    const unsigned int totalLocallyOwnedCells =
+      d_basisOperationsPtrHost->nCells();
+    const unsigned int nQuadsPerCell =
+      d_basisOperationsPtrHost->nQuadsPerCell();
+    const unsigned int spinPolarizedFactor = 1 + d_dftParamsPtr->spinPolarized;
+
+    if (d_dftParamsPtr->XCAuxBasisType == "FE")
+      {
+        auto auxDensityFEInPtr =
+          std::dynamic_pointer_cast<AuxDensityFE>(d_auxDensityMatrixInPtr);
+
+
+        std::vector<double> densityValsForXC(2 * totalLocallyOwnedCells *
+                                               nQuadsPerCell,
+                                             0);
+
+        if (spinPolarizedFactor == 1)
+          {
+            const double *cellRhoValues =
+              densityQuadValues[0].data() + iCell * nQuadsPerCell;
+            for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells;
+                 ++iCell)
+              {
+                for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                  densityValsForXC[iCell * nQuadsPerCell + iQuad] =
+                    cellRhoValues[iQuad] / 2.0;
+
+                for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                  densityValsForXC[totalLocallyOwnedCells * nQuadsPerCell +
+                                   iCell * nQuadsPerCell + iQuad] =
+                    cellRhoValues[iQuad] / 2.0;
+              }
+          }
+        else if (spinPolarizedFactor == 2)
+          {
+            const double *cellRhoValues =
+              densityQuadValues[0].data() + iCell * nQuadsPerCell;
+            const double *cellMagValues =
+              densityQuadValues[1].data() + iCell * nQuadsPerCell;
+
+            for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells;
+                 ++iCell)
+              {
+                for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                  densityValsForXC[iCell * nQuadsPerCell + iQuad] =
+                    cellRhoValues[iQuad] / 2.0 + cellMagValues[iQuad] / 2.0;
+
+                for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                  densityValsForXC[totalLocallyOwnedCells * nQuadsPerCell +
+                                   iCell * nQuadsPerCell + iQuad] =
+                    cellRhoValues[iQuad] / 2.0 - cellMagValues[iQuad] / 2.0;
+              }
+          }
+
+
+
+        if (d_dftParamsPtr->nonLinearCoreCorrection)
+          {
+            const std::vector<double> &tempRhoCore =
+              rhoCore.find(d_basisOperationsPtrHost->cellID(iCell))->second;
+
+            for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+              densityValsForXC[iCell * nQuadsPerCell + iQuad] +=
+                tempRhoCore[iQuad] / 2.0;
+
+            for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+              densityValsForXC[totalLocallyOwnedCells * nQuadsPerCell +
+                               iCell * nQuadsPerCell + iQuad] +=
+                tempRhoCore[iQuad] / 2.0;
+          }
+        if (d_excManagerPtr->getDensityBasedFamilyType() ==
+            densityFamilyType::GGA)
+          {
+            std::vector<double> gradDensityValsForXC(
+              2 * totalLocallyOwnedCells * nQuadsPerCell * 3, 0);
+
+
+            if (spinPolarizedFactor == 1)
+              {
+                const double *cellGradRhoValues =
+                  gradDensityQuadValues[0].data() + iCell * nQuadsPerCell * 3;
+                for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells;
+                     ++iCell)
+                  {
+                    for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                      for (unsigned int idim = 0; idim < 3; ++idim)
+                        gradDensityValsForXC[iCell * nQuadsPerCell * 3 +
+                                             iQuad * 3 + idim] =
+                          cellGradRhoValues[3 * iQuad + idim] / 2.0;
+
+                    for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                      for (unsigned int idim = 0; idim < 3; ++idim)
+                        gradDensityValsForXC[totalLocallyOwnedCells *
+                                               nQuadsPerCell * 3 +
+                                             iCell * nQuadsPerCell * 3 +
+                                             iQuad * 3 + idim] =
+                          cellGradRhoValues[3 * iQuad + idim] / 2.0;
+                  }
+              }
+            else if (spinPolarizedFactor == 2)
+              {
+                const double *cellGradRhoValues =
+                  gradDensityQuadValues[0].data() + iCell * nQuadsPerCell * 3;
+                const double *cellGradMagValues =
+                  gradDensityQuadValues[0].data() + iCell * nQuadsPerCell * 3;
+                for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells;
+                     ++iCell)
+                  {
+                    for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                      for (unsigned int idim = 0; idim < 3; ++idim)
+                        gradDensityValsForXC[iCell * nQuadsPerCell * 3 +
+                                             iQuad * 3 + idim] =
+                          cellGradRhoValues[3 * iQuad + idim] / 2.0 +
+                          cellGradMagValues[3 * iQuad + idim] / 2.0;
+
+                    for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                      for (unsigned int idim = 0; idim < 3; ++idim)
+                        gradDensityValsForXC[totalLocallyOwnedCells *
+                                               nQuadsPerCell * 3 +
+                                             iCell * nQuadsPerCell * 3 +
+                                             iQuad * 3 + idim] =
+                          cellGradRhoValues[3 * iQuad + idim] / 2.0 -
+                          cellGradMagValues[3 * iQuad + idim] / 2.0;
+                  }
+              }
+
+
+            if (d_dftParamsPtr->nonLinearCoreCorrection)
+              {
+                const std::vector<double> &tempGradRhoCore =
+                  gradRhoCore.find(d_basisOperationsPtrHost->cellID(iCell))
+                    ->second;
+
+                for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                  for (unsigned int idim = 0; idim < 3; ++idim)
+                    gradDensityValsForXC[iCell * nQuadsPerCell * 3 + iQuad * 3 +
+                                         idim] +=
+                      tempGradRhoCore[3 * iQuad + idim] / 2.0;
+
+                for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                  for (unsigned int idim = 0; idim < 3; ++idim)
+                    gradDensityValsForXC[totalLocallyOwnedCells *
+                                           nQuadsPerCell * 3 +
+                                         iCell * nQuadsPerCell * 3 + iQuad * 3 +
+                                         idim] +=
+                      tempGradRhoCore[3 * iQuad + idim] / 2.0;
+              }
+          }
+
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+          quadPoints = d_basisOperationsPtrHost->quadPoints();
+
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+          quadWeights = d_basisOperationsPtrHost->JxW();
+
+        std::vector<double> QptsStdVec;
+        std::vector<double> QwtsStdVec;
+
+        quadPoints.copyTo(QptsStdVec);
+        quadWeights.copyTo(QwtsStdVec);
+
+        if (d_excManagerPtr->getDensityBasedFamilyType() ==
+            densityFamilyType::GGA)
+          auxDensityFEInPtr->setQuadVals(QptsStdVec,
+                                         QWtsStdVec,
+                                         QPtsStdVec.size(),
+                                         densityValsForXC,
+                                         gradDensityValsForXC);
+
+        else
+          auxDensityFEInPtr->setQuadVals(QptsStdVec,
+                                         QWtsStdVec,
+                                         QPtsStdVec.size(),
+                                         densityValsForXC);
+      }
+    else if (d_dftParamsPtr->XCAuxBasisType == "SlaterAE")
+      {
+        auto auxDensityMatrixSlaterInPtr =
+          std::dynamic_pointer_cast<AuxDensityMatrixSlater>(
+            d_auxDensityMatrixInPtr);
+      }
+  }
 
 
 #include "dft.inst.cc"

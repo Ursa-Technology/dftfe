@@ -79,8 +79,7 @@ namespace dftfe
     projectDensity(const std::vector<double> &Qpts,
                    const std::vector<double> &QWt,
                    const int                  nQ,
-                   const std::vector<double> &densityVals,
-                   const std::vector<double> &gradDensityVals) override;
+                   const std::vector<double> &densityVals) override;
   };
 } // namespace dftfe
 

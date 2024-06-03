@@ -23,24 +23,18 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   KohnShamHamiltonianOperator<memorySpace>::computeVEffPrime(
-    const std::vector<
-      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-      &rhoValues,
+    std::shared_ptr<AuxDensityMatrix> auxDensityRepresentationPtr,
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       &rhoPrimeValues,
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-      &gradRhoValues,
-    const std::vector<
-      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       &gradRhoPrimeValues,
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-      &                                                  phiPrimeValues,
-    const std::map<dealii::CellId, std::vector<double>> &rhoCoreValues,
-    const std::map<dealii::CellId, std::vector<double>> &gradRhoCoreValues,
-    const unsigned int                                   spinIndex)
+      &                phiPrimeValues,
+    const unsigned int spinIndex)
   {
+    /*
     const bool isGGA =
       d_excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA;
     const unsigned int spinPolarizedFactor = 1 + d_dftParamsPtr->spinPolarized;
@@ -612,6 +606,7 @@ namespace dftfe
     d_invJacderExcWithSigmaTimesGradRhoJxW.copyFrom(
       d_invJacderExcWithSigmaTimesGradRhoJxWHost);
 #endif
+    */
   }
   template class KohnShamHamiltonianOperator<dftfe::utils::MemorySpace::HOST>;
 #if defined(DFTFE_WITH_DEVICE)

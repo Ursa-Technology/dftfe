@@ -66,6 +66,7 @@
 
 #include <mixingClass.h>
 #include <oncvClass.h>
+#include <AuxDensityMatrix.h>
 
 namespace dftfe
 {
@@ -1023,6 +1024,26 @@ namespace dftfe
     applyPeriodicBCHigherOrderNodes();
 
 
+    void
+    updateAuxDensityMatrix(
+      const std::vector<
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+        &densityQuadValues,
+      const std::vector<
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+        &gradDensityQuadValues,
+      const std::map<dealii::CellId, std::vector<double>> &rhoCore,
+      const std::map<dealii::CellId, std::vector<double>> &gradRhoCore,
+      const dftfe::utils::MemoryStorage<dataTypes::number,
+                                        dftfe::utils::MemorySpace::HOST>
+        &eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+      const dftfe::utils::MemoryStorage<dataTypes::number,
+                                        dftfe::utils::MemorySpace::DEVICE>
+        &eigenVectorsFlattenedDevice,
+#endif
+      const std::vector<std::vector<double>> &eigenValues,
+      std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixInPtr);
 
     std::shared_ptr<excManager> d_excManagerPtr;
     dispersionCorrection        d_dispersionCorr;
@@ -1451,6 +1472,8 @@ namespace dftfe
     dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
       d_densityTotalOutValuesLpspQuad, d_densityTotalInValuesLpspQuad,
       d_gradDensityTotalOutValuesLpspQuad, d_gradDensityTotalInValuesLpspQuad;
+
+    std::shared_ptr<AuxDensityMatrix> d_auxDensityMatrixInPtr;
 
     // For multipole boundary conditions
     double              d_monopole;

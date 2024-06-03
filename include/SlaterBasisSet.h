@@ -8,36 +8,59 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
-#include "AtomInfo.h"
-#include "SlaterPrimitive.h"
+#include <utility>
 
 namespace dftfe
 {
+  struct SlaterPrimitive
+  {
+    int    n;     // principal quantum number
+    int    l;     // azimuthal (angular) quantum number
+    int    m;     // magnetic quantum number
+    double alpha; // exponent of the basis
+  };
+
+  struct SlaterBasisInfo
+  {
+    std::string            symbol; // atom name
+    std::vector<double>    center; // atom center coordinates
+    const SlaterPrimitive *sp;     // pointer to the Slater basis
+  };
+
   class SlaterBasisSet
   {
   private:
-    std::unordered_map<std::string, std::vector<SlaterPrimitive>> basisSets;
-    std::unordered_map<std::string, std::vector<SlaterPrimitive>> basisSize;
+    // std::unordered_map<std::string, std::string> d_atomToSlaterBasisName;
+
+    std::unordered_map<std::string, std::vector<SlaterPrimitive *>>
+      d_atomToSlaterPrimitivePtr;
+
+    std::vector<SlaterBasisInfo> d_SlaterBasisInfo;
+
+    std::unordered_map<std::string, std::string>
+    readAtomToSlaterBasisName(const std::string &fileName);
+
+    void
+    addSlaterPrimitivesFromBasisFile(const std::string &atomSymbol,
+                                     const std::string &basisName);
 
   public:
-    // SlaterBasisSet(const std::vector<Atom>& atoms);
+    SlaterBasisSet();  // Constructor
+    ~SlaterBasisSet(); // Destructor
+
+
     void
-    constructBasisSet(const std::vector<Atom> &atoms);
+    constructBasisSet(
+      const std::vector<std::pair<std::string, std::vector<double>>>
+        &                atomCoords,
+      const std::string &auxBasisFileName);
 
-    static std::vector<SlaterPrimitive>
-    readSlaterBasisFile(const std::string &filename);
 
-    std::vector<SlaterPrimitive>
-    getBasisSet(const std::string &basisFileName) const;
-
-    static void
-    displayBasisSetInfo(const std::vector<SlaterPrimitive> &basisList);
-
-    static int
-    getBasisSize(const std::vector<SlaterPrimitive> &basisList);
+    const std::vector<SlaterBasisInfo> &
+    getSlaterBasisInfo() const;
 
     int
-    getTotalBasisSize(const std::vector<Atom> &atoms);
+    getSlaterBasisSize() const;
   };
 } // namespace dftfe
 

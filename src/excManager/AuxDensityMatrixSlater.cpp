@@ -4,39 +4,12 @@
 
 #include "AuxDensityMatrixSlater.h"
 #include <stdexcept>
-#include <lapacke.h>
 
 namespace dftfe
 {
-  AuxDensityMatrixSlater::AuxDensityMatrixSlater(
-    const std::map<int, std::string> &atom_coords,
-    const std::vector<double> &       quadpts,
-    const std::vector<double> &       quadWt,
-    const std::string                 atomBasisNameFile,
-    const int                         nQuad,
-    const int                         nSpin,
-    const int                         maxDerOrder)
-    : AuxDensityMatrix()
-    , // call the base class constructor
-    d_quadpts(quadpts)
-    , d_quadWt(quadWt)
-    ,
-    , d_nQuad(nQuad)
-    , d_nSpin(nSpin)
-    , d_maxDerOrder(maxDerOrder)
+  AuxDensityMatrixSlater::AuxDensityMatrixSlater()
   {
-    // ------------------ Read AtomicCoords_Slater --------------
-    d_atoms = Atom::readCoordFile(atomBasisNameFile);
-
-    // ------------------ SlaterBasisSets -------------
-    d_sbs.constructBasisSet(d_atoms);
-    d_nBasis = d_sbs.getTotalBasisSize(d_atoms);
-    std::cout << "nBasis : " << d_nBasis << std::endl;
-
-    d_DM.assign(nSpin * d_nBasis * d_nBasis, 0.0);
-
-    d_sbd.evalBasisData(
-      d_atoms, d_quadpts, d_sbs, d_nQuad, d_nBasis, d_maxDerOrder);
+    // Constructor implementation
   }
 
   AuxDensityMatrixSlater::~AuxDensityMatrixSlater()
@@ -45,14 +18,242 @@ namespace dftfe
   }
 
   void
-  AuxDensityMatrixSlater::setDMzero()
+  AuxDensityMatrixSlater::reinitAuxDensityMatrix(
+    const std::vector<std::pair<std::string, std::vector<double>>> &atomCoords,
+    const std::string &        auxBasisFile,
+    const std::vector<double> &quadpts,
+    const int                  nSpin,
+    const int                  maxDerOrder)
   {
-    // setDMzero implementation
-    for (auto &element : d_DM)
+    d_sbs.constructBasisSet(atomCoords, auxBasisFile);
+    d_nBasis = d_sbs.getSlaterBasisSize();
+    d_nSpin  = nSpin;
+    d_DM.assign(d_nSpin * d_nBasis * d_nBasis, 0.0);
+    d_sbd.evalBasisData(quadpts, d_sbs, maxDerOrder);
+  }
+
+  void
+  AuxDensityMatrixSlater::evalOverlapMatrixStart(
+    const std::vector<double> &quadWt)
+  {
+    d_SMatrix = std::vector<double>(d_nBasis * d_nBasis, 0.0);
+
+    for (int i = 0; i < d_nBasis; ++i)
       {
-        element = 0.0;
+        for (int j = i; j < d_nBasis; ++j)
+          {
+            double sum = 0.0;
+            for (int iQuad = 0; iQuad < quadWt.size(); iQuad++)
+              {
+                sum += d_sbd.getBasisValues(iQuad * d_nBasis + i) *
+                       d_sbd.getBasisValues(iQuad * d_nBasis + j) *
+                       quadWt[iQuad];
+              }
+            d_SMatrix[i * d_nBasis + j] = sum;
+            if (i != j)
+              {
+                d_SMatrix[j * d_nBasis + i] = sum;
+              }
+          }
       }
   }
+
+  void
+  AuxDensityMatrixSlater::evalOverlapMatrixEnd()
+  {
+    // MPI All Reduce
+    evalOverlapMatrixInv();
+  }
+
+  void
+  AuxDensityMatrixSlater::evalOverlapMatrixInv()
+  {
+    // Invert using Cholesky
+    int info;
+    // Compute the Cholesky factorization of SMatrix
+    dftfe::dpotrf_("L",
+                   reinterpret_cast<const unsigned int *>(&d_nBasis),
+                   d_SMatrixInv.data(),
+                   reinterpret_cast<const unsigned int *>(&d_nBasis),
+                   &info);
+
+    if (info != 0)
+      {
+        throw std::runtime_error("Error in dpotrf."
+                                 "Cholesky Factorization failed."
+                                 " Matrix may not be positive definite.");
+      }
+
+    // Compute the inverse of SMatrix using the Cholesky factorization
+    dftfe::dpotri_("L",
+                   reinterpret_cast<const unsigned int *>(&d_nBasis),
+                   d_SMatrixInv.data(),
+                   reinterpret_cast<const unsigned int *>(&d_nBasis),
+                   &info);
+    if (info != 0)
+      {
+        throw std::runtime_error("Error in dpotri."
+                                 "Inversion using Cholesky Factors failed."
+                                 "Matrix may not be positive definite.");
+      }
+
+    // Fill the upper triangular part of the inverted matrix
+    for (int i = 0; i < d_nBasis; ++i)
+      {
+        for (int j = i + 1; j < d_nBasis; ++j)
+          {
+            d_SMatrixInv[i * d_nBasis + j] = d_SMatrixInv[j * d_nBasis + i];
+          }
+      }
+
+    // Multiply SMatrix and SMatrixInv using dgemm_
+
+    double              alpha = 1.0;
+    double              beta  = 0.0;
+    std::vector<double> CMatrix(d_nBasis * d_nBasis, 0.0);
+    dftfe::dgemm_("N",
+                  "N",
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  &alpha,
+                  d_SMatrix.data(),
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  d_SMatrixInv.data(),
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  &beta,
+                  CMatrix.data(),
+                  reinterpret_cast<const unsigned int *>(&d_nBasis));
+
+    double frobenius_norm = 0.0;
+    for (int i = 0; i < d_nBasis; ++i)
+      {
+        for (int j = 0; j < d_nBasis; j++)
+          {
+            if (i == j)
+              {
+                frobenius_norm += (CMatrix[i * d_nBasis + j] - 1.0) *
+                                  (CMatrix[i * d_nBasis + j] - 1.0);
+              }
+            else
+              {
+                frobenius_norm +=
+                  CMatrix[i * d_nBasis + j] * CMatrix[i * d_nBasis + j];
+              }
+          }
+      }
+    frobenius_norm = std::sqrt(frobenius_norm);
+    if (frobenius_norm > 1E-6)
+      {
+        throw std::runtime_error("SMatrix Inversion"
+                                 "using Cholesky Factors failed"
+                                 "to pass check!");
+      }
+  }
+
+  std::vector<double> &
+  AuxDensityMatrixSlater::getOverlapMatrixInv()
+  {
+    return d_SMatrixInv;
+  }
+
+  void
+  AuxDensityMatrixSlater::projectDensityMatrixStart(
+    std::unordered_map<std::string, std::vector<double>> &projectionInputs)
+  {
+    // eval <SlaterBasis|WFC> matrix d_SWFC
+
+    auto &              psiFunc                = projectionInputs["psiFunc"];
+    auto &              quadWt                 = projectionInputs["quadWt"];
+    std::vector<double> SlaterBasisValWeighted = d_sbd.getBasisValuesAll();
+
+    auto nQuad = quadWt.size();
+    auto nWFC  = psiFunc.size() / nQuad;
+    d_SWFC     = std::vector<double>(d_nBasis * nWFC, 0.0);
+
+
+    for (int i = 0; i < nQuad; ++i)
+      {
+        for (int j = 0; j < d_nBasis; ++j)
+          {
+            SlaterBasisValWeighted[i * d_nBasis + j] *= quadWt[i];
+          }
+      }
+
+    double alpha = 1.0;
+    double beta  = 0.0;
+    dftfe::dgemm_("N",
+                  "T",
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  reinterpret_cast<const unsigned int *>(&nWFC),
+                  reinterpret_cast<const unsigned int *>(&nQuad),
+                  &alpha,
+                  SlaterBasisValWeighted.data(),
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  psiFunc.data(),
+                  reinterpret_cast<const unsigned int *>(&nWFC),
+                  &beta,
+                  d_SWFC.data(),
+                  reinterpret_cast<const unsigned int *>(&d_nBasis));
+  }
+
+  void
+  AuxDensityMatrixSlater::projectDensityMatrixEnd(
+    std::unordered_map<std::string, std::vector<double>> &projectionInputs,
+    int                                                   iSpin)
+  {
+    // MPI All Reduce d_SWFC
+
+    auto  SlaterOverlapInv = this->getOverlapMatrixInv();
+    auto  nQuad            = projectionInputs["quadWt"].size();
+    auto  nWFC             = projectionInputs["psiFunc"].size() / nQuad;
+    auto &fValues          = projectionInputs["fValues"];
+
+
+    // Multiply S^(-1) * <S|W> = BB
+    std::vector<double> BB(d_nBasis * nWFC, 0.0);
+    double              alpha = 1.0;
+    double              beta  = 0.0;
+    dftfe::dgemm_("N",
+                  "N",
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  reinterpret_cast<const unsigned int *>(&nWFC),
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  &alpha,
+                  SlaterOverlapInv.data(),
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  d_SWFC.data(),
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  &beta,
+                  BB.data(),
+                  reinterpret_cast<const unsigned int *>(&d_nBasis));
+
+    // BF = BB * F^(1/2)
+    std::vector<double> BF = BB;
+    for (int i = 0; i < nWFC; i++)
+      {
+        for (int j = 0; j < d_nBasis; j++)
+          {
+            BF[i * d_nBasis + j] *= std::sqrt(fValues[i]);
+          }
+      }
+
+    // D = BF * BF^T
+    dftfe::dgemm_("N",
+                  "T",
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  reinterpret_cast<const unsigned int *>(&nWFC),
+                  &alpha,
+                  BF.data(),
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  BF.data(),
+                  reinterpret_cast<const unsigned int *>(&d_nBasis),
+                  &beta,
+                  d_DM.data() + iSpin * d_nBasis * d_nBasis,
+                  reinterpret_cast<const unsigned int *>(&d_nBasis));
+  }
+
 
   namespace
   {
@@ -85,7 +286,7 @@ namespace dftfe
     int                       DMSpinOffset = d_nBasis * d_nBasis;
     std::pair<size_t, size_t> indexRange;
 
-    for (int iQuad = 0; iQuad < Qpts.size(); iQuad++)
+    for (int iQuad = 0; iQuad < Points.size(); iQuad++)
       {
         std::vector<double> rhoUp(1, 0.0);
         std::vector<double> rhoDown(1, 0.0);
@@ -207,7 +408,7 @@ namespace dftfe
         if (densityData.find(DensityDescriptorDataAttributes::valuesTotal) ==
             densityData.end())
           {
-            this->fillDensityAttributeData(
+            fillDensityAttributeData(
               densityData[DensityDescriptorDataAttributes::valuesTotal],
               rhoTotal,
               indexRange);
@@ -216,7 +417,7 @@ namespace dftfe
         if (densityData.find(DensityDescriptorDataAttributes::valuesSpinUp) ==
             densityData.end())
           {
-            this->fillDensityAttributeData(
+            fillDensityAttributeData(
               densityData[DensityDescriptorDataAttributes ::valuesSpinUp],
               rhoUp,
               indexRange);
@@ -225,7 +426,7 @@ namespace dftfe
         if (densityData.find(DensityDescriptorDataAttributes::valuesSpinDown) ==
             densityData.end())
           {
-            this->fillDensityAttributeData(
+            fillDensityAttributeData(
               densityData[DensityDescriptorDataAttributes ::valuesSpinDown],
               rhoDown,
               indexRange);
@@ -237,7 +438,7 @@ namespace dftfe
               DensityDescriptorDataAttributes::gradValueSpinUp) ==
             densityData.end())
           {
-            this->fillDensityAttributeData(
+            fillDensityAttributeData(
               densityData[DensityDescriptorDataAttributes ::gradValueSpinUp],
               gradrhoUp,
               indexRange);
@@ -247,7 +448,7 @@ namespace dftfe
               DensityDescriptorDataAttributes::gradValueSpinDown) ==
             densityData.end())
           {
-            this->fillDensityAttributeData(
+            fillDensityAttributeData(
               densityData[DensityDescriptorDataAttributes ::gradValueSpinDown],
               gradrhoDown,
               indexRange);
@@ -257,7 +458,7 @@ namespace dftfe
         if (densityData.find(DensityDescriptorDataAttributes::hessianSpinUp) ==
             densityData.end())
           {
-            this->fillDensityAttributeData(
+            fillDensityAttributeData(
               densityData[DensityDescriptorDataAttributes ::hessianSpinUp],
               HessianrhoUp,
               indexRange);
@@ -268,7 +469,7 @@ namespace dftfe
               DensityDescriptorDataAttributes::hessianSpinDown) ==
             densityData.end())
           {
-            this->fillDensityAttributeData(
+            fillDensityAttributeData(
               densityData[DensityDescriptorDataAttributes ::hessianSpinDown],
               HessianrhoDown,
               indexRange);
@@ -280,7 +481,7 @@ namespace dftfe
               DensityDescriptorDataAttributes::laplacianSpinUp) ==
             densityData.end())
           {
-            this->fillDensityAttributeData(
+            fillDensityAttributeData(
               densityData[DensityDescriptorDataAttributes ::laplacianSpinUp],
               LaplacianrhoUp,
               indexRange);
@@ -290,7 +491,7 @@ namespace dftfe
               DensityDescriptorDataAttributes::laplacianSpinDown) ==
             densityData.end())
           {
-            this->fillDensityAttributeData(
+            fillDensityAttributeData(
               densityData[DensityDescriptorDataAttributes ::laplacianSpinDown],
               LaplacianrhoDown,
               indexRange);
@@ -299,274 +500,12 @@ namespace dftfe
   }
 
   void
-  AuxDensityMatrixSlater::projectDensityMatrix(
+  AuxDensityMatrixSlater::projectDensity(
     const std::vector<double> &Qpts,
     const std::vector<double> &QWt,
     const int                  nQ,
-    const std::vector<double> &psiFunc,
-    const std::vector<double> &fValues,
-    const std::pair<int, int>  nPsi,
-    double                     alpha,
-    double                     beta)
-  {
-    /*
-     * Qpts - x1, y1, z1, x2, y2, z2, ...
-     * QWt  - quadWt1, quadWt2, ....
-     * nQ   - number of quad points
-     * psiFunc - FE eigenfunction, \psi_{sigma, quadpt, basisIndex}
-     * fValues - FE eigenValues, f_{sigma, basisIndex}
-     * nPsi   - pair of <num of eigenfunctions up, num of eigenfunctions down>
-     * alpha, beta - DM = alpha * DM + beta * DM_dash (BLAS format)
-     */
-
-
-    // Check if QPts are same as quadpts, then update quadpts, qwt, nQuad
-    /*
-    if(Qpts.size() != d_quadWt.size()){
-        d_quadpts = Qpts;
-        d_quadWt = QWt;
-        d_nQuad  = nQ;
-        d_sbd.evalBasisData(d_atoms, d_quadpts, d_sbs, d_nQuad, d_nBasis,
-    d_maxDerOrder); d_sbd.evalSlaterOverlapMatrixInv(d_quadWt, d_nQuad,
-    d_nBasis);
-    }
-    else if( (std::equal(Qpts.begin(), Qpts.end(), d_quadWt.begin())) == 0){
-        d_quadpts = Qpts;
-        d_quadWt = QWt;
-        d_nQuad  = nQ;
-        d_sbd.evalBasisData(d_atoms, d_quadpts, d_sbs, d_nQuad, d_nBasis,
-    d_maxDerOrder); d_sbd.evalSlaterOverlapMatrixInv(d_quadWt, d_nQuad,
-    d_nBasis);
-    } */
-
-    int nPsi1   = nPsi.first;
-    int nPsi2   = nPsi.second;
-    int nPsiTot = nPsi1 + nPsi2;
-
-    auto SlaterOverlapInv =
-      this->evalSlaterOverlapMatrixInv(quadWt, nQuad, nBasis);
-
-    std::vector<double> SlaterBasisVal = d_sbd.getBasisValuesAll();
-
-    // stores AA = Slater_Phi^T * FE_EigVec = (Ns * Nq) * (Nq * N_eig) = (Ns *
-    // N_eig) Slater_Phi^T is quadrature weighted
-
-    std::vector<double> AA(d_nBasis * nPsiTot, 0.0);
-
-    std::vector<double> AA1(d_nBasis * nPsi1, 0.0);
-    std::vector<double> AA2(d_nBasis * nPsi2, 0.0);
-
-    std::vector<double> SlaterBasisValWeighted = SlaterBasisVal;
-    for (int i = 0; i < d_nQuad; ++i)
-      {
-        for (int j = 0; j < d_nBasis; ++j)
-          {
-            SlaterBasisValWeighted[i * d_nBasis + j] *= d_quadWt[i];
-          }
-      }
-
-    // Perform matrix multiplication: C[:, :Ne1] = A^T * B1
-    cblas_dgemm(CblasRowMajor,
-                CblasTrans,
-                CblasNoTrans,
-                d_nBasis,
-                nPsi1,
-                d_nQuad,
-                1.0,
-                SlaterBasisValWeighted.data(),
-                d_nBasis,
-                psiFunc.data(),
-                nPsi1,
-                0.0,
-                AA1.data(),
-                nPsi1);
-
-    // Perform matrix multiplication: C[:, Ne1:] = A^T * B2
-    cblas_dgemm(CblasRowMajor,
-                CblasTrans,
-                CblasNoTrans,
-                d_nBasis,
-                nPsi2,
-                d_nQuad,
-                1.0,
-                SlaterBasisValWeighted.data(),
-                d_nBasis,
-                psiFunc.data() + d_nQuad * nPsi1,
-                nPsi2,
-                0.0,
-                AA2.data(),
-                nPsi2);
-
-    // stores BB = S^(-1) * AA   // (Ns * N_eig)
-    std::vector<double> BB1(d_nBasis * nPsi1, 0.0);
-    std::vector<double> BB2(d_nBasis * nPsi2, 0.0);
-
-    cblas_dgemm(CblasRowMajor,
-                CblasNoTrans,
-                CblasNoTrans,
-                d_nBasis,
-                nPsi1,
-                d_nBasis,
-                1.0,
-                SlaterOverlapInv.data(),
-                d_nBasis,
-                AA1.data(),
-                nPsi1,
-                0.0,
-                BB1.data(),
-                nPsi1);
-
-    cblas_dgemm(CblasRowMajor,
-                CblasNoTrans,
-                CblasNoTrans,
-                d_nBasis,
-                nPsi2,
-                d_nBasis,
-                1.0,
-                SlaterOverlapInv.data(),
-                d_nBasis,
-                AA2.data(),
-                nPsi2,
-                0.0,
-                BB2.data(),
-                nPsi2);
-
-    // BF = BB * F    // (Ns * Neig)
-    std::vector<double> BF1 = BB1;
-    std::vector<double> BF2 = BB2;
-
-    for (int i = 0; i < d_nBasis; i++)
-      {
-        for (int j = 0; j < nPsi1; j++)
-          {
-            BF1[i * nPsi1 + j] *= fValues[j];
-          }
-        for (int j = 0; j < nPsi2; j++)
-          {
-            BF2[i * nPsi2 + j] *= fValues[nPsi1 + j];
-          }
-      }
-
-    std::vector<double> DM_dash(d_nSpin * d_nBasis * d_nBasis, 0.0);
-
-    cblas_dgemm(CblasRowMajor,
-                CblasNoTrans,
-                CblasTrans,
-                d_nBasis,
-                d_nBasis,
-                nPsi1,
-                1.0,
-                BF1.data(),
-                nPsi1,
-                BB1.data(),
-                nPsi1,
-                0.0,
-                DM_dash.data(),
-                d_nBasis);
-
-    // Perform matrix multiplication: C[:, Ne1:] = A^T * B2
-    cblas_dgemm(CblasRowMajor,
-                CblasNoTrans,
-                CblasTrans,
-                d_nBasis,
-                d_nBasis,
-                nPsi2,
-                1.0,
-                BF2.data(),
-                nPsi2,
-                BB2.data(),
-                nPsi2,
-                0.0,
-                DM_dash.data() + d_nBasis * d_nBasis,
-                d_nBasis);
-
-    for (int i = 0; i < d_DM.size(); i++)
-      {
-        d_DM[i] = alpha * d_DM[i] + beta * DM_dash[i];
-      }
-
-    std::cout << "DM1:" << std::endl;
-    for (int i = 0; i < d_nBasis; ++i)
-      {
-        for (int j = 0; j < d_nBasis; ++j)
-          {
-            std::cout << DM_dash[i * d_nBasis + j] << " ";
-          }
-        std::cout << std::endl;
-      }
-
-    std::cout << "DM2:" << std::endl;
-    for (int i = 0; i < d_nBasis; ++i)
-      {
-        for (int j = 0; j < d_nBasis; ++j)
-          {
-            std::cout << DM_dash[d_nBasis * d_nBasis + i * d_nBasis + j] << " ";
-          }
-        std::cout << std::endl;
-      }
-  }
-
-
-  std::vector<double>
-  AuxDensityMatrixSlater::evalSlaterOverlapMatrix(
-    const std::vector<double> &quadWt,
-    int                        nQuad,
-    int                        nBasis)
-  {
-    std::vector<double> SMatrix(nBasis * nBasis, 0.0);
-
-    for (int i = 0; i < nBasis; ++i)
-      {
-        for (int j = i; j < nBasis; ++j)
-          {
-            double sum = 0.0;
-            for (int iQuad = 0; iQuad < nQuad; iQuad++)
-              {
-                sum += getBasisValues(iQuad * nBasis + i) *
-                       getbasisValues(iQuad * nBasis + j) * quadWt[iQuad];
-              }
-            SMatrix[i * nBasis + j] = sum;
-            if (i != j)
-              {
-                SMatrix[j * nBasis + i] = sum;
-              }
-          }
-      }
-    return SMatrix;
-  }
-
-  std::vector<double>
-  SlaterBasisData::evalSlaterOverlapMatrixInv(const std::vector<double> &quadWt,
-                                              int                        nQuad,
-                                              int                        nBasis)
-  {
-    auto SMatrix = this->evalSlaterOverlapMatrix(quadWt, nQuad, nBasis);
-
-    std::vector<double> SMatrixInv(SMatrix);
-
-    // Invert the matrix using Cholesky decomposition
-    int info;
-    info =
-      LAPACKE_dpotri(LAPACK_ROW_MAJOR, 'L', nBasis, invMatrix.data(), nBasis);
-    if (info != 0)
-      {
-        throw std::runtime_error(
-          "Matrix inversion failed. Matrix may not be positive definite.");
-      }
-
-    // Fill the upper triangular part of the inverted matrix
-    for (int i = 0; i < nBasis; ++i)
-      {
-        for (int j = i + 1; j < nBasis; ++j)
-          {
-            SMatrixInv[i * nBasis + j] = SMatrixInv[j * nBasis + i];
-          }
-      }
-    return SMatrixInv;
-  }
-
-  void
-  AuxDensityMatrixSlater::projectDensity()
+    const std::vector<double> &densityVals,
+    const std::vector<double> &gradDensityVals)
   {
     // projectDensity implementation
     std::cout << "Error : No implementation yet" << std::endl;

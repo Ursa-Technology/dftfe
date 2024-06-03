@@ -6,11 +6,6 @@
 
 namespace dftfe
 {
-  AuxDensityMatrix::AuxDensityMatrix()
-  {
-    // Constructor implementation
-  }
-
   AuxDensityMatrix::~AuxDensityMatrix()
   {
     // Destructor implementation

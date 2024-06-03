@@ -12,136 +12,202 @@
 
 namespace dftfe
 {
-  /*
-  // Implement the constructor
-  SlaterBasisSet::
-      SlaterBasisSet(const std::vector<Atom>& atoms) {
-
-      for (const auto& atom : atoms) {
-          // Check if the basisfile has already been processed
-          if (basisSets.find(atom.basisfile) == basisSets.end()) {
-              basisSets[atom.basisfile] = readSlaterBasisFile(atom.basisfile);
-          }
-      }
-  }*/
-
-  void
-  SlaterBasisSet::constructBasisSet(const std::vector<Atom> &atoms)
+  SlaterBasisSet::SlaterBasisSet()
   {
-    for (const auto &atom : atoms)
-      {
-        // Check if the basisfile has already been processed
-        if (basisSets.find(atom.basisfile) == basisSets.end())
-          {
-            basisSets[atom.basisfile] = readSlaterBasisFile(atom.basisfile);
-          }
-      }
+    // empty constructor
   }
 
-
-  std::vector<SlaterPrimitive>
-  SlaterBasisSet::readSlaterBasisFile(const std::string &filename)
+  SlaterBasisSet::~SlaterBasisSet()
   {
-    std::ifstream file(filename);
-    if (!file.is_open())
+    // deallocate SlaterPrimitive pointers stored in the map
+    for (auto &pair : d_atomToSlaterPrimitivePtr)
       {
-        throw std::runtime_error("Unable to open file: " + filename);
-      }
-
-    std::vector<SlaterPrimitive> basisList;
-    int                          nBasis = 0;
-    std::string                  line;
-    std::map<std::string, int>   lStringToIntMap = {
-      {"S", 0}, {"P", 1}, {"D", 2}, {"F", 3}, {"G", 4}, {"H", 5}};
-
-    // Ignore the first line
-    std::getline(file, line);
-
-    while (std::getline(file, line))
-      {
-        std::istringstream iss(line);
-        std::string        nlString;
-        double             alpha;
-        iss >> nlString >> alpha;
-
-        if (iss.fail())
+        std::vector<SlaterPrimitive *> &primitives = pair.second;
+        for (SlaterPrimitive *sp : primitives)
           {
-            throw std::runtime_error("Error reading line in file: " + filename);
-          }
-
-        char lChar = nlString.back();
-
-        int n = std::stoi(nlString.substr(0, nlString.size() - 1));
-        int l = lStringToIntMap[std::string(1, lChar)];
-
-        std::vector<int> mList;
-        if (l == 1)
-          {
-            mList = {1, -1, 0}; // Special case for p orbitals
-          }
-        else
-          {
-            for (int m = -l; m <= l; ++m)
+            if (sp != nullptr)
               {
-                mList.push_back(m);
+                delete sp;
               }
           }
-
-        for (int m : mList)
-          {
-            nBasis += 1;
-            basisList.emplace_back(n, l, m, alpha);
-          }
+        primitives.clear();
       }
-
-    return basisList;
   }
 
-  std::vector<SlaterPrimitive>
-  SlaterBasisSet::getBasisSet(const std::string &basisFileName) const
+
+  void
+  SlaterBasisSet::constructBasisSet(
+    const std::vector<std::pair<std::string, std::vector<double>>> &atomCoords,
+    const std::string &auxBasisFileName)
   {
-    auto it = basisSets.find(basisFileName);
-    if (it != basisSets.end())
+    const auto atomToSlaterBasisName =
+      readAtomToSlaterBasisName(auxBasisFileName);
+
+    for (const auto &pair : atomToSlaterBasisName)
       {
-        return it->second;
+        const std::string &atomSymbol = pair.first;
+        const std::string &basisName  = pair.second;
+
+        this->addSlaterPrimitivesFromBasisFile(atomSymbol, basisName);
       }
-    return {}; // Return an empty vector if the basis name is not found
+
+
+    for (const auto &pair : atomCoords)
+      {
+        const std::string &        atomSymbol = pair.first;
+        const std::vector<double> &atomCenter = pair.second;
+
+        for (const SlaterPrimitive *sp : d_atomToSlaterPrimitivePtr[atomSymbol])
+          {
+            SlaterBasisInfo info = {atomSymbol, atomCenter, sp};
+            d_SlaterBasisInfo.push_back(info);
+          }
+      }
+  }
+
+  const std::vector<SlaterBasisInfo> &
+  SlaterBasisSet::getSlaterBasisInfo() const
+  {
+    return d_SlaterBasisInfo;
+  }
+
+  int
+  SlaterBasisSet::getSlaterBasisSize() const
+  {
+    return static_cast<int>(d_SlaterBasisInfo.size());
   }
 
   void
-  SlaterBasisSet::displayBasisSetInfo(
-    const std::vector<SlaterPrimitive> &basisList)
+  SlaterBasisSet::addSlaterPrimitivesFromBasisFile(
+    const std::string &atomSymbol,
+    const std::string &basisName)
   {
-    for (const auto &basis : basisList)
+    /*
+     * Written in a format that ignores the first line
+     */
+    std::ifstream file("../Data/" + basisName);
+    if (file.is_open())
       {
-        int n, l, m;
-        basis.nlm(n, l, m); // Retrieve the n, l, m values
+        std::string                          line;
+        std::unordered_map<std::string, int> lStringToIntMap = {
+          {"S", 0}, {"P", 1}, {"D", 2}, {"F", 3}, {"G", 4}, {"H", 5}};
+        // First line - Ignore
+        std::getline(file, line);
+        std::istringstream iss(line);
+        if (iss.fail())
+          {
+            throw std::runtime_error("Error reading line in file: " +
+                                     basisName);
+          }
+        std::string atomType, extra;
+        iss >> atomType;
+        if (iss >> extra)
+          {
+            throw std::runtime_error("Error: More than one entry in line 1 in" +
+                                     basisName);
+          }
+        // Second Line Onwards
+        while (std::getline(file, line))
+          {
+            std::istringstream iss(line);
+            if (iss.fail())
+              {
+                throw std::runtime_error("Error reading line in file: " +
+                                         basisName);
+              }
 
-        std::cout << "Slater Primitive: n=" << n << ", l=" << l << ", m=" << m
-                  << ", alpha=" << basis.alpha()
-                  << ", normalization constant=" << basis.normConst()
-                  << std::endl;
+            std::string nlString;
+            double      alpha;
+            iss >> nlString >> alpha;
+            if (iss >> extra)
+              {
+                throw std::runtime_error(
+                  "Error: More than two entries in a line in" + basisName);
+              }
+
+            char lChar = nlString.back();
+
+            int n = std::stoi(nlString.substr(0, nlString.size() - 1));
+            int l;
+            try
+              {
+                l = lStringToIntMap.at(std::string(1, lChar));
+              }
+            catch (const std::out_of_range &e)
+              {
+                throw std::runtime_error(
+                  std::string(
+                    "Character doesn't exist in the lStringToIntMap in "
+                    "SlaterBasisSet.cpp: ") +
+                  std::string(1, lChar));
+              }
+            std::vector<int> mList;
+            if (l == 1)
+              {
+                mList = {1, -1, 0}; // Special case for p orbitals
+              }
+            else
+              {
+                for (int m = -l; m <= l; ++m)
+                  {
+                    mList.push_back(m);
+                  }
+              }
+            for (int m : mList)
+              {
+                SlaterPrimitive *sp = new SlaterPrimitive{n, l, m, alpha};
+                d_atomToSlaterPrimitivePtr[atomSymbol].push_back(sp);
+              }
+          }
       }
-
-    // std::cout << "basis size =" << basisList.size() << std::endl;
-  }
-
-  int
-  SlaterBasisSet::getBasisSize(const std::vector<SlaterPrimitive> &basisList)
-  {
-    return basisList.size();
-  }
-
-  int
-  SlaterBasisSet::getTotalBasisSize(const std::vector<Atom> &atoms)
-  {
-    int nBasis = 0;
-    for (const auto &atom : atoms)
+    else
       {
-        auto cBasisSet = this->getBasisSet(atom.basisfile);
-        nBasis += this->getBasisSize(cBasisSet);
+        throw std::runtime_error("Unable to open file: " + basisName);
       }
-
-    return nBasis;
   }
+
+
+  std::unordered_map<std::string, std::string>
+  SlaterBasisSet::readAtomToSlaterBasisName(const std::string &fileName)
+  {
+    std::unordered_map<std::string, std::string> atomToSlaterBasisName;
+    std::ifstream                                file(fileName);
+    if (file.is_open())
+      {
+        std::string line;
+        int         lineNumber = 0;
+        while (std::getline(file, line))
+          {
+            lineNumber++;
+            std::istringstream iss(line);
+            std::string        atomSymbol;
+            std::string        slaterBasisName;
+
+            if (iss >> atomSymbol >> slaterBasisName)
+              {
+                std::string extra;
+                if (iss >> extra)
+                  {
+                    throw std::runtime_error(
+                      "Error: More than two entries in line " +
+                      std::to_string(lineNumber) + "in" + fileName);
+                  }
+                atomToSlaterBasisName[atomSymbol] = slaterBasisName;
+              }
+            else
+              {
+                throw std::runtime_error("Error: Invalid format in line " +
+                                         std::to_string(lineNumber) + "in" +
+                                         fileName);
+              }
+          }
+        file.close();
+      }
+    else
+      {
+        std::cout << "Unable to open the file." + fileName << std::endl;
+      }
+    return atomToSlaterBasisName;
+  }
+
 } // namespace dftfe

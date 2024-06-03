@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <utility>
+#include <map>
 
 namespace dftfe
 {
@@ -26,9 +27,6 @@ namespace dftfe
   class AuxDensityMatrix
   {
   public:
-    // Constructor
-    AuxDensityMatrix();
-
     // Virtual destructor
     virtual ~AuxDensityMatrix();
 
@@ -38,48 +36,53 @@ namespace dftfe
     applyLocalOperations(const std::vector<double> &    Points,
                          std::map<DensityDescriptorDataAttributes,
                                   std::vector<double>> &densityData) = 0;
+    virtual void
+    reinitAuxDensityMatrix(
+      const std::vector<std::pair<std::string, std::vector<double>>>
+        &                        atomCoords,
+      const std::string &        auxBasisFile,
+      const std::vector<double> &quadpts,
+      const int                  nSpin,
+      const int                  maxDerOrder) = 0;
+
+    virtual void
+    evalOverlapMatrixStart(const std::vector<double> &quadWt) = 0;
+
+    virtual void
+    evalOverlapMatrixEnd() = 0;
 
     /**
-     * @brief Projects the FE density matrix to aux basis (L2 projection).
      *
-     * @note This function computes:
-     * d_DM := alpha * d_DM + beta * DM_dash
+     * @param projectionInputs is a map from string to inputs needed
+     *                          for projection.
+     * eg - projectionInputs["quadpts"],
+     *      projectionInputs["quadWt"],
+     *      projectionInputs["psiFunc"],
+     *      projectionInputs["fValues"]
      *
-     * @param Qpts The quadrature points.
-     * @param QWt The quadrature weights.
-     * @param nQ The number of quadrature points.
-     * @param psiFunc The SCF wave function or eigen function in FE Basis.
-     * @param fValues The SCF eigen values.
-     * @param nPsi The number of wave functions as a pair (number of spin-up, number of spin-down).
-     * @param alpha The scaling factor for existing density matrix d_DM.
-     * @param beta The scaling factor for the newly calculated density matrix DM_dash.
+     * psiFunc The SCF wave function or eigen function in FE Basis.
+     *                psiFunc(quad_index, wfc_index),
+     *                quad_index is fastest.
+     * fValues The SCF eigen values.
+     *                fValues(wfc_index),
      *
-     * @par Example
-     * @code
-     * std::vector<double> Qpts = {...};  // Quadrature points
-     * std::vector<double> QWt = {...};   // Quadrature weights
-     * int nQ = Qpts.size();             // Number of quadrature points
-     * std::vector<double> psiFunc = {...};  // Wave/Eigen function values
-     * std::vector<double> fValues = {...};  // Eigenvalues
-     * std::pair<int, int> nPsi = {5, 5};    // Number of spin-up and spin-down
-     * wave functions double alpha = 1.0;               // Scaling factor for
-     * d_DM double beta = 1.0;                // Scaling factor for DM_dash
-     *
-     * AuxDensityMatrix auxDensity;
-     * auxDensity.projectDensityMatrix(Qpts, QWt, nQ, psiFunc, fValues, nPsi,
-     * alpha, beta);
-     * @endcode
      */
-    virtual void
-    projectDensityMatrix(const std::vector<double> &Qpts,
-                         const std::vector<double> &QWt,
-                         const int                  nQ,
-                         const std::vector<double> &psiFunc,
-                         const std::vector<double> &fValues,
-                         const std::pair<int, int>  nPsi,
-                         double                     alpha,
-                         double                     beta) = 0;
 
+    virtual void
+    projectDensityMatrixStart(
+      std::unordered_map<std::string, std::vector<double>>
+        &projectionInputs) = 0;
+
+    /**
+     *
+     * @param projectionInputs - same as above
+     * @param iSpin - 0 (up) or 1 (down) required to fill d_DM
+     */
+
+    virtual void
+    projectDensityMatrixEnd(
+      std::unordered_map<std::string, std::vector<double>> &projectionInputs,
+      int                                                   iSpin) = 0;
 
     /**
      * @brief Projects the quadrature density to aux basis (L2 projection).

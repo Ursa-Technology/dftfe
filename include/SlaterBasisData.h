@@ -9,10 +9,8 @@
 
 #  include <vector>
 #  include <memory>
-#  include "AtomInfo.h"
 #  include <torch/torch.h>
 #  include "SlaterBasisSet.h"
-#  include "SlaterPrimitive.h"
 #  include "SphericalHarmonicFunc.h"
 
 namespace dftfe
@@ -22,15 +20,9 @@ namespace dftfe
   public:
     // Public Member functions declarations
     void
-    evalBasisData(const std::vector<Atom> &  atoms,
-                  const std::vector<double> &quadpts,
+    evalBasisData(const std::vector<double> &quadpts,
                   const SlaterBasisSet &     sbs,
-                  int                        nQuad,
-                  int                        nBasis,
                   int                        maxDerOrder);
-
-    void
-    printBasisInfo(int nQuad, int nBasis);
 
     double
     getBasisValues(const int index);
@@ -44,48 +36,30 @@ namespace dftfe
     double
     getBasisHessianValues(const int index);
 
-    std::vector<double>
-    getSlaterOverlapMatrixInv();
 
   private:
     // Member variables
     std::vector<double> basisValues;
     std::vector<double> basisGradValues;
     std::vector<double> basisHessValues;
-    std::vector<double> SMatrixInv;
 
     void
-    evalBasisValues(const std::vector<Atom> &  atoms,
-                    const std::vector<double> &quadpts,
-                    const SlaterBasisSet &     sbs,
-                    int                        nBasis);
+    evalBasisValues(const std::vector<double> &quadpts,
+                    const SlaterBasisSet &     sbs);
 
     void
-    evalBasisGradValues(const std::vector<Atom> &  atoms,
-                        const std::vector<double> &quadpts,
-                        const SlaterBasisSet &     sbs,
-                        int                        nBasis);
+    evalBasisGradValues(const std::vector<double> &quadpts,
+                        const SlaterBasisSet &     sbs);
 
     void
-    evalBasisHessianValues(const std::vector<Atom> &  atoms,
-                           const std::vector<double> &quadpts,
-                           const SlaterBasisSet &     sbs,
-                           int                        nBasis);
+    evalBasisHessianValues(const std::vector<double> &quadpts,
+                           const SlaterBasisSet &     sbs);
 
     torch::Tensor
     evalSlaterFunc(const torch::Tensor &  x_s,
                    const torch::Tensor &  y_s,
                    const torch::Tensor &  z_s,
-                   const SlaterPrimitive &basis);
-    void
-    evalSlaterOverlapMatrix(const std::vector<double> &quadWt,
-                            int                        nQuad,
-                            int                        nBasis);
-
-    void
-    evalSlaterOverlapMatrixInv(const std::vector<double> &quadWt,
-                               int                        nQuad,
-                               int                        nBasis);
+                   const SlaterPrimitive *sp);
   };
 } // namespace dftfe
 

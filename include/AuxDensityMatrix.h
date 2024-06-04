@@ -87,18 +87,22 @@ namespace dftfe
     /**
      * @brief Projects the quadrature density to aux basis (L2 projection).
      *
+     * @param projectionInputs is a map from string to inputs needed
+     *                          for projection.
+     * eg - projectionInputs["quadpts"],
+     *      projectionInputs["quadWt"],
+     *      projectionInputs["densityFunc"]
      *
-     * @param Qpts The quadrature points.
-     * @param QWt The quadrature weights.
-     * @param nQ The number of quadrature points.
-     * @param densityVals density values at quad points with spin index
-     * the slowest index followed by the quad index. nspin=2 assumed
+     * densityFunc The density Values at quad points
+     *                psiFunc(spin_index, quad_index),
+     *                quad_index is fastest.
+     *
      */
     virtual void
-    projectDensity(const std::vector<double> &Qpts,
-                   const std::vector<double> &QWt,
-                   const int                  nQ,
-                   const std::vector<double> &densityVals) = 0;
+    projectDensityStart(std::unordered_map<std::string, std::vector<double>> &projectionInputs);
+
+    virtual void 
+    projectDensityEnd()=0;
   };
 } // namespace dftfe
 

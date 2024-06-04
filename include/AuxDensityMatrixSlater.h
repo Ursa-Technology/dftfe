@@ -76,10 +76,12 @@ namespace dftfe
       int                                                   iSpin) override;
 
     void
-    projectDensity(const std::vector<double> &Qpts,
-                   const std::vector<double> &QWt,
-                   const int                  nQ,
-                   const std::vector<double> &densityVals) override;
+    projectDensityStart(
+      std::unordered_map<std::string, std::vector<double>> &projectionInputs)
+      override;
+
+    void
+    projectDensityEnd() override;
   };
 } // namespace dftfe
 

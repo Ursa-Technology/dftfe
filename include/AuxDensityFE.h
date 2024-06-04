@@ -25,20 +25,36 @@ namespace dftfe
 
 
     void
-    projectDensityMatrix(const std::vector<double> &Qpts,
-                         const std::vector<double> &QWt,
-                         const int                  nQ,
-                         const std::vector<double> &psiFunc,
-                         const std::vector<double> &fValues,
-                         const std::pair<int, int>  nPsi,
-                         double                     alpha,
-                         double                     beta) override;
+    projectDensityMatrixStart(
+      std::unordered_map<std::string, std::vector<double>> &projectionInputs)
+      override;
 
     void
-    projectDensity(const std::vector<double> &Qpts,
-                   const std::vector<double> &QWt,
-                   const int                  nQ,
-                   const std::vector<double> &densityVals) override;
+    projectDensityMatrixEnd(
+      std::unordered_map<std::string, std::vector<double>> &projectionInputs,
+      int                                                   iSpin) override;
+
+    /**
+     * @brief Projects the quadrature density to aux basis (L2 projection).
+     *
+     * @param projectionInputs is a map from string to inputs needed
+     *                          for projection.
+     * eg - projectionInputs["quadpts"],
+     *      projectionInputs["quadWt"],
+     *      projectionInputs["densityFunc"]
+     *
+     * densityFunc The density Values at quad points
+     *                psiFunc(spin_index, quad_index),
+     *                quad_index is fastest.
+     *
+     */
+    void
+    projectDensityStart(
+      std::unordered_map<std::string, std::vector<double>> &projectionInputs)
+      override;
+
+    void
+    projectDensityEnd() override;
 
 
   private:

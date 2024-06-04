@@ -27,9 +27,6 @@ namespace dftfe
   class AuxDensityMatrix
   {
   public:
-    // Virtual destructor
-    virtual ~AuxDensityMatrix();
-
     // Pure virtual functions
 
     virtual void
@@ -67,7 +64,6 @@ namespace dftfe
      *                fValues(wfc_index),
      *
      */
-
     virtual void
     projectDensityMatrixStart(
       std::unordered_map<std::string, std::vector<double>>

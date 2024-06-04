@@ -500,12 +500,14 @@ namespace dftfe
   }
 
   void
-  AuxDensityMatrixSlater::projectDensity(
-    const std::vector<double> &Qpts,
-    const std::vector<double> &QWt,
-    const int                  nQ,
-    const std::vector<double> &densityVals,
-    const std::vector<double> &gradDensityVals)
+  AuxDensityMatrixSlater::projectDensityStart(std::unordered_map<std::string, std::vector<double>> &projectionInputs)
+  {
+    // projectDensity implementation
+    std::cout << "Error : No implementation yet" << std::endl;
+  }
+
+   void
+  AuxDensityMatrixSlater::projectDensityEnd()
   {
     // projectDensity implementation
     std::cout << "Error : No implementation yet" << std::endl;

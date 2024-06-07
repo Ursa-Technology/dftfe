@@ -39,19 +39,23 @@ namespace dftfe
      *
      * @param projectionInputs is a map from string to inputs needed
      *                          for projection.
-     * eg - projectionInputs["quadpts"],
+     *      projectionInputs["quadpts"],
      *      projectionInputs["quadWt"],
      *      projectionInputs["densityFunc"]
+     *      projectionInputs["gradDensityFunc"]
      *
      * densityFunc The density Values at quad points
-     *                psiFunc(spin_index, quad_index),
+     *                densityFunc(spin_index, quad_index),
      *                quad_index is fastest.
+     *
+     * gradDensityFunc The density Values at quad points
+     *                gradDensityFunc(spin_index, quad_index,dim_index),
+     *                dim_index is fastest.
      *
      */
     void
-    projectDensityStart(
-      std::unordered_map<std::string, std::vector<double>> &projectionInputs)
-      override;
+    projectDensityStart(std::unordered_map<std::string, std::vector<double>>
+                          &projectionInputs) override;
 
     void
     projectDensityEnd() override;

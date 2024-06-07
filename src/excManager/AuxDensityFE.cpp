@@ -31,10 +31,6 @@ namespace dftfe
   } // namespace
 
 
-  // Constructor implementation
-  AuxDensityFE::AuxDensityFE()
-  {}
-
   void
   AuxDensityFE::applyLocalOperations(
     const std::vector<double> &                                     Points,
@@ -87,35 +83,27 @@ namespace dftfe
   }
 
   void
-  AuxDensityFE::projectDensityMatrix(const std::vector<double> &Qpts,
-                                     const std::vector<double> &QWt,
-                                     const int                  nQ,
-                                     const std::vector<double> &psiFunc,
-                                     const std::vector<double> &fValues,
-                                     const std::pair<int, int>  nPsi,
-                                     double                     alpha,
-                                     double                     beta)
+  AuxDensityFE::projectDensityMatrixStart(
+    std::unordered_map<std::string, std::vector<double>> &projectionInputs)
+
   {
     std::string errMsg = "Not implemented";
     dftfe::utils::throwException(false, errMsg);
   }
 
   void
-  AuxDensityFE::projectDensity(const std::vector<double> &Qpts,
-                               const std::vector<double> &QWt,
-                               const int                  nQ,
-                               const std::vector<double> &densityVals)
+  AuxDensityFE::projectDensityMatrixEnd()
   {
     std::string errMsg = "Not implemented";
     dftfe::utils::throwException(false, errMsg);
   }
 
 
+
   void
-  AuxDensityFE::setQuadVals(const std::vector<double> &Qpts,
-                            const std::vector<double> &QWt,
-                            const int                  nQ,
-                            const std::vector<double> &densityVals)
+  AuxDensityFE::projectDensityStart(
+    std::unordered_map<std::string, std::vector<double>> &projectionInputs);
+
   {
     d_quadPointsSet  = QPts;
     d_quadWeightsSet = QWt;
@@ -131,45 +119,26 @@ namespace dftfe
     for (unsigned int iquad = 0; iquad < nQ; iquad++)
       d_densityValsTotal[iquad] =
         d_densityValsSpinUp[iquad] + d_densityValsSpinDown[iquad];
+
+
+    d_gradDensityValsSpinUp.resize(nQ * 3, 0);
+    d_gradDensityValsSpinDown.resize(nQ * 3, 0);
+
+    for (unsigned int iquad = 0; iquad < nQ; iquad++)
+      for (idim = 0; idim < 3; idim++)
+        d_gradDensityValsSpinUp[3 * iquad + idim] =
+          gradDensityVals[3 * iquad + idim];
+
+    for (unsigned int iquad = 0; iquad < nQ; iquad++)
+      for (idim = 0; idim < 3; idim++)
+        d_gradDensityValsSpinDown[3 * iquad + idim] =
+          gradDensityVals[3 * nQ + 3 * iquad + idim];
   }
 
 
   void
-  AuxDensityFE::setQuadVals(const std::vector<double> &Qpts,
-                            const std::vector<double> &QWt,
-                            const int                  nQ,
-                            const std::vector<double> &densityVals,
-                            const std::vector<double> &gradDensityVals)
-  {
-    d_quadPointsSet  = QPts;
-    d_quadWeightsSet = QWt;
-    d_densityValsTotal.resize(nQ, 0);
-    d_densityValsSpinUp.resize(nQ, 0);
-    d_densityValsSpinDown.resize(nQ, 0);
-    for (unsigned int iquad = 0; iquad < nQ; iquad++)
-      d_densityValsSpinUp[iquad] = densityVals[iquad];
-
-    for (unsigned int iquad = 0; iquad < nQ; iquad++)
-      d_densityValsSpinDown[iquad] = densityVals[nQ + iquad];
-
-    for (unsigned int iquad = 0; iquad < nQ; iquad++)
-      d_densityValsTotal[iquad] =
-        d_densityValsSpinUp[iquad] + d_densityValsSpinDown[iquad];
-  }
-
-
-  d_gradDensityValsSpinUp.resize(nQ * 3, 0);
-  d_gradDensityValsSpinDown.resize(nQ * 3, 0);
-
-  for (unsigned int iquad = 0; iquad < nQ; iquad++)
-    for (idim = 0; idim < 3; idim++)
-      d_gradDensityValsSpinUp[3 * iquad + idim] =
-        gradDensityVals[3 * iquad + idim];
-
-  for (unsigned int iquad = 0; iquad < nQ; iquad++)
-    for (idim = 0; idim < 3; idim++)
-      d_gradDensityValsSpinDown[3 * iquad + idim] =
-        gradDensityVals[3 * nQ + 3 * iquad + idim];
+  AuxDensityFE::projectDensityEnd()
+  {}
 
 
 } // namespace dftfe

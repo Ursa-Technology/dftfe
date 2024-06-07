@@ -4874,13 +4874,15 @@ namespace dftfe
 
     if (d_dftParamsPtr->XCAuxBasisType == "FE")
       {
-        auto auxDensityFEInPtr =
-          std::dynamic_pointer_cast<AuxDensityFE>(d_auxDensityMatrixInPtr);
-
-
         std::vector<double> densityValsForXC(2 * totalLocallyOwnedCells *
                                                nQuadsPerCell,
                                              0);
+
+        std::unordered_map<std::string, std::vector<double>>
+                             densityProjectionInputs;
+        std::vector<double> &densityValsForXC =
+          densityProjectionInputs["densityFunc"];
+        densityValsForXC.resize(2 * totalLocallyOwnedCells * nQuadsPerCell, 0);
 
         if (spinPolarizedFactor == 1)
           {
@@ -4939,8 +4941,12 @@ namespace dftfe
         if (d_excManagerPtr->getDensityBasedFamilyType() ==
             densityFamilyType::GGA)
           {
-            std::vector<double> gradDensityValsForXC(
-              2 * totalLocallyOwnedCells * nQuadsPerCell * 3, 0);
+            std::vector<double> &gradDensityValsForXC =
+              gradDensityProjectionInputs["gradDensityFunc"];
+
+            gradDensityValsForXC.resize(2 * totalLocallyOwnedCells *
+                                          nQuadsPerCell * 3,
+                                        0);
 
 
             if (spinPolarizedFactor == 1)
@@ -5021,32 +5027,16 @@ namespace dftfe
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
           quadWeights = d_basisOperationsPtrHost->JxW();
 
-        std::vector<double> QptsStdVec;
-        std::vector<double> QwtsStdVec;
+        quadPoints.copyTo(densityProjectionInputs["quadpts"]);
+        quadWeights.copyTo(densityProjectionInputs["quadWt"]);
 
-        quadPoints.copyTo(QptsStdVec);
-        quadWeights.copyTo(QwtsStdVec);
 
-        if (d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
-          auxDensityFEInPtr->setQuadVals(QptsStdVec,
-                                         QWtsStdVec,
-                                         QPtsStdVec.size(),
-                                         densityValsForXC,
-                                         gradDensityValsForXC);
+        d_auxDensityMatrixInPtr->projectDensityStart(densityProjectionInputs);
 
-        else
-          auxDensityFEInPtr->setQuadVals(QptsStdVec,
-                                         QWtsStdVec,
-                                         QPtsStdVec.size(),
-                                         densityValsForXC);
+        d_auxDensityMatrixInPtr->projectDensityEnd();
       }
     else if (d_dftParamsPtr->XCAuxBasisType == "SlaterAE")
-      {
-        auto auxDensityMatrixSlaterInPtr =
-          std::dynamic_pointer_cast<AuxDensityMatrixSlater>(
-            d_auxDensityMatrixInPtr);
-      }
+      {}
   }
 
 

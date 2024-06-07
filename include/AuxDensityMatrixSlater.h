@@ -76,9 +76,8 @@ namespace dftfe
       int                                                   iSpin) override;
 
     void
-    projectDensityStart(
-      std::unordered_map<std::string, std::vector<double>> &projectionInputs)
-      override;
+    projectDensityStart(std::unordered_map<std::string, std::vector<double>>
+                          &projectionInputs) override;
 
     void
     projectDensityEnd() override;

@@ -215,11 +215,10 @@ namespace dftfe
   {
     const bool isGGA =
       d_excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA;
-    const unsigned int spinPolarizedFactor = 1 + d_dftParamsPtr->spinPolarized;
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
     const unsigned int totalLocallyOwnedCells =
       d_basisOperationsPtrHost->nCells();
-    const unsigned int numberQuadraturePoints =
+    const unsigned int numberQuadraturePointsPerCell =
       d_basisOperationsPtrHost->nQuadsPerCell();
 #if defined(DFTFE_WITH_DEVICE)
     dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
@@ -231,191 +230,170 @@ namespace dftfe
     auto &d_invJacderExcWithSigmaTimesGradRhoJxWHost =
       d_invJacderExcWithSigmaTimesGradRhoJxW;
 #endif
-    d_VeffJxWHost.resize(totalLocallyOwnedCells * numberQuadraturePoints, 0.0);
+    d_VeffJxWHost.resize(totalLocallyOwnedCells * numberQuadraturePointsPerCell,
+                         0.0);
     d_invJacderExcWithSigmaTimesGradRhoJxWHost.resize(
-      isGGA ? totalLocallyOwnedCells * numberQuadraturePoints * 3 : 0, 0.0);
+      isGGA ? totalLocallyOwnedCells * numberQuadraturePointsPerCell * 3 : 0,
+      0.0);
 
-    // allocate storage for exchange potential
-    std::vector<double> exchangePotentialVal(numberQuadraturePoints *
-                                             spinPolarizedFactor);
-    std::vector<double> corrPotentialVal(numberQuadraturePoints *
-                                         spinPolarizedFactor);
-    std::vector<double> densityValue(numberQuadraturePoints *
-                                     spinPolarizedFactor);
-    std::vector<double> derExchEnergyWithSigmaVal(
-      isGGA ? numberQuadraturePoints * spinPolarizedSigmaFactor : 0);
-    std::vector<double> derCorrEnergyWithSigmaVal(
-      isGGA ? numberQuadraturePoints * spinPolarizedSigmaFactor : 0);
-    std::vector<double> gradDensityValue(
-      isGGA ? 3 * numberQuadraturePoints * spinPolarizedFactor : 0);
+    std::vector<std::vector<double>> pdexDensity(2);
+    std::vector<std::vector<double>> pdecDensity(2);
+    std::vector<double>              pdexSigma;
+    std::vector<double>              pdecSigma;
 
 
-    std::map<xcOutputDataAttributes, std::vector<double>> xDataOut;
-    std::map<xcOutputDataAttributes, std::vector<double>> cDataOut;
+    std::unordered_map<xcOutputDataAttributes, std::vector<double>> xDataOut;
+    std::unordered_map<xcOutputDataAttributes, std::vector<double>> cDataOut;
 
 
-    outputPdeDensitySpinUp[xcOutputDataAttributes::derEnergyWithDensity] =
-      &exchangePotentialVal;
+    xDataOut[xcOutputDataAttributes::pdeDensitySpinUp]   = &pdexDensity[0];
+    xDataOut[xcOutputDataAttributes::pdeDensitySpinDown] = &pdexDensity[1];
+    xDataOut[xcOutputDataAttributes::pdeDensitySpinUp]   = &pdecDensity[0];
+    xDataOut[xcOutputDataAttributes::pdeDensitySpinDown] = &pdecDensity[1];
 
-    outputDerCorrEnergy[VeffOutputDataAttributes::derEnergyWithDensity] =
-      &corrPotentialVal;
     if (isGGA)
       {
-        outputDerExchangeEnergy
-          [VeffOutputDataAttributes::derEnergyWithSigmaGradDensity] =
-            &derExchEnergyWithSigmaVal;
-        outputDerCorrEnergy
-          [VeffOutputDataAttributes::derEnergyWithSigmaGradDensity] =
-            &derCorrEnergyWithSigmaVal;
+        xDataOut[xcOutputDataAttributes::pdeSigma] = &pdexSigma;
+        cDataOut[xcOutputDataAttributes::pdeSigma] = &pdecSigma;
       }
-    d_excManagerPtr->getExcDensityObj()->computeDensityBasedVxc(
-      numberQuadraturePoints,
-      rhoData,
-      outputDerExchangeEnergy,
-      outputDerCorrEnergy);
+
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      quadPointsAll = d_basisOperationsPtrHost->quadPoints();
+
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      quadWeightsAll = d_basisOperationsPtrHost->JxW();
+
+    std::vector<double> quadPointsAllStdVec;
+    std::vector<double> quadWeightsAllStdVec;
+    quadPointsAll.copyTo(quadPointsAllStdVec);
+    quadWeightsAll.copyTo(quadWeightsAllStdVec);
+
+    d_excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
+      auxDensityRepresentation,
+      quadPointsAllStdVec,
+      quadWeightsAllStdVec,
+      xDataOut,
+      cDataOut);
+
+    const std::vector<double> &pdexDensitySpinIndex = pdexDensity[spinIndex];
+    const std::vector<double> &pdecDensitySpinIndex = pdecDensity[spinIndex];
+
+    std::vector<std::vector<double>> gradDensityXC(2);
+
+    if (isGGA)
+      {
+        std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
+          densityData;
+        densityData[DensityDescriptorDataAttributes::gradValuesSpinUp] =
+          gradDensityXC[0];
+        densityData[DensityDescriptorDataAttributes::gradValuesSpinDown] =
+          gradDensityXC[1];
+        auxDensityRepresentation->applyLocalOperations(quadPointsAllStdVec,
+                                                       densityData);
+      }
+
+    const std::vector<double> &gradDensityXCSpinIndex =
+      gradDensityXC[spinIndex];
+    const std::vector<double> &gradDensityXCOtherSpinIndex =
+      gradDensityXC[1 - spinIndex];
 
     for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells; ++iCell)
       {
         const double *tempPhi =
-          phiValues.data() + iCell * numberQuadraturePoints;
+          phiValues.data() + iCell * numberQuadraturePointsPerCell;
 
 
 
         auto cellJxWPtr = d_basisOperationsPtrHost->JxWBasisData().data() +
-                          iCell * numberQuadraturePoints;
-        for (unsigned int iQuad = 0; iQuad < numberQuadraturePoints; ++iQuad)
+                          iCell * numberQuadraturePointsPerCell;
+        for (unsigned int iQuad = 0; iQuad < numberQuadraturePointsPerCell;
+             ++iQuad)
           {
-            if (spinPolarizedFactor == 1)
-              d_VeffJxWHost[iCell * numberQuadraturePoints + iQuad] =
-                (tempPhi[iQuad] + exchangePotentialVal[iQuad] +
-                 corrPotentialVal[iQuad]) *
-                cellJxWPtr[iQuad];
-            else
-              d_VeffJxWHost[iCell * numberQuadraturePoints + iQuad] =
-                (tempPhi[iQuad] + exchangePotentialVal[2 * iQuad + spinIndex] +
-                 corrPotentialVal[2 * iQuad + spinIndex]) *
-                cellJxWPtr[iQuad];
+            d_VeffJxWHost[iCell * numberQuadraturePointsPerCell + iQuad] =
+              (tempPhi[iQuad] +
+               pdexDensitySpinIndex[iCell * numberQuadraturePointsPerCell +
+                                    iQuad] +
+               pdecDensitySpinIndex[iCell * numberQuadraturePointsPerCell +
+                                    iQuad]) *
+              cellJxWPtr[iQuad];
           }
+
         if (isGGA)
           {
-            if (spinPolarizedFactor == 1)
+            if (d_basisOperationsPtrHost->cellsTypeFlag() != 2)
               {
-                if (d_basisOperationsPtrHost->cellsTypeFlag() != 2)
+                for (unsigned int iQuad = 0;
+                     iQuad < numberQuadraturePointsPerCell;
+                     ++iQuad)
                   {
-                    for (unsigned int iQuad = 0; iQuad < numberQuadraturePoints;
-                         ++iQuad)
-                      {
-                        const double *inverseJacobiansQuadPtr =
-                          d_basisOperationsPtrHost->inverseJacobiansBasisData()
-                            .data() +
-                          (d_basisOperationsPtrHost->cellsTypeFlag() == 0 ?
-                             iCell * numberQuadraturePoints * 9 + iQuad * 9 :
-                             iCell * 9);
-                        const double *gradDensityQuadPtr =
-                          gradDensityValue.data() + 3 * iQuad;
-                        const double term = (derExchEnergyWithSigmaVal[iQuad] +
-                                             derCorrEnergyWithSigmaVal[iQuad]) *
-                                            cellJxWPtr[iQuad];
-                        for (unsigned jDim = 0; jDim < 3; ++jDim)
-                          for (unsigned iDim = 0; iDim < 3; ++iDim)
-                            d_invJacderExcWithSigmaTimesGradRhoJxWHost
-                              [iCell * numberQuadraturePoints * 3 + iQuad * 3 +
-                               iDim] +=
-                              2.0 * inverseJacobiansQuadPtr[3 * jDim + iDim] *
-                              gradDensityQuadPtr[jDim] * term;
-                      }
-                  }
-                else if (d_basisOperationsPtrHost->cellsTypeFlag() == 2)
-                  {
-                    for (unsigned int iQuad = 0; iQuad < numberQuadraturePoints;
-                         ++iQuad)
-                      {
-                        const double *inverseJacobiansQuadPtr =
-                          d_basisOperationsPtrHost->inverseJacobiansBasisData()
-                            .data() +
-                          iCell * 3;
-                        const double *gradDensityQuadPtr =
-                          gradDensityValue.data() + 3 * iQuad;
-                        const double term = (derExchEnergyWithSigmaVal[iQuad] +
-                                             derCorrEnergyWithSigmaVal[iQuad]) *
-                                            cellJxWPtr[iQuad];
-                        for (unsigned iDim = 0; iDim < 3; ++iDim)
-                          d_invJacderExcWithSigmaTimesGradRhoJxWHost
-                            [iCell * numberQuadraturePoints * 3 + iQuad * 3 +
-                             iDim] = 2.0 * inverseJacobiansQuadPtr[iDim] *
-                                     gradDensityQuadPtr[iDim] * term;
-                      }
+                    const double *inverseJacobiansQuadPtr =
+                      d_basisOperationsPtrHost->inverseJacobiansBasisData()
+                        .data() +
+                      (d_basisOperationsPtrHost->cellsTypeFlag() == 0 ?
+                         iCell * numberQuadraturePointsPerCell * 9 + iQuad * 9 :
+                         iCell * 9);
+                    const double *gradDensityQuadPtr =
+                      gradDensityXCSpinIndex.data() +
+                      iCell * numberQuadraturePointsPerCell * 3 + iQuad * 3;
+                    const double *gradDensityOtherQuadPtr =
+                      gradDensityXCOtherSpinIndex.data() +
+                      iCell * numberQuadraturePointsPerCell * 3 + iQuad * 3;
+                    const double term =
+                      (pdexSigma[iCell * numberQuadraturePointsPerCell * 3 +
+                                 iQuad * 3 + 2 * spinIndex] +
+                       pdecSigma[iCell * numberQuadraturePointsPerCell * 3 +
+                                 iQuad * 3 + 2 * spinIndex]) *
+                      cellJxWPtr[iQuad];
+                    const double termoff =
+                      (pdexSigma[iCell * numberQuadraturePointsPerCell * 3 +
+                                 iQuad * 3 + 1] +
+                       pdecSigma[iCell * numberQuadraturePointsPerCell * 3 +
+                                 iQuad * 3 + 1]) *
+                      cellJxWPtr[iQuad];
+                    for (unsigned jDim = 0; jDim < 3; ++jDim)
+                      for (unsigned iDim = 0; iDim < 3; ++iDim)
+                        d_invJacderExcWithSigmaTimesGradRhoJxWHost
+                          [iCell * numberQuadraturePointsPerCell * 3 +
+                           iQuad * 3 + iDim] +=
+                          inverseJacobiansQuadPtr[3 * jDim + iDim] *
+                          (2.0 * gradDensityQuadPtr[jDim] * term +
+                           gradDensityOtherQuadPtr[jDim] * termoff);
                   }
               }
-            else if (spinPolarizedFactor == 2)
+            else if (d_basisOperationsPtrHost->cellsTypeFlag() == 2)
               {
-                if (d_basisOperationsPtrHost->cellsTypeFlag() != 2)
+                for (unsigned int iQuad = 0;
+                     iQuad < numberQuadraturePointsPerCell;
+                     ++iQuad)
                   {
-                    for (unsigned int iQuad = 0; iQuad < numberQuadraturePoints;
-                         ++iQuad)
-                      {
-                        const double *inverseJacobiansQuadPtr =
-                          d_basisOperationsPtrHost->inverseJacobiansBasisData()
-                            .data() +
-                          (d_basisOperationsPtrHost->cellsTypeFlag() == 0 ?
-                             iCell * numberQuadraturePoints * 9 + iQuad * 9 :
-                             iCell * 9);
-                        const double *gradDensityQuadPtr =
-                          gradDensityValue.data() + 6 * iQuad + 3 * spinIndex;
-                        const double *gradDensityOtherQuadPtr =
-                          gradDensityValue.data() + 6 * iQuad +
-                          3 * (1 - spinIndex);
-                        const double term =
-                          (derExchEnergyWithSigmaVal[3 * iQuad +
-                                                     2 * spinIndex] +
-                           derCorrEnergyWithSigmaVal[3 * iQuad +
-                                                     2 * spinIndex]) *
-                          cellJxWPtr[iQuad];
-                        const double termoff =
-                          (derExchEnergyWithSigmaVal[3 * iQuad + 1] +
-                           derCorrEnergyWithSigmaVal[3 * iQuad + 1]) *
-                          cellJxWPtr[iQuad];
-                        for (unsigned jDim = 0; jDim < 3; ++jDim)
-                          for (unsigned iDim = 0; iDim < 3; ++iDim)
-                            d_invJacderExcWithSigmaTimesGradRhoJxWHost
-                              [iCell * numberQuadraturePoints * 3 + iQuad * 3 +
-                               iDim] +=
-                              inverseJacobiansQuadPtr[3 * jDim + iDim] *
-                              (2.0 * gradDensityQuadPtr[jDim] * term +
-                               gradDensityOtherQuadPtr[jDim] * termoff);
-                      }
-                  }
-                else if (d_basisOperationsPtrHost->cellsTypeFlag() == 2)
-                  {
-                    for (unsigned int iQuad = 0; iQuad < numberQuadraturePoints;
-                         ++iQuad)
-                      {
-                        const double *inverseJacobiansQuadPtr =
-                          d_basisOperationsPtrHost->inverseJacobiansBasisData()
-                            .data() +
-                          iCell * 3;
-                        const double *gradDensityQuadPtr =
-                          gradDensityValue.data() + 6 * iQuad + 3 * spinIndex;
-                        const double *gradDensityOtherQuadPtr =
-                          gradDensityValue.data() + 6 * iQuad +
-                          3 * (1 - spinIndex);
-                        const double term =
-                          (derExchEnergyWithSigmaVal[3 * iQuad +
-                                                     2 * spinIndex] +
-                           derCorrEnergyWithSigmaVal[3 * iQuad +
-                                                     2 * spinIndex]) *
-                          cellJxWPtr[iQuad];
-                        const double termoff =
-                          (derExchEnergyWithSigmaVal[3 * iQuad + 1] +
-                           derCorrEnergyWithSigmaVal[3 * iQuad + 1]) *
-                          cellJxWPtr[iQuad];
-                        for (unsigned iDim = 0; iDim < 3; ++iDim)
-                          d_invJacderExcWithSigmaTimesGradRhoJxWHost
-                            [iCell * numberQuadraturePoints * 3 + iQuad * 3 +
-                             iDim] = inverseJacobiansQuadPtr[iDim] *
-                                     (2.0 * gradDensityQuadPtr[iDim] * term +
-                                      gradDensityOtherQuadPtr[iDim] * termoff);
-                      }
+                    const double *inverseJacobiansQuadPtr =
+                      d_basisOperationsPtrHost->inverseJacobiansBasisData()
+                        .data() +
+                      iCell * 3;
+                    const double *gradDensityQuadPtr =
+                      gradDensityXCSpinIndex.data() +
+                      iCell * numberQuadraturePointsPerCell * 3 + iQuad * 3;
+                    const double *gradDensityOtherQuadPtr =
+                      gradDensityXCOtherSpinIndex.data() +
+                      iCell * numberQuadraturePointsPerCell * 3 + iQuad * 3;
+                    const double term =
+                      (pdexSigma[iCell * numberQuadraturePointsPerCell * 3 +
+                                 iQuad * 3 + 2 * spinIndex] +
+                       pdecSigma[iCell * numberQuadraturePointsPerCell * 3 +
+                                 iQuad * 3 + 2 * spinIndex]) *
+                      cellJxWPtr[iQuad];
+                    const double termoff =
+                      (pdexSigma[iCell * numberQuadraturePointsPerCell * 3 +
+                                 iQuad * 3 + 1] +
+                       pdecSigma[iCell * numberQuadraturePointsPerCell * 3 +
+                                 iQuad * 3 + 1]) *
+                      cellJxWPtr[iQuad];
+                    for (unsigned iDim = 0; iDim < 3; ++iDim)
+                      d_invJacderExcWithSigmaTimesGradRhoJxWHost
+                        [iCell * numberQuadraturePointsPerCell * 3 + iQuad * 3 +
+                         iDim] = inverseJacobiansQuadPtr[iDim] *
+                                 (2.0 * gradDensityQuadPtr[iDim] * term +
+                                  gradDensityOtherQuadPtr[iDim] * termoff);
                   }
               }
           }

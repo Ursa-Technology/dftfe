@@ -19,9 +19,10 @@ namespace dftfe
 
     // CAUTION: Points have to be a subset of d_quadPointsSet
     void
-    applyLocalOperations(const std::vector<double> &    Points,
-                         std::map<DensityDescriptorDataAttributes,
-                                  std::vector<double>> &densityData) override;
+    applyLocalOperations(
+      const std::vector<double> &Points,
+      std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
+        &densityData) override;
 
 
     void

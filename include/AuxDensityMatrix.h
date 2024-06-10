@@ -30,9 +30,10 @@ namespace dftfe
     // Pure virtual functions
 
     virtual void
-    applyLocalOperations(const std::vector<double> &    Points,
-                         std::map<DensityDescriptorDataAttributes,
-                                  std::vector<double>> &densityData) = 0;
+    applyLocalOperations(
+      const std::vector<double> &Points,
+      std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
+        &densityData) = 0;
     virtual void
     reinitAuxDensityMatrix(
       const std::vector<std::pair<std::string, std::vector<double>>>

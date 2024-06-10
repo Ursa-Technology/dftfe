@@ -46,9 +46,10 @@ namespace dftfe
     virtual ~AuxDensityMatrixSlater();
 
     void
-    applyLocalOperations(const std::vector<double> &    Points,
-                         std::map<DensityDescriptorDataAttributes,
-                                  std::vector<double>> &densityData) override;
+    applyLocalOperations(
+      const std::vector<double> &Points,
+      std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
+        &densityData) override;
 
     void
     reinitAuxDensityMatrix(

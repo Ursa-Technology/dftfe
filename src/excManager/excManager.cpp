@@ -197,6 +197,22 @@ namespace dftfe
           d_excWavefunctionObjPtr =
             new excWavefunctionNoneClass(isSpinPolarized);
           break;
+
+	  case 8:
+          exceptParamX =
+            xc_func_init(d_funcXPtr, XC_GGA_X_LB, isSpinPolarizedXC);
+          exceptParamC =
+            xc_func_init(d_funcCPtr, XC_GGA_C_PBE, isSpinPolarizedXC);
+
+	  d_excDensityObjPtr = new excDensityGGAClass(d_funcXPtr,
+                                                      d_funcCPtr,
+                                                      isSpinPolarized,
+                                                      scaleExchange,
+                                                      computeCorrelation,
+                                                      scaleExchangeFactor);
+          d_excWavefunctionObjPtr =
+            new excWavefunctionNoneClass(isSpinPolarized);
+          break;
         default:
           std::cout << "Error in xc code \n";
           break;

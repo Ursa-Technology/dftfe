@@ -154,6 +154,9 @@ namespace dftfe
     void
     computeCellHamiltonianMatrixExtPotContribution();
 
+    void 
+    setVEffExternalPotCorrToZero();
+    
     void
     HX(dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &src,
        const double scalarHX,

@@ -156,6 +156,8 @@ namespace dftfe
 
     problem.precondition_Jacobi(yMemSpace, r1MemSpace, omega);
 
+    //pcout<<" first MultiVectorXDot : beta1MemSpace = "<<beta1MemSpace.size()<<" beta1Host = "<<beta1Host.size();
+
     BLASWrapperPtr->MultiVectorXDot(blockSize,
                                     locallyOwned,
                                     r1MemSpace.begin(),
@@ -211,7 +213,7 @@ namespace dftfe
     computing_timer.leave_subsection("MINRES initial MPI");
     while (iter < maxNumberIterations && hasAllConverged == false)
       {
-	       pcout << "iter  = " << iter << "\n";
+	       //pcout << "iter  = " << iter << "\n";
         computing_timer.enter_subsection("MINRES vmult MPI");
         for (unsigned int i = 0; i < blockSize; ++i)
           sHost[i] = (1.0 / betaHost[i]) - 1.0;
@@ -253,7 +255,8 @@ namespace dftfe
         computing_timer.leave_subsection("MINRES vmult MPI");
         computing_timer.enter_subsection("MINRES linalg MPI");
 
-        BLASWrapperPtr->MultiVectorXDot(blockSize,
+        //pcout<<" second MultiVectorXDot: alphaMemSpace = "<<alphaMemSpace.size()<<" alphaHost = "<<alphaHost.size()<<"\n"; 
+	BLASWrapperPtr->MultiVectorXDot(blockSize,
                                         locallyOwned,
                                         vMemSpace.begin(),
                                         yMemSpace.begin(),
@@ -292,6 +295,8 @@ namespace dftfe
         problem.precondition_Jacobi(yMemSpace, r2MemSpace, omega);
 
         oldbHost = betaHost;
+
+	//pcout<<" third MultiVectorXDot: betaMemSpace = "<<betaMemSpace.size()<<" betaHost = "<<betaHost.size()<<"\n";
 
         BLASWrapperPtr->MultiVectorXDot(blockSize,
                                         locallyOwned,
@@ -395,13 +400,13 @@ namespace dftfe
 //            std::cout<<" res = "<<rnormHost[i]<<"\n";
           }
 
-        pcout << " iter = " << iter << "\n";
+        //pcout << " iter = " << iter << "\n";
         bool                updateFlag = false;
         dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> coeffForXMemHost(blockSize, 1.0);
         dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> coeffForXTmpHost(blockSize, 0.0);
         for (unsigned int i = 0; i < blockSize; ++i)
           {
-		  pcout << " res = " << rnormHost[i] << "\n";
+		  //pcout << " res = " << rnormHost[i] << "\n";
             if (rnormHost[i] < absTolerance && hasConvergedHost[i] == false)
               {
                 updateFlag         = true;
@@ -485,23 +490,24 @@ namespace dftfe
 
      std::vector<double> l2NormVec(blockSize,0.0);
 
-    xMemSpace.l2Norm(&l2NormVec[0]);
-
+    //xMemSpace.l2Norm(&l2NormVec[0]);
+/*
     pcout<<" xMemSpace before dist = \n";
     for(unsigned int iB = 0; iB  < blockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
-
+*/
     problem.distributeX();
 
-        xMemSpace.l2Norm(&l2NormVec[0]);
-
+        //xMemSpace.l2Norm(&l2NormVec[0]);
+/*
     pcout<<" xMemSpace after dist = \n";
     for(unsigned int iB = 0; iB  < blockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
+    */
 #if defined(DFTFE_WITH_DEVICE)
     if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
       dftfe::utils::deviceSynchronize();

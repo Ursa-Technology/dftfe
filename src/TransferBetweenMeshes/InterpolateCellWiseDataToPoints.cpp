@@ -77,6 +77,9 @@ namespace dftfe
 
       std::vector<double> cellLevelOutputPoints;
       const size_type inc = 1;
+      
+       cellLevelParentNodalMemSpace.resize(numberOfVectors*numDofsPerElement);
+
       for( size_type iElemSrc = 0 ; iElemSrc < numCells; iElemSrc++)
         {
           unsigned int numberOfPointsInSrcCell =
@@ -147,6 +150,7 @@ namespace dftfe
     {
 
       size_type pointsFoundInProc =  std::accumulate(numPointsInCell.begin(), numPointsInCell.end(),0.0);
+      cellLevelParentNodalMemSpace.resize(numCells*numberOfVectors*numDofsPerElement);
       dftfe::utils::deviceKernelsGeneric::stridedCopyToBlock(
         numberOfVectors,
         numCells * numDofsPerElement,
@@ -164,6 +168,7 @@ namespace dftfe
         mapPointToShapeFuncIndex.data(),
         cellLevelParentNodalMemSpace.data(),
         outputData.data());
+	
     }
 #endif
 
@@ -419,6 +424,7 @@ namespace dftfe
     if(resizeData)
       {
         d_mpiCommP2PPtr = std::make_shared<dftfe::utils::mpi::MPICommunicatorP2P<dataTypes::number,dftfe::utils::MemorySpace::HOST>>(d_mpiPatternP2PPtr,numberOfVectors);
+	d_mpiCommP2PPtr->setCommunicationPrecision(dftfe::utils::mpi::communicationPrecision::full);
         outputData.resize(d_numPointsLocal*numberOfVectors);
       }
 
@@ -497,8 +503,8 @@ namespace dftfe
     if(resizeData)
       {
         d_mpiCommPtrMemSpace = std::make_unique<dftfe::utils::mpi::MPICommunicatorP2P<T,memorySpace>>(d_mpiP2PPtrMemSpace,numberOfVectors);
+	d_mpiCommPtrMemSpace->setCommunicationPrecision(dftfe::utils::mpi::communicationPrecision::full);
         outputData.resize(d_numPointsLocal*numberOfVectors);
-        d_cellLevelParentNodalMemSpace.resize(numberOfVectors*d_numDofsPerElement);
       }
 
     outputData.setValue(0.0);
@@ -525,7 +531,7 @@ namespace dftfe
                                          outputData);
 
 
-
+// TODO uncomment the following line after testing
     d_mpiCommPtrMemSpace->accumulateInsertLocallyOwned(outputData);
   }
 

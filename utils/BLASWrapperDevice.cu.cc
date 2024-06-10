@@ -769,7 +769,7 @@ namespace dftfe
       dftfe::utils::deviceMemcpyD2H(dftfe::utils::makeDataTypeDeviceCompatible(
                                       result),
                                     tempResults,
-                                    numContiguousBlocks * sizeof(double));
+                                    contiguousBlockSize * sizeof(double));
     }
 
     void
@@ -796,8 +796,8 @@ namespace dftfe
 
       MPI_Allreduce(MPI_IN_PLACE,
                     &result[0],
-                    numContiguousBlocks,
-                    MPI_DOUBLE,
+                    contiguousBlockSize,
+		    MPI_DOUBLE,
                     MPI_SUM,
                     mpi_communicator);
     }
@@ -846,7 +846,7 @@ namespace dftfe
       dftfe::utils::deviceMemcpyD2H(dftfe::utils::makeDataTypeDeviceCompatible(
                                       result),
                                     tempResults,
-                                    numContiguousBlocks * sizeof(std::complex<double>));
+                                    contiguousBlockSize * sizeof(std::complex<double>));
     }
 
     void
@@ -872,7 +872,7 @@ namespace dftfe
 
         MPI_Allreduce(MPI_IN_PLACE,
                       &result[0],
-                      numContiguousBlocks,
+                      contiguousBlockSize,
                       MPI_C_DOUBLE_COMPLEX,
                       MPI_SUM,
                       mpi_communicator);

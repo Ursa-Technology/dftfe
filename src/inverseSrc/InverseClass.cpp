@@ -1089,7 +1089,7 @@ namespace dftfe
     excFunctionalPtrLDA = excManagerObjLDA.getExcDensityObj();
 
     excManager excManagerObjGGA;
-    excManagerObjGGA.init(6, // X - LB , C = PBE
+    excManagerObjGGA.init(8,//TODO this is experimental // X - LB , C = PBE
                                      // isSpinPolarized,
                                   (d_dftParams.spinPolarized == 1) ? true :
                                                                      false,
@@ -1292,6 +1292,7 @@ namespace dftfe
 
         d_targetPotValuesParentQuadData[spinIndex].resize(totalOwnedCellsPsi);
 
+	double sumInitialValuesVxcParent = 0.0;
         dealii::DoFHandler<3>::active_cell_iterator
           cellPsi             = d_dofHandlerDFTClass->begin_active(),
           endcPsi             = d_dofHandlerDFTClass->end();
@@ -1375,9 +1376,22 @@ namespace dftfe
                                      spinIndex];
                   initialPotValuesParentQuadData[spinIndex][(iElemPsi * numQuadPointsPerPsiCell +
                                                              iQuad)] = cellLevelQuadInput[iQuad];
-                }
+                  sumInitialValuesVxcParent += initialPotValuesParentQuadData[spinIndex][(iElemPsi * numQuadPointsPerPsiCell +
+                                                             iQuad)]*
+			  initialPotValuesParentQuadData[spinIndex][(iElemPsi * numQuadPointsPerPsiCell +
+                                                             iQuad)];
+	      	}
               iElemPsi++;
             }
+
+	MPI_Allreduce(MPI_IN_PLACE,
+                  &sumInitialValuesVxcParent,
+                  1,
+                  dftfe::dataTypes::mpi_type_id(&sumInitialValuesVxcParent),
+                  MPI_SUM,
+                  d_mpiComm_domain);
+
+            pcout<<" sumInitialValuesVxcParent = "<<sumInitialValuesVxcParent<<"\n";
 
         d_dftBaseClass->l2ProjectionQuadToNodal(
           d_basisOperationsHost,
@@ -1389,8 +1403,13 @@ namespace dftfe
 
 	pcout<<" vxcInitialGuess norm before distribute= "<<vxcInitialGuess[spinIndex].l2_norm()<<"\n";
 
+        //vxcInitialGuess[spinIndex].update_ghost_values();
+        //constraintsMatrixDataInfoPsi.distribute(vxcInitialGuess[spinIndex], 1);
+        //vxcInitialGuess[spinIndex].update_ghost_values();
+
+	vxcInitialGuess[spinIndex].update_ghost_values();
+	d_constraintDFTClass->distribute(vxcInitialGuess[spinIndex]);
         vxcInitialGuess[spinIndex].update_ghost_values();
-        constraintsMatrixDataInfoPsi.distribute(vxcInitialGuess[spinIndex], 1);
 
 	pcout<<" vxcInitialGuess norm after distribute= "<<vxcInitialGuess[spinIndex].l2_norm()<<"\n";
         distributedCPUVec<double> exactVxcTestParent;
@@ -1405,13 +1424,16 @@ namespace dftfe
           exactVxcTestParent);
 
 	pcout<<" norm of exactVxcTestParent distribute = "<<exactVxcTestParent.l2_norm()<<"\n";
-        exactVxcTestParent.update_ghost_values();
-        constraintsMatrixDataInfoPsi.distribute(exactVxcTestParent, 1);
-	pcout<<" norm of exactVxcTestParent distribute = "<<exactVxcTestParent.l2_norm()<<"\n";
+        //exactVxcTestParent.update_ghost_values();
+        //constraintsMatrixDataInfoPsi.distribute(exactVxcTestParent, 1);
+	//exactVxcTestParent.update_ghost_values();
+	//pcout<<" norm of exactVxcTestParent distribute = "<<exactVxcTestParent.l2_norm()<<"\n";
 
-        //        d_constraintDFTClass->distribute(vxcInitialGuess[spinIndex]);
-        //        vxcInitialGuess[spinIndex].update_ghost_values();
+	        exactVxcTestParent.update_ghost_values();
+                d_constraintDFTClass->distribute(exactVxcTestParent);
+                exactVxcTestParent.update_ghost_values();
 
+		pcout<<" norm of exactVxcTestParent distribute = "<<exactVxcTestParent.l2_norm()<<"\n";
 
         dftfe::utils::MemoryStorage<dftfe::global_size_type, dftfe::utils::MemorySpace::HOST>
           fullFlattenedArrayCellLocalProcIndexIdMapVxcInitialParent;
@@ -1553,9 +1575,9 @@ pcout<<" exactVxcTestParent norm = "<<exactVxcTestParent.l2_norm()<<"\n";
 
     pcout<<"norm of rhoInputTotal before constraints = "<<rhoInputTotal.l2_norm()<<"\n";
     rhoInputTotal.update_ghost_values();
-    constraintsMatrixDataInfoPsi.distribute(rhoInputTotal, 1);
+    //constraintsMatrixDataInfoPsi.distribute(rhoInputTotal, 1);
 
-//    d_constraintDFTClass->distribute(rhoInputTotal);
+     d_constraintDFTClass->distribute(rhoInputTotal);
     rhoInputTotal.update_ghost_values();
     pcout<<"norm of rhoInputTotal after constraints = "<<rhoInputTotal.l2_norm()<<"\n";
 
@@ -3153,7 +3175,7 @@ const unsigned int nLocallyOwnedCells = d_dftMatrixFreeData->n_physical_cells();
      const unsigned int numberQuadraturePointsRhs = quadratureRhs.size();
 
      unsigned int                   defaultBlockSize = 100;
-    distributedCPUMultiVec<double>  boundaryValues,
+     dftfe::linearAlgebra::MultiVector<double,memorySpace>  boundaryValues,
       multiVectorOutput,psiBlockVecMemSpace;
 
     unsigned int currentBlockSize =d_numEigenValues;
@@ -3258,7 +3280,7 @@ const unsigned int nLocallyOwnedCells = d_dftMatrixFreeData->n_physical_cells();
 
 		multiVectorLinearMINRESSolver.solve(
                   multiVectorAdjointProblem,
-                  d_blasWrapperHost,
+                  d_blasWrapperMemSpace,
                   multiVectorOutput,
                   boundaryValues,
                   locallyOwnedDofs,
@@ -3270,7 +3292,7 @@ const unsigned int nLocallyOwnedCells = d_dftMatrixFreeData->n_physical_cells();
 
 		                    std::vector<double> l2NormVec(currentBlockSize,0.0);
 
-    multiVectorOutput.l2Norm(&l2NormVec[0]);
+    //multiVectorOutput.l2Norm(&l2NormVec[0]);
 
     pcout<<" multiVectorOutput = \n";
     for(unsigned int iB = 0; iB  < currentBlockSize ; iB++)

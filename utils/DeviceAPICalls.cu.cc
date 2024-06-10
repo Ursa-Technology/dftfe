@@ -22,6 +22,8 @@
 #  include <DeviceDataTypeOverloads.h>
 #  include <DeviceKernelLauncherConstants.h>
 #  include <Exceptions.h>
+#include <boost/stacktrace.hpp>
+#include <iostream>
 namespace dftfe
 {
   namespace utils

@@ -416,6 +416,7 @@ namespace dftfe
 
           dftfe::size_type iVec = index - pointIndex*numVecs;
 
+	  
 
           for (dftfe::size_type iParentNode = 0;
                iParentNode < numDofsPerElem;
@@ -432,6 +433,7 @@ namespace dftfe
                                       + iParentNode * numVecs +
                                       iVec])));
             }
+	    
         }
     }
 

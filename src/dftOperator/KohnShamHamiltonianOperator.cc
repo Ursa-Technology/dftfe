@@ -657,6 +657,34 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
+  KohnShamHamiltonianOperator<memorySpace>::setVEffExternalPotCorrToZero()
+    {
+    d_basisOperationsPtrHost->reinit(0, 0, d_lpspQuadratureID, false);
+    const unsigned int nCells = d_basisOperationsPtrHost->nCells();
+    const int nQuadsPerCell   = d_basisOperationsPtrHost->nQuadsPerCell();
+#if defined(DFTFE_WITH_DEVICE)
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      d_VeffExtPotJxWHost;
+#else
+    auto &d_VeffExtPotJxWHost = d_VeffExtPotJxW;
+#endif
+    d_VeffExtPotJxWHost.resize(nCells * nQuadsPerCell);
+
+    for (unsigned int iCell = 0; iCell < nCells; ++iCell)
+      {
+        for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+          d_VeffExtPotJxWHost[iCell * nQuadsPerCell + iQuad] = 0.0;
+      }
+
+#if defined(DFTFE_WITH_DEVICE)
+    d_VeffExtPotJxW.resize(d_VeffExtPotJxWHost.size());
+    d_VeffExtPotJxW.copyFrom(d_VeffExtPotJxWHost);
+#endif
+  }
+
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  void
   KohnShamHamiltonianOperator<memorySpace>::reinitkPointSpinIndex(
     const unsigned int kPointIndex,
     const unsigned int spinIndex)

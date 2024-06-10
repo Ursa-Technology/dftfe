@@ -414,7 +414,7 @@ namespace dftfe
 
 
 
-    std::cout<<" local size in adjoint = "<<d_locallyOwnedSize<<"\n";
+    //std::cout<<" local size in adjoint = "<<d_locallyOwnedSize<<"\n";
 
     if (isComputeDiagonalA)
       {
@@ -512,8 +512,8 @@ namespace dftfe
     std::vector<double> d_diagonalANorm, d_diagonalSqrtANorm;
     d_diagonalANorm.resize(1);
     d_diagonalSqrtANorm.resize(1);
-    d_diagonalA.l2Norm(&d_diagonalANorm[0]);
-    d_diagonalSqrtA.l2Norm(&d_diagonalSqrtANorm[0]);
+    //d_diagonalA.l2Norm(&d_diagonalANorm[0]);
+    //d_diagonalSqrtA.l2Norm(&d_diagonalSqrtANorm[0]);
     pcout<<" Norm of d_diagonalA = "<<d_diagonalANorm[0]<<"\n";
     pcout<<" Norm of d_diagonalSqrtA = "<<d_diagonalSqrtANorm[0]<<"\n";
   }
@@ -526,13 +526,14 @@ namespace dftfe
     const dftfe::linearAlgebra::MultiVector<dataTypes::number ,
                                             memorySpace> &src,
     const double                     omega) const
-  {
+  {/*
 	          d_BLASWrapperPtr->axpby(d_locallyOwnedSize*d_blockSize,
                           1.0,
                           src.begin(),
                           0.0,
                           dst.begin());
-		  /*
+			  */
+		  
     d_BLASWrapperPtr->stridedBlockScaleCopy(
       d_blockSize,
       d_locallyOwnedSize,
@@ -541,7 +542,7 @@ namespace dftfe
       src.data(),
       dst.data(),
       d_mapNodeIdToProcId.data());
-      */
+    
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -553,12 +554,14 @@ namespace dftfe
                                                                   memorySpace> &src,
                           const double omega) const
   {
+	  /*
 	   d_BLASWrapperPtr->axpby(d_locallyOwnedSize*d_blockSize,
                           1.0,
                           src.begin(),
                           0.0,
                           dst.begin());
-	   /*
+			  */
+	   
     d_BLASWrapperPtr->stridedBlockScaleCopy(
       d_blockSize,
       d_locallyOwnedSize,
@@ -567,7 +570,7 @@ namespace dftfe
       src.data(),
       dst.data(),
       d_mapNodeIdToProcId.data());
-      */
+      
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -656,13 +659,15 @@ namespace dftfe
 
     std::vector<double> l2NormVec(d_blockSize,0.0);
 
-    psiTempMemSpace.l2Norm(&l2NormVec[0]);
+    //psiTempMemSpace.l2Norm(&l2NormVec[0]);
 
+    /*
     pcout<<" psiTempMemSpace = \n";
     for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
     {
 	    pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
+    */
 
     dftfe::linearAlgebra::MultiVector<double,
                                       memorySpace> psiTempMemSpace2;
@@ -677,9 +682,9 @@ namespace dftfe
 
     auto sqrtMassMat = d_basisOperationsPtr->sqrtMassVectorBasisData();
 
-    pcout<<" sqrtMassMat = "<<sqrtMassMat.size()<<"\n";
-    pcout<<" psiTempMemSpace = "<<psiTempMemSpace.locallyOwnedSize()<<"\n";
-    pcout<<" d_mapNodeIdToProcId = "<<d_mapNodeIdToProcId.size()<<"\n";
+    //pcout<<" sqrtMassMat = "<<sqrtMassMat.size()<<"\n";
+    //pcout<<" psiTempMemSpace = "<<psiTempMemSpace.locallyOwnedSize()<<"\n";
+    //pcout<<" d_mapNodeIdToProcId = "<<d_mapNodeIdToProcId.size()<<"\n";
 
     d_BLASWrapperPtr->stridedBlockScaleCopy(
       d_blockSize,
@@ -690,14 +695,14 @@ namespace dftfe
       psiTempMemSpace.data(),
       d_mapNodeIdToProcId.data());
 
-    psiTempMemSpace.l2Norm(&l2NormVec[0]);
-
+    //psiTempMemSpace.l2Norm(&l2NormVec[0]);
+/*
     pcout<<" psiTempMemSpace  sqrt mass mat = \n";
     for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
-
+*/
     psiTempMemSpace.updateGhostValues();
     computing_timer.leave_subsection("M^(-1/2) MemSpace MPI");
 
@@ -743,14 +748,15 @@ namespace dftfe
       d_blockSize);
 
 
-        d_rhsMemSpace.l2Norm(&l2NormVec[0]);
+        //d_rhsMemSpace.l2Norm(&l2NormVec[0]);
 
+    /*
 	    pcout<<" d_rhsMemSpace = \n";
     for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
-
+*/
     computing_timer.leave_subsection("Mu*Psi MemSpace MPI");
 
 
@@ -774,14 +780,15 @@ namespace dftfe
       d_mapNodeIdToProcId.data());
 
 
-            psiTempMemSpace.l2Norm(&l2NormVec[0]);
+            //psiTempMemSpace.l2Norm(&l2NormVec[0]);
 
+    /*
     pcout<<" psiTempMemSpace invSqrt = \n";
     for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
-
+*/
     psiTempMemSpace.updateGhostValues();
     d_constraintsInfo.distribute(psiTempMemSpace);
     computing_timer.leave_subsection("psi*M(-1/2) MemSpace MPI");
@@ -841,13 +848,15 @@ namespace dftfe
     psiTempMemSpace2.accumulateAddLocallyOwned();
 
 
-    psiTempMemSpace2.l2Norm(&l2NormVec[0]);
+    //psiTempMemSpace2.l2Norm(&l2NormVec[0]);
 
+    /*
     pcout<<" psiTempMemSpace2 r mat = \n";
     for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
+    */
     // 3. PsiTemp2 = M^{-1/2}*PsiTemp2
     computing_timer.leave_subsection("R times psi MemSpace MPI");
 
@@ -869,40 +878,45 @@ namespace dftfe
     psiTempMemSpace2.updateGhostValues();
     d_constraintsInfo.distribute(psiTempMemSpace2);
 
-        psiTempMemSpace2.l2Norm(&l2NormVec[0]);
-
+        //psiTempMemSpace2.l2Norm(&l2NormVec[0]);
+/*
     pcout<<" psiTempMemSpace2 inv mat = \n";
     for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
-
+*/
     d_BLASWrapperPtr->stridedBlockScaleAndAddColumnWise(d_blockSize,
                                                       d_locallyOwnedSize,
 						      psiTempMemSpace2.data(),
                                                       d_4xeffectiveOrbitalOccupancyMemSpace.data(),
                                                       d_rhsMemSpace.data());
-
+/*
     pcout<<" d_4xeffectiveOrbitalOccupancyMemSpace size = "<<d_4xeffectiveOrbitalOccupancyMemSpace.size()<<"\n";
     for( unsigned int iBlock = 0 ; iBlock < d_blockSize; iBlock++)
     {
 pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()[iBlock]<<"\n";
     }
-    d_rhsMemSpace.l2Norm(&l2NormVec[0]);
-        pcout<<" d_rhsMemSpace before set = \n";
+    */
+    //d_rhsMemSpace.l2Norm(&l2NormVec[0]);
+    /*    
+    pcout<<" d_rhsMemSpace before set = \n";
     for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
+    */
     d_constraintsInfo.set_zero(d_rhsMemSpace);
 
-    d_rhsMemSpace.l2Norm(&l2NormVec[0]);
+    //d_rhsMemSpace.l2Norm(&l2NormVec[0]);
 
+    /*
     pcout<<" d_rhsMemSpace final = \n";
     for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
+    */
     computing_timer.leave_subsection("psiTemp M^(-1/2) MemSpace MPI");
 
     return d_rhsMemSpace;
@@ -932,13 +946,14 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
 
             std::vector<double> l2NormVec(blockSize,0.0);
 
-    d_psiMemSpace->l2Norm(&l2NormVec[0]);
-
+    //d_psiMemSpace->l2Norm(&l2NormVec[0]);
+/*
     pcout<<" d_psiMemSpace = \n";
     for(unsigned int iB = 0; iB  < blockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
+    */
     d_RMatrixMemSpace.resize(d_numCells * d_numberDofsPerElement *
                                d_numberDofsPerElement);
     d_RMatrixMemSpace.setValue(0.0);
@@ -1055,7 +1070,7 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
 
 
      d_basisOperationsPtr->reinit(d_blockSize,
-                                 d_cellBlockSize,
+                                 d_numCells,
                                  d_matrixFreeQuadratureComponentRhs,
                                  true, // TODO should this be set to true
                                  false); // TODO should this be set to true
@@ -1108,7 +1123,7 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
       d_blockSize,
       strideC,
       d_numCells);
-
+/*
                     double normcellWaveFunction = 0.0;
      d_BLASWrapperPtr->xnrm2(
       d_cellWaveFunctionMatrixMemSpace.size(),
@@ -1135,9 +1150,15 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
       mpi_communicator,
       &normcellWaveFunctionQuadMatrix);
      pcout<<" normcellWaveFunctionQuadMatrix = "<<normcellWaveFunctionQuadMatrix<<"\n";
-    unsigned int numVec = d_vectorList.size() / 2;
+  */
+     unsigned int numVec = d_vectorList.size() / 2;
     d_MuMatrixMemSpaceCellWise.setValue(0.0);
-
+/*
+    pcout<<" d_effectiveOrbitalOccupancyMemSpace = "<<d_effectiveOrbitalOccupancyMemSpace.size()<<" d_vectorListMemSpace = "<<
+	    d_vectorListMemSpace.size()<<" d_cellWaveFunctionQuadMatrixMemSpace = "<<d_cellWaveFunctionQuadMatrixMemSpace.size()<<
+	    " inputJxwMemSpace = "<<inputJxwMemSpace.size()<<" d_MuMatrixMemSpaceCellWise = "<<d_MuMatrixMemSpaceCellWise.size()<<"\n";
+  */  
+    
     muMatrixMemSpaceKernel(d_numCells,
                    numVec,
                    d_numQuadsPerCell,
@@ -1150,8 +1171,8 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
                    d_MuMatrixMemSpaceCellWise);
 
 
-    pcout<<" d_numCells = "<< d_numCells <<" numVec = "<<numVec<<" d_numQuadsPerCell = "<<d_numQuadsPerCell<<"  d_blockSize = "<<d_blockSize<<"\n";
-
+   // pcout<<" d_numCells = "<< d_numCells <<" numVec = "<<numVec<<" d_numQuadsPerCell = "<<d_numQuadsPerCell<<"  d_blockSize = "<<d_blockSize<<"\n";
+/*
     pcout<<" d_effectiveOrbitalOccupancyMemSpace = \n";
     for( unsigned int iBlock = 0 ; iBlock < d_effectiveOrbitalOccupancyMemSpace.size(); iBlock++)
     {
@@ -1165,7 +1186,9 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
             pcout<<d_vectorListMemSpace.data()[iBlock]<<" ";
     }
 	pcout<<"\n";
-        double norminputJxwMemSpace = 0.0;
+	*/
+    /*
+    double norminputJxwMemSpace = 0.0;
      d_BLASWrapperPtr->xnrm2(
       inputJxwMemSpace.size(),
       inputJxwMemSpace.data(),
@@ -1173,9 +1196,10 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
       mpi_communicator,
       &norminputJxwMemSpace);
      pcout<<" norminputJxwMemSpace = "<<norminputJxwMemSpace<<"\n";
-    d_MuMatrixHostCellWise.copyFrom(d_MuMatrixMemSpaceCellWise);
+   */
+     d_MuMatrixHostCellWise.copyFrom(d_MuMatrixMemSpaceCellWise);
 
-    pcout<<"  = numVec = "<<numVec<<"\n";
+    //pcout<<"  = numVec = "<<numVec<<"\n";
 
     for (unsigned int iVecList = 0; iVecList < numVec; iVecList++)
       {
@@ -1187,7 +1211,7 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
               d_MuMatrixHostCellWise[iVecList + iCell * numVec];
           }
       }
-
+/*
     double normMuMatrixHostCellWise = 0.0;
      d_BLASWrapperPtr->xnrm2(
       d_MuMatrixHostCellWise.size(),
@@ -1196,6 +1220,7 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
       mpi_communicator,
       &normMuMatrixHostCellWise);
     pcout<<" norm of d_MuMatrixHostCellWise = "<<normMuMatrixHostCellWise;
+  */
     MPI_Allreduce(MPI_IN_PLACE,
                   &d_MuMatrixHost[0],
                   d_blockSize * d_blockSize,
@@ -1204,7 +1229,8 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
                   mpi_communicator);
 
     d_MuMatrixMemSpace.copyFrom(d_MuMatrixHost);
- 
+
+   /* 
    pcout<<" d_MuMatrixMemSpace = \n"; 
    for( unsigned int iBlock = 0 ; iBlock < d_blockSize; iBlock++)
     {
@@ -1215,6 +1241,7 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
 	    pcout<<"\n";
     
     }
+    */
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -1246,6 +1273,18 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
 
     auto invSqrtMassMat = d_basisOperationsPtr->inverseSqrtMassVectorBasisData();
 
+    std::vector<double> l2NormVec(d_blockSize,0.0);
+
+    //d_blockedXPtr->l2Norm(&l2NormVec[0]);
+
+    /*
+    pcout<<" d_blockedXPtr before inv = \n";
+    for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
+    */
+
     d_BLASWrapperPtr->stridedBlockScaleCopy(
       d_blockSize,
       d_locallyOwnedSize,
@@ -1255,14 +1294,39 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
       d_blockedXPtr->data(),
       d_mapNodeIdToProcId.data());
 
+
+    //d_blockedXPtr->l2Norm(&l2NormVec[0]);
+/*
+    pcout<<" d_blockedXPtr after inv = \n";
+    for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
+*/
     d_blockedXPtr->updateGhostValues();
+
 
     d_constraintsInfo.distribute(*d_blockedXPtr);
 
+
+    //d_blockedXPtr->l2Norm(&l2NormVec[0]);
+/*
+    pcout<<" d_blockedXPtr after dist = \n";
+    for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
+    */
     multiVectorDotProdQuadWise(*d_blockedXPtr,
                                *d_psiMemSpace,
                                dotProductHost);
-
+   /*
+    pcout<<" dotProdVals = \n";
+   for(unsigned int iB = 0 ; iB  <d_blockSize; iB++)
+   {
+	   pcout<<" iB = "<<iB<<" dot prod = "<<dotProductHost[iB] <<"\n";
+   }
+   */
 
     dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
       dotProductMemSpace(d_blockSize, 0.0);
@@ -1281,6 +1345,16 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
 						      dotProductMemSpace.data(),
                                                       d_blockedXPtr->data());
 
+    //d_blockedXPtr->l2Norm(&l2NormVec[0]);
+
+    /*
+    pcout<<" d_blockedXPtr final = \n";
+    for(unsigned int iB = 0; iB  < d_blockSize ; iB++)
+    {
+            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
+    }
+    */
+
     d_blockedXPtr->updateGhostValues();
   }
 
@@ -1294,7 +1368,7 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
                                                                                    dotProductOutputHost)
   {
 	   d_basisOperationsPtr->reinit(d_blockSize,
-                                 d_cellBlockSize,
+                                 d_numCells,
                                  d_matrixFreeQuadratureComponentRhs,
                                  true, // TODO should this be set to true
                                  false); // TODO should this be set to true
@@ -1366,14 +1440,14 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
     
                 std::vector<double> l2NormVec(blockSize,0.0);
 
-    x.l2Norm(&l2NormVec[0]);
-
+    //x.l2Norm(&l2NormVec[0]);
+/*
     pcout<<" x in vmult = \n";
     for(unsigned int iB = 0; iB  < blockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
-
+*/
     d_ksOperatorPtr->HX(x,
                         1.0, //scalarHX,
                         0.0, //scalarY,
@@ -1384,13 +1458,15 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
     d_constraintsInfo.set_zero(x);
     d_constraintsInfo.set_zero(Ax);
 
-        Ax.l2Norm(&l2NormVec[0]);
+        //Ax.l2Norm(&l2NormVec[0]);
 
+    /*
     pcout<<" Ax in vmult = \n";
     for(unsigned int iB = 0; iB  < blockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
+    */
     d_BLASWrapperPtr->stridedBlockScaleAndAddColumnWise(
                                d_blockSize,
       d_locallyOwnedSize,
@@ -1398,21 +1474,23 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
       d_negEigenValuesMemSpace.data(),
       Ax.data());
 
-     x.l2Norm(&l2NormVec[0]);
-
+     //x.l2Norm(&l2NormVec[0]);
+/*
     pcout<<" x after HX in vmult = \n";
     for(unsigned int iB = 0; iB  < blockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
+    */
 
-    Ax.l2Norm(&l2NormVec[0]);
-
+    //Ax.l2Norm(&l2NormVec[0]);
+/*
     pcout<<" Ax at end in vmult = \n";
     for(unsigned int iB = 0; iB  < blockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
+    */
   }
 
   template <dftfe::utils::MemorySpace memorySpace>

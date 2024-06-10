@@ -97,11 +97,11 @@ namespace dftfe
         d_matrixFreeDataChild->get_quadrature(d_matrixFreeQuadratureComponentPot);
       const unsigned int numQuadraturePointsPerCellChild =
         quadratureRuleChild.size();
-      std::cout<<" numQuadraturePointsPerCellChild = "<<numQuadraturePointsPerCellChild<<"\n";
+      //std::cout<<" numQuadraturePointsPerCellChild = "<<numQuadraturePointsPerCellChild<<"\n";
       const unsigned int numTotalQuadraturePointsChild =
         d_numLocallyOwnedCellsChild * numQuadraturePointsPerCellChild;
 
-      std::cout<<" numTotalQuadraturePointsChild = "<<numTotalQuadraturePointsChild<<"\n";
+      //std::cout<<" numTotalQuadraturePointsChild = "<<numTotalQuadraturePointsChild<<"\n";
       dealii::FEValues<3> fe_valuesChild(d_dofHandlerChild->get_fe(),
                                          quadratureRuleChild,
                                          dealii::update_values |
@@ -110,14 +110,14 @@ namespace dftfe
       const unsigned int numberDofsPerElement =
         d_dofHandlerChild->get_fe().dofs_per_cell;
 
-      std::cout<<" numberDofsPerElement = "<<numberDofsPerElement<<"\n";
+      //std::cout<<" numberDofsPerElement = "<<numberDofsPerElement<<"\n";
       //
       // resize data members
       //
 
       d_childCellJxW.resize(numTotalQuadraturePointsChild);
 
-      std::cout<<" d_childCellJxW = "<<d_childCellJxW.size()<<"\n";
+      //std::cout<<" d_childCellJxW = "<<d_childCellJxW.size()<<"\n";
       typename dealii::DoFHandler<3>::active_cell_iterator
         cell             = d_dofHandlerChild->begin_active(),
         endc             = d_dofHandlerChild->end();
@@ -132,7 +132,7 @@ namespace dftfe
                 d_childCellShapeFunctionValue.resize(
                   numberDofsPerElement * numQuadraturePointsPerCellChild);
 
-                std::cout<<" d_childCellShapeFunctionValue = "<<d_childCellShapeFunctionValue.size()<<"\n";
+                //std::cout<<" d_childCellShapeFunctionValue = "<<d_childCellShapeFunctionValue.size()<<"\n";
                 for (unsigned int iNode = 0; iNode < numberDofsPerElement;
                      ++iNode)
                   {
@@ -570,8 +570,8 @@ namespace dftfe
     for (unsigned int iSpin = 0; iSpin < d_numSpins; ++iSpin)
       {
         pot[iSpin].update_ghost_values();
-        d_constraintsMatrixDataInfoPot.distribute(pot[iSpin], 1);
-        //      d_constraintMatrixPot->distribute(pot[iSpin]);
+        //d_constraintsMatrixDataInfoPot.distribute(pot[iSpin], 1);
+        d_constraintMatrixPot->distribute(pot[iSpin]);
               pot[iSpin].update_ghost_values();
       }
     computingTimerStandard.enter_subsection(
@@ -583,7 +583,7 @@ namespace dftfe
                                       memorySpace>
                                            & eigenVectorsMemSpace = d_dftClassPtr->getEigenVectors();
 
-    std::cout<<"eigenVectorsMemSpace size = "<< eigenVectorsMemSpace.size()<<"\n";
+    //std::cout<<"eigenVectorsMemSpace size = "<< eigenVectorsMemSpace.size()<<"\n";
     const std::vector<std::vector<double>> &eigenValuesHost =
       d_dftClassPtr->getEigenValues();
     const double fermiEnergy = d_dftClassPtr->getFermiEnergy();
@@ -665,7 +665,7 @@ namespace dftfe
       {
         for (unsigned int kPoint = 0; kPoint < d_numKPoints; ++kPoint)
           {
-            pcout << " before partial occupancy " << kPoint << " \n";
+            //pcout << " before partial occupancy " << kPoint << " \n";
             for (unsigned int iWave = 0; iWave < d_numEigenValues; ++iWave)
               {
                 const double eigenValue =
@@ -1040,13 +1040,14 @@ namespace dftfe
 
 		    std::vector<double> l2NormVec(currentBlockSize,0.0);
 
-    multiVectorAdjointOutputWithPsiConstraintsMemSpace.l2Norm(&l2NormVec[0]);
-
+    //multiVectorAdjointOutputWithPsiConstraintsMemSpace.l2Norm(&l2NormVec[0]);
+/*
     pcout<<" multiVectorAdjointOutputWithPsiConstraintsMemSpace = \n";
     for(unsigned int iB = 0; iB  < currentBlockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
+    */
 
                 d_BLASWrapperPtr->xcopy(
                   currentBlockSize * numLocallyOwnedDofs,
@@ -1060,23 +1061,27 @@ namespace dftfe
                 constraintsMatrixAdjointDataInfo.distribute(
                   multiVectorAdjointOutputWithAdjointConstraintsMemSpace);
 
-		    multiVectorAdjointOutputWithAdjointConstraintsMemSpace.l2Norm(&l2NormVec[0]);
+		multiVectorAdjointOutputWithAdjointConstraintsMemSpace.updateGhostValues();
+	psiBlockVecMemSpace.updateGhostValues();
+		    //multiVectorAdjointOutputWithAdjointConstraintsMemSpace.l2Norm(&l2NormVec[0]);
 
+	/*
     pcout<<" multiVectorAdjointOutputWithAdjointConstraintsMemSpace = \n";
     for(unsigned int iB = 0; iB  < currentBlockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
+    */
 
 
-                    psiBlockVecMemSpace.l2Norm(&l2NormVec[0]);
-
+                    //psiBlockVecMemSpace.l2Norm(&l2NormVec[0]);
+/*
     pcout<<" psiBlockVecMemSpace = \n";
     for(unsigned int iB = 0; iB  < currentBlockSize ; iB++)
     {
             pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
     }
-
+*/
     computingTimerStandard.enter_subsection(
                   "interpolate parent data to child quad on GPU");
                 d_transferDataPtr
@@ -1096,7 +1101,7 @@ namespace dftfe
                     d_resizeMemSpaceVecDuringInterpolation);
                 computingTimerStandard.leave_subsection(
                   "interpolate parent data to child quad on GPU");
-
+/*
 		 double normadjointChildQuad = 0.0;
      d_BLASWrapperPtr->xnrm2(
       currentBlockSize*numTotalQuadraturePointsChild,
@@ -1114,7 +1119,7 @@ namespace dftfe
       d_mpi_comm_domain,
       &normpsiChildQuadData);
      pcout<<"  normpsiChildQuadData = "<<normpsiChildQuadData<<"\n";
-      
+  */    
      sumPsiAdjointChildQuadDataMemorySpace.setValue(0.0);
                 d_BLASWrapperPtr->addVecOverContinuousIndex(
                   numTotalQuadraturePointsChild,
@@ -1144,7 +1149,8 @@ namespace dftfe
 
         integrateWithShapeFunctionsForChildData(force[iSpin],
                                                 sumPsiAdjointChildQuadData);
-        
+       
+       /*	
 	 double normsumPsiAdjoint = 0.0;
      d_BLASWrapperPtr->xnrm2(
       numTotalQuadraturePointsChild,
@@ -1153,7 +1159,8 @@ namespace dftfe
       d_mpi_comm_domain,
       &normsumPsiAdjoint);
      pcout<<"  normsumPsiAdjoint = "<<normsumPsiAdjoint<<"\n";
-	pcout << "force norm = " << force[iSpin].l2_norm() << "\n";
+*/	
+     pcout << "force norm = " << force[iSpin].l2_norm() << "\n";
         if ((d_getForceCounter % d_inverseDFTParams->writeVxcFrequency == 0) &&
             (d_inverseDFTParams->writeVxcData))
           {
@@ -1162,7 +1169,7 @@ namespace dftfe
             d_constraintMatrixPot->distribute(force[iSpin]);
             force[iSpin].update_ghost_values();
 
-            /*
+            
             dealii::DataOut<3> data_out_force;
 
                         data_out_force.attach_dof_handler(*d_dofHandlerChild);
@@ -1172,7 +1179,7 @@ namespace dftfe
                         data_out_force.add_data_vector(force[iSpin],
             outputVecNameForce); data_out_force.write_vtu_with_pvtu_record("./",
             "forceOutput", d_getForceCounter,d_mpi_comm_domain ,2, 4);
-                    */
+                   
           }
         d_constraintMatrixPot->set_zero(force[iSpin]);
         force[iSpin].zero_out_ghosts();
@@ -1181,7 +1188,7 @@ namespace dftfe
     if ((d_getForceCounter % d_inverseDFTParams->writeVxcFrequency == 0) &&
         (d_inverseDFTParams->writeVxcData))
       {
-        std::cout << " Norm of vxc written = " << pot[0].l2_norm() << "\n";
+        //std::cout << " Norm of vxc written = " << pot[0].l2_norm() << "\n";
         writeVxcDataToFile(pot, d_getForceCounter);
       }
     MPI_Allreduce(MPI_IN_PLACE,
@@ -1354,7 +1361,10 @@ namespace dftfe
         pcout << " norm2 of input to hamil = " << inputToHamil << "\n";
         computingTimerStandard.enter_subsection("computeVeff inverse on CPU");
         d_kohnShamClass->computeVEff(potKSQuadData, iSpin);
-        computingTimerStandard.leave_subsection("computeVeff inverse on CPU");
+        d_kohnShamClass->resetExtPotHamFlag();
+	d_kohnShamClass->setVEffExternalPotCorrToZero();
+	d_kohnShamClass->computeCellHamiltonianMatrixExtPotContribution();
+	computingTimerStandard.leave_subsection("computeVeff inverse on CPU");
 
         computingTimerStandard.enter_subsection(
           "computeHamiltonianMatrix on CPU");
@@ -1436,7 +1446,7 @@ namespace dftfe
           {
             for (unsigned int iKpoint = 0; iKpoint < d_numKPoints; ++iKpoint)
               {
-                pcout << "compute partial occupancy eigen\n";
+                //pcout << "compute partial occupancy eigen\n";
                 for (unsigned int iEig = 0; iEig < d_numEigenValues; ++iEig)
                   {
                     const double eigenValue =
@@ -1487,8 +1497,8 @@ namespace dftfe
     const unsigned int inc            = 1;
     const unsigned int blockSizeInput = 1;
     char               doNotTans      = 'N';
-    pcout << " inside integrateWithShapeFunctionsForChildData doNotTans = "
-          << doNotTans << "\n";
+    //pcout << " inside integrateWithShapeFunctionsForChildData doNotTans = "
+    //      << doNotTans << "\n";
 
     const unsigned int numberDofsPerElement =
       d_dofHandlerChild->get_fe().dofs_per_cell;

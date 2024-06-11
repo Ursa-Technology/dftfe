@@ -21,5 +21,6 @@ srun -n $SLURM_NTASKS --mpi=pmi2 ./dftfe parameterFileMg2x_3.prm > outputMg2x_3
 srun -n $SLURM_NTASKS --mpi=pmi2 ./dftfe parameterFileMg2x_4.prm > outputMg2x_4
 srun -n $SLURM_NTASKS --mpi=pmi2 ./dftfe parameterFileMg2x_5.prm > outputMg2x_5
 srun -n $SLURM_NTASKS --mpi=pmi2 ./dftfe parameterFileMg2x_6.prm > outputMg2x_6
+srun -n $SLURM_NTASKS --mpi=pmi2 ./dftfe parameterFileMg2x_7.prm > outputMg2x_7
 srun -n $SLURM_NTASKS --mpi=pmi2 ./dftfe parameterFileBe.prm     > outputBe
 

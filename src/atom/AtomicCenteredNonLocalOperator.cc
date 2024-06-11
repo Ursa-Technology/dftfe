@@ -16,6 +16,7 @@
 //
 // @author Kartick Ramakrishnan, Sambit Das, Phani Motamarri, Vishal Subramanian
 //
+#include <AtomicCenteredNonLocalOperator.h>
 #if defined(DFTFE_WITH_DEVICE)
 #  include <AtomicCenteredNonLocalOperatorKernelsDevice.h>
 #  include <DeviceTypeConfig.h>
@@ -23,7 +24,6 @@
 #  include <DeviceAPICalls.h>
 #  include <DeviceDataTypeOverloads.h>
 #endif
-
 namespace dftfe
 {
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
@@ -32,7 +32,7 @@ namespace dftfe
       std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
         BLASWrapperPtr,
       std::shared_ptr<
-        dftfe::basis::FEBasisOperations<ValueType, double, memorySpace>>
+        dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
         basisOperatorPtr,
       std::shared_ptr<AtomCenteredSphericalFunctionContainer>
                       atomCenteredSphericalFunctionContainer,
@@ -117,11 +117,11 @@ namespace dftfe
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
   AtomicCenteredNonLocalOperator<ValueType, memorySpace>::computeCMatrixEntries(
-    std::shared_ptr<
-      dftfe::basis::
-        FEBasisOperations<ValueType, double, dftfe::utils::MemorySpace::HOST>>
-                       basisOperationsPtr,
-    const unsigned int quadratureIndex)
+    std::shared_ptr<dftfe::basis::FEBasisOperations<
+      dataTypes::number,
+      double,
+      dftfe::utils::MemorySpace::HOST>> basisOperationsPtr,
+    const unsigned int                  quadratureIndex)
   {
     d_locallyOwnedCells = basisOperationsPtr->nCells();
     basisOperationsPtr->reinit(0, 0, quadratureIndex);
@@ -138,7 +138,7 @@ namespace dftfe
           ->shapeFunctionBasisData(); // shapeFunctionData() for complex
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
       quadraturePointsVector = basisOperationsPtr->quadPoints();
-    const dftfe::utils::MemoryStorage<ValueType,
+    const dftfe::utils::MemoryStorage<dataTypes::number,
                                       dftfe::utils::MemorySpace::HOST>
                                      JxwVector = basisOperationsPtr->JxW();
     const std::vector<unsigned int> &atomicNumber =
@@ -2061,7 +2061,7 @@ namespace dftfe
     else
       {
         initialiseOperatorActionOnX(kPointIndex);
-        dftfe::utils::MemoryStorage<dataTypes::number,
+        dftfe::utils::MemoryStorage<ValueType,
                                     dftfe::utils::MemorySpace::DEVICE>
           cellWaveFunctionMatrix;
         cellWaveFunctionMatrix.resize(d_locallyOwnedCells *
@@ -2260,8 +2260,9 @@ namespace dftfe
       const std::vector<double> &kPointWeights,
       const std::vector<double> &kPointCoordinates,
       std::shared_ptr<
-        dftfe::basis::
-          FEBasisOperations<ValueType, double, dftfe::utils::MemorySpace::HOST>>
+        dftfe::basis::FEBasisOperations<dataTypes::number,
+                                        double,
+                                        dftfe::utils::MemorySpace::HOST>>
                          basisOperationsPtr,
       const unsigned int quadratureIndex)
   {
@@ -2285,5 +2286,19 @@ namespace dftfe
   {
     return (d_flattenedNonLocalCellDofIndexToProcessDofIndexMap);
   }
+  template class AtomicCenteredNonLocalOperator<
+    dataTypes::number,
+    dftfe::utils::MemorySpace::HOST>;
+  template class AtomicCenteredNonLocalOperator<
+    dataTypes::numberFP32,
+    dftfe::utils::MemorySpace::HOST>;
+#if defined(DFTFE_WITH_DEVICE)
+  template class AtomicCenteredNonLocalOperator<
+    dataTypes::number,
+    dftfe::utils::MemorySpace::DEVICE>;
+  template class AtomicCenteredNonLocalOperator<
+    dataTypes::numberFP32,
+    dftfe::utils::MemorySpace::DEVICE>;
+#endif
 
 } // namespace dftfe

@@ -27,7 +27,7 @@ not interfaced via deal.II are \href{http://www.alglib.net/}{ALGLIB}, \href{http
 $ g++ -c -fPIC -O2 *.cpp
 $ g++ *.o -shared -o libAlglib.so
 \end{verbatim}
-\item {\bf Libxc}: Used by \dftfe{} for exchange-correlation functionals. Download the current release from \url{http://www.tddft.org/programs/libxc/download/}, and do 
+\item {\bf Libxc}: Used by \dftfe{} for exchange-correlation functionals. Download the current release from \url{https://libxc.gitlab.io/download/}, and do 
 \begin{verbatim}
 $ ./configure --prefix=libxc_install_dir_path
               CC=c_compiler CXX=c++_compiler FC=fortran_compiler
@@ -40,9 +40,9 @@ Do not forget to replace \verb|libxc_install_dir_path| by some appropriate path 
 
 \item {\bf spglib}: Used by \dftfe{} to find crystal symmetries. To install spglib, first obtain the development version of spglib from their github repository by
 \begin{verbatim}
-$ git clone https://github.com/atztogo/spglib.git	
+$ git clone https://github.com/spglib/spglib.git	
 \end{verbatim}	
-and next follow the ``Compiling using cmake'' installation procedure described in \url{https://atztogo.github.io/spglib/install.html}.   	
+and next follow the ``Compiling using cmake'' installation procedure described in \url{https://spglib.readthedocs.io/en/stable/install.html}.   	
 We recommend using the ccmake gui interface for the installation and also use appropriate compiler for \verb|CMAKE_C_COMPILER|.
 
 \item {\bf Libxml2}: Libxml2 is used by \dftfe{} to read \verb|.xml| files. Most likely, Libxml2 might be already installed in the high-performance computer you are working with. It is usually installed in the default locations like \verb|/usr/lib64| (library path which contains \verb|.so| file for Libxml2, something like \verb|libxml2.so.2|) and \verb|/usr/include/libxml2| (include path). 

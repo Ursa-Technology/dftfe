@@ -317,10 +317,16 @@ namespace dftfe
 
         d_basisOperationsPtrHost->createScratchMultiVectors(1, 3);
         d_basisOperationsPtrHost->createScratchMultiVectors(BVec, 2);
+        if (d_dftParamsPtr->useSinglePrecCheby)
+          d_basisOperationsPtrHost->createScratchMultiVectorsSinglePrec(BVec,
+                                                                        2);
         if (d_numEigenValues % BVec != 0)
           d_basisOperationsPtrHost->createScratchMultiVectors(d_numEigenValues %
                                                                 BVec,
                                                               2);
+        if (d_dftParamsPtr->useSinglePrecCheby)
+          d_basisOperationsPtrHost->createScratchMultiVectorsSinglePrec(
+            d_numEigenValues % BVec, 2);
         if (d_numEigenValues != d_numEigenValuesRR &&
             d_numEigenValuesRR % BVec != 0)
           d_basisOperationsPtrHost->createScratchMultiVectors(
@@ -360,6 +366,10 @@ namespace dftfe
             d_basisOperationsPtrDevice->createScratchMultiVectors(1, 3);
             d_basisOperationsPtrDevice->createScratchMultiVectors(
               BVec, d_dftParamsPtr->overlapComputeCommunCheby ? 4 : 2);
+            if (d_dftParamsPtr->useSinglePrecCheby)
+              d_basisOperationsPtrDevice->createScratchMultiVectorsSinglePrec(
+                BVec, d_dftParamsPtr->overlapComputeCommunCheby ? 4 : 2);
+
             d_basisOperationsPtrDevice->computeCellStiffnessMatrix(
               d_feOrderPlusOneQuadratureId, 50, true, false);
             if (std::is_same<dataTypes::number, std::complex<double>>::value)
@@ -408,6 +418,9 @@ namespace dftfe
         d_basisOperationsPtrDevice->createScratchMultiVectors(1, 3);
         d_basisOperationsPtrDevice->createScratchMultiVectors(
           BVec, d_dftParamsPtr->overlapComputeCommunCheby ? 4 : 2);
+        if (d_dftParamsPtr->useSinglePrecCheby)
+          d_basisOperationsPtrDevice->createScratchMultiVectorsSinglePrec(
+            BVec, d_dftParamsPtr->overlapComputeCommunCheby ? 4 : 2);
       }
 #endif
 

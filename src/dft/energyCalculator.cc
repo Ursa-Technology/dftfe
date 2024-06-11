@@ -117,7 +117,7 @@ namespace dftfe
           pcout << std::endl << "Energy computations (Hartree) " << std::endl;
           pcout << "-------------------" << std::endl;
           if (dftParams.useMixedPrecCGS_O || dftParams.useMixedPrecCGS_SR ||
-              dftParams.useMixedPrecCheby)
+              dftParams.useSinglePrecCommunCheby)
             pcout << std::setw(25) << "Total energy"
                   << ": " << std::fixed << std::setprecision(6) << std::setw(20)
                   << totalEnergyTrunc << std::endl;

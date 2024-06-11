@@ -2747,21 +2747,21 @@ namespace dftfe
                       d_numEigenValues :
                       d_numEigenValuesRR)));
 
+            updateAuxDensityMatrix(d_densityInQuadValues,
+                                   d_gradDensityInQuadValues,
+                                   d_rhoCore,
+                                   d_gradRhoCore,
+                                   d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                                   d_eigenVectorsFlattenedDevice,
+#endif
+                                   eigenValues,
+                                   d_auxDensityMatrixXCInPtr);
+
             for (unsigned int s = 0; s < 2; ++s)
               {
                 computing_timer.enter_subsection("VEff Computation");
 
-
-                updateAuxDensityMatrix(d_densityInQuadValues,
-                                       d_gradDensityInQuadValues,
-                                       d_rhoCore,
-                                       d_gradRhoCore,
-                                       d_eigenVectorsFlattenedHost,
-#ifdef DFTFE_WITH_DEVICE
-                                       d_eigenVectorsFlattenedDevice,
-#endif
-                                       eigenValues,
-                                       d_auxDensityMatrixXCInPtr);
 
 
                 kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixXCInPtr,
@@ -2910,19 +2910,6 @@ namespace dftfe
                           {
                             computing_timer.enter_subsection(
                               "VEff Computation");
-
-                            updateAuxDensityMatrix(
-                              d_densityInQuadValues,
-                              d_gradDensityInQuadValues,
-                              d_rhoCore,
-                              d_gradRhoCore,
-                              d_eigenVectorsFlattenedHost,
-#ifdef DFTFE_WITH_DEVICE
-                              d_eigenVectorsFlattenedDevice,
-#endif
-                              eigenValues,
-                              d_auxDensityMatrixXCInPtr);
-
                             kohnShamDFTEigenOperator.computeVEff(
                               d_auxDensityMatrixXCInPtr, d_phiInQuadValues, s);
                             computing_timer.leave_subsection(
@@ -3050,7 +3037,6 @@ namespace dftfe
                   d_numEigenValues :
                   d_numEigenValuesRR);
 
-            computing_timer.enter_subsection("VEff Computation");
             updateAuxDensityMatrix(d_densityInQuadValues,
                                    d_gradDensityInQuadValues,
                                    d_rhoCore,
@@ -3061,6 +3047,8 @@ namespace dftfe
 #endif
                                    eigenValues,
                                    d_auxDensityMatrixInXCPtr);
+
+            computing_timer.enter_subsection("VEff Computation");
             kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixInXCPtr,
                                                  d_phiInQuadValues);
             computing_timer.leave_subsection("VEff Computation");
@@ -3535,6 +3523,17 @@ namespace dftfe
       pcout << "SCF iterations converged to the specified tolerance after: "
             << scfIter << " iterations." << std::endl;
 
+    updateAuxDensityMatrix(d_densityOutQuadValues,
+                           d_gradDensityOutQuadValues,
+                           d_rhoCore,
+                           d_gradRhoCore,
+                           d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                           d_eigenVectorsFlattenedDevice,
+#endif
+                           eigenValues,
+                           d_auxDensityMatrixOutXCPtr);
+
     const unsigned int numberBandGroups =
       dealii::Utilities::MPI::n_mpi_processes(interBandGroupComm);
 
@@ -3706,8 +3705,8 @@ namespace dftfe
       d_gradDensityInQuadValues,
       d_gradDensityOutQuadValues,
       d_densityTotalOutValuesLpspQuad,
-      d_rhoCore,
-      d_gradRhoCore,
+      d_auxDensityMatrixInXCPtr,
+      d_auxDensityMatrixOutXCPtr,
       d_bQuadValuesAllAtoms,
       d_bCellNonTrivialAtomIds,
       d_localVselfs,
@@ -4863,7 +4862,7 @@ namespace dftfe
       &eigenVectorsFlattenedDevice,
 #endif
     const std::vector<std::vector<double>> &eigenValues,
-    std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixXCInPtr)
+    std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixXCPtr)
   {
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
     const unsigned int totalLocallyOwnedCells =
@@ -5031,9 +5030,9 @@ namespace dftfe
         quadWeights.copyTo(densityProjectionInputs["quadWt"]);
 
 
-        d_auxDensityMatrixInXCPtr->projectDensityStart(densityProjectionInputs);
+        auxDensityMatrixXCPtr->projectDensityStart(densityProjectionInputs);
 
-        d_auxDensityMatrixInXCPtr->projectDensityEnd();
+        auxDensityMatrixXCPtr->projectDensityEnd();
       }
     else if (d_dftParamsPtr->XCAuxBasisType == "SlaterAE")
       {}

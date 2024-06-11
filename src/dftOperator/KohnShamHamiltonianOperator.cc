@@ -236,25 +236,24 @@ namespace dftfe
       isGGA ? totalLocallyOwnedCells * numberQuadraturePointsPerCell * 3 : 0,
       0.0);
 
-    std::vector<std::vector<double>> pdexDensity(2);
-    std::vector<std::vector<double>> pdecDensity(2);
-    std::vector<double>              pdexSigma;
-    std::vector<double>              pdecSigma;
-
 
     std::unordered_map<xcOutputDataAttributes, std::vector<double>> xDataOut;
     std::unordered_map<xcOutputDataAttributes, std::vector<double>> cDataOut;
 
 
-    xDataOut[xcOutputDataAttributes::pdeDensitySpinUp]   = &pdexDensity[0];
-    xDataOut[xcOutputDataAttributes::pdeDensitySpinDown] = &pdexDensity[1];
-    xDataOut[xcOutputDataAttributes::pdeDensitySpinUp]   = &pdecDensity[0];
-    xDataOut[xcOutputDataAttributes::pdeDensitySpinDown] = &pdecDensity[1];
+    std::vector<double> &pdexDensitySpinUp =
+      xDataOut[xcOutputDataAttributes::pdeDensitySpinUp];
+    std::vector<double> &pdexDensitySpinDown =
+      xDataOut[xcOutputDataAttributes::pdeDensitySpinDown];
+    std::vector<double> &pdecDensitySpinUp =
+      cDataOut[xcOutputDataAttributes::pdeDensitySpinUp];
+    std::vector<double> &pdecDensitySpinDown =
+      cDataOut[xcOutputDataAttributes::pdeDensitySpinDown];
 
     if (isGGA)
       {
-        xDataOut[xcOutputDataAttributes::pdeSigma] = &pdexSigma;
-        cDataOut[xcOutputDataAttributes::pdeSigma] = &pdecSigma;
+        xDataOut[xcOutputDataAttributes::pdeSigma] = std::vector<double>();
+        cDataOut[xcOutputDataAttributes::pdeSigma] = std::vector<double>();
       }
 
     dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
@@ -275,27 +274,34 @@ namespace dftfe
       xDataOut,
       cDataOut);
 
-    const std::vector<double> &pdexDensitySpinIndex = pdexDensity[spinIndex];
-    const std::vector<double> &pdecDensitySpinIndex = pdecDensity[spinIndex];
+    const std::vector<double> &pdexDensitySpinIndex =
+      spinIndex == 1 ? pdexDensitySpinUp : pdexDensitySpinDown;
+    const std::vector<double> &pdecDensitySpinIndex =
+      spinIndex == 1 ? pdecDensitySpinUp : pdecDensitySpinDown;
 
-    std::vector<std::vector<double>> gradDensityXC(2);
-
+    std::vector<double> pdexSigma;
+    std::vector<double> pdecSigma;
     if (isGGA)
       {
-        std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
-          densityData;
-        densityData[DensityDescriptorDataAttributes::gradValuesSpinUp] =
-          gradDensityXC[0];
-        densityData[DensityDescriptorDataAttributes::gradValuesSpinDown] =
-          gradDensityXC[1];
-        auxDensityXCRepresentation->applyLocalOperations(quadPointsAllStdVec,
-                                                         densityData);
+        pdexSigma = xDataOut[xcOutputDataAttributes::pdeSigma];
+        pdecSigma = cDataOut[xcOutputDataAttributes::pdeSigma];
       }
 
+    std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
+                         densityData;
+    std::vector<double> &gradDensitySpinUp =
+      densityData[DensityDescriptorDataAttributes::gradValuesSpinUp];
+    std::vector<double> &gradDensitySpinDown =
+      densityData[DensityDescriptorDataAttributes::gradValuesSpinDown];
+
+    if (isGGA)
+      auxDensityXCRepresentation->applyLocalOperations(quadPointsAllStdVec,
+                                                       densityData);
+
     const std::vector<double> &gradDensityXCSpinIndex =
-      gradDensityXC[spinIndex];
+      spinIndex == 1 ? gradDensitySpinUp : gradDensitySpinDown;
     const std::vector<double> &gradDensityXCOtherSpinIndex =
-      gradDensityXC[1 - spinIndex];
+      spinIndex == 1 ? gradDensitySpinDown : gradDensitySpinUp;
 
     for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells; ++iCell)
       {

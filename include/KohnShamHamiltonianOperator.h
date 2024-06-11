@@ -25,6 +25,7 @@
 #include <BLASWrapper.h>
 #include <FEBasisOperations.h>
 #include <oncvClass.h>
+#include <auxDensityMatrixSlater.h>
 
 namespace dftfe
 {
@@ -97,7 +98,7 @@ namespace dftfe
 
     void
     computeVEffPrime(
-      std::shared_ptr<AuxDensityMatrix> auxDensityRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix> auxDensityXCRepresentationPtr,
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &rhoPrimeValues,

@@ -20,6 +20,7 @@
 #include <excManager.h>
 #include "dftParameters.h"
 #include <FEBasisOperations.h>
+#include <auxDensityMatrixSlater.h>
 #ifndef energyCalculator_H_
 #  define energyCalculator_H_
 
@@ -131,9 +132,9 @@ namespace dftfe
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &gradDensityOutValues,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-        &                                                  rhoOutValuesLpsp,
-      const std::map<dealii::CellId, std::vector<double>> &rhoCoreValues,
-      const std::map<dealii::CellId, std::vector<double>> &gradRhoCoreValues,
+        &                               rhoOutValuesLpsp,
+      std::shared_ptr<AuxDensityMatrix> auxDensityXCInRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix> auxDensityXCOutRepresentationPtr,
       const std::map<dealii::CellId, std::vector<double>> &smearedbValues,
       const std::map<dealii::CellId, std::vector<unsigned int>>
         &                                     smearedbNonTrivialAtomIds,
@@ -168,10 +169,12 @@ namespace dftfe
         &gradDensityInValues,
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &     gradDensityOutValues,
-      double &exchangeEnergy,
-      double &correlationEnergy,
-      double &excCorrPotentialTimesRho);
+        &                               gradDensityOutValues,
+      std::shared_ptr<AuxDensityMatrix> auxDensityXCInRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix> auxDensityXCOutRepresentationPtr,
+      double &                          exchangeEnergy,
+      double &                          correlationEnergy,
+      double &                          excCorrPotentialTimesRho);
 
     double
     computeEntropicEnergy(const std::vector<std::vector<double>> &eigenValues,

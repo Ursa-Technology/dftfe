@@ -1043,7 +1043,7 @@ namespace dftfe
         &eigenVectorsFlattenedDevice,
 #endif
       const std::vector<std::vector<double>> &eigenValues,
-      std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixXCInPtr);
+      std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixXCPtr);
 
     std::shared_ptr<excManager> d_excManagerPtr;
     dispersionCorrection        d_dispersionCorr;

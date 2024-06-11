@@ -530,8 +530,6 @@ namespace dftfe
                                       densityQuadratureID,
                                       excManagerPtr,
                                       densityInValues,
-                                      densityOutValues,
-                                      gradDensityInValues,
                                       gradDensityOutValues,
                                       auxDensityXCInRepresentationPtr,
                                       auxDensityXCOutRepresentationPtr,
@@ -628,12 +626,6 @@ namespace dftfe
       &densityInValues,
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-      &densityOutValues,
-    const std::vector<
-      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-      &gradDensityInValues,
-    const std::vector<
-      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       &                               gradDensityOutValues,
     std::shared_ptr<AuxDensityMatrix> auxDensityXCInRepresentationPtr,
     std::shared_ptr<AuxDensityMatrix> auxDensityXCOutRepresentationPtr,
@@ -645,180 +637,298 @@ namespace dftfe
     const unsigned int nCells        = basisOperationsPtr->nCells();
     const unsigned int nQuadsPerCell = basisOperationsPtr->nQuadsPerCell();
 
-    std::vector<double> xEnergyDensity;
-    std::vector<double> cEnergyDensity;
 
-    std::unordered_map<xcOutputDataAttributes, std::vector<double>> xDataOut;
-    std::unordered_map<xcOutputDataAttributes, std::vector<double>> cDataOut;
+    std::unordered_map<xcOutputDataAttributes, std::vector<double>>
+      xDensityInDataOut;
+    std::unordered_map<xcOutputDataAttributes, std::vector<double>>
+      cDensityInDataOut;
 
-    xDataOut[xcOutputDataAttributes::e]                  = &pdexDensity[0];
-    cDataOut[xcOutputDataAttributes::e]                  = &pdexDensity[1];
-    xDataOut[xcOutputDataAttributes::pdeDensitySpinUp]   = &pdexDensity[0];
-    xDataOut[xcOutputDataAttributes::pdeDensitySpinDown] = &pdexDensity[1];
-    cDataOut[xcOutputDataAttributes::pdeDensitySpinUp]   = &pdecDensity[0];
-    cDataOut[xcOutputDataAttributes::pdeDensitySpinDown] = &pdecDensity[1];
+    std::unordered_map<xcOutputDataAttributes, std::vector<double>>
+      xDensityOutDataOut;
+    std::unordered_map<xcOutputDataAttributes, std::vector<double>>
+      cDensityOutDataOut;
+
+    std::vector<double> &xEnergyDensityOut =
+      xDensityOutDataOut[xcOutputDataAttributes::e];
+    std::vector<double> &cEnergyDensityOut =
+      cDensityOutDataOut[xcOutputDataAttributes::e];
+
+    std::vector<double> &pdexDensityInSpinUp =
+      xDensityInDataOut[xcOutputDataAttributes::pdeDensitySpinUp];
+    std::vector<double> &pdexDensityInSpinDown =
+      xDensityInDataOut[xcOutputDataAttributes::pdeDensitySpinDown];
+    std::vector<double> &pdecDensityInSpinUp =
+      cDensityInDataOut[xcOutputDataAttributes::pdeDensitySpinUp];
+    std::vector<double> &pdecDensityInSpinDown =
+      cDensityInDataOut[xcOutputDataAttributes::pdeDensitySpinDown];
 
     if (isGGA)
       {
-        xDataOut[xcOutputDataAttributes::pdeSigma] = &pdexSigma;
-        cDataOut[xcOutputDataAttributes::pdeSigma] = &pdecSigma;
+        xDensityInDataOut[xcOutputDataAttributes::pdeSigma] =
+          std::vector<double>();
+        cDensityInDataOut[xcOutputDataAttributes::pdeSigma] =
+          std::vector<double>();
       }
 
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      quadPointsAll = basisOperationsPtr->quadPoints();
 
-    std::vector<double> gradXCRhoInDotgradRhoOut;
-    if (excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA)
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      quadWeightsAll = basisOperationsPtr->JxW();
+
+    std::vector<double> quadPointsAllStdVec;
+    std::vector<double> quadWeightsAllStdVec;
+    quadPointsAll.copyTo(quadPointsAllStdVec);
+    quadWeightsAll.copyTo(quadWeightsAllStdVec);
+
+    excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
+      auxDensityXCInRepresentation,
+      quadPointsAllStdVec,
+      quadWeightsAllStdVec,
+      xDensityInDataOut,
+      cDensityInDataOut);
+
+    excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
+      auxDensityXCOutRepresentation,
+      quadPointsAllStdVec,
+      quadWeightsAllStdVec,
+      xDensityOutDataOut,
+      cDensityOutDataOut);
+
+    std::vector<double> pdexDensityInSigma;
+    std::vector<double> pdecDensityInSigma;
+    if (isGGA)
       {
-        gradXCRhoInDotgradRhoOut.resize(3 * nQuadsPerCell);
+        pdexDensityInSigma =
+          xDensityInDataOut[xcOutputDataAttributes::pdeSigma];
+        pdecDensityInSigma =
+          cDensityInDataOut[xcOutputDataAttributes::pdeSigma];
       }
+
+    std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
+                         densityXCinData;
+    std::vector<double> &gradDensityXCInSpinUp =
+      densityXCInData[DensityDescriptorDataAttributes::gradValuesSpinUp];
+    std::vector<double> &gradDensityXCInSpinDown =
+      densityXCInData[DensityDescriptorDataAttributes::gradValuesSpinDown];
+
+    if (isGGA)
+      auxDensityXCInRepresentation->applyLocalOperations(quadPointsAllStdVec,
+                                                         densityXCInData);
+
+    auto dot3 = [](const std::array<double, 3> &a,
+                   const std::array<double, 3> &b) {
+      double sum = 0.0;
+      for (unsigned int i = 0; i < 3; i++)
+        {
+          sum += a[i] * b[i];
+        }
+      return sum;
+    };
+
 
     for (unsigned int iCell = 0; iCell < nCells; ++iCell)
       {
         auto cellId = basisOperationsPtr->cellID(iCell);
 
 
-        for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+        std::vector<double> gradXCRhoInDotgradRhoOut;
+        if (excManagerPtr->getDensityBasedFamilyType() ==
+            densityFamilyType::GGA)
           {
-            double Vxc = derExchEnergyWithInputDensity[2 * iQuad + 0] +
-                         derCorrEnergyWithInputDensity[2 * iQuad + 0];
-            excCorrPotentialTimesRho +=
-              Vxc *
-              ((densityOutValues[0][iCell * nQuadsPerCell + iQuad] +
-                densityOutValues[1][iCell * nQuadsPerCell + iQuad]) /
-               2.0) *
-              basisOperationsPtr->JxWBasisData()[iCell * nQuadsPerCell + iQuad];
-            Vxc = derExchEnergyWithInputDensity[2 * iQuad + 1] +
-                  derCorrEnergyWithInputDensity[2 * iQuad + 1];
-            excCorrPotentialTimesRho +=
-              Vxc *
-              ((densityInValues[0][iCell * nQuadsPerCell + iQuad] -
-                densityInValues[1][iCell * nQuadsPerCell + iQuad]) /
-               2.0) *
-              basisOperationsPtr->JxWBasisData()[iCell * nQuadsPerCell + iQuad];
-            exchangeEnergy +=
-              (xEnergyDensity[iCell * nQuadsPerCell + iQuad]) *
-              basisOperationsPtr->JxWBasisData()[iCell * nQuadsPerCell + iQuad];
+            gradXCRhoInDotgradRhoOut.resize(nQuadsPerCell * 3);
 
-            correlationEnergy +=
-              (cEnergyDensity[iCell * nQuadsPerCell + iQuad]) *
-              basisOperationsPtr->JxWBasisData()[iCell * nQuadsPerCell + iQuad];
-            if (excManagerPtr->getDensityBasedFamilyType() ==
-                densityFamilyType::GGA)
+            std::array<double, 3> gradXCRhoIn1, gradXCRhoIn2, gradRhoOut1,
+              gradRhoOut2;
+            for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
               {
-                double VxcGrad = 0.0;
                 for (unsigned int iDim = 0; iDim < 3; ++iDim)
-                  VxcGrad +=
-                    2.0 *
-                    (derExchEnergyWithSigmaGradDenInput[3 * iQuad + iDim] +
-                     derCorrEnergyWithSigmaGradDenInput[3 * iQuad + iDim]) *
-                    gradXCRhoInDotgradRhoOut[3 * iQuad + iDim];
+                  {
+                    gradXCRhoIn1[iDim] =
+                      gradDensityXCInSpinUp[iCell * 3 * nQuadsPerCell +
+                                            3 * iQuad + iDim];
+                    gradXCRhoIn2[iDim] =
+                      gradDensityXCInSpinDown[iCell * 3 * nQuadsPerCell +
+                                              3 * iQuad + iDim];
+                    gradRhoOut1[iDim] =
+                      (gradDensityOutValues[0][iCell * 3 * nQuadsPerCell +
+                                               3 * iQuad + iDim] +
+                       gradDensityOutValues[1][iCell * 3 * nQuadsPerCell +
+                                               3 * iQuad + iDim]) /
+                      2.0;
+                    gradRhoOut2[iDim] =
+                      (gradDensityOutValues[0][iCell * 3 * nQuadsPerCell +
+                                               3 * iQuad + iDim] -
+                       gradDensityOutValues[1][iCell * 3 * nQuadsPerCell +
+                                               3 * iQuad + iDim]) /
+                      2.0;
+                  }
+
+                for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                  {
+                    gradXCRhoInDotgradRhoOut[iQuad * 3 + 0] =
+                      dot3(gradXCRhoIn1, gradRhoOut1);
+                    gradXCRhoInDotgradRhoOut[iQuad * 3 + 1] =
+                      (dot3(gradXCRhoIn1, gradRhoOut2) +
+                       dot3(gradXCRhoIn2, gradRhoOut1)) /
+                      2.0;
+                    gradXCRhoInDotgradRhoOut[3 * iQuad + 2] =
+                      dot3(gradXCRhoIn2, gradRhoOut2);
+                  }
+              }
+
+            for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+              {
+                double Vxc =
+                  pdexDensityInSpinUp[iCell * nQuadsPerCell + iQuad] +
+                  pdecDensityInSpinUp[iCell * nQuadsPerCell + iQuad];
                 excCorrPotentialTimesRho +=
-                  VxcGrad * basisOperationsPtr
-                              ->JxWBasisData()[iCell * nQuadsPerCell + iQuad];
+                  Vxc *
+                  ((densityOutValues[0][iCell * nQuadsPerCell + iQuad] +
+                    densityOutValues[1][iCell * nQuadsPerCell + iQuad]) /
+                   2.0) *
+                  basisOperationsPtr
+                    ->JxWBasisData()[iCell * nQuadsPerCell + iQuad];
+
+                Vxc = pdexDensityInSpinDown[iCell * nQuadsPerCell + iQuad] +
+                      pdexDensityInSpinUp[iCell * nQuadsPerCell + iQuad];
+                excCorrPotentialTimesRho +=
+                  Vxc *
+                  ((densityInValues[0][iCell * nQuadsPerCell + iQuad] -
+                    densityInValues[1][iCell * nQuadsPerCell + iQuad]) /
+                   2.0) *
+                  basisOperationsPtr
+                    ->JxWBasisData()[iCell * nQuadsPerCell + iQuad];
+
+                exchangeEnergy +=
+                  (xEnergyDensityOut[iCell * nQuadsPerCell + iQuad]) *
+                  basisOperationsPtr
+                    ->JxWBasisData()[iCell * nQuadsPerCell + iQuad];
+
+                correlationEnergy +=
+                  (cEnergyDensityOut[iCell * nQuadsPerCell + iQuad]) *
+                  basisOperationsPtr
+                    ->JxWBasisData()[iCell * nQuadsPerCell + iQuad];
+                if (excManagerPtr->getDensityBasedFamilyType() ==
+                    densityFamilyType::GGA)
+                  {
+                    double VxcGrad = 0.0;
+                    for (unsigned int isigma = 0; isigma < 3; ++isigma)
+                      VxcGrad += 2.0 *
+                                 (pdexDensityInSigma[iCell * nQuadsPerCell * 3 +
+                                                     iQuad * 3 + isigma] +
+                                  pdecDensityInSigma[iCell * nQuadsPerCell * 3 +
+                                                     iQuad * 3 + isigma]) *
+                                 gradXCRhoInDotgradRhoOut[iQuad * 3 + isigma];
+                    excCorrPotentialTimesRho +=
+                      VxcGrad *
+                      basisOperationsPtr
+                        ->JxWBasisData()[iCell * nQuadsPerCell + iQuad];
+                  }
               }
           }
       }
-  }
 
 
-  double
-  energyCalculator::computeEntropicEnergy(
-    const std::vector<std::vector<double>> &eigenValues,
-    const std::vector<double> &             kPointWeights,
-    const double                            fermiEnergy,
-    const double                            fermiEnergyUp,
-    const double                            fermiEnergyDown,
-    const bool                              isSpinPolarized,
-    const bool                              isConstraintMagnetization,
-    const double                            temperature) const
-  {
-    // computation of entropic term only for one k-pt
-    double             entropy = 0.0;
-    const unsigned int numEigenValues =
-      isSpinPolarized ? eigenValues[0].size() / 2 : eigenValues[0].size();
+    double energyCalculator::computeEntropicEnergy(
+      const std::vector<std::vector<double>> &eigenValues,
+      const std::vector<double> &             kPointWeights,
+      const double                            fermiEnergy,
+      const double                            fermiEnergyUp,
+      const double                            fermiEnergyDown,
+      const bool                              isSpinPolarized,
+      const bool                              isConstraintMagnetization,
+      const double                            temperature) const
+    {
+      // computation of entropic term only for one k-pt
+      double             entropy = 0.0;
+      const unsigned int numEigenValues =
+        isSpinPolarized ? eigenValues[0].size() / 2 : eigenValues[0].size();
 
-    for (unsigned int kPoint = 0; kPoint < eigenValues.size(); ++kPoint)
-      for (int i = 0; i < numEigenValues; ++i)
-        {
-          if (isSpinPolarized)
-            {
-              double partOccSpin0 = dftUtils::getPartialOccupancy(
-                eigenValues[kPoint][i], fermiEnergy, C_kb, temperature);
-              double partOccSpin1 = dftUtils::getPartialOccupancy(
-                eigenValues[kPoint][i + numEigenValues],
-                fermiEnergy,
-                C_kb,
-                temperature);
+      for (unsigned int kPoint = 0; kPoint < eigenValues.size(); ++kPoint)
+        for (int i = 0; i < numEigenValues; ++i)
+          {
+            if (isSpinPolarized)
+              {
+                double partOccSpin0 = dftUtils::getPartialOccupancy(
+                  eigenValues[kPoint][i], fermiEnergy, C_kb, temperature);
+                double partOccSpin1 = dftUtils::getPartialOccupancy(
+                  eigenValues[kPoint][i + numEigenValues],
+                  fermiEnergy,
+                  C_kb,
+                  temperature);
 
-              if (d_dftParams.constraintMagnetization)
-                {
-                  partOccSpin0 = 1.0, partOccSpin1 = 1.0;
-                  if (eigenValues[kPoint][i + numEigenValues] > fermiEnergyDown)
-                    partOccSpin1 = 0.0;
-                  if (eigenValues[kPoint][i] > fermiEnergyUp)
-                    partOccSpin0 = 0.0;
-                }
+                if (d_dftParams.constraintMagnetization)
+                  {
+                    partOccSpin0 = 1.0, partOccSpin1 = 1.0;
+                    if (eigenValues[kPoint][i + numEigenValues] >
+                        fermiEnergyDown)
+                      partOccSpin1 = 0.0;
+                    if (eigenValues[kPoint][i] > fermiEnergyUp)
+                      partOccSpin0 = 0.0;
+                  }
 
 
-              double fTimeslogfSpin0, oneminusfTimeslogoneminusfSpin0;
+                double fTimeslogfSpin0, oneminusfTimeslogoneminusfSpin0;
 
-              if (std::abs(partOccSpin0 - 1.0) <= 1e-07 ||
-                  std::abs(partOccSpin0) <= 1e-07)
-                {
-                  fTimeslogfSpin0                 = 0.0;
-                  oneminusfTimeslogoneminusfSpin0 = 0.0;
-                }
-              else
-                {
-                  fTimeslogfSpin0 = partOccSpin0 * log(partOccSpin0);
-                  oneminusfTimeslogoneminusfSpin0 =
-                    (1.0 - partOccSpin0) * log(1.0 - partOccSpin0);
-                }
-              entropy += -C_kb * kPointWeights[kPoint] *
-                         (fTimeslogfSpin0 + oneminusfTimeslogoneminusfSpin0);
+                if (std::abs(partOccSpin0 - 1.0) <= 1e-07 ||
+                    std::abs(partOccSpin0) <= 1e-07)
+                  {
+                    fTimeslogfSpin0                 = 0.0;
+                    oneminusfTimeslogoneminusfSpin0 = 0.0;
+                  }
+                else
+                  {
+                    fTimeslogfSpin0 = partOccSpin0 * log(partOccSpin0);
+                    oneminusfTimeslogoneminusfSpin0 =
+                      (1.0 - partOccSpin0) * log(1.0 - partOccSpin0);
+                  }
+                entropy += -C_kb * kPointWeights[kPoint] *
+                           (fTimeslogfSpin0 + oneminusfTimeslogoneminusfSpin0);
 
-              double fTimeslogfSpin1, oneminusfTimeslogoneminusfSpin1;
+                double fTimeslogfSpin1, oneminusfTimeslogoneminusfSpin1;
 
-              if (std::abs(partOccSpin1 - 1.0) <= 1e-07 ||
-                  std::abs(partOccSpin1) <= 1e-07)
-                {
-                  fTimeslogfSpin1                 = 0.0;
-                  oneminusfTimeslogoneminusfSpin1 = 0.0;
-                }
-              else
-                {
-                  fTimeslogfSpin1 = partOccSpin1 * log(partOccSpin1);
-                  oneminusfTimeslogoneminusfSpin1 =
-                    (1.0 - partOccSpin1) * log(1.0 - partOccSpin1);
-                }
-              entropy += -C_kb * kPointWeights[kPoint] *
-                         (fTimeslogfSpin1 + oneminusfTimeslogoneminusfSpin1);
-            }
-          else
-            {
-              const double partialOccupancy = dftUtils::getPartialOccupancy(
-                eigenValues[kPoint][i], fermiEnergy, C_kb, temperature);
-              double fTimeslogf, oneminusfTimeslogoneminusf;
+                if (std::abs(partOccSpin1 - 1.0) <= 1e-07 ||
+                    std::abs(partOccSpin1) <= 1e-07)
+                  {
+                    fTimeslogfSpin1                 = 0.0;
+                    oneminusfTimeslogoneminusfSpin1 = 0.0;
+                  }
+                else
+                  {
+                    fTimeslogfSpin1 = partOccSpin1 * log(partOccSpin1);
+                    oneminusfTimeslogoneminusfSpin1 =
+                      (1.0 - partOccSpin1) * log(1.0 - partOccSpin1);
+                  }
+                entropy += -C_kb * kPointWeights[kPoint] *
+                           (fTimeslogfSpin1 + oneminusfTimeslogoneminusfSpin1);
+              }
+            else
+              {
+                const double partialOccupancy = dftUtils::getPartialOccupancy(
+                  eigenValues[kPoint][i], fermiEnergy, C_kb, temperature);
+                double fTimeslogf, oneminusfTimeslogoneminusf;
 
-              if (std::abs(partialOccupancy - 1.0) <= 1e-07 ||
-                  std::abs(partialOccupancy) <= 1e-07)
-                {
-                  fTimeslogf                 = 0.0;
-                  oneminusfTimeslogoneminusf = 0.0;
-                }
-              else
-                {
-                  fTimeslogf = partialOccupancy * log(partialOccupancy);
-                  oneminusfTimeslogoneminusf =
-                    (1.0 - partialOccupancy) * log(1.0 - partialOccupancy);
-                }
-              entropy += -2.0 * C_kb * kPointWeights[kPoint] *
-                         (fTimeslogf + oneminusfTimeslogoneminusf);
-            }
-        }
+                if (std::abs(partialOccupancy - 1.0) <= 1e-07 ||
+                    std::abs(partialOccupancy) <= 1e-07)
+                  {
+                    fTimeslogf                 = 0.0;
+                    oneminusfTimeslogoneminusf = 0.0;
+                  }
+                else
+                  {
+                    fTimeslogf = partialOccupancy * log(partialOccupancy);
+                    oneminusfTimeslogoneminusf =
+                      (1.0 - partialOccupancy) * log(1.0 - partialOccupancy);
+                  }
+                entropy += -2.0 * C_kb * kPointWeights[kPoint] *
+                           (fTimeslogf + oneminusfTimeslogoneminusf);
+              }
+          }
 
-    // Sum across k point parallelization pools
-    entropy = dealii::Utilities::MPI::sum(entropy, interpoolcomm);
+      // Sum across k point parallelization pools
+      entropy = dealii::Utilities::MPI::sum(entropy, interpoolcomm);
 
-    return temperature * entropy;
-  }
-} // namespace dftfe
+      return temperature * entropy;
+    }
+  } // namespace dftfe

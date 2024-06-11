@@ -163,12 +163,6 @@ namespace dftfe
         &densityInValues,
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &densityOutValues,
-      const std::vector<
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &gradDensityInValues,
-      const std::vector<
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &                               gradDensityOutValues,
       std::shared_ptr<AuxDensityMatrix> auxDensityXCInRepresentationPtr,
       std::shared_ptr<AuxDensityMatrix> auxDensityXCOutRepresentationPtr,

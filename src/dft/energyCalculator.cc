@@ -526,11 +526,29 @@ namespace dftfe
                                            lpspQuadratureIDElectro,
                                            pseudoLocValues,
                                            rhoOutValuesLpsp);
+
+    std::vector<
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+      densityInQuadValuesSpinPolarized = densityInValues;
+    std::vector<
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+      gradDensityOutQuadValuesSpinPolarized = gradDensityOutValues;
+
+    if (d_dftParams.spinPolarized == 0)
+      {
+        densityInQuadValuesSpinPolarized.push_back(
+          dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
+            densityInValues[0].size(), 0.0));
+        gradDensityOutQuadValuesSpinPolarized.push_back(
+          dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
+            gradDensityOutValues[0].size(), 0.0));
+      }
+
     computeXCEnergyTermsSpinPolarized(basisOperationsPtr,
                                       densityQuadratureID,
                                       excManagerPtr,
-                                      densityInValues,
-                                      gradDensityOutValues,
+                                      densityInValuesSpinPolarized,
+                                      gradDensityOutValuesSpinPolarized,
                                       auxDensityXCInRepresentationPtr,
                                       auxDensityXCOutRepresentationPtr,
                                       exchangeEnergy,

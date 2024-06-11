@@ -207,6 +207,27 @@ namespace dftfe
     MPI_Barrier(d_mpiComm);
     double startMapPoints = MPI_Wtime();
 
+
+    size_type maxNumCells = srcCells.size();
+    size_type maxNumPoints = numInitialTargetPoints;
+
+
+    std::cout<<" NumPoints in proc = "<<numInitialTargetPoints<<" numCells per proc = "<<srcCells.size()<<"\n";
+	    MPI_Allreduce(MPI_IN_PLACE,
+                  &maxNumCells,
+                  1,
+                  dftfe::dataTypes::mpi_type_id(&maxNumCells),
+                  MPI_MAX,
+                  d_mpiComm);
+
+	    MPI_Allreduce(MPI_IN_PLACE,
+                  &maxNumPoints,
+                  1,
+                  dftfe::dataTypes::mpi_type_id(&maxNumPoints),
+                  MPI_MAX,
+                  d_mpiComm);
+
+	    std::cout<<" maxNumPoints = "<<maxNumPoints<<" maxNumCells = "<<maxNumCells<<"\n";
     // create the RTree and the
     d_mapPoints.init(srcCells,
                      targetPts,

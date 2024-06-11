@@ -1368,7 +1368,8 @@ pcout<<" iB = "<<iBlock<<" occ = "<<d_4xeffectiveOrbitalOccupancyMemSpace.data()
                                                                                    dotProductOutputHost)
   {
 	   d_basisOperationsPtr->reinit(d_blockSize,
-                                 d_numCells,
+                                // d_cellBlockSize,
+				    d_numCells,
                                  d_matrixFreeQuadratureComponentRhs,
                                  true, // TODO should this be set to true
                                  false); // TODO should this be set to true

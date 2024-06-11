@@ -282,7 +282,7 @@ main(int argc, char *argv[])
 
       if ( runParams.useDevice == false)
       {
-      dftfe::inverseDFT<2,2,dftfe::utils::MemorySpace::HOST> invDFTObj(*dftBasePtr,
+      dftfe::inverseDFT<4,4,dftfe::utils::MemorySpace::HOST> invDFTObj(*dftBasePtr,
                                   dftParams,
                                   invParams,
                                   dftBasePtr->getMPIParent(),
@@ -297,7 +297,7 @@ main(int argc, char *argv[])
 #ifdef DFTFE_WITH_DEVICE
       if ( runParams.useDevice == true)
       {
-      dftfe::inverseDFT<2,2,dftfe::utils::MemorySpace::DEVICE> invDFTObj(*dftBasePtr,
+      dftfe::inverseDFT<4,4,dftfe::utils::MemorySpace::DEVICE> invDFTObj(*dftBasePtr,
                                   dftParams,
                                   invParams,
                                   dftBasePtr->getMPIParent(),

@@ -208,7 +208,7 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   KohnShamHamiltonianOperator<memorySpace>::computeVEff(
-    std::shared_ptr<AuxDensityMatrix> auxDensityRepresentation,
+    std::shared_ptr<AuxDensityMatrix> auxDensityXCRepresentation,
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
       &                phiValues,
     const unsigned int spinIndex)
@@ -269,7 +269,7 @@ namespace dftfe
     quadWeightsAll.copyTo(quadWeightsAllStdVec);
 
     d_excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
-      auxDensityRepresentation,
+      auxDensityXCRepresentation,
       quadPointsAllStdVec,
       quadWeightsAllStdVec,
       xDataOut,
@@ -288,8 +288,8 @@ namespace dftfe
           gradDensityXC[0];
         densityData[DensityDescriptorDataAttributes::gradValuesSpinDown] =
           gradDensityXC[1];
-        auxDensityRepresentation->applyLocalOperations(quadPointsAllStdVec,
-                                                       densityData);
+        auxDensityXCRepresentation->applyLocalOperations(quadPointsAllStdVec,
+                                                         densityData);
       }
 
     const std::vector<double> &gradDensityXCSpinIndex =

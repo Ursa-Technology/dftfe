@@ -85,7 +85,7 @@ namespace dftfe
      */
     void
     computeVEff(
-      std::shared_ptr<AuxDensityMatrix> auxDensityRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix> auxDensityXCRepresentationPtr,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
         &                phiValues,
       const unsigned int spinIndex = 0);

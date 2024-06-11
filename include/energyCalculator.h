@@ -168,40 +168,10 @@ namespace dftfe
         &gradDensityInValues,
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &                                                  gradDensityOutValues,
-      const std::map<dealii::CellId, std::vector<double>> &rhoCoreValues,
-      const std::map<dealii::CellId, std::vector<double>> &gradRhoCoreValues,
-      double &                                             exchangeEnergy,
-      double &                                             correlationEnergy,
+        &     gradDensityOutValues,
+      double &exchangeEnergy,
+      double &correlationEnergy,
       double &excCorrPotentialTimesRho);
-
-    void
-    computeXCEnergyTerms(
-      const std::shared_ptr<
-        dftfe::basis::FEBasisOperations<dataTypes::number,
-                                        double,
-                                        dftfe::utils::MemorySpace::HOST>>
-        &                               basisOperationsPtr,
-      const unsigned int                quadratureId,
-      const std::shared_ptr<excManager> excManagerPtr,
-      const std::vector<
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &densityInValues,
-      const std::vector<
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &densityOutValues,
-      const std::vector<
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &gradDensityInValues,
-      const std::vector<
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &                                                  gradDensityOutValues,
-      const std::map<dealii::CellId, std::vector<double>> &rhoCoreValues,
-      const std::map<dealii::CellId, std::vector<double>> &gradRhoCoreValues,
-      double &                                             exchangeEnergy,
-      double &                                             correlationEnergy,
-      double &excCorrPotentialTimesRho);
-
 
     double
     computeEntropicEnergy(const std::vector<std::vector<double>> &eigenValues,

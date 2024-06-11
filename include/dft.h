@@ -1025,7 +1025,7 @@ namespace dftfe
 
 
     void
-    updateAuxDensityMatrix(
+    updateAuxDensityXCMatrix(
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &densityQuadValues,
@@ -1043,7 +1043,7 @@ namespace dftfe
         &eigenVectorsFlattenedDevice,
 #endif
       const std::vector<std::vector<double>> &eigenValues,
-      std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixInPtr);
+      std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixXCInPtr);
 
     std::shared_ptr<excManager> d_excManagerPtr;
     dispersionCorrection        d_dispersionCorr;
@@ -1473,7 +1473,8 @@ namespace dftfe
       d_densityTotalOutValuesLpspQuad, d_densityTotalInValuesLpspQuad,
       d_gradDensityTotalOutValuesLpspQuad, d_gradDensityTotalInValuesLpspQuad;
 
-    std::shared_ptr<AuxDensityMatrix> d_auxDensityMatrixInPtr;
+    std::shared_ptr<AuxDensityMatrix> d_auxDensityMatrixXCInPtr;
+    std::shared_ptr<AuxDensityMatrix> d_auxDensityMatrixXCOutPtr;
 
     // For multipole boundary conditions
     double              d_monopole;

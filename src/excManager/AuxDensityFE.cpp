@@ -33,15 +33,46 @@ namespace dftfe
 
   void
   AuxDensityFE::applyLocalOperations(
-    const std::vector<double> &                                     Points,
+    const std::vector<double> &                                     points,
     std::map<DensityDescriptorDataAttributes, std::vector<double>> &densityData)
   {
+    std::pair<size_t, size_t> indexRange;
+
+    unsigned int minIndex = 0;
+    for (unsigned int i = 0; i < d_quadWeightsAll.size(); i++)
+      {
+        if (std::abs(points[0] - d_quadPointsAll[3 * i + 0]) +
+              std::abs(points[1] - d_quadPointsAll[3 * i + 1]) +
+              std::abs(points[2] - d_quadPointsAll[3 * i + 2]) <
+            1e-6)
+          {
+            minIndex = i;
+            break;
+          }
+      }
+
+    unsigned int maxIndex = 0;
+    for (unsigned int i = 0; i < d_quadWeightsAll.size(); i++)
+      {
+        if (std::abs(points[points.size() - 3] - d_quadPointsAll[3 * i + 0]) +
+              std::abs(points[points.size() - 2] - d_quadPointsAll[3 * i + 1]) +
+              std::abs(points[points.size() - 1] - d_quadPointsAll[3 * i + 2]) <
+            1e-6)
+          {
+            maxIndex = i;
+            break;
+          }
+      }
+
+    indexRange.first  = minIndex;
+    indexRange.second = maxIndex;
+
     if (densityData.find(DensityDescriptorDataAttributes::valuesTotal) ==
         densityData.end())
       {
         this->fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::valuesTotal],
-          d_densityValsTotal,
+          d_densityValsTotalAllQuads,
           indexRange);
       }
 
@@ -50,7 +81,7 @@ namespace dftfe
       {
         this->fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::valuesSpinUp],
-          d_densityValsSpinUp,
+          d_densityValsSpinUpAllQuads,
           indexRange);
       }
 
@@ -59,7 +90,7 @@ namespace dftfe
       {
         this->fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::valuesSpinDown],
-          d_densityValsSpinDown,
+          d_densityValsSpinDownAllQuads,
           indexRange);
       }
 
@@ -68,7 +99,7 @@ namespace dftfe
       {
         this->fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::gradValueSpinUp],
-          d_gradDensityValsSpinUp,
+          d_gradDensityValsSpinUpAllQuads,
           indexRange);
       }
 
@@ -77,7 +108,7 @@ namespace dftfe
       {
         this->fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::gradValueSpinDown],
-          d_gradDensityValsSpinDown,
+          d_gradDensityValsSpinDownAllQuads,
           indexRange);
       }
   }
@@ -105,34 +136,41 @@ namespace dftfe
     std::unordered_map<std::string, std::vector<double>> &projectionInputs);
 
   {
-    d_quadPointsSet  = QPts;
-    d_quadWeightsSet = QWt;
-    d_densityValsTotal.resize(nQ, 0);
-    d_densityValsSpinUp.resize(nQ, 0);
-    d_densityValsSpinDown.resize(nQ, 0);
+    d_quadPointsAll  = projectionInputs["quadpts"];
+    d_quadWeightsAll = projectionInputs["quadWt"];
+    const std::vector<double> &densityVals =
+      projectionInputs["densityFunc"]->second;
+    const unsigned int nQ = d_quadPointsAll.size();
+    d_densityValsTotalAllquads.resize(nQ, 0);
+    d_densityValsSpinUpAllQuads.resize(nQ, 0);
+    d_densityValsSpinDownAllQuads.resize(nQ, 0);
     for (unsigned int iquad = 0; iquad < nQ; iquad++)
-      d_densityValsSpinUp[iquad] = densityVals[iquad];
-
-    for (unsigned int iquad = 0; iquad < nQ; iquad++)
-      d_densityValsSpinDown[iquad] = densityVals[nQ + iquad];
-
-    for (unsigned int iquad = 0; iquad < nQ; iquad++)
-      d_densityValsTotal[iquad] =
-        d_densityValsSpinUp[iquad] + d_densityValsSpinDown[iquad];
-
-
-    d_gradDensityValsSpinUp.resize(nQ * 3, 0);
-    d_gradDensityValsSpinDown.resize(nQ * 3, 0);
+      d_densityValsSpinUpAllQuads[iquad] = densityVals[iquad];
 
     for (unsigned int iquad = 0; iquad < nQ; iquad++)
-      for (idim = 0; idim < 3; idim++)
-        d_gradDensityValsSpinUp[3 * iquad + idim] =
-          gradDensityVals[3 * iquad + idim];
+      d_densityValsSpinDownAllQuads[iquad] = densityVals[nQ + iquad];
 
     for (unsigned int iquad = 0; iquad < nQ; iquad++)
-      for (idim = 0; idim < 3; idim++)
-        d_gradDensityValsSpinDown[3 * iquad + idim] =
-          gradDensityVals[3 * nQ + 3 * iquad + idim];
+      d_densityValsTotalAllQuads[iquad] = d_densityValsSpinUpAllQuads[iquad] +
+                                          d_densityValsSpinDownAllQuads[iquad];
+
+    if (projectionInputs.find("gradDensityFunc") != projectionInputs.end())
+      {
+        const std::vector<double> &gradDensityVals =
+          projectionInputs["gradDensityFunc"];
+        d_gradDensityValsSpinUpAllQuads.resize(nQ * 3, 0);
+        d_gradDensityValsSpinDownAllQuads.resize(nQ * 3, 0);
+
+        for (unsigned int iquad = 0; iquad < nQ; iquad++)
+          for (idim = 0; idim < 3; idim++)
+            d_gradDensityValsSpinUpAllQuads[3 * iquad + idim] =
+              gradDensityVals[3 * iquad + idim];
+
+        for (unsigned int iquad = 0; iquad < nQ; iquad++)
+          for (idim = 0; idim < 3; idim++)
+            d_gradDensityValsSpinDownAllQuads[3 * iquad + idim] =
+              gradDensityVals[3 * nQ + 3 * iquad + idim];
+      }
   }
 
 

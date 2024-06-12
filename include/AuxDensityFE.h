@@ -17,10 +17,10 @@ namespace dftfe
     // Constructor
     AuxDensityFE();
 
-    // CAUTION: Points have to be a subset of d_quadPointsSet
+    // CAUTION: points have to be a contiguous subset of d_quadPointsSet
     void
     applyLocalOperations(
-      const std::vector<double> &Points,
+      const std::vector<double> &points,
       std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
         &densityData) override;
 
@@ -37,6 +37,8 @@ namespace dftfe
 
     /**
      * @brief Projects the quadrature density to aux basis (L2 projection).
+     * This is actually a copy call all the quadrature points must
+     * to be passed to this function in one go
      *
      * @param projectionInputs is a map from string to inputs needed
      *                          for projection.
@@ -63,13 +65,13 @@ namespace dftfe
 
 
   private:
-    std::vector<double> d_densityValsTotal;
-    std::vector<double> d_densityValsSpinUp;
-    std::vector<double> d_densityValsSpinDown;
-    std::vector<double> d_gradDensityValsSpinUp;
-    std::vector<double> d_gradDensityValsSpinDown;
-    std::vector<double> d_quadPointsSet;
-    std::vector<double> d_quadWeightsSet;
+    std::vector<double> d_densityValsTotalAllQuads;
+    std::vector<double> d_densityValsSpinUpAllQuads;
+    std::vector<double> d_densityValsSpinDownAllQuads;
+    std::vector<double> d_gradDensityValsSpinUpAllQuads;
+    std::vector<double> d_gradDensityValsSpinDownAllQuads;
+    std::vector<double> d_quadPointsAll;
+    std::vector<double> d_quadWeightsAll;
   };
 } // namespace dftfe
 

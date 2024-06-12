@@ -245,15 +245,12 @@ namespace dftfe
   template<unsigned int FEOrder, unsigned int FEOrderElectro, dftfe::utils::MemorySpace memorySpace>
   void inverseDFT<FEOrder,FEOrderElectro,memorySpace>::createParentChildDofManager()
   {
-    /*
+    
 
-        dftParameters dftParamsVxc(dftParams);
+        dftParameters dftParamsVxc(d_dftParams);
 
-        dftParamsVxc.innerAtomBallRadius = dftParams.VxcInnerDomain;
-        dftParamsVxc.meshSizeInnerBall = dftParams.VxcInnerMeshSize;
-        dftParamsVxc.meshSizeOuterDomain = dftParams.meshSizeOuterDomain;
-        dftParamsVxc.outerAtomBallRadius = dftParams.outerAtomBallRadius;
-        dftParamsVxc.meshSizeOuterBall = dftParams.meshSizeOuterBall;
+        dftParamsVxc.innerAtomBallRadius = d_inverseDFTParams.VxcInnerDomain;
+        dftParamsVxc.meshSizeInnerBall = d_inverseDFTParams.VxcInnerMeshSize;
 
         triangulationManager dftTriaManagerVxc(d_mpiComm_parent,
             d_mpiComm_domain,
@@ -262,14 +259,28 @@ namespace dftfe
             1,
             dftParamsVxc);
 
-        dftTriaManagerVxc.generateSerialUnmovedAndParallelMovedUnmovedMesh(
-            atomLocations,
-            :q);
-            */
-    const parallel::distributed::Triangulation<3> &parallelMeshUnmoved =
-      d_dftTriaManager->getParallelMeshUnmoved();
-    const parallel::distributed::Triangulation<3> &parallelMeshMoved =
-      d_dftTriaManager->getParallelMeshMoved();
+          // TODO does not assume periodic BCs.
+    std::vector<std::vector<double>> atomLocations =
+      d_dftBaseClass->getAtomLocationsCart();
+
+    const std::vector<std::vector<double>> & imageAtomsCart = d_dftBaseClass->getImageAtomLocationsCart();
+
+    const std::vector<int> & imageIdsTrunc = d_dftBaseClass->getImageAtomIDs();
+
+    const std::vector<double> & nearestAtomDist = d_dftBaseClass->getNearestAtomDistance();
+const std::vector<std::vector<double>> & domainBound = d_dftBaseClass->getCell();
+
+        dftTriaManagerVxc.generateSerialUnmovedAndParallelMovedUnmovedMesh( atomLocations,
+    imageAtomsCart,
+    imageIdsTrunc,
+    nearestAtomDist,
+    domainBound,
+    false); //generateSerialTria
+	    
+   // const parallel::distributed::Triangulation<3> &parallelMeshUnmoved =
+   //   d_dftTriaManager->getParallelMeshUnmoved();
+   // const parallel::distributed::Triangulation<3> &parallelMeshMoved =
+   //   d_dftTriaManager->getParallelMeshMoved();
     /*
               d_triaManagerVxcPtr = new TriangulationManagerVxc(d_mpiComm_parent,
                            d_mpiComm_domain,
@@ -283,40 +294,33 @@ namespace dftfe
 
 
 
-    // TODO does not assume periodic BCs.
-    std::vector<std::vector<double>> atomLocations =
-      d_dftBaseClass->getAtomLocationsCart();
-
     MPI_Barrier(d_mpiComm_domain);
     double meshStart = MPI_Wtime();
     //
     // @note This is compatible with only non-periodic boundary conditions as imageAtomLocations is not considered
     //
     d_triaManagerVxc.generateParallelUnmovedMeshVxc(
-      d_dftParams.meshSizeInnerBall, // TODO Read value from params  (This is
-                                     // the uniform mesh size for the vxc mesh)
-      parallelMeshUnmoved,
       atomLocations,
-      *d_dftTriaManager);
+      dftTriaManagerVxc);
 
     MPI_Barrier(d_mpiComm_domain);
     double meshEnd = MPI_Wtime();
     // TODO this function has been commented out
-    d_triaManagerVxc.generateParallelMovedMeshVxc(parallelMeshUnmoved,
-                                                  parallelMeshMoved);
+    //d_triaManagerVxc.generateParallelMovedMeshVxc(parallelMeshUnmoved,
+    //                                              parallelMeshMoved);
 
     //parallelMeshMoved = parallelMeshUnmoved;
     MPI_Barrier(d_mpiComm_domain);
     double                                         meshMoveEnd = MPI_Wtime();
-    const parallel::distributed::Triangulation<3> &parallelMeshMovedVxc =
-      d_triaManagerVxc.getParallelMovedMeshVxc();
+    //const parallel::distributed::Triangulation<3> &parallelMeshMovedVxc =
+    //  d_triaManagerVxc.getParallelMovedMeshVxc();
 
     const parallel::distributed::Triangulation<3> &parallelMeshUnmovedVxc =
       d_triaManagerVxc.getParallelUnmovedMeshVxc();
 
-    d_dofHandlerTriaVxc.reinit(parallelMeshMovedVxc);
+  //  d_dofHandlerTriaVxc.reinit(parallelMeshMovedVxc);
 
-//    d_dofHandlerTriaVxc.reinit(parallelMeshUnmovedVxc);
+    d_dofHandlerTriaVxc.reinit(parallelMeshUnmovedVxc);
 
     // TODO this hard coded to linear FE (which should be the usual case).
     // Read it from params file for generality

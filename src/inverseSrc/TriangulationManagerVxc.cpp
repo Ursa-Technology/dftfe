@@ -137,8 +137,6 @@ namespace dftfe
 
   void
   TriangulationManagerVxc::generateParallelUnmovedMeshVxc(
-    const double                                   xcut,
-    const parallel::distributed::Triangulation<3> &parallelMeshUnmoved,
     const std::vector<std::vector<double>> &       atomPositions,
     triangulationManager &                         dftTria)
   {
@@ -170,7 +168,7 @@ namespace dftfe
           ExcMessage(
             "DFT-FE error:  Vxc mesh partitioning is not consistent with the wave function mesh "));
     */
-    double minCellSize = getMinCellSize(parallelMeshUnmoved, d_mpi_comm_domain);
+    double minCellSize = getMinCellSize(d_parallelTriangulationUnmovedVxc, d_mpi_comm_domain);
     bool   meshSatisfied = false;
     // TODO change the flag for refinement to ensure no change in parallel
     // layout
@@ -209,7 +207,7 @@ namespace dftfe
         // DO not call repartition(). this ensures that the partitioning is
         // consistent
         d_parallelTriangulationUnmovedVxc.execute_coarsening_and_refinement();
-
+        d_parallelTriangulationUnmovedVxc.repartition();
         meshSatisfied =
           Utilities::MPI::min((unsigned int)meshSatisfied, d_mpi_comm_domain);
 

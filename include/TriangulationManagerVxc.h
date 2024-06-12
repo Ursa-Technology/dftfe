@@ -68,8 +68,6 @@ namespace dftfe
 
     void
     generateParallelUnmovedMeshVxc(
-      const double                                   xcut,
-      const parallel::distributed::Triangulation<3> &parallelMeshUnmoved,
       const std::vector<std::vector<double>> &       atomPositions,
       triangulationManager
         &dftTria); // TODO const triangulationManager will have been better but

@@ -5297,5 +5297,16 @@ namespace dftfe
       return interBandGroupComm;
     }
 
+
+template <unsigned int              FEOrder,
+              unsigned int              FEOrderElectro,
+              dftfe::utils::MemorySpace memorySpace>
+const std::vector<double> &
+dftClass<FEOrder, FEOrderElectro, memorySpace>::getNearestAtomDistance() const
+{
+	return d_nearestAtomDistances;
+}
+
+
 #include "dft.inst.cc"
 } // namespace dftfe

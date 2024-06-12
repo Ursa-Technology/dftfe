@@ -396,6 +396,9 @@ namespace dftfe
     getAtomLocationsCart() const;
 
 
+    const std::vector<double> & 
+	    getNearestAtomDistance() const;
+
     /**
      * @brief Gets the current image atom Locations in cartesian form
      * (origin at center of domain) from dftClass

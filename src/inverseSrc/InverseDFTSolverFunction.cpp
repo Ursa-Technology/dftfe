@@ -1252,7 +1252,7 @@ namespace dftfe
         pot[iSpin].zero_out_ghosts();
       }
     d_getForceCounter++;
-    d_resizeMemSpaceVecDuringInterpolation = false;
+    d_resizeMemSpaceVecDuringInterpolation = true;
   }
 
   template <unsigned int              FEOrder,

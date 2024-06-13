@@ -18,6 +18,7 @@
 //
 
 #include <dealiiLinearSolver.h>
+#include <boost/stacktrace.hpp>
 
 namespace dftfe
 {
@@ -89,7 +90,6 @@ namespace dftfe
             double old_alpha = 0.0;
             double omega     = 0.3;
 
-	    pcout << " norm of rhs = " << rhs.l2_norm() << "\n";
             // compute residual. if vector is zero, then short-circuit the full
             // computation
             if (!x.all_zero())
@@ -106,7 +106,6 @@ namespace dftfe
 
             res         = gvec.l2_norm();
             initial_res = res;
-            pcout << "initial res = " << initial_res << "\n";
             if (res < absTolerance)
               conv = true;
             if (conv)
@@ -148,8 +147,7 @@ namespace dftfe
 
                 if (res < absTolerance)
                   conv = true;
-                
-		pcout << "iter = " << it << " res = " << res << "\n";
+
 	      }
             if (!conv)
               {
@@ -194,5 +192,7 @@ namespace dftfe
     if (debugLevel >= 4)
       pcout << "Time for Poisson/Helmholtz problem CG iterations: " << time
             << std::endl;
+
+    std::cout << boost::stacktrace::stacktrace();
   }
 } // namespace dftfe

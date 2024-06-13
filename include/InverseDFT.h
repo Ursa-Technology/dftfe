@@ -214,7 +214,7 @@ namespace dftfe
       dftfe::basis::FEBasisOperations<dataTypes::number,
                                       double,
                                       memorySpace>> d_basisOperationsMemSpace,
-      d_basisOperationsElectroMemSpace, d_basisOperationsChildMemSpacePtr;
+      d_basisOperationsElectroMemSpace;
 
     std::shared_ptr<
       dftfe::basis::FEBasisOperations<dataTypes::number,

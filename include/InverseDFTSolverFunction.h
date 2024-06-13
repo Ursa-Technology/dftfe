@@ -71,8 +71,11 @@ namespace dftfe
       std::vector<std::shared_ptr<
         dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>>
         &basisOperationsParentPtr,
+      std::vector<std::shared_ptr<
+        dftfe::basis::FEBasisOperations<dataTypes::number, double, dftfe::utils::MemorySpace::HOST>>>
+        &basisOperationsParentHostPtr,
       std::shared_ptr<
-        dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
+        dftfe::basis::FEBasisOperations<dataTypes::number, double, dftfe::utils::MemorySpace::HOST>>
         & basisOperationsChildPtr,
       dftfe::KohnShamHamiltonianOperator<
         memorySpace> & kohnShamClass,
@@ -145,6 +148,9 @@ namespace dftfe
     std::vector<dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST>> d_rhoKSQuadDataHost;
     std::vector<dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST>> d_weightQuadDataHost;
     std::vector<dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST>> d_potBaseQuadDataHost;
+
+    std::vector<dftfe::utils::MemoryStorage<dataTypes::number,
+                                            dftfe::utils::MemorySpace::HOST>> d_potParentQuadDataForce, d_potParentQuadDataSolveEigen;
     dftfe::linearAlgebra::MultiVector<double,
       dftfe::utils::MemorySpace::HOST> d_adjointBlock;
     MultiVectorAdjointLinearSolverProblem<memorySpace> d_multiVectorAdjointProblem;
@@ -161,7 +167,7 @@ namespace dftfe
 
     dftfe::utils::MemoryStorage<double,
                                 memorySpace>
-    psiChildQuadDataMemorySpace, adjointChildQuadDataMemorySpace;
+    d_psiChildQuadDataMemorySpace, d_adjointChildQuadDataMemorySpace;
 
     // TODO remove this from gerForceVectorCPU
     dftfe::dftUtils::constraintMatrixInfo<memorySpace> constraintsMatrixPsiDataInfo,
@@ -237,12 +243,8 @@ namespace dftfe
 
     dealii::ConditionalOStream pcout;
 
-    // TODO implemented for debugging purpose
-    std::vector< dftfe::utils::MemoryStorage<double,
-                                            dftfe::utils::MemorySpace::HOST>>
-      d_targetPotValuesParentQuadData;
-
     bool d_resizeMemSpaceVecDuringInterpolation;
+    bool d_resizeMemSpaceBlockSizeChildQuad;
 
     dftfe::dftClass<FEOrder, FEOrder, memorySpace> *d_dftClassPtr;
 
@@ -252,11 +254,34 @@ namespace dftfe
       dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>>
       d_basisOperationsParentPtr;
 
+    std::vector<std::shared_ptr<
+      dftfe::basis::FEBasisOperations<dataTypes::number, double, dftfe::utils::MemorySpace::HOST>>>
+      d_basisOperationsParentHostPtr;
+
       std::shared_ptr<
-        dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
+        dftfe::basis::FEBasisOperations<dataTypes::number, double, dftfe::utils::MemorySpace::HOST>>
       d_basisOperationsChildPtr;
 
       unsigned int d_numCellBlockSizeParent, d_numCellBlockSizeChild;
+
+      dftfe::utils::MemoryStorage<dftfe::global_size_type, dftfe::utils::MemorySpace::HOST>
+        d_mapQuadIdsToProcId;
+
+      dftfe::utils::MemoryStorage<double, memorySpace>
+        d_sumPsiAdjointChildQuadPartialDataMemorySpace;
+
+      std::vector<
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>> rhoValues, gradRhoValues, rhoValuesSpinPolarized, gradRhoValuesSpinPolarized;
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> sumPsiAdjointChildQuadData;
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> sumPsiAdjointChildQuadDataPartial;
+      // u = rhoTarget - rhoKS
+      dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST > d_uValsHost;
+
+      dftfe::utils::MemoryStorage<double,memorySpace > d_uValsMemSpace;
+
+      dealii::TimerOutput d_computingTimerStandard;
+
+      std::vector<dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST>> rhoDiff;
 
   };
 } // end of namespace dftfe

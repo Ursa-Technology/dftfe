@@ -375,10 +375,6 @@ const std::vector<std::vector<double>> & domainBound = d_dftBaseClass->getCell()
     d_basisOperationsChildHostPtr->
     init(d_matrixFreeDataVxc, constraintsVector, 0, quadratureIDVec, updateFlags);
 
-    d_basisOperationsChildMemSpacePtr = std::make_shared<dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
-      (d_blasWrapperMemSpace);
-
-    d_basisOperationsChildMemSpacePtr->init(*(d_basisOperationsChildHostPtr.get()));
 
     d_dofHandlerVxcIndex = 0;
     d_quadVxcIndex       = 0;
@@ -3101,7 +3097,8 @@ const unsigned int nLocallyOwnedCells = d_dftMatrixFreeData->n_physical_cells();
       d_constraintMatrixVxc,
       d_blasWrapperMemSpace,
       d_basisOperationsAdjointMemSpacePtr,
-      d_basisOperationsChildMemSpacePtr,
+      d_basisOperationsAdjointHostPtr,
+      d_basisOperationsChildHostPtr,
       *kohnShamClassPtr,
       d_inverseDftDoFManagerObjPtr,
       d_kpointWeights,

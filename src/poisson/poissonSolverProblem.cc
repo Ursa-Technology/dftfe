@@ -164,17 +164,7 @@ namespace dftfe
   {
     dealii::DoFHandler<3>::active_cell_iterator subCellPtr;
     rhs.reinit(*d_xPtr);
-
-    distributedCPUVec<double> tempvecCheckSize;
-        
-     vectorTools::createDealiiVector<double>(
-          d_matrixFreeDataPtr->get_vector_partitioner(d_matrixFreeVectorComponent),
-          1,
-          tempvecCheckSize);
     rhs = 0;
-    tempvecCheckSize = 0;
-
-    pcout << " norm of rhs first = " << rhs.l2_norm() << "\n";
     if (d_isStoreSmearedChargeRhs)
       {
         d_rhsSmearedCharge.reinit(*d_xPtr);
@@ -184,19 +174,6 @@ namespace dftfe
     const dealii::DoFHandler<3> &dofHandler =
       d_matrixFreeDataPtr->get_dof_handler(d_matrixFreeVectorComponent);
 
-    if( dofHandler.n_locally_owned_dofs() != rhs.locally_owned_size())
-    {
-std::cout<<" locally owned size do not match inside compute \n";
-    }
-
-   if (!tempvecCheckSize.partitioners_are_globally_compatible(*(rhs.get_partitioner().get())))
-   {
-	   pcout<<" compute rhs is not compatible with rhs\n";
-   } 
-   else
-   {
-	   pcout<<" compute rhs is compatible with rhs\n";
-   }
     const unsigned int     dofs_per_cell = dofHandler.get_fe().dofs_per_cell;
     dealii::Vector<double> elementalRhs(dofs_per_cell);
     std::vector<dealii::types::global_dof_index> local_dof_indices(
@@ -212,8 +189,6 @@ std::cout<<" locally owned size do not match inside compute \n";
     tempvec.update_ghost_values();
     d_constraintsInfo.distribute(tempvec);
 
-    pcout << " norm of tempvec norm = " << tempvec.l2_norm() << "\n"; 
-
     dealii::FEEvaluation<3, FEOrderElectro, FEOrderElectro + 1> fe_eval(
       *d_matrixFreeDataPtr,
       d_matrixFreeVectorComponent,
@@ -221,19 +196,6 @@ std::cout<<" locally owned size do not match inside compute \n";
 
     const dealii::Quadrature<3> &quadratureRuleAxTemp =
       d_matrixFreeDataPtr->get_quadrature(d_matrixFreeQuadratureComponentAX);
-    const unsigned int numQuadPointsPerCellAx = quadratureRuleAxTemp.size();
-
-    pcout<<" FEOrderElectro = "<<FEOrderElectro<<"\n";
-    pcout<<" numQuadPointsPerCellAx = "<<numQuadPointsPerCellAx<<"\n";
-    pcout<<" fe_eval.n_q_points = "<<fe_eval.n_q_points<<"\n";
-    if( numQuadPointsPerCellAx == fe_eval.n_q_points)
-    {
-	   pcout<<" quad points in ax match \n";
-    }
-    else 
-    {
-	    pcout<<" quad points in ax dont match \n";
-    }
 
     int isPerformStaticCondensation = (tempvec.linfty_norm() > 1e-10) ? 1 : 0;
 
@@ -259,7 +221,6 @@ std::cout<<" locally owned size do not match inside compute \n";
           }
       }
 
-    pcout << " norm of rhs second = " << rhs.l2_norm() << "\n";
 
     // rhs contribution from electronic charge
     if (d_rhoValuesPtr)
@@ -272,7 +233,6 @@ std::cout<<" locally owned size do not match inside compute \n";
                           d_matrixFreeVectorComponent,
                           d_matrixFreeQuadratureComponentRhsDensity);
 
-	pcout<<" denisty quad points inside compute rhs = "<<fe_eval_density.n_q_points<<"\n";
         dealii::AlignedVector<dealii::VectorizedArray<double>> rhoQuads(
           fe_eval_density.n_q_points, dealii::make_vectorized_array(0.0));
         for (unsigned int macrocell = 0;
@@ -310,7 +270,6 @@ std::cout<<" locally owned size do not match inside compute \n";
           }
       }
 
-    pcout << " norm of rhs third = " << rhs.l2_norm() << "\n";
     // rhs contribution from atomic charge at fem nodes
     if (d_atomsPtr != NULL)
       for (std::map<dealii::types::global_dof_index, double>::const_iterator
@@ -437,25 +396,21 @@ std::cout<<" locally owned size do not match inside compute \n";
           }
       }
 
-    pcout << " norm of rhs fourth = " << rhs.l2_norm() << "\n";
     // MPI operation to sync data
     rhs.compress(dealii::VectorOperation::add);
 
     if (d_isReuseSmearedChargeRhs)
       rhs += d_rhsSmearedCharge;
 
-    pcout << " norm of rhs fifth = " << rhs.l2_norm() << "\n";
     if (d_isStoreSmearedChargeRhs)
       d_rhsSmearedCharge.compress(dealii::VectorOperation::add);
 
     if (d_isMeanValueConstraintComputed)
       meanValueConstraintDistributeSlaveToMaster(rhs);
 
-    pcout << " norm of rhs sizth = " << rhs.l2_norm() << "\n";
     // FIXME: check if this is really required
     d_constraintMatrixPtr->set_zero(rhs);
 
-    pcout << " norm of rhs seven = " << rhs.l2_norm() << "\n";
   }
 
   // Matrix-Free Jacobi preconditioner application
@@ -766,7 +721,6 @@ std::cout<<" locally owned size do not match inside compute \n";
   {
     Ax = 0.0;
 
-    pcout << " norm of x = " << x.l2_norm() << "\n";
     if (d_isMeanValueConstraintComputed)
       {
         meanValueConstraintDistribute(x);
@@ -790,7 +744,6 @@ std::cout<<" locally owned size do not match inside compute \n";
            std::make_pair(0, d_matrixFreeDataPtr->n_cell_batches()));
         Ax.compress(dealii::VectorOperation::add);
       }
-    pcout << " norm of Ax = " << Ax.l2_norm() << "\n";
   }
 
 #include "poissonSolverProblem.inst.cc"

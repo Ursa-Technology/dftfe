@@ -89,147 +89,6 @@ namespace dftfe
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
-  void
-  InverseDFTSolverFunction<FEOrder,FEOrderElectro,memorySpace>::preComputeChildShapeFunction()
-    {
-      // Quadrature for AX multiplication will FEOrderElectro+1
-      const dealii::Quadrature<3> &quadratureRuleChild =
-        d_matrixFreeDataChild->get_quadrature(d_matrixFreeQuadratureComponentPot);
-      const unsigned int numQuadraturePointsPerCellChild =
-        quadratureRuleChild.size();
-      //std::cout<<" numQuadraturePointsPerCellChild = "<<numQuadraturePointsPerCellChild<<"\n";
-      const unsigned int numTotalQuadraturePointsChild =
-        d_numLocallyOwnedCellsChild * numQuadraturePointsPerCellChild;
-
-      //std::cout<<" numTotalQuadraturePointsChild = "<<numTotalQuadraturePointsChild<<"\n";
-      dealii::FEValues<3> fe_valuesChild(d_dofHandlerChild->get_fe(),
-                                         quadratureRuleChild,
-                                         dealii::update_values |
-                                           dealii::update_JxW_values);
-
-      const unsigned int numberDofsPerElement =
-        d_dofHandlerChild->get_fe().dofs_per_cell;
-
-      //std::cout<<" numberDofsPerElement = "<<numberDofsPerElement<<"\n";
-      //
-      // resize data members
-      //
-
-      d_childCellJxW.resize(numTotalQuadraturePointsChild);
-
-      //std::cout<<" d_childCellJxW = "<<d_childCellJxW.size()<<"\n";
-      typename dealii::DoFHandler<3>::active_cell_iterator
-        cell             = d_dofHandlerChild->begin_active(),
-        endc             = d_dofHandlerChild->end();
-      unsigned int iElem = 0;
-      for (; cell != endc; ++cell)
-        if (cell->is_locally_owned())
-          {
-            fe_valuesChild.reinit(cell);
-            if (iElem == 0)
-              {
-                // For the reference cell initalize the shape function values
-                d_childCellShapeFunctionValue.resize(
-                  numberDofsPerElement * numQuadraturePointsPerCellChild);
-
-                //std::cout<<" d_childCellShapeFunctionValue = "<<d_childCellShapeFunctionValue.size()<<"\n";
-                for (unsigned int iNode = 0; iNode < numberDofsPerElement;
-                     ++iNode)
-                  {
-                    for (unsigned int q_point = 0;
-                         q_point < numQuadraturePointsPerCellChild;
-                         ++q_point)
-                      {
-                        d_childCellShapeFunctionValue
-                          [numQuadraturePointsPerCellChild * iNode + q_point] =
-                            fe_valuesChild.shape_value(iNode, q_point);
-                      }
-                  }
-              }
-
-            for (unsigned int q_point = 0;
-                 q_point < numQuadraturePointsPerCellChild;
-                 ++q_point)
-              {
-                d_childCellJxW[(iElem * numQuadraturePointsPerCellChild) +
-                               q_point] = fe_valuesChild.JxW(q_point);
-              }
-            iElem++;
-          }
-    }
-
-    template <unsigned int              FEOrder,
-              unsigned int              FEOrderElectro,
-              dftfe::utils::MemorySpace memorySpace>
-    void
-    InverseDFTSolverFunction<FEOrder,FEOrderElectro,memorySpace>::preComputeParentJxW()
-    {
-      // Quadrature for AX multiplication will FEOrderElectro+1
-      const dealii::Quadrature<3> &quadratureRuleParent =
-        d_matrixFreeDataParent->get_quadrature(
-          d_matrixFreeQuadratureComponentAdjointRhs);
-      const unsigned int numQuadraturePointsPerCellParent =
-        quadratureRuleParent.size();
-      const unsigned int numTotalQuadraturePointsParent =
-        d_numLocallyOwnedCellsParent * numQuadraturePointsPerCellParent;
-
-      dealii::FEValues<3> fe_valuesParent(d_dofHandlerParent->get_fe(),
-                                          quadratureRuleParent,
-                                          dealii::update_values |
-                                            dealii::update_JxW_values);
-
-      const unsigned int numberDofsPerElement =
-        d_dofHandlerParent->get_fe().dofs_per_cell;
-
-      //
-      // resize data members
-      //
-
-      d_parentCellJxW.resize(numTotalQuadraturePointsParent);
-
-      typename dealii::DoFHandler<3>::active_cell_iterator
-        cell             = d_dofHandlerParent->begin_active(),
-        endc             = d_dofHandlerParent->end();
-      unsigned int iElem = 0;
-      for (; cell != endc; ++cell)
-        if (cell->is_locally_owned())
-          {
-            fe_valuesParent.reinit(cell);
-
-            if (iElem == 0)
-              {
-                // For the reference cell initalize the shape function values
-                d_shapeFunctionValueParent.resize(
-                  numberDofsPerElement * numQuadraturePointsPerCellParent);
-
-                for (unsigned int iNode = 0; iNode < numberDofsPerElement;
-                     ++iNode)
-                  {
-                    for (unsigned int q_point = 0;
-                         q_point < numQuadraturePointsPerCellParent;
-                         ++q_point)
-                      {
-                        d_shapeFunctionValueParent[iNode +
-                                                   q_point *
-                                                     numberDofsPerElement] =
-                          fe_valuesParent.shape_value(iNode, q_point);
-                      }
-                  }
-              }
-            for (unsigned int q_point = 0;
-                 q_point < numQuadraturePointsPerCellParent;
-                 ++q_point)
-              {
-                d_parentCellJxW[(iElem * numQuadraturePointsPerCellParent) +
-                                q_point] = fe_valuesParent.JxW(q_point);
-              }
-            iElem++;
-          }
-    }
-
-  template <unsigned int              FEOrder,
-            unsigned int              FEOrderElectro,
-            dftfe::utils::MemorySpace memorySpace>
     InverseDFTSolverFunction<FEOrder,FEOrderElectro,memorySpace>::InverseDFTSolverFunction(
     const MPI_Comm &mpi_comm_parent,
     const MPI_Comm &mpi_comm_domain,
@@ -244,8 +103,13 @@ namespace dftfe
     ,
     pcout(std::cout,
           (dealii::Utilities::MPI::this_mpi_process(d_mpi_comm_parent) == 0))
+  , d_computingTimerStandard(mpi_comm_domain,
+                               pcout,
+                               dealii::TimerOutput::summary,
+                               dealii::TimerOutput::wall_times)
   {
     d_resizeMemSpaceVecDuringInterpolation = true;
+    d_resizeMemSpaceBlockSizeChildQuad = true;
     d_lossPreviousIteration = 0.0;
   
     d_numCellBlockSizeParent= 100;
@@ -273,8 +137,11 @@ namespace dftfe
     std::vector<std::shared_ptr<
       dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>> &
       basisOperationsParentPtr,
+    std::vector<std::shared_ptr<
+      dftfe::basis::FEBasisOperations<dataTypes::number, double, dftfe::utils::MemorySpace::HOST>>>
+      &basisOperationsParentHostPtr,
     std::shared_ptr<
-      dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>> &
+      dftfe::basis::FEBasisOperations<dataTypes::number, double, dftfe::utils::MemorySpace::HOST>> &
       basisOperationsChildPtr,
     dftfe::KohnShamHamiltonianOperator<
       memorySpace> & kohnShamClass,
@@ -299,6 +166,7 @@ namespace dftfe
 
     d_BLASWrapperPtr = BLASWrapperPtr;
     d_basisOperationsParentPtr        = basisOperationsParentPtr;
+    d_basisOperationsParentHostPtr    = basisOperationsParentHostPtr;
     d_basisOperationsChildPtr        = basisOperationsChildPtr;
 
     d_dftClassPtr                                = &dftClass;
@@ -464,7 +332,31 @@ namespace dftfe
       distributedCPUVec<double>(locally_owned_dofs_,
                                 ghost_indices_,
                                 d_mpi_comm_domain);
+    d_potParentQuadDataForce.resize(d_numSpins);
+    d_potParentQuadDataSolveEigen.resize(d_numSpins);
 
+      const dealii::Quadrature<3> &quadratureRuleChild =
+      d_matrixFreeDataChild->get_quadrature(d_matrixFreeQuadratureComponentPot);
+    const unsigned int numQuadraturePointsPerCellChild =
+      quadratureRuleChild.size();
+
+
+    d_mapQuadIdsToProcId.resize(d_numLocallyOwnedCellsChild*numQuadraturePointsPerCellChild);
+
+    for(size_type i = 0 ; i < d_numLocallyOwnedCellsChild*numQuadraturePointsPerCellChild;i++)
+      {
+        d_mapQuadIdsToProcId.data()[i] = i;
+      }
+
+    d_basisOperationsParentHostPtr[d_matrixFreeAdjointVectorComponent]->reinit(
+                                                                            d_numEigenValues,
+                                                                            d_numCellBlockSizeParent,
+                                                                            d_matrixFreeQuadratureComponentAdjointRhs,
+                                                                            true ,
+                                                                            false);
+
+    d_sumPsiAdjointChildQuadPartialDataMemorySpace.resize(d_numLocallyOwnedCellsChild*numQuadraturePointsPerCellChild);
+//    d_parentCellJxW = d_basisOperationsParentHostPtr[d_matrixFreeAdjointVectorComponent]->JxW();
 
 //    d_solutionPotVecForWritingInParentNodesMFVec.resize(d_numSpins);
 //    d_solutionPotVecForWritingInParentNodes.resize(d_numSpins);
@@ -483,6 +375,37 @@ namespace dftfe
         preComputeChildShapeFunction();
         preComputeParentJxW();
       }
+
+    d_kohnShamClass->resetExtPotHamFlag();
+    d_kohnShamClass->setVEffExternalPotCorrToZero();
+    d_kohnShamClass->computeCellHamiltonianMatrixExtPotContribution();
+
+    const dealii::Quadrature<3> &quadratureRuleParent =
+      d_matrixFreeDataParent->get_quadrature(
+        d_matrixFreeQuadratureComponentAdjointRhs);
+    const unsigned int numQuadraturePointsPerCellParent =
+      quadratureRuleParent.size();
+
+    d_uValsHost.resize(d_numLocallyOwnedCellsParent*numQuadraturePointsPerCellParent);
+    d_uValsMemSpace.resize(d_numLocallyOwnedCellsParent*numQuadraturePointsPerCellParent);
+
+
+    rhoValues.resize(d_numSpins, dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(numQuadraturePointsPerCellParent*
+                                                                                                      d_numLocallyOwnedCellsParent));
+
+    rhoValuesSpinPolarized.resize(d_numSpins, dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(numQuadraturePointsPerCellParent*
+                                                                                                                   d_numLocallyOwnedCellsParent));
+
+    gradRhoValues.resize(d_numSpins, dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(3.0*numQuadraturePointsPerCellParent*
+                                                                                                          d_numLocallyOwnedCellsParent));
+
+    gradRhoValuesSpinPolarized.resize(d_numSpins, dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(3.0*numQuadraturePointsPerCellParent*
+                                                                                                                       d_numLocallyOwnedCellsParent));
+    rhoDiff.resize(
+      d_numSpins,
+      dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST>(
+        d_numLocallyOwnedCellsParent*numQuadraturePointsPerCellParent));
+
   }
 
 
@@ -556,16 +479,8 @@ namespace dftfe
     std::vector<distributedCPUVec<double>> &force,
     std::vector<double> &                   loss)
   {
-    dealii::TimerOutput computingTimerStandard(
-      d_kohnShamClass->getMPICommunicatorDomain(),
-      pcout,
-      d_dftParams->reproducible_output || d_dftParams->verbosity < 2 ?
-        dealii::TimerOutput::never :
-        dealii::TimerOutput::every_call,
-      dealii::TimerOutput::wall_times);
-
-
-
+    d_computingTimerStandard.reset();
+    d_computingTimerStandard.enter_subsection("Get Force Vector");
     pcout << "Inside force vector \n";
     for (unsigned int iSpin = 0; iSpin < d_numSpins; ++iSpin)
       {
@@ -574,16 +489,16 @@ namespace dftfe
         d_constraintMatrixPot->distribute(pot[iSpin]);
               pot[iSpin].update_ghost_values();
       }
-    computingTimerStandard.enter_subsection(
-      "SolveEigen in inverse call on CPU");
+    d_computingTimerStandard.enter_subsection(
+      "SolveEigen in inverse call");
     this->solveEigen(pot);
-    computingTimerStandard.leave_subsection(
-      "SolveEigen in inverse call on CPU");
+    d_computingTimerStandard.leave_subsection(
+      "SolveEigen in inverse call");
     const dftfe::utils::MemoryStorage<dataTypes::number,
                                       memorySpace>
                                            & eigenVectorsMemSpace = d_dftClassPtr->getEigenVectors();
 
-    //std::cout<<"eigenVectorsMemSpace size = "<< eigenVectorsMemSpace.size()<<"\n";
+
     const std::vector<std::vector<double>> &eigenValuesHost =
       d_dftClassPtr->getEigenValues();
     const double fermiEnergy = d_dftClassPtr->getFermiEnergy();
@@ -604,20 +519,6 @@ namespace dftfe
     const unsigned int numTotalQuadraturePointsChild =
       d_numLocallyOwnedCellsChild * numQuadraturePointsPerCellChild;
 
-    std::vector<
-      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>> rhoValues, gradRhoValues, rhoValuesSpinPolarized, gradRhoValuesSpinPolarized;
-
-    rhoValues.resize(d_numSpins, dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(numQuadraturePointsPerCellParent*
-                                                                                                           d_numLocallyOwnedCellsParent));
-
-    rhoValuesSpinPolarized.resize(d_numSpins, dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(numQuadraturePointsPerCellParent*
-                                                                                                           d_numLocallyOwnedCellsParent));
-
-    gradRhoValues.resize(d_numSpins, dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(3.0*numQuadraturePointsPerCellParent*
-                                                                                                           d_numLocallyOwnedCellsParent));
-
-    gradRhoValuesSpinPolarized.resize(d_numSpins, dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(3.0*numQuadraturePointsPerCellParent*
-                                                                                                           d_numLocallyOwnedCellsParent));
 
     typename dealii::DoFHandler<3>::active_cell_iterator cellPtr =
       d_dofHandlerParent->begin_active();
@@ -630,7 +531,7 @@ namespace dftfe
     // set to the same value (=fermi energy)
     // 2. No spectrum splitting
     //
-    pcout << "computeRhoFromPSIGPU\n";
+    d_computingTimerStandard.enter_subsection("Calculating Density");
     dftfe::computeRhoFromPSI<dataTypes::number>(&eigenVectorsMemSpace,
                                                  &eigenVectorsMemSpace,
                                                  d_numEigenValues,
@@ -654,60 +555,12 @@ namespace dftfe
                                                  false // spectrum splitting
                                                  );
 
-    pcout<<" computed density \n";
+    d_computingTimerStandard.leave_subsection("Calculating Density");
 
     force.resize(d_numSpins);
 
-    std::vector<std::vector<double>> partialOccupancies(
-      d_numKPoints, std::vector<double>(d_numSpins * d_numEigenValues, 0.0));
-
-    for (unsigned int spinIndex = 0; spinIndex < d_numSpins; ++spinIndex)
-      {
-        for (unsigned int kPoint = 0; kPoint < d_numKPoints; ++kPoint)
-          {
-            //pcout << " before partial occupancy " << kPoint << " \n";
-            for (unsigned int iWave = 0; iWave < d_numEigenValues; ++iWave)
-              {
-                const double eigenValue =
-                  eigenValuesHost[kPoint][d_numEigenValues * spinIndex + iWave];
-                partialOccupancies[kPoint][d_numEigenValues * spinIndex +
-                                           iWave] =
-                  dftUtils::getPartialOccupancy(eigenValue,
-                                                fermiEnergy,
-                                                C_kb,
-                                                d_dftParams->TVal);
-
-                if (d_dftParams->constraintMagnetization)
-                  {
-                    partialOccupancies[kPoint][d_numEigenValues * spinIndex +
-                                               iWave] = 1.0;
-                    if (spinIndex == 0)
-                      {
-                        if (eigenValue > fermiEnergy) // fermi energy up
-                          partialOccupancies[kPoint]
-                                            [d_numEigenValues * spinIndex +
-                                             iWave] = 0.0;
-                      }
-                    else if (spinIndex == 1)
-                      {
-                        if (eigenValue > fermiEnergy) // fermi energy down
-                          partialOccupancies[kPoint]
-                                            [d_numEigenValues * spinIndex +
-                                             iWave] = 0.0;
-                      }
-                  }
-              }
-          }
-      }
-
-
-    std::vector<dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST>> rhoDiff(
-      d_numSpins,
-      dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST>(
-        d_numLocallyOwnedCellsParent*numQuadraturePointsPerCellParent));
-
     //
-    // @note: d_rhoTargetQuadDataHost for spin unploarized case stores only the
+    // @note: d_rhoTargetQuadDataHost for spin unpolarized case stores only the
     // rho_up (which is also equals tp rho_down) and not the total rho.
     // Accordingly, while taking the difference with the KS rho, we use half of
     // the total KS rho
@@ -728,7 +581,6 @@ namespace dftfe
                          iQuad < numQuadraturePointsPerCellParent;
                          ++iQuad)
                       {
-                        const dealii::CellId cellId = cellPtr->id();
                         rhoDiff[iSpin].data()[iCell*numQuadraturePointsPerCellParent+iQuad] =
                           (d_rhoTargetQuadDataHost[iSpin].data()[iCell *numQuadraturePointsPerCellParent + iQuad] -
                            0.5 * rhoValues[iSpin].data()[iCell*numQuadraturePointsPerCellParent + iQuad]);
@@ -749,7 +601,6 @@ namespace dftfe
                          ++iQuad)
                       {
                         // TODO check the spin polarised case
-                        const dealii::CellId cellId = cellPtr->id();
                         rhoDiff[iSpin].data()[iCell* numQuadraturePointsPerCellParent + iQuad] =
                           (d_rhoTargetQuadDataHost[iSpin].data()[iCell* numQuadraturePointsPerCellParent + iQuad] -
                            rhoValuesSpinPolarized[iSpin].data()[iCell * numQuadraturePointsPerCellParent + iQuad]); // TODO check the spin polarised case
@@ -762,16 +613,12 @@ namespace dftfe
 
     std::vector<double>              lossUnWeighted(d_numSpins, 0.0);
     std::vector<double>              errorInVxc(d_numSpins, 0.0);
-    std::vector<dftfe::utils::MemoryStorage<dataTypes::number,
-                                            dftfe::utils::MemorySpace::HOST>> potParentQuadData(
-        d_numSpins,
-        dftfe::utils::MemoryStorage<dataTypes::number,
-                                    dftfe::utils::MemorySpace::HOST>(numQuadraturePointsPerCellParent *
-                                                                       d_numLocallyOwnedCellsParent,
-                                                                     0.0));
+
+
 
     for (unsigned int iSpin = 0; iSpin < d_numSpins; ++iSpin)
       {
+        d_computingTimerStandard.enter_subsection("Create Force Vector");
         vectorTools::createDealiiVector<double>(
           d_matrixFreeDataChild->get_vector_partitioner(
             d_matrixFreePotVectorComponent),
@@ -779,39 +626,32 @@ namespace dftfe
           force[iSpin]);
 
         force[iSpin] = 0.0;
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> sumPsiAdjointChildQuadData(
-          numTotalQuadraturePointsChild, 0.0);
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> sumPsiAdjointChildQuadDataPartial(
-          numTotalQuadraturePointsChild, 0.0);
 
-        dftfe::utils::MemoryStorage<double, memorySpace>
-          sumPsiAdjointChildQuadDataMemorySpace(numTotalQuadraturePointsChild, 0.0);
+        d_computingTimerStandard.leave_subsection("Create Force Vector");
 
-        // u = rhoTarget - rhoKS
-        dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST > uValsHost;
-
-        dftfe::utils::MemoryStorage<double,memorySpace > uValsMemSpace;
-
-        uValsHost.resize(d_numLocallyOwnedCellsParent*numQuadraturePointsPerCellParent);
-        uValsMemSpace.resize(d_numLocallyOwnedCellsParent*numQuadraturePointsPerCellParent);
-
-
+        sumPsiAdjointChildQuadData.resize(numTotalQuadraturePointsChild);
+        std::fill(sumPsiAdjointChildQuadData.begin(),sumPsiAdjointChildQuadData.end(),0.0);
+        sumPsiAdjointChildQuadDataPartial.resize(numTotalQuadraturePointsChild);
+        std::fill(sumPsiAdjointChildQuadDataPartial.begin(),sumPsiAdjointChildQuadDataPartial.end(),0.0);
 
 
         loss[iSpin]       = 0.0;
         errorInVxc[iSpin] = 0.0;
-//        pcout<<" inter polating interpolateMesh2DataToMesh1QuadPoints 1 \n";
+
+        d_computingTimerStandard.enter_subsection("Interpolate To Parent Mesh");
         d_transferDataPtr->interpolateMesh2DataToMesh1QuadPoints(
-          pot[iSpin], 1, d_fullFlattenedMapChild,potParentQuadData[iSpin],d_resizeMemSpaceVecDuringInterpolation);
+          pot[iSpin], 1, d_fullFlattenedMapChild,d_potParentQuadDataForce[iSpin],d_resizeMemSpaceVecDuringInterpolation);
+        d_computingTimerStandard.leave_subsection("Interpolate To Parent Mesh");
+
+        d_computingTimerStandard.enter_subsection("Compute Rho vectors");
         for (unsigned int iCell = 0; iCell < d_numLocallyOwnedCellsParent;
              iCell++)
           {
-//            pcout<<" cell i = "<<iCell <<"\n";
             for (unsigned int iQuad = 0;
                  iQuad < numQuadraturePointsPerCellParent;
                  ++iQuad)
               {
-                uValsHost.data()[iCell* numQuadraturePointsPerCellParent +iQuad] = rhoDiff[iSpin].data()[iCell*numQuadraturePointsPerCellParent+ iQuad] *
+                d_uValsHost.data()[iCell* numQuadraturePointsPerCellParent +iQuad] = rhoDiff[iSpin].data()[iCell*numQuadraturePointsPerCellParent+ iQuad] *
                                                                               d_weightQuadDataHost[iSpin].data()[iCell*numQuadraturePointsPerCellParent + iQuad];
 
                 lossUnWeighted[iSpin] +=
@@ -827,23 +667,15 @@ namespace dftfe
                   d_parentCellJxW[iCell * numQuadraturePointsPerCellParent +
                                   iQuad];
 
-                double vxcDiff =
-                  (potParentQuadData[iSpin]
-                                    [iCell * numQuadraturePointsPerCellParent +
-                                     iQuad] -
-                   d_targetPotValuesParentQuadData[iSpin][iCell* numQuadraturePointsPerCellParent + iQuad]);
-                errorInVxc[iSpin] +=
-                  vxcDiff * vxcDiff *
-                  d_parentCellJxW[iCell * numQuadraturePointsPerCellParent +
-                                  iQuad];
               }
           }
 
-        uValsMemSpace.copyFrom(uValsHost);
+        d_uValsMemSpace.copyFrom(d_uValsHost);
 
         const unsigned int defaultBlockSize = d_dftParams->chebyWfcBlockSize;
 
 
+        d_computingTimerStandard.leave_subsection("Compute Rho vectors");
         for (unsigned int iKPoint = 0; iKPoint < d_numKPoints; ++iKPoint)
           {
 //            pcout << " kpoint loop before adjoint " << iKPoint
@@ -853,7 +685,8 @@ namespace dftfe
             unsigned int previousBlockSize = defaultBlockSize;
             while (jvec < d_numEigenValues)
               {
-//                pcout << " jvec = " << jvec << "\n";
+                d_computingTimerStandard.enter_subsection("Initialize Block Vectors");
+
                 unsigned int currentBlockSize =
                   std::min(defaultBlockSize, d_numEigenValues - jvec);
 
@@ -889,7 +722,6 @@ namespace dftfe
                       }
                   }
 
-//                pcout << " curr block size = " << currentBlockSize << "\n";
                 if (currentBlockSize != previousBlockSize || jvec == 0)
                   {
 
@@ -965,8 +797,13 @@ namespace dftfe
                     fullFlattenedArrayCellLocalProcIndexIdMapAdjointMemSpace
                       .copyFrom(
                         fullFlattenedArrayCellLocalProcIndexIdMapAdjointHost);
+
+                    d_resizeMemSpaceBlockSizeChildQuad =true;
                   }
 
+                d_computingTimerStandard.leave_subsection("Initialize Block Vectors");
+
+                d_computingTimerStandard.enter_subsection("Set Up MINRES");
                 //
                 // @note We assume that there is only homogenous Dirichlet BC
                 //
@@ -1005,7 +842,7 @@ namespace dftfe
                                  [d_numEigenValues * iSpin + iBlock + jvec];
 
                     effectiveOrbitalOccupancy[iBlock] =
-                      partialOccupancies[iKPoint][d_numEigenValues * iSpin +
+                      d_fractionalOccupancy[iKPoint][d_numEigenValues * iSpin +
                                                   iBlock + jvec] *
                       d_kpointWeights[iKPoint];
                   }
@@ -1017,7 +854,7 @@ namespace dftfe
                 d_multiVectorAdjointProblem.updateInputPsi(
                   psiBlockVecMemSpace,
                   effectiveOrbitalOccupancy,
-                  uValsMemSpace,
+                  d_uValsMemSpace,
                   degeneracyMap,
                   shiftValues,
                   currentBlockSize);
@@ -1025,7 +862,10 @@ namespace dftfe
                 double adjoinTolForThisIteration = 5.0 * d_tolForChebFiltering;
                 d_adjointTol =
                   std::min(d_adjointTol, adjoinTolForThisIteration);
-                pcout << " Tol for adjoint problem = " << d_adjointTol << "\n";
+
+                d_computingTimerStandard.leave_subsection("Set Up MINRES");
+
+                d_computingTimerStandard.enter_subsection("MINRES Solve");
                 d_multiVectorLinearMINRESSolver.solve(
                   d_multiVectorAdjointProblem,
                   d_BLASWrapperPtr,
@@ -1038,16 +878,9 @@ namespace dftfe
                   d_dftParams->verbosity,
                   true); // distributeFlag
 
-		    std::vector<double> l2NormVec(currentBlockSize,0.0);
+                d_computingTimerStandard.leave_subsection("MINRES Solve");
 
-    //multiVectorAdjointOutputWithPsiConstraintsMemSpace.l2Norm(&l2NormVec[0]);
-/*
-    pcout<<" multiVectorAdjointOutputWithPsiConstraintsMemSpace = \n";
-    for(unsigned int iB = 0; iB  < currentBlockSize ; iB++)
-    {
-            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
-    }
-    */
+                d_computingTimerStandard.enter_subsection("copy vec");
 
                 d_BLASWrapperPtr->xcopy(
                   currentBlockSize * numLocallyOwnedDofs,
@@ -1063,72 +896,38 @@ namespace dftfe
 
 		multiVectorAdjointOutputWithAdjointConstraintsMemSpace.updateGhostValues();
 	psiBlockVecMemSpace.updateGhostValues();
-		    //multiVectorAdjointOutputWithAdjointConstraintsMemSpace.l2Norm(&l2NormVec[0]);
 
-	/*
-    pcout<<" multiVectorAdjointOutputWithAdjointConstraintsMemSpace = \n";
-    for(unsigned int iB = 0; iB  < currentBlockSize ; iB++)
-    {
-            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
-    }
-    */
-
-
-                    //psiBlockVecMemSpace.l2Norm(&l2NormVec[0]);
-/*
-    pcout<<" psiBlockVecMemSpace = \n";
-    for(unsigned int iB = 0; iB  < currentBlockSize ; iB++)
-    {
-            pcout<<" iB = "<<iB<<" norm = "<<l2NormVec[iB]<<"\n";
-    }
-*/
-    computingTimerStandard.enter_subsection(
-                  "interpolate parent data to child quad on GPU");
+  d_computingTimerStandard.leave_subsection("copy vec");
+    d_computingTimerStandard.enter_subsection(
+                  "interpolate parent data to child quad");
                 d_transferDataPtr
                   ->interpolateMesh1DataToMesh2QuadPoints(
                     psiBlockVecMemSpace,
                     currentBlockSize,
                     fullFlattenedArrayCellLocalProcIndexIdMapPsiMemSpace,
-                    psiChildQuadDataMemorySpace,
-                    d_resizeMemSpaceVecDuringInterpolation);
+                    d_psiChildQuadDataMemorySpace,
+        d_resizeMemSpaceBlockSizeChildQuad);
 
                 d_transferDataPtr
                   ->interpolateMesh1DataToMesh2QuadPoints(
                     multiVectorAdjointOutputWithAdjointConstraintsMemSpace,
                     currentBlockSize,
                     fullFlattenedArrayCellLocalProcIndexIdMapAdjointMemSpace,
-                    adjointChildQuadDataMemorySpace,
-                    d_resizeMemSpaceVecDuringInterpolation);
-                computingTimerStandard.leave_subsection(
-                  "interpolate parent data to child quad on GPU");
-/*
-		 double normadjointChildQuad = 0.0;
-     d_BLASWrapperPtr->xnrm2(
-      currentBlockSize*numTotalQuadraturePointsChild,
-      adjointChildQuadDataMemorySpace.data(),
-      1,
-      d_mpi_comm_domain,
-      &normadjointChildQuad);
-     pcout<<" normadjointChildQuad = "<<normadjointChildQuad<<"\n";
+                    d_adjointChildQuadDataMemorySpace,
+                    d_resizeMemSpaceBlockSizeChildQuad);
+                d_computingTimerStandard.leave_subsection(
+                  "interpolate parent data to child quad");
 
-                   double normpsiChildQuadData = 0.0;
-     d_BLASWrapperPtr->xnrm2(
-      currentBlockSize*numTotalQuadraturePointsChild,
-      psiChildQuadDataMemorySpace.data(),
-      1,
-      d_mpi_comm_domain,
-      &normpsiChildQuadData);
-     pcout<<"  normpsiChildQuadData = "<<normpsiChildQuadData<<"\n";
-  */    
-     sumPsiAdjointChildQuadDataMemorySpace.setValue(0.0);
+                d_computingTimerStandard.enter_subsection("Compute P_i Psi_i");
+                d_sumPsiAdjointChildQuadPartialDataMemorySpace.setValue(0.0);
                 d_BLASWrapperPtr->addVecOverContinuousIndex(
                   numTotalQuadraturePointsChild,
                   currentBlockSize,
-                  psiChildQuadDataMemorySpace.data(),
-                  adjointChildQuadDataMemorySpace.data(),
-                  sumPsiAdjointChildQuadDataMemorySpace.data());
+                  d_psiChildQuadDataMemorySpace.data(),
+                  d_adjointChildQuadDataMemorySpace.data(),
+                  d_sumPsiAdjointChildQuadPartialDataMemorySpace.data());
 
-                sumPsiAdjointChildQuadDataPartial.copyFrom(sumPsiAdjointChildQuadDataMemorySpace);
+                sumPsiAdjointChildQuadDataPartial.copyFrom(d_sumPsiAdjointChildQuadPartialDataMemorySpace);
 
                 for (unsigned int iQuad = 0;
                      iQuad < numTotalQuadraturePointsChild;
@@ -1141,65 +940,32 @@ namespace dftfe
 
                 previousBlockSize = currentBlockSize;
 
+                d_computingTimerStandard.leave_subsection("Compute P_i Psi_i");
               } // block loop
           }     // kpoint loop
 
         // Assumes the block size is 1
         // if that changes, change the d_flattenedArrayCellChildCellMap
 
+        d_computingTimerStandard.enter_subsection("Integrate With Shape function");
         integrateWithShapeFunctionsForChildData(force[iSpin],
                                                 sumPsiAdjointChildQuadData);
-       
-       /*	
-	 double normsumPsiAdjoint = 0.0;
-     d_BLASWrapperPtr->xnrm2(
-      numTotalQuadraturePointsChild,
-      sumPsiAdjointChildQuadData.data(),
-      1,
-      d_mpi_comm_domain,
-      &normsumPsiAdjoint);
-     pcout<<"  normsumPsiAdjoint = "<<normsumPsiAdjoint<<"\n";
-*/	
+        d_computingTimerStandard.leave_subsection("Integrate With Shape function");
+
      pcout << "force norm = " << force[iSpin].l2_norm() << "\n";
-        if ((d_getForceCounter % d_inverseDFTParams->writeVxcFrequency == 0) &&
-            (d_inverseDFTParams->writeVxcData))
-          {
-            pcout << "writing force output\n";
-            force[iSpin].update_ghost_values();
-            d_constraintMatrixPot->distribute(force[iSpin]);
-            force[iSpin].update_ghost_values();
 
-            
-            dealii::DataOut<3> data_out_force;
-
-                        data_out_force.attach_dof_handler(*d_dofHandlerChild);
-
-                        std::string outputVecNameForce = "ForceOutput";
-
-                        data_out_force.add_data_vector(force[iSpin],
-            outputVecNameForce); data_out_force.write_vtu_with_pvtu_record("./",
-            "forceOutput", d_getForceCounter,d_mpi_comm_domain ,2, 4);
-                   
-          }
         d_constraintMatrixPot->set_zero(force[iSpin]);
         force[iSpin].zero_out_ghosts();
       } // spin loop
 
+    d_computingTimerStandard.enter_subsection("Post process");
     if ((d_getForceCounter % d_inverseDFTParams->writeVxcFrequency == 0) &&
         (d_inverseDFTParams->writeVxcData))
       {
-        //std::cout << " Norm of vxc written = " << pot[0].l2_norm() << "\n";
         writeVxcDataToFile(pot, d_getForceCounter);
       }
     MPI_Allreduce(MPI_IN_PLACE,
                   &loss[0],
-                  d_numSpins,
-                  MPI_DOUBLE,
-                  MPI_SUM,
-                  d_mpi_comm_domain);
-
-    MPI_Allreduce(MPI_IN_PLACE,
-                  &errorInVxc[0],
                   d_numSpins,
                   MPI_DOUBLE,
                   MPI_SUM,
@@ -1218,27 +984,8 @@ namespace dftfe
               << " loss unweighted = " << lossUnWeighted[iSpin] << "\n";
         pcout << " iter = " << d_getForceCounter
               << " vxc norm = " << pot[iSpin].l2_norm() << "\n";
-        pcout << " iter = " << d_getForceCounter
-              << " error In Vxc = " << errorInVxc[iSpin] << "\n";
       }
 
-    if ((d_getForceCounter % d_inverseDFTParams->writeVxcFrequency == 0) &&
-        (d_inverseDFTParams->writeVxcData))
-      {
-
-        pcout<<"writing solution";
-        dealii::DataOut<3>data_out;
-
-        data_out.attach_dof_handler(*d_dofHandlerChild);
-
-        std::string outputVecName = "solution";
-        data_out.add_data_vector(pot[0], outputVecName);
-
-        data_out.build_patches();
-        data_out.write_vtu_with_pvtu_record("./", "inverseVxc",
-                                            d_getForceCounter,d_mpi_comm_domain ,2, 4);
-
-      }
 
     d_lossPreviousIteration = loss[0];
     if (d_numSpins == 2)
@@ -1252,7 +999,12 @@ namespace dftfe
         pot[iSpin].zero_out_ghosts();
       }
     d_getForceCounter++;
-    d_resizeMemSpaceVecDuringInterpolation = true;
+    d_resizeMemSpaceVecDuringInterpolation = false;
+    d_resizeMemSpaceBlockSizeChildQuad = false;
+
+    d_computingTimerStandard.leave_subsection("Post process");
+    d_computingTimerStandard.leave_subsection("Get Force Vector");
+    d_computingTimerStandard.print_summary();
   }
 
   template <unsigned int              FEOrder,
@@ -1261,27 +1013,9 @@ namespace dftfe
   void InverseDFTSolverFunction<FEOrder,FEOrderElectro,memorySpace>::solveEigen(
     const std::vector<distributedCPUVec<double>> &pot)
   {
-    dealii::TimerOutput computingTimerStandard(
-      d_kohnShamClass->getMPICommunicatorDomain(),
-      pcout,
-      d_dftParams->reproducible_output || d_dftParams->verbosity < 2 ?
-        dealii::TimerOutput::never :
-        dealii::TimerOutput::every_call,
-      dealii::TimerOutput::wall_times);
 
     pcout << "Inside solve eigen\n";
 
-    double potL2Norm = 0.0;
-
-    for (unsigned int i = 0; i < pot[0].locally_owned_size(); i++)
-      {
-        potL2Norm += pot[0].local_element(i) * pot[0].local_element(i);
-      }
-
-    MPI_Allreduce(
-      MPI_IN_PLACE, &potL2Norm, 1, MPI_DOUBLE, MPI_SUM, d_mpi_comm_domain);
-
-    pcout << " norm2 of input pot = " << potL2Norm << "\n";
     const dealii::Quadrature<3> &quadratureRuleParent =
       d_matrixFreeDataParent->get_quadrature(
         d_matrixFreeQuadratureComponentAdjointRhs);
@@ -1312,26 +1046,19 @@ namespace dftfe
         d_tolForChebFiltering = 1e-10;
       }
 
-    pcout << " Tol for the eigen solve = " << d_tolForChebFiltering << "\n";
-    std::vector<dftfe::utils::MemoryStorage<dataTypes::number,
-                                            dftfe::utils::MemorySpace::HOST>> potParentQuadData(
-        d_numSpins, dftfe::utils::MemoryStorage<dataTypes::number,
-                                                dftfe::utils::MemorySpace::HOST>(numTotalQuadraturePoints, 0.0));
 
     for (unsigned int iSpin = 0; iSpin < d_numSpins; ++iSpin)
       {
-        computingTimerStandard.enter_subsection(
-          "interpolate child data to parent quad on CPU");
+        d_computingTimerStandard.enter_subsection(
+          "interpolate child data to parent quad");
         d_transferDataPtr->interpolateMesh2DataToMesh1QuadPoints(
-          pot[iSpin], 1, d_fullFlattenedMapChild,potParentQuadData[iSpin],d_resizeMemSpaceVecDuringInterpolation);
-        computingTimerStandard.leave_subsection(
-          "interpolate child data to parent quad on CPU");
+          pot[iSpin], 1, d_fullFlattenedMapChild,d_potParentQuadDataSolveEigen[iSpin],d_resizeMemSpaceVecDuringInterpolation);
+        d_computingTimerStandard.leave_subsection(
+          "interpolate child data to parent quad");
         std::vector<dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
           potKSQuadData(d_numSpins, dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
           d_numLocallyOwnedCellsParent*numQuadraturePointsPerCellParent));
-        pcout << "before cell loop before compute veff eigen\n";
 
-        double inputToHamil = 0.0;
         for (unsigned int iCell = 0; iCell < d_numLocallyOwnedCellsParent;
              ++iCell)
           {
@@ -1341,39 +1068,23 @@ namespace dftfe
               {
                 potKSQuadData[iSpin].data()[iCell* numQuadraturePointsPerCellParent + iQuad] =
                   d_potBaseQuadDataHost[iSpin].data()[iCell*numQuadraturePointsPerCellParent + iQuad] +
-                  potParentQuadData[iSpin]
+                  d_potParentQuadDataSolveEigen[iSpin]
                                    [iCell * numQuadraturePointsPerCellParent +
                                     iQuad];
-
-                inputToHamil +=
-                  potKSQuadData[iSpin].data()[iCell*numQuadraturePointsPerCellParent + iQuad] *
-                  potKSQuadData[iSpin].data()[iCell*numQuadraturePointsPerCellParent + iQuad];
               }
           }
 
-        MPI_Allreduce(MPI_IN_PLACE,
-                      &inputToHamil,
-                      1,
-                      MPI_DOUBLE,
-                      MPI_SUM,
-                      d_mpi_comm_domain);
-
-        pcout << " norm2 of input to hamil = " << inputToHamil << "\n";
-        computingTimerStandard.enter_subsection("computeVeff inverse on CPU");
+        d_computingTimerStandard.enter_subsection("computeVeff inverse");
         d_kohnShamClass->computeVEff(potKSQuadData, iSpin);
-        d_kohnShamClass->resetExtPotHamFlag();
-	d_kohnShamClass->setVEffExternalPotCorrToZero();
-	d_kohnShamClass->computeCellHamiltonianMatrixExtPotContribution();
-	computingTimerStandard.leave_subsection("computeVeff inverse on CPU");
+        d_computingTimerStandard.leave_subsection("computeVeff inverse");
 
-        computingTimerStandard.enter_subsection(
-          "computeHamiltonianMatrix on CPU");
+        d_computingTimerStandard.enter_subsection(
+          "computeHamiltonianMatrix");
         d_kohnShamClass->computeCellHamiltonianMatrix();
-        computingTimerStandard.leave_subsection(
-          "computeHamiltonianMatrix on CPU");
+        d_computingTimerStandard.leave_subsection(
+          "computeHamiltonianMatrix");
 
-//        double hamilNorm = d_kohnShamClass->computeNormOfHamiltonian();
-//        pcout << " norm2 of hamil matrix = " << hamilNorm << "\n";
+
       }
 
     do
@@ -1383,18 +1094,11 @@ namespace dftfe
           {
             for (unsigned int iKpoint = 0; iKpoint < d_numKPoints; ++iKpoint)
               {
-                pcout
-                  << "before kohnShamEigenSpaceCompute in k point loop eigen\n";
                 const unsigned int kpointSpinId =
                   iSpin * d_numKPoints + iKpoint;
-                computingTimerStandard.enter_subsection(
-                  "reinitkPointSpinIndex on CPU");
                 d_kohnShamClass->reinitkPointSpinIndex(iKpoint, iSpin);
-                computingTimerStandard.leave_subsection(
-                  "reinitkPointSpinIndex on CPU");
-
-                computingTimerStandard.enter_subsection(
-                  "kohnShamEigenSpaceCompute inverse on CPU");
+                d_computingTimerStandard.enter_subsection(
+                  "kohnShamEigenSpaceCompute inverse");
 
 		if constexpr (memorySpace == dftfe::utils::MemorySpace::HOST)
 		{
@@ -1432,8 +1136,8 @@ namespace dftfe
 
 		}
 #endif
-                computingTimerStandard.leave_subsection(
-                  "kohnShamEigenSpaceCompute inverse on CPU");
+    d_computingTimerStandard.leave_subsection(
+                  "kohnShamEigenSpaceCompute inverse");
               }
           }
 
@@ -1457,6 +1161,27 @@ namespace dftfe
                                                     fermiEnergy,
                                                     C_kb,
                                                     d_dftParams->TVal);
+
+                    if (d_dftParams->constraintMagnetization)
+                      {
+                        d_fractionalOccupancy[iKpoint][d_numEigenValues * iSpin +
+                                                       iEig] = 1.0;
+                        if (iSpin == 0)
+                          {
+                            if (eigenValue > fermiEnergy) // fermi energy up
+                              d_fractionalOccupancy[iKpoint]
+                                                [d_numEigenValues * iSpin +
+                                                    iEig] = 0.0;
+                          }
+                        else if (iSpin == 1)
+                          {
+                            if (eigenValue > fermiEnergy) // fermi energy down
+                              d_fractionalOccupancy[iKpoint]
+                                                [d_numEigenValues * iSpin +
+                                                    iEig] = 0.0;
+                          }
+                      }
+
                     if (d_fractionalOccupancy[iKpoint]
                                              [d_numEigenValues * iSpin + iEig] >
                         d_fractionalOccupancyTol)
@@ -1475,89 +1200,6 @@ namespace dftfe
   }
 
 
-
-
-  template <unsigned int              FEOrder,
-            unsigned int              FEOrderElectro,
-            dftfe::utils::MemorySpace memorySpace>
-  void
-  InverseDFTSolverFunction<FEOrder,FEOrderElectro, memorySpace>::integrateWithShapeFunctionsForChildData(
-    distributedCPUVec<double> &outputVec,
-    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &quadInputData)
-  {
-    const dealii::Quadrature<3> &quadratureRuleChild =
-      d_matrixFreeDataChild->get_quadrature(d_matrixFreeQuadratureComponentPot);
-    const unsigned int numQuadraturePointsPerCellChild =
-      quadratureRuleChild.size();
-    const unsigned int numTotalQuadraturePointsChild =
-      d_numLocallyOwnedCellsChild * numQuadraturePointsPerCellChild;
-
-    const double       alpha          = 1.0;
-    const double       beta           = 0.0;
-    const unsigned int inc            = 1;
-    const unsigned int blockSizeInput = 1;
-    char               doNotTans      = 'N';
-    //pcout << " inside integrateWithShapeFunctionsForChildData doNotTans = "
-    //      << doNotTans << "\n";
-
-    const unsigned int numberDofsPerElement =
-      d_dofHandlerChild->get_fe().dofs_per_cell;
-
-    std::vector<double> cellLevelNodalOutput(numberDofsPerElement);
-    std::vector<double> cellLevelQuadInput(numQuadraturePointsPerCellChild);
-    std::vector<dealii::types::global_dof_index> localDofIndices(
-      numberDofsPerElement);
-
-    typename dealii::DoFHandler<3>::active_cell_iterator
-      cell             = d_dofHandlerChild->begin_active(),
-      endc             = d_dofHandlerChild->end();
-    unsigned int iElem = 0;
-    for (; cell != endc; ++cell)
-      if (cell->is_locally_owned())
-        {
-          cell->get_dof_indices(localDofIndices);
-          std::fill(cellLevelNodalOutput.begin(),
-                    cellLevelNodalOutput.end(),
-                    0.0);
-
-          std::copy(quadInputData.begin() +
-                      (iElem * numQuadraturePointsPerCellChild),
-                    quadInputData.begin() +
-                      ((iElem + 1) * numQuadraturePointsPerCellChild),
-                    cellLevelQuadInput.begin());
-
-          for (unsigned int q_point = 0;
-               q_point < numQuadraturePointsPerCellChild;
-               ++q_point)
-            {
-              cellLevelQuadInput[q_point] =
-                cellLevelQuadInput[q_point] *
-                d_childCellJxW[(iElem * numQuadraturePointsPerCellChild) +
-                               q_point];
-            }
-
-          dgemm_(&doNotTans,
-                 &doNotTans,
-                 &blockSizeInput,
-                 &numberDofsPerElement,
-                 &numQuadraturePointsPerCellChild,
-                 &alpha,
-                 &cellLevelQuadInput[0],
-                 &blockSizeInput,
-                 &d_childCellShapeFunctionValue[0],
-                 &numQuadraturePointsPerCellChild,
-                 &beta,
-                 &cellLevelNodalOutput[0],
-                 &blockSizeInput);
-
-          d_constraintMatrixPot->distribute_local_to_global(
-            cellLevelNodalOutput, localDofIndices, outputVec);
-
-          iElem++;
-        }
-    outputVec.compress(dealii::VectorOperation::add);
-  }
-
   // TODO changed for debugging purposes
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
@@ -1569,58 +1211,228 @@ namespace dftfe
       &targetPotValuesParentQuadData)
   {
     d_pot = pot;
-    const dealii::Quadrature<3> &quadratureRuleParent =
-      d_matrixFreeDataParent->get_quadrature(
-        d_matrixFreeQuadratureComponentAdjointRhs);
-    const unsigned int numQuadraturePointsPerCellParent =
-      quadratureRuleParent.size();
+  }
 
-    d_targetPotValuesParentQuadData.resize(d_numSpins,
-                                           dftfe::utils::MemoryStorage<double,
-                                                                       dftfe::utils::MemorySpace::HOST>(
-                                             d_numLocallyOwnedCellsParent*numQuadraturePointsPerCellParent
-                                             )  );
-    for (unsigned int iSpin = 0; iSpin < d_numSpins; iSpin++)
+    template <unsigned int              FEOrder,
+              unsigned int              FEOrderElectro,
+              dftfe::utils::MemorySpace memorySpace>
+    void
+    InverseDFTSolverFunction<FEOrder,FEOrderElectro,memorySpace>::preComputeChildShapeFunction()
       {
-        for (unsigned int iCell = 0; iCell < d_numLocallyOwnedCellsParent;
-             iCell++)
-          {
-            for (unsigned int iQuad = 0;
-                 iQuad < numQuadraturePointsPerCellParent;
-                 ++iQuad)
-              {
-                d_targetPotValuesParentQuadData[iSpin][iCell*numQuadraturePointsPerCellParent +  iQuad] =
-                  targetPotValuesParentQuadData[iSpin][iCell][iQuad];
-              }
-          }
+        // Quadrature for AX multiplication will FEOrderElectro+1
+        const dealii::Quadrature<3> &quadratureRuleChild =
+          d_matrixFreeDataChild->get_quadrature(d_matrixFreeQuadratureComponentPot);
+        const unsigned int numQuadraturePointsPerCellChild =
+          quadratureRuleChild.size();
+        //std::cout<<" numQuadraturePointsPerCellChild = "<<numQuadraturePointsPerCellChild<<"\n";
+        const unsigned int numTotalQuadraturePointsChild =
+          d_numLocallyOwnedCellsChild * numQuadraturePointsPerCellChild;
+
+        //std::cout<<" numTotalQuadraturePointsChild = "<<numTotalQuadraturePointsChild<<"\n";
+        dealii::FEValues<3> fe_valuesChild(d_dofHandlerChild->get_fe(),
+                                           quadratureRuleChild,
+                                           dealii::update_values |
+                                             dealii::update_JxW_values);
+
+        const unsigned int numberDofsPerElement =
+          d_dofHandlerChild->get_fe().dofs_per_cell;
+
+        //std::cout<<" numberDofsPerElement = "<<numberDofsPerElement<<"\n";
+        //
+        // resize data members
+        //
+
+        d_childCellJxW.resize(numTotalQuadraturePointsChild);
+
+        //std::cout<<" d_childCellJxW = "<<d_childCellJxW.size()<<"\n";
+        typename dealii::DoFHandler<3>::active_cell_iterator
+          cell             = d_dofHandlerChild->begin_active(),
+          endc             = d_dofHandlerChild->end();
+        unsigned int iElem = 0;
+        for (; cell != endc; ++cell)
+          if (cell->is_locally_owned())
+            {
+              fe_valuesChild.reinit(cell);
+              if (iElem == 0)
+                {
+                  // For the reference cell initalize the shape function values
+                  d_childCellShapeFunctionValue.resize(
+                    numberDofsPerElement * numQuadraturePointsPerCellChild);
+
+                  //std::cout<<" d_childCellShapeFunctionValue = "<<d_childCellShapeFunctionValue.size()<<"\n";
+                  for (unsigned int iNode = 0; iNode < numberDofsPerElement;
+                       ++iNode)
+                    {
+                      for (unsigned int q_point = 0;
+                           q_point < numQuadraturePointsPerCellChild;
+                           ++q_point)
+                        {
+                          d_childCellShapeFunctionValue
+                            [numQuadraturePointsPerCellChild * iNode + q_point] =
+                              fe_valuesChild.shape_value(iNode, q_point);
+                        }
+                    }
+                }
+
+              for (unsigned int q_point = 0;
+                   q_point < numQuadraturePointsPerCellChild;
+                   ++q_point)
+                {
+                  d_childCellJxW[(iElem * numQuadraturePointsPerCellChild) +
+                                 q_point] = fe_valuesChild.JxW(q_point);
+                }
+              iElem++;
+            }
       }
 
-    std::vector<distributedCPUVec<double>> potTest;
-    potTest.resize(1);
-    potTest[0].reinit(d_pot[0]);
-    potTest[0] = 0.0;
+      template <unsigned int              FEOrder,
+                unsigned int              FEOrderElectro,
+                dftfe::utils::MemorySpace memorySpace>
+      void
+      InverseDFTSolverFunction<FEOrder,FEOrderElectro,memorySpace>::preComputeParentJxW()
+      {
+        // Quadrature for AX multiplication will FEOrderElectro+1
+        const dealii::Quadrature<3> &quadratureRuleParent =
+          d_matrixFreeDataParent->get_quadrature(
+            d_matrixFreeQuadratureComponentAdjointRhs);
+        const unsigned int numQuadraturePointsPerCellParent =
+          quadratureRuleParent.size();
+        const unsigned int numTotalQuadraturePointsParent =
+          d_numLocallyOwnedCellsParent * numQuadraturePointsPerCellParent;
 
-    double potTestNorm  = potTest[0].l2_norm();
-    double potInputNorm = d_pot[0].l2_norm();
+        dealii::FEValues<3> fe_valuesParent(d_dofHandlerParent->get_fe(),
+                                            quadratureRuleParent,
+                                            dealii::update_values |
+                                              dealii::update_JxW_values);
 
-    pcout << " norm of input pot = " << potInputNorm << "\n";
-    pcout << " norm of trial vec initial = " << potTestNorm << "\n";
+        const unsigned int numberDofsPerElement =
+          d_dofHandlerParent->get_fe().dofs_per_cell;
 
+        //
+        // resize data members
+        //
 
-    //    writeVxcDataToFile(d_pot,1000);
+        d_parentCellJxW.resize(numTotalQuadraturePointsParent);
 
-    pcout<<"writing solution";
-    dealii::DataOut<3> data_out;
+        typename dealii::DoFHandler<3>::active_cell_iterator
+          cell             = d_dofHandlerParent->begin_active(),
+          endc             = d_dofHandlerParent->end();
+        unsigned int iElem = 0;
+        for (; cell != endc; ++cell)
+          if (cell->is_locally_owned())
+            {
+              fe_valuesParent.reinit(cell);
 
-    data_out.attach_dof_handler(*d_dofHandlerChild);
+              if (iElem == 0)
+                {
+                  // For the reference cell initalize the shape function values
+                  d_shapeFunctionValueParent.resize(
+                    numberDofsPerElement * numQuadraturePointsPerCellParent);
 
-    std::string outputVecName = "solution";
-    data_out.add_data_vector(d_pot[0], outputVecName);
+                  for (unsigned int iNode = 0; iNode < numberDofsPerElement;
+                       ++iNode)
+                    {
+                      for (unsigned int q_point = 0;
+                           q_point < numQuadraturePointsPerCellParent;
+                           ++q_point)
+                        {
+                          d_shapeFunctionValueParent[iNode +
+                                                     q_point *
+                                                       numberDofsPerElement] =
+                            fe_valuesParent.shape_value(iNode, q_point);
+                        }
+                    }
+                }
+              for (unsigned int q_point = 0;
+                   q_point < numQuadraturePointsPerCellParent;
+                   ++q_point)
+                {
+                  d_parentCellJxW[(iElem * numQuadraturePointsPerCellParent) +
+                                  q_point] = fe_valuesParent.JxW(q_point);
+                }
+              iElem++;
+            }
+      }
+    template <unsigned int              FEOrder,
+              unsigned int              FEOrderElectro,
+              dftfe::utils::MemorySpace memorySpace>
+    void
+    InverseDFTSolverFunction<FEOrder,FEOrderElectro, memorySpace>::integrateWithShapeFunctionsForChildData(
+      distributedCPUVec<double> &outputVec,
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &quadInputData)
+    {
+      const dealii::Quadrature<3> &quadratureRuleChild =
+        d_matrixFreeDataChild->get_quadrature(d_matrixFreeQuadratureComponentPot);
+      const unsigned int numQuadraturePointsPerCellChild =
+        quadratureRuleChild.size();
+      const unsigned int numTotalQuadraturePointsChild =
+        d_numLocallyOwnedCellsChild * numQuadraturePointsPerCellChild;
 
-    data_out.build_patches();
-    data_out.write_vtu_with_pvtu_record("./", "inverseVxc_start",
-                                        1000,d_mpi_comm_domain ,2, 4);
-  }
+      const double       alpha          = 1.0;
+      const double       beta           = 0.0;
+      const unsigned int inc            = 1;
+      const unsigned int blockSizeInput = 1;
+      char               doNotTans      = 'N';
+      //pcout << " inside integrateWithShapeFunctionsForChildData doNotTans = "
+      //      << doNotTans << "\n";
+
+      const unsigned int numberDofsPerElement =
+        d_dofHandlerChild->get_fe().dofs_per_cell;
+
+      std::vector<double> cellLevelNodalOutput(numberDofsPerElement);
+      std::vector<double> cellLevelQuadInput(numQuadraturePointsPerCellChild);
+      std::vector<dealii::types::global_dof_index> localDofIndices(
+        numberDofsPerElement);
+
+      typename dealii::DoFHandler<3>::active_cell_iterator
+        cell             = d_dofHandlerChild->begin_active(),
+        endc             = d_dofHandlerChild->end();
+      unsigned int iElem = 0;
+      for (; cell != endc; ++cell)
+        if (cell->is_locally_owned())
+          {
+            cell->get_dof_indices(localDofIndices);
+            std::fill(cellLevelNodalOutput.begin(),
+                      cellLevelNodalOutput.end(),
+                      0.0);
+
+            std::copy(quadInputData.begin() +
+                        (iElem * numQuadraturePointsPerCellChild),
+                      quadInputData.begin() +
+                        ((iElem + 1) * numQuadraturePointsPerCellChild),
+                      cellLevelQuadInput.begin());
+
+            for (unsigned int q_point = 0;
+                 q_point < numQuadraturePointsPerCellChild;
+                 ++q_point)
+              {
+                cellLevelQuadInput[q_point] =
+                  cellLevelQuadInput[q_point] *
+                  d_childCellJxW[(iElem * numQuadraturePointsPerCellChild) +
+                                 q_point];
+              }
+
+            dgemm_(&doNotTans,
+                   &doNotTans,
+                   &blockSizeInput,
+                   &numberDofsPerElement,
+                   &numQuadraturePointsPerCellChild,
+                   &alpha,
+                   &cellLevelQuadInput[0],
+                   &blockSizeInput,
+                   &d_childCellShapeFunctionValue[0],
+                   &numQuadraturePointsPerCellChild,
+                   &beta,
+                   &cellLevelNodalOutput[0],
+                   &blockSizeInput);
+
+            d_constraintMatrixPot->distribute_local_to_global(
+              cellLevelNodalOutput, localDofIndices, outputVec);
+
+            iElem++;
+          }
+      outputVec.compress(dealii::VectorOperation::add);
+    }
 
   template <unsigned int FEOrder, unsigned int FEOrderElectro, dftfe::utils::MemorySpace memorySpace>
   std::vector<distributedCPUVec<double>>
@@ -3744,3 +3556,23 @@ namespace dftfe
 //
 //  pcout << " maxRes = " << maxResidual << " iPass = " << iPass << "\n";
 //}
+//        if ((d_getForceCounter % d_inverseDFTParams->writeVxcFrequency == 0) &&
+//            (d_inverseDFTParams->writeVxcData))
+//          {
+//            pcout << "writing force output\n";
+//            force[iSpin].update_ghost_values();
+//            d_constraintMatrixPot->distribute(force[iSpin]);
+//            force[iSpin].update_ghost_values();
+//
+//
+//            dealii::DataOut<3> data_out_force;
+//
+//                        data_out_force.attach_dof_handler(*d_dofHandlerChild);
+//
+//                        std::string outputVecNameForce = "ForceOutput";
+//
+//                        data_out_force.add_data_vector(force[iSpin],
+//            outputVecNameForce); data_out_force.write_vtu_with_pvtu_record("./",
+//            "forceOutput", d_getForceCounter,d_mpi_comm_domain ,2, 4);
+//
+//          }

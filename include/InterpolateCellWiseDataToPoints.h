@@ -43,6 +43,8 @@ namespace dftfe
 
     template <typename T>
     void interpolateSrcDataToTargetPoints(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>> &
+        BLASWrapperPtr,
       const dftfe::linearAlgebra::MultiVector<T,
                                               memorySpace> &inputVec,
       const unsigned int                    numberOfVectors,

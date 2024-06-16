@@ -902,6 +902,7 @@ namespace dftfe
                   "interpolate parent data to child quad");
                 d_transferDataPtr
                   ->interpolateMesh1DataToMesh2QuadPoints(
+        d_BLASWrapperPtr,
                     psiBlockVecMemSpace,
                     currentBlockSize,
                     fullFlattenedArrayCellLocalProcIndexIdMapPsiMemSpace,
@@ -910,6 +911,7 @@ namespace dftfe
 
                 d_transferDataPtr
                   ->interpolateMesh1DataToMesh2QuadPoints(
+                    d_BLASWrapperPtr,
                     multiVectorAdjointOutputWithAdjointConstraintsMemSpace,
                     currentBlockSize,
                     fullFlattenedArrayCellLocalProcIndexIdMapAdjointMemSpace,

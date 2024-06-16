@@ -169,6 +169,8 @@ namespace dftfe
   void
   TransferDataBetweenMeshesIncompatiblePartitioning<memorySpace>::
     interpolateMesh1DataToMesh2QuadPoints(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
+        BLASWrapperPtr,
       const dftfe::linearAlgebra::MultiVector<T,
                                               memorySpace> &inputVec,
       const unsigned int                    numberOfVectors,
@@ -177,6 +179,7 @@ namespace dftfe
       bool resizeOutputVec)
   {
     d_mesh1toMesh2->interpolateSrcDataToTargetPoints(
+      BLASWrapperPtr,
       inputVec,
       numberOfVectors,
       fullFlattenedArrayCellLocalProcIndexIdMapMesh1,
@@ -188,6 +191,8 @@ namespace dftfe
   template <typename T>
   void
   TransferDataBetweenMeshesIncompatiblePartitioning<memorySpace>::interpolateMesh2DataToMesh1QuadPoints(
+    const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
+      BLASWrapperPtr,
     const dftfe::linearAlgebra::MultiVector<T,
                                             memorySpace> &inputVec,
     const unsigned int                    numberOfVectors,
@@ -196,6 +201,7 @@ namespace dftfe
     bool resizeOutputVec)
   {
     d_mesh2toMesh1->interpolateSrcDataToTargetPoints(
+      BLASWrapperPtr,
       inputVec,
       numberOfVectors,
       fullFlattenedArrayCellLocalProcIndexIdMapMesh2,
@@ -247,6 +253,8 @@ namespace dftfe
   void
     TransferDataBetweenMeshesIncompatiblePartitioning<dftfe::utils::MemorySpace::HOST>
       ::interpolateMesh1DataToMesh2QuadPoints(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
+        BLASWrapperPtr,
     const dftfe::linearAlgebra::MultiVector<dataTypes::number,
                                               dftfe::utils::MemorySpace::HOST> &inputVec,
     const unsigned int                    numberOfVectors,
@@ -258,6 +266,8 @@ namespace dftfe
   void
   TransferDataBetweenMeshesIncompatiblePartitioning<dftfe::utils::MemorySpace::HOST>
     ::interpolateMesh2DataToMesh1QuadPoints(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
+        BLASWrapperPtr,
     const dftfe::linearAlgebra::MultiVector<dataTypes::number,
                                               dftfe::utils::MemorySpace::HOST> &inputVec,
     const unsigned int                    numberOfVectors,
@@ -296,6 +306,8 @@ namespace dftfe
   void
     TransferDataBetweenMeshesIncompatiblePartitioning<dftfe::utils::MemorySpace::DEVICE>
       ::interpolateMesh1DataToMesh2QuadPoints(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>> &
+        BLASWrapperPtr,
     const dftfe::linearAlgebra::MultiVector<dataTypes::number,
                                               dftfe::utils::MemorySpace::DEVICE> &inputVec,
     const unsigned int                    numberOfVectors,
@@ -307,6 +319,8 @@ namespace dftfe
   void
   TransferDataBetweenMeshesIncompatiblePartitioning<dftfe::utils::MemorySpace::DEVICE>
     ::interpolateMesh2DataToMesh1QuadPoints(
+        const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>> &
+          BLASWrapperPtr,
     const dftfe::linearAlgebra::MultiVector<dataTypes::number,
                                               dftfe::utils::MemorySpace::DEVICE> &inputVec,
     const unsigned int                    numberOfVectors,

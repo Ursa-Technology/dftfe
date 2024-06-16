@@ -50,7 +50,10 @@ namespace dftfe
   {
     template <typename T>
     void
-    performCellWiseInterpolationToPoints( const dftfe::linearAlgebra::MultiVector<T,
+    performCellWiseInterpolationToPoints(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
+        BLASWrapperPtr,
+      const dftfe::linearAlgebra::MultiVector<T,
                                                                                  dftfe::utils::MemorySpace::HOST> &inputVec,
                                          const unsigned int                    numberOfVectors,
                                          const unsigned int                    numCells,
@@ -129,7 +132,10 @@ namespace dftfe
 #ifdef DFTFE_WITH_DEVICE
     template <typename T>
     void
-    performCellWiseInterpolationToPoints( const dftfe::linearAlgebra::MultiVector<T,
+    performCellWiseInterpolationToPoints(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>> &
+        BLASWrapperPtr,
+      const dftfe::linearAlgebra::MultiVector<T,
                                                                                  dftfe::utils::MemorySpace::DEVICE> &inputVec,
                                          const unsigned int                    numberOfVectors,
                                          const unsigned int                    numCells,
@@ -153,6 +159,9 @@ namespace dftfe
                                                                      dftfe::utils::MemorySpace::DEVICE> &outputData)
     {
 
+      const char         transA = 'N', transB = 'N';
+      const double       scalarCoeffAlpha = 1.0;
+      const double       scalarCoeffBeta  = 0.0;
       size_type pointsFoundInProc =  std::accumulate(numPointsInCell.begin(), numPointsInCell.end(),0.0);
       //cellLevelParentNodalMemSpace.resize(numCells*numberOfVectors*numDofsPerElement);
       dftfe::MemoryStorage<T,dftfe::utils::MemorySpace::DEVICE>tempOutput
@@ -174,9 +183,25 @@ namespace dftfe
         cellLevelParentNodalMemSpace.begin(),
         mapVecToCells.begin());
 */
+      dftfe::size_type pointStartIndex = 0;
       for(dftfe::size_type iCell = 0 ; iCell < numCells; iCell++)
-      {
+        {
+          BLASWrapperPtr->
+          xgemm(transA,
+                transB,
+                  numberOfVectors,
+                  numPointsInCell[iCell],
+                  numDofsPerElement,
+                  &scalarCoeffAlpha,
+                  cellLevelParentNodalMemSpace.data() + numberOfVectors*numDofsPerElement*iCell,
+                  numberOfVectors,
+                  shapeFuncValues.data() + pointStartIndex*numDofsPerElement,
+                  numDofsPerElement,
+                &scalarCoeffBeta,
+                  tempOutputdata.data() + pointStartIndex*numberOfVectors,
+                  numberOfVectors);
 
+          pointStartIndex += numPointsInCell[iCell];
 
       }
 /*
@@ -541,6 +566,8 @@ namespace dftfe
   template <typename T>
   void InterpolateCellWiseDataToPoints<memorySpace>::
     interpolateSrcDataToTargetPoints(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>> &
+        BLASWrapperPtr,
       const dftfe::linearAlgebra::MultiVector<T,
                                                     memorySpace> &inputVec,
       const unsigned int                    numberOfVectors,
@@ -580,7 +607,9 @@ namespace dftfe
     outputData.setValue(0.0);
 
 
-    performCellWiseInterpolationToPoints<T>(inputVec,
+    performCellWiseInterpolationToPoints<T>(
+      BLASWrapperPtr,
+      inputVec,
                                          numberOfVectors,
                                          d_numCells,
                                          d_numDofsPerElement,
@@ -603,6 +632,8 @@ namespace dftfe
 
   template
   void InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::HOST>::interpolateSrcDataToTargetPoints(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
+        BLASWrapperPtr,
     const dftfe::linearAlgebra::MultiVector<dataTypes::number,
                                               dftfe::utils::MemorySpace::HOST> &inputVec,
     const unsigned int                    numberOfVectors,
@@ -629,6 +660,8 @@ namespace dftfe
 
     template
   void InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::DEVICE>::interpolateSrcDataToTargetPoints(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>> &
+        BLASWrapperPtr,
     const dftfe::linearAlgebra::MultiVector<dataTypes::number,
                                               dftfe::utils::MemorySpace::DEVICE> &inputVec,
     const unsigned int                    numberOfVectors,

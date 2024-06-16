@@ -44,6 +44,8 @@ namespace dftfe
     template <typename T>
     void
     interpolateMesh1DataToMesh2QuadPoints(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
+        BLASWrapperPtr,
       const dftfe::linearAlgebra::MultiVector<T,
                                               memorySpace> &inputVec,
       const unsigned int                    numberOfVectors,
@@ -54,6 +56,8 @@ namespace dftfe
     template <typename T>
       void
       interpolateMesh2DataToMesh1QuadPoints(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
+        BLASWrapperPtr,
         const dftfe::linearAlgebra::MultiVector<T,
                                                 memorySpace> &inputVec,
         const unsigned int                    numberOfVectors,

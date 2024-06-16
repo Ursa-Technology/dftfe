@@ -68,6 +68,8 @@ namespace dftfe
                                          const std::vector<std::vector<unsigned int>> & mapCellLocalToProcLocal,
                                          dftfe::utils::MemoryStorage<T,
                                                                      dftfe::utils::MemorySpace::HOST> &cellLevelParentNodalMemSpace,
+								     dftfe::utils::MemoryStorage<T,
+                                                                     dftfe::utils::MemorySpace::DEVICE> &tempOutputdata,
                                          dftfe::utils::MemoryStorage<T,
                                                                      dftfe::utils::MemorySpace::HOST> &outputData)
     {
@@ -145,12 +147,17 @@ namespace dftfe
                                          const std::vector<std::vector<unsigned int>> & mapCellLocalToProcLocal,
                                          dftfe::utils::MemoryStorage<T,
                                                                      dftfe::utils::MemorySpace::DEVICE> &cellLevelParentNodalMemSpace,
+								     dftfe::utils::MemoryStorage<T,
+                                                                     dftfe::utils::MemorySpace::DEVICE> &tempOutputdata,
                                          dftfe::utils::MemoryStorage<T,
                                                                      dftfe::utils::MemorySpace::DEVICE> &outputData)
     {
 
       size_type pointsFoundInProc =  std::accumulate(numPointsInCell.begin(), numPointsInCell.end(),0.0);
-      cellLevelParentNodalMemSpace.resize(numCells*numberOfVectors*numDofsPerElement);
+      //cellLevelParentNodalMemSpace.resize(numCells*numberOfVectors*numDofsPerElement);
+      dftfe::MemoryStorage<T,dftfe::utils::MemorySpace::DEVICE>tempOutput
+      
+      
       dftfe::utils::deviceKernelsGeneric::stridedCopyToBlock(
         numberOfVectors,
         numCells * numDofsPerElement,
@@ -158,6 +165,21 @@ namespace dftfe
         cellLevelParentNodalMemSpace.begin(),
         mapVecToCells.begin());
 
+	      /*
+      dftfe::utils::deviceKernelsGeneric::stridedCopyToBlockTranspose(
+        numberOfVectors,
+	numDofsPerElement,
+        numCells * numDofsPerElement,
+        inputVec.data(),
+        cellLevelParentNodalMemSpace.begin(),
+        mapVecToCells.begin());
+*/
+      for(dftfe::size_type iCell = 0 ; iCell < numCells; iCell++)
+      {
+
+
+      }
+/*
       dftfe::utils::deviceKernelsGeneric::interpolateNodalDataToQuadDevice(
         numDofsPerElement,
         pointsFoundInProc,
@@ -168,7 +190,14 @@ namespace dftfe
         mapPointToShapeFuncIndex.data(),
         cellLevelParentNodalMemSpace.data(),
         outputData.data());
-	
+*/
+
+      dftfe::utils::deviceKernelsGeneric::stridedCopyFromBlock(
+        numberOfVectors,
+        pointsFoundInProc,
+        tempOutputdata.data(),
+        outputData.data(),
+        mapPointToProcLocal.data());
     }
 #endif
 
@@ -526,15 +555,30 @@ namespace dftfe
         d_mpiCommPtrMemSpace = std::make_unique<dftfe::utils::mpi::MPICommunicatorP2P<T,memorySpace>>(d_mpiP2PPtrMemSpace,numberOfVectors);
 	d_mpiCommPtrMemSpace->setCommunicationPrecision(dftfe::utils::mpi::communicationPrecision::full);
         outputData.resize(d_numPointsLocal*numberOfVectors);
+        d_cellLevelParentNodalMemSpace.resize(d_numCells*d_numDofsPerElement*numberOfVectors);
+   
+       std::vector<size_type> cellLocalToProcLocal;
+    cellLocalToProcLocal.resize(d_pointsFoundInProc);
+	    size_type pointIndex = 0;
+    for ( size_type iCell = 0 ; iCell < d_numCells; iCell++)
+      {
+        for ( size_type iPoint = 0 ;iPoint < d_numPointsInCell[iCell]; iPoint++)
+          {
+            cellLocalToProcLocal[pointIndex] = d_mapCellLocalToProcLocal[iCell][iPoint]*numberOfVectors;
+            pointIndex++;
+          }
+      }
+
+
+    d_mapPointToProcLocalMemSpace.resize(cellLocalToProcLocal.size());
+    d_mapPointToProcLocalMemSpace.copyFrom(cellLocalToProcLocal);
+
+   
+   d_tempOutputMemSpace.resize(d_pointsFoundInProc*numberOfVectors);
       }
 
     outputData.setValue(0.0);
 
-    dftfe::utils::MemoryStorage<T,
-                                memorySpace> cellLevelInputVec;
-    cellLevelInputVec.resize(d_numDofsPerElement *
-                             numberOfVectors);
-    cellLevelInputVec.setValue(0.0);
 
     performCellWiseInterpolationToPoints<T>(inputVec,
                                          numberOfVectors,
@@ -549,7 +593,8 @@ namespace dftfe
                                          d_cellShapeFuncStartIndex,
                                          d_mapCellLocalToProcLocal,
                                          d_cellLevelParentNodalMemSpace,
-                                         outputData);
+                                         d_tempOutputMemSpace,
+					 outputData);
 
 
 // TODO uncomment the following line after testing

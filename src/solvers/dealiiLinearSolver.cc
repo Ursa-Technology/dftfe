@@ -18,7 +18,6 @@
 //
 
 #include <dealiiLinearSolver.h>
-#include <boost/stacktrace.hpp>
 
 namespace dftfe
 {
@@ -193,6 +192,5 @@ namespace dftfe
       pcout << "Time for Poisson/Helmholtz problem CG iterations: " << time
             << std::endl;
 
-    std::cout << boost::stacktrace::stacktrace();
   }
 } // namespace dftfe

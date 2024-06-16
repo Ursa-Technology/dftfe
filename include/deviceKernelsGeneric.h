@@ -66,6 +66,15 @@ namespace dftfe
         const dftfe::global_size_type *copyFromVecStartingContiguousBlockIds);
 
 
+      template <typename ValueType1, typename ValueType2>
+      void
+      stridedCopyToBlockTranspose(
+        const dftfe::size_type         contiguousBlockSize,
+        const dftfe::size_type         transposeBlockSize,
+        const dftfe::size_type         numContiguousBlocks,
+        const ValueType1 *             copyFromVec,
+        ValueType2 *                   copyToVecBlock,
+        const dftfe::global_size_type *copyFromVecStartingContiguousBlockIds);
 
       template <typename ValueType1, typename ValueType2>
       void

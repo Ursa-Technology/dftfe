@@ -109,6 +109,9 @@ namespace dftfe
     std::vector<global_size_type> d_ghostGlobalIds;
     std::pair<global_size_type,global_size_type> d_localRange;
 
+    dftfe::utils::MemoryStorage<dataTypes::number,
+                                memorySpace>
+      d_tempOutputMemSpace;
   }; // end of class InterpolateCellWiseDataToPoints
 } // end of namespace dftfe
 

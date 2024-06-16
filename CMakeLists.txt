@@ -188,8 +188,8 @@ SET(TARGET_SRC
         ./src/inverseSrc/InverseClass.cpp
         ./src/solvers/BFGSInverseDFTSolver.cpp
         ./src/inverseSrc/TriangulationManagerVxc.cpp
-        ./src/inverseSrc/inverseDFTParameters.cpp
-        ./src/poisson/MultiVectorAdjointLinearSolverProblem.cpp)
+        ./src/inverseSrc/inverseDFTParameters.cpp)
+	#        ./src/poisson/MultiVectorAdjointLinearSolverProblem.cpp)
 
 IF ("${GPU_LANG}" STREQUAL "cuda")
 

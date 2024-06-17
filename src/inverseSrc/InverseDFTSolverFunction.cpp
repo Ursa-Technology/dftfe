@@ -111,7 +111,8 @@ namespace dftfe
     d_resizeMemSpaceVecDuringInterpolation = true;
     d_resizeMemSpaceBlockSizeChildQuad = true;
     d_lossPreviousIteration = 0.0;
-  
+ 
+   d_previousBlockSize = 0; 
     d_numCellBlockSizeParent= 100;
     d_numCellBlockSizeChild = 100;
   }
@@ -480,6 +481,11 @@ namespace dftfe
     std::vector<double> &                   loss)
   {
     d_computingTimerStandard.reset();
+    #if defined(DFTFE_WITH_DEVICE)          
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif 
+    MPI_Barrier(d_mpi_comm_domain);
     d_computingTimerStandard.enter_subsection("Get Force Vector");
     pcout << "Inside force vector \n";
     for (unsigned int iSpin = 0; iSpin < d_numSpins; ++iSpin)
@@ -489,9 +495,19 @@ namespace dftfe
         d_constraintMatrixPot->distribute(pot[iSpin]);
               pot[iSpin].update_ghost_values();
       }
+        #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
     d_computingTimerStandard.enter_subsection(
       "SolveEigen in inverse call");
     this->solveEigen(pot);
+        #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
     d_computingTimerStandard.leave_subsection(
       "SolveEigen in inverse call");
     const dftfe::utils::MemoryStorage<dataTypes::number,
@@ -531,6 +547,11 @@ namespace dftfe
     // set to the same value (=fermi energy)
     // 2. No spectrum splitting
     //
+        #if defined(DFTFE_WITH_DEVICE)          
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
     d_computingTimerStandard.enter_subsection("Calculating Density");
     dftfe::computeRhoFromPSI<dataTypes::number>(&eigenVectorsMemSpace,
                                                  &eigenVectorsMemSpace,
@@ -555,6 +576,11 @@ namespace dftfe
                                                  false // spectrum splitting
                                                  );
 
+        #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
     d_computingTimerStandard.leave_subsection("Calculating Density");
 
     force.resize(d_numSpins);
@@ -619,7 +645,12 @@ namespace dftfe
     for (unsigned int iSpin = 0; iSpin < d_numSpins; ++iSpin)
       {
         d_computingTimerStandard.enter_subsection("Create Force Vector");
-        vectorTools::createDealiiVector<double>(
+            #if defined(DFTFE_WITH_DEVICE)          
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
+	vectorTools::createDealiiVector<double>(
           d_matrixFreeDataChild->get_vector_partitioner(
             d_matrixFreePotVectorComponent),
           1,
@@ -627,6 +658,11 @@ namespace dftfe
 
         force[iSpin] = 0.0;
 
+	    #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
         d_computingTimerStandard.leave_subsection("Create Force Vector");
 
         sumPsiAdjointChildQuadData.resize(numTotalQuadraturePointsChild);
@@ -638,10 +674,20 @@ namespace dftfe
         loss[iSpin]       = 0.0;
         errorInVxc[iSpin] = 0.0;
 
+	    #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
         d_computingTimerStandard.enter_subsection("Interpolate To Parent Mesh");
         d_transferDataPtr->interpolateMesh2DataToMesh1QuadPoints(
           pot[iSpin], 1, d_fullFlattenedMapChild,d_potParentQuadDataForce[iSpin],d_resizeMemSpaceVecDuringInterpolation);
-        d_computingTimerStandard.leave_subsection("Interpolate To Parent Mesh");
+            #if defined(DFTFE_WITH_DEVICE)          
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
+	d_computingTimerStandard.leave_subsection("Interpolate To Parent Mesh");
 
         d_computingTimerStandard.enter_subsection("Compute Rho vectors");
         for (unsigned int iCell = 0; iCell < d_numLocallyOwnedCellsParent;
@@ -675,6 +721,11 @@ namespace dftfe
         const unsigned int defaultBlockSize = d_dftParams->chebyWfcBlockSize;
 
 
+	    #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
         d_computingTimerStandard.leave_subsection("Compute Rho vectors");
         for (unsigned int iKPoint = 0; iKPoint < d_numKPoints; ++iKPoint)
           {
@@ -682,7 +733,6 @@ namespace dftfe
 //                  << " forceVector\n";
             d_kohnShamClass->reinitkPointSpinIndex(iKPoint, iSpin);
             unsigned int jvec              = 0;
-            unsigned int previousBlockSize = defaultBlockSize;
             while (jvec < d_numEigenValues)
               {
                 d_computingTimerStandard.enter_subsection("Initialize Block Vectors");
@@ -722,9 +772,10 @@ namespace dftfe
                       }
                   }
 
-                if (currentBlockSize != previousBlockSize || jvec == 0)
+                if (currentBlockSize != d_previousBlockSize)
                   {
 
+			  pcout<<" block size not matching in inverse DFT Solver functions\n";
 
                     dftfe::linearAlgebra::
                       createMultiVectorFromDealiiPartitioner(
@@ -801,8 +852,18 @@ namespace dftfe
                     d_resizeMemSpaceBlockSizeChildQuad =true;
                   }
 
+		    #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
                 d_computingTimerStandard.leave_subsection("Initialize Block Vectors");
 
+		    #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
                 d_computingTimerStandard.enter_subsection("Set Up MINRES");
                 //
                 // @note We assume that there is only homogenous Dirichlet BC
@@ -863,8 +924,18 @@ namespace dftfe
                 d_adjointTol =
                   std::min(d_adjointTol, adjoinTolForThisIteration);
 
+		    #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
                 d_computingTimerStandard.leave_subsection("Set Up MINRES");
 
+		    #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
                 d_computingTimerStandard.enter_subsection("MINRES Solve");
                 d_multiVectorLinearMINRESSolver.solve(
                   d_multiVectorAdjointProblem,
@@ -878,8 +949,18 @@ namespace dftfe
                   d_dftParams->verbosity,
                   true); // distributeFlag
 
+		    #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
                 d_computingTimerStandard.leave_subsection("MINRES Solve");
 
+		    #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
                 d_computingTimerStandard.enter_subsection("copy vec");
 
                 d_BLASWrapperPtr->xcopy(
@@ -897,10 +978,23 @@ namespace dftfe
 		multiVectorAdjointOutputWithAdjointConstraintsMemSpace.updateGhostValues();
 	psiBlockVecMemSpace.updateGhostValues();
 
+	    #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
   d_computingTimerStandard.leave_subsection("copy vec");
-    d_computingTimerStandard.enter_subsection(
+      #if defined(DFTFE_WITH_DEVICE)          
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);  
+  d_computingTimerStandard.enter_subsection(
                   "interpolate parent data to child quad");
-                d_transferDataPtr
+
+pcout<<"d_resizeMemSpaceBlockSizeChildQuad in inverse dft Solver func = "<<d_resizeMemSpaceBlockSizeChildQuad<<"\n";  
+
+  d_transferDataPtr
                   ->interpolateMesh1DataToMesh2QuadPoints(
         d_BLASWrapperPtr,
                     psiBlockVecMemSpace,
@@ -917,7 +1011,12 @@ namespace dftfe
                     fullFlattenedArrayCellLocalProcIndexIdMapAdjointMemSpace,
                     d_adjointChildQuadDataMemorySpace,
                     d_resizeMemSpaceBlockSizeChildQuad);
-                d_computingTimerStandard.leave_subsection(
+                    #if defined(DFTFE_WITH_DEVICE)          
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
+		d_computingTimerStandard.leave_subsection(
                   "interpolate parent data to child quad");
 
                 d_computingTimerStandard.enter_subsection("Compute P_i Psi_i");
@@ -940,8 +1039,13 @@ namespace dftfe
                   }
                 jvec += currentBlockSize;
 
-                previousBlockSize = currentBlockSize;
+                d_previousBlockSize = currentBlockSize;
 
+		    #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
                 d_computingTimerStandard.leave_subsection("Compute P_i Psi_i");
               } // block loop
           }     // kpoint loop
@@ -949,10 +1053,20 @@ namespace dftfe
         // Assumes the block size is 1
         // if that changes, change the d_flattenedArrayCellChildCellMap
 
+	    #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
         d_computingTimerStandard.enter_subsection("Integrate With Shape function");
         integrateWithShapeFunctionsForChildData(force[iSpin],
                                                 sumPsiAdjointChildQuadData);
-        d_computingTimerStandard.leave_subsection("Integrate With Shape function");
+            #if defined(DFTFE_WITH_DEVICE)          
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
+	d_computingTimerStandard.leave_subsection("Integrate With Shape function");
 
      pcout << "force norm = " << force[iSpin].l2_norm() << "\n";
 
@@ -1005,6 +1119,11 @@ namespace dftfe
     d_resizeMemSpaceBlockSizeChildQuad = false;
 
     d_computingTimerStandard.leave_subsection("Post process");
+        #if defined(DFTFE_WITH_DEVICE)          
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+    MPI_Barrier(d_mpi_comm_domain);
     d_computingTimerStandard.leave_subsection("Get Force Vector");
     d_computingTimerStandard.print_summary();
   }

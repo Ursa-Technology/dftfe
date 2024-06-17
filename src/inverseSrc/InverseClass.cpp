@@ -187,9 +187,9 @@ namespace dftfe
     , d_gaussQuadVxc(2) // TODO this hard coded to Gauss 2x2x2 rule which is
                         // sufficient as the vxc mesh is taken to be linear FE.
                         // Read from params file for generality
-    , d_rhoTargetTolForConstraints(
-        1e-6) // // TODO this hard coded. Is this correct
   {
+
+	  d_rhoTargetTolForConstraints = d_inverseDFTParams.rhoTolForConstraints;
 
     d_dftBaseClass =  ((dftfe::dftClass<FEOrder, FEOrderElectro,memorySpace> *) &dft);
 

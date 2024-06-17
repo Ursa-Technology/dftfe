@@ -25,7 +25,7 @@
 #include <boost/geometry.hpp>
 #include <boost/geometry/index/rtree.hpp>
 #include <boost/range/adaptors.hpp>
-
+#include "BLASWrapper.h"
 #include "MapPointsToCells.h"
 #include "Cell.h"
 
@@ -84,7 +84,7 @@ namespace dftfe
     dftfe::utils::MemoryStorage<size_type, memorySpace>
       d_mapPointToCellIndexMemSpace;
 
-    dftfe::utils::MemoryStorage<size_type, memorySpace>
+    dftfe::utils::MemoryStorage<global_size_type, memorySpace>
       d_mapPointToProcLocalMemSpace;
 
     dftfe::utils::MemoryStorage<dataTypes::number,

@@ -65,14 +65,14 @@ namespace dftfe
                                          const  dftfe::utils::MemoryStorage<T,
                                                                            dftfe::utils::MemorySpace::HOST>& shapeFuncValues,
                                          const dftfe::utils::MemoryStorage<size_type, dftfe::utils::MemorySpace::HOST> &mapPointToCell,
-                                         const dftfe::utils::MemoryStorage<size_type, dftfe::utils::MemorySpace::HOST> &mapPointToProcLocal,
+                                         const dftfe::utils::MemoryStorage<global_size_type, dftfe::utils::MemorySpace::HOST> &mapPointToProcLocal,
                                          const  dftfe::utils::MemoryStorage<size_type, dftfe::utils::MemorySpace::HOST> &mapPointToShapeFuncIndex,
                                          const std::vector<unsigned int> &cellShapeFuncStartIndex,
                                          const std::vector<std::vector<unsigned int>> & mapCellLocalToProcLocal,
                                          dftfe::utils::MemoryStorage<T,
                                                                      dftfe::utils::MemorySpace::HOST> &cellLevelParentNodalMemSpace,
 								     dftfe::utils::MemoryStorage<T,
-                                                                     dftfe::utils::MemorySpace::DEVICE> &tempOutputdata,
+                                                                     dftfe::utils::MemorySpace::HOST> &tempOutputdata,
                                          dftfe::utils::MemoryStorage<T,
                                                                      dftfe::utils::MemorySpace::HOST> &outputData)
     {
@@ -147,7 +147,7 @@ namespace dftfe
                                          const  dftfe::utils::MemoryStorage<T,
                                                                            dftfe::utils::MemorySpace::DEVICE>& shapeFuncValues,
                                          const dftfe::utils::MemoryStorage<size_type, dftfe::utils::MemorySpace::DEVICE> &mapPointToCell,
-                                         const dftfe::utils::MemoryStorage<size_type, dftfe::utils::MemorySpace::DEVICE> &mapPointToProcLocal,
+                                         const dftfe::utils::MemoryStorage<global_size_type, dftfe::utils::MemorySpace::DEVICE> &mapPointToProcLocal,
                                          const  dftfe::utils::MemoryStorage<size_type, dftfe::utils::MemorySpace::DEVICE> &mapPointToShapeFuncIndex,
                                          const std::vector<unsigned int> &cellShapeFuncStartIndex,
                                          const std::vector<std::vector<unsigned int>> & mapCellLocalToProcLocal,
@@ -164,7 +164,6 @@ namespace dftfe
       const double       scalarCoeffBeta  = 0.0;
       size_type pointsFoundInProc =  std::accumulate(numPointsInCell.begin(), numPointsInCell.end(),0.0);
       //cellLevelParentNodalMemSpace.resize(numCells*numberOfVectors*numDofsPerElement);
-      dftfe::MemoryStorage<T,dftfe::utils::MemorySpace::DEVICE>tempOutput
       
       
       dftfe::utils::deviceKernelsGeneric::stridedCopyToBlock(
@@ -432,7 +431,8 @@ namespace dftfe
 
 
     d_mpiP2PPtrMemSpace = std::make_shared<dftfe::utils::mpi::MPIPatternP2P<memorySpace>>(d_localRange, d_ghostGlobalIds, d_mpiComm);
-    std::vector<size_type> cellLocalToProcLocal, shapeFuncIndex, pointToCellIndex;
+    std::vector<global_size_type> cellLocalToProcLocal;
+    std::vector<size_type> shapeFuncIndex, pointToCellIndex;
     cellLocalToProcLocal.resize(d_pointsFoundInProc);
     shapeFuncIndex.resize(d_pointsFoundInProc);
     pointToCellIndex.resize(d_pointsFoundInProc);
@@ -577,6 +577,17 @@ namespace dftfe
                                   memorySpace> &outputData, // this is not std::vector
       bool resizeData )
   {
+	  if( dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0 )
+      {
+          std::cout<<" resizeData inside InterpolateCellWiseDataToPoints = "<<resizeData<<"\n";
+      }
+
+#if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+	  MPI_Barrier(d_mpiComm);
+	  double startTime = MPI_Wtime();
     if(resizeData)
       {
         d_mpiCommPtrMemSpace = std::make_unique<dftfe::utils::mpi::MPICommunicatorP2P<T,memorySpace>>(d_mpiP2PPtrMemSpace,numberOfVectors);
@@ -584,7 +595,7 @@ namespace dftfe
         outputData.resize(d_numPointsLocal*numberOfVectors);
         d_cellLevelParentNodalMemSpace.resize(d_numCells*d_numDofsPerElement*numberOfVectors);
    
-       std::vector<size_type> cellLocalToProcLocal;
+       std::vector<global_size_type> cellLocalToProcLocal;
     cellLocalToProcLocal.resize(d_pointsFoundInProc);
 	    size_type pointIndex = 0;
     for ( size_type iCell = 0 ; iCell < d_numCells; iCell++)
@@ -604,6 +615,12 @@ namespace dftfe
    d_tempOutputMemSpace.resize(d_pointsFoundInProc*numberOfVectors);
       }
 
+    #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+          MPI_Barrier(d_mpiComm);
+          double endResizeTime = MPI_Wtime();
     outputData.setValue(0.0);
 
 
@@ -625,9 +642,26 @@ namespace dftfe
                                          d_tempOutputMemSpace,
 					 outputData);
 
-
+#if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+          MPI_Barrier(d_mpiComm);
+          double endCompTime = MPI_Wtime();
 // TODO uncomment the following line after testing
     d_mpiCommPtrMemSpace->accumulateInsertLocallyOwned(outputData);
+  
+    #if defined(DFTFE_WITH_DEVICE)
+    if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      dftfe::utils::deviceSynchronize();
+#endif
+          MPI_Barrier(d_mpiComm);
+          double endCommTime = MPI_Wtime();
+
+if( dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0 )
+      {
+	  std::cout<<" resize Time = "<<endResizeTime-startTime<<" Comp time = "<<endCompTime-endResizeTime<<" comm time = "<<endCommTime-endCompTime<<"\n";
+      }
   }
 
   template

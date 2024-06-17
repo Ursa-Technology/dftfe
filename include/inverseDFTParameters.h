@@ -46,6 +46,7 @@ namespace dftfe
     std::string  fileNameWriteVxcPostFix;
     unsigned int writeVxcFrequency;
 
+    double rhoTolForConstraints;
     double       VxcInnerDomain;
     double VxcInnerMeshSize;
     double       inverseAdjointInitialTol;

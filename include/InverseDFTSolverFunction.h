@@ -283,6 +283,7 @@ namespace dftfe
 
       std::vector<dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST>> rhoDiff;
 
+      unsigned int d_previousBlockSize;
   };
 } // end of namespace dftfe
 #endif // DFTFE_INVERSEDFTSOLVERFUNCTION_H

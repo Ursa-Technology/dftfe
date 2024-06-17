@@ -24,7 +24,7 @@
 #include <TypeConfig.h>
 #include <DeviceTypeConfig.h>
 #include <cmath>
-
+#include "BLASWrapper.h"
 
 namespace dftfe
 {

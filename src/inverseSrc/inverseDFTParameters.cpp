@@ -92,6 +92,11 @@ namespace dftfe
           dealii::Patterns::Integer(1, 2000),
           "[Standard] Frequency with which the Vxc data is written to the disk");
 
+	prm.declare_entry(
+	"RHO TOL FOR CONSTRAINTS",
+	"1e-6",
+	dealii::Patterns::Double(0.0),
+	"[Standard] The tol for rho less than which the initial guess of Vxc is not updated");
         prm.declare_entry(
           "VXC MESH DOMAIN SIZE",
           "6.0",
@@ -222,6 +227,7 @@ namespace dftfe
     fileNameWriteVxcPostFix  = ".";
     writeVxcFrequency        = 20;
 
+    rhoTolForConstraints = 1e-6;
     VxcInnerDomain              = 6.0;
     VxcInnerMeshSize  = 0.0;
     inverseAdjointInitialTol    = 1e-11;
@@ -268,6 +274,7 @@ namespace dftfe
         prm.get("POSTFIX TO THE FILENAME FOR WRITING VXC DATA");
       writeVxcFrequency = prm.get_integer("FREQUENCY FOR WRITING VXC");
 
+      rhoTolForConstraints = prm.get_double("RHO TOL FOR CONSTRAINTS");
       VxcInnerDomain = prm.get_double("VXC MESH DOMAIN SIZE");
       VxcInnerMeshSize = prm.get_double("VXC MESH SIZE NEAR ATOM");
       inverseAdjointInitialTol =

@@ -166,7 +166,10 @@ namespace unitTest
 
   }
 
-  void testTransferFromParentToChildIncompatiblePartitioning( const MPI_Comm &                        mpi_comm_parent,
+  void testTransferFromParentToChildIncompatiblePartitioning(
+		     const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
+                                                                                BLASWrapperPtr,
+		  const MPI_Comm &                        mpi_comm_parent,
                                                         const MPI_Comm &                        mpi_comm_domain,
                                                         const MPI_Comm &                        interpoolcomm,
                                                         const MPI_Comm &                        interbandgroup_comm,
@@ -438,6 +441,7 @@ namespace unitTest
     fullFlattenedArrayCellLocalProcIndexIdMapParentMemStorage.resize(fullFlattenedArrayCellLocalProcIndexIdMapParent.size());
     fullFlattenedArrayCellLocalProcIndexIdMapParentMemStorage.copyFrom(fullFlattenedArrayCellLocalProcIndexIdMapParent);
     inverseDftDoFManagerObj.interpolateMesh1DataToMesh2QuadPoints(
+		    BLASWrapperPtr,
       parentVec,
       blockSize,
       fullFlattenedArrayCellLocalProcIndexIdMapParentMemStorage,
@@ -593,7 +597,7 @@ namespace unitTest
     fullFlattenedArrayCellLocalProcIndexIdMapChildMemStorage.copyFrom(fullFlattenedArrayCellLocalProcIndexIdMapChild);
 
     double startTimeMesh2ToMesh1 = MPI_Wtime();
-    inverseDftDoFManagerObj.interpolateMesh2DataToMesh1QuadPoints<double>(
+    inverseDftDoFManagerObj.interpolateMesh2DataToMesh1QuadPoints<double>(BLASWrapperPtr,
       childVec, blockSize, fullFlattenedArrayCellLocalProcIndexIdMapChildMemStorage, quadValuesParentComputed, true);
 
     std::cout<<std::flush;

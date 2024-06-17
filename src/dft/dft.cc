@@ -233,6 +233,7 @@ namespace dftfe
 
 //    unitTest::testAccumulateInsert(mpi_communicator);
 //    unitTest::testTransferFromParentToChildIncompatiblePartitioning(
+//    d_BLASWrapperPtrHost,
 //      d_mpiCommParent,
 //      mpi_communicator,
 //      interpoolcomm,

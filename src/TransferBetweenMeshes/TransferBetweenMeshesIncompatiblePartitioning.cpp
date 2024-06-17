@@ -169,7 +169,7 @@ namespace dftfe
   void
   TransferDataBetweenMeshesIncompatiblePartitioning<memorySpace>::
     interpolateMesh1DataToMesh2QuadPoints(
-      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>> &
         BLASWrapperPtr,
       const dftfe::linearAlgebra::MultiVector<T,
                                               memorySpace> &inputVec,
@@ -191,7 +191,7 @@ namespace dftfe
   template <typename T>
   void
   TransferDataBetweenMeshesIncompatiblePartitioning<memorySpace>::interpolateMesh2DataToMesh1QuadPoints(
-    const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
+    const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>> &
       BLASWrapperPtr,
     const dftfe::linearAlgebra::MultiVector<T,
                                             memorySpace> &inputVec,

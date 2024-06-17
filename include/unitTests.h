@@ -25,7 +25,10 @@
 
 namespace unitTest
 {
-  void testTransferFromParentToChildIncompatiblePartitioning( const MPI_Comm &                  mpi_comm_parent,
+  void testTransferFromParentToChildIncompatiblePartitioning(
+		 const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
+                                                                                BLASWrapperPtr,
+		                                        const MPI_Comm &                  mpi_comm_parent,
                                                         const MPI_Comm &                        mpi_comm_domain,
                                                         const MPI_Comm &                        interpoolcomm,
                                                         const MPI_Comm &                        interbandgroup_comm,

@@ -36,7 +36,8 @@ namespace dftfe
     const std::vector<double> &                                     points,
     std::map<DensityDescriptorDataAttributes, std::vector<double>> &densityData)
   {
-    std::pair<size_t, size_t> indexRange;
+    std::pair<size_t, size_t> indexRangeVal;
+    std::pair<size_t, size_t> indexRangeGrad;
 
     unsigned int minIndex = 0;
     for (unsigned int i = 0; i < d_quadWeightsAll.size(); i++)
@@ -64,8 +65,11 @@ namespace dftfe
           }
       }
 
-    indexRange.first  = minIndex;
-    indexRange.second = maxIndex;
+    indexRangeVal.first  = minIndex;
+    indexRangeVal.second = maxIndex;
+
+    indexRangeGrad.first  = minIndex * 3;
+    indexRangeGrad.second = maxIndex * 3;
 
     if (densityData.find(DensityDescriptorDataAttributes::valuesTotal) ==
         densityData.end())
@@ -73,7 +77,7 @@ namespace dftfe
         this->fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::valuesTotal],
           d_densityValsTotalAllQuads,
-          indexRange);
+          indexRangeVal);
       }
 
     if (densityData.find(DensityDescriptorDataAttributes::valuesSpinUp) ==
@@ -82,7 +86,7 @@ namespace dftfe
         this->fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::valuesSpinUp],
           d_densityValsSpinUpAllQuads,
-          indexRange);
+          indexRangeVal);
       }
 
     if (densityData.find(DensityDescriptorDataAttributes::valuesSpinDown) ==
@@ -91,7 +95,7 @@ namespace dftfe
         this->fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::valuesSpinDown],
           d_densityValsSpinDownAllQuads,
-          indexRange);
+          indexRangeVal);
       }
 
     if (densityData.find(DensityDescriptorDataAttributes::gradValueSpinUp) ==
@@ -100,7 +104,7 @@ namespace dftfe
         this->fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::gradValueSpinUp],
           d_gradDensityValsSpinUpAllQuads,
-          indexRange);
+          indexRangeGrad);
       }
 
     if (densityData.find(DensityDescriptorDataAttributes::gradValueSpinDown) ==
@@ -109,7 +113,7 @@ namespace dftfe
         this->fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::gradValueSpinDown],
           d_gradDensityValsSpinDownAllQuads,
-          indexRange);
+          indexRangeGrad);
       }
   }
 

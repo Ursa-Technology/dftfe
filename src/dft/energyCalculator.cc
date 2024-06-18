@@ -723,15 +723,15 @@ namespace dftfe
 
         excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
           auxDensityXCInRepresentation,
-          quadPointsAllStdVec,
-          quadWeightsAllStdVec,
+          quadPointsInCell,
+          quadWeightsInCell,
           xDensityInDataOut,
           cDensityInDataOut);
 
         excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
           auxDensityXCOutRepresentation,
-          quadPointsAllStdVec,
-          quadWeightsAllStdVec,
+          quadPointsInCell,
+          quadWeightsInCell,
           xDensityOutDataOut,
           cDensityOutDataOut);
 
@@ -746,15 +746,15 @@ namespace dftfe
           }
 
         std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
-                             densityXCinData;
+                             densityXCInData;
         std::vector<double> &gradDensityXCInSpinUp =
           densityXCInData[DensityDescriptorDataAttributes::gradValuesSpinUp];
         std::vector<double> &gradDensityXCInSpinDown =
           densityXCInData[DensityDescriptorDataAttributes::gradValuesSpinDown];
 
         if (isGGA)
-          auxDensityXCInRepresentation->applyLocalOperations(
-            quadPointsAllStdVec, densityXCInData);
+          auxDensityXCInRepresentation->applyLocalOperations(quadPointsInCell,
+                                                             densityXCInData);
 
         auto cellId = basisOperationsPtr->cellID(iCell);
 

@@ -379,6 +379,9 @@ namespace dftfe
                                d_eigenVectorsFlattenedDevice,
 #endif
                                eigenValues,
+                               fermiEnergy,
+                               fermiEnergyUp,
+                               fermiEnergyDown,
                                d_auxDensityMatrixXCInPtr);
 
 
@@ -666,6 +669,9 @@ namespace dftfe
                                d_eigenVectorsFlattenedDevice,
 #endif
                                eigenValues,
+                               fermiEnergy,
+                               fermiEnergyUp,
+                               fermiEnergyDown,
                                d_auxDensityMatrixXCInPtr);
 
         computing_timer.enter_subsection("VEff Computation");
@@ -891,6 +897,9 @@ namespace dftfe
                            d_eigenVectorsFlattenedDevice,
 #endif
                            eigenValues,
+                           fermiEnergy,
+                           fermiEnergyUp,
+                           fermiEnergyDown,
                            d_auxDensityMatrixOutXCPtr);
 
     //

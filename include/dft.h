@@ -1043,6 +1043,9 @@ namespace dftfe
         &eigenVectorsFlattenedDevice,
 #endif
       const std::vector<std::vector<double>> &eigenValues,
+      const double                            fermiEnergy_,
+      const double                            fermiEnergyUp_,
+      const double                            fermiEnergyDown_,
       std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixXCPtr);
 
     std::shared_ptr<excManager> d_excManagerPtr;

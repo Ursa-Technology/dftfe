@@ -2763,6 +2763,9 @@ namespace dftfe
                                    d_eigenVectorsFlattenedDevice,
 #endif
                                    eigenValues,
+                                   fermiEnergy,
+                                   fermiEnergyUp,
+                                   fermiEnergyDown,
                                    d_auxDensityMatrixXCInPtr);
 
             for (unsigned int s = 0; s < 2; ++s)
@@ -3053,6 +3056,9 @@ namespace dftfe
                                    d_eigenVectorsFlattenedDevice,
 #endif
                                    eigenValues,
+                                   fermiEnergy,
+                                   fermiEnergyUp,
+                                   fermiEnergyDown,
                                    d_auxDensityMatrixInXCPtr);
 
             computing_timer.enter_subsection("VEff Computation");
@@ -3584,6 +3590,9 @@ namespace dftfe
                            d_eigenVectorsFlattenedDevice,
 #endif
                            eigenValues,
+                           fermiEnergy,
+                           fermiEnergyUp,
+                           fermiEnergyDown,
                            d_auxDensityMatrixOutXCPtr);
 
     const unsigned int numberBandGroups =
@@ -4913,7 +4922,10 @@ namespace dftfe
                                       dftfe::utils::MemorySpace::DEVICE>
       &eigenVectorsFlattenedDevice,
 #endif
-    const std::vector<std::vector<double>> &eigenValues,
+    const std::vector<std::vector<double>> &eigenValues_,
+    const double                            fermiEnergy_,
+    const double                            fermiEnergyUp_,
+    const double                            fermiEnergyDown_,
     std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixXCPtr)
   {
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
@@ -5090,12 +5102,12 @@ namespace dftfe
       {
 #ifdef DFTFE_WITH_DEVICE
         if (d_dftParamsPtr->useDevice)
-          computeAuxProjectedDensityMatrixFromPSI(d_eigenVectorsFlattenedDevice,
+          computeAuxProjectedDensityMatrixFromPSI(eigenVectorsFlattenedDevice,
                                                   d_numEigenValues,
-                                                  eigenValues,
-                                                  fermiEnergy,
-                                                  fermiEnergyUp,
-                                                  fermiEnergyDown,
+                                                  eigenValues_,
+                                                  fermiEnergy_,
+                                                  fermiEnergyUp_,
+                                                  fermiEnergyDown_,
                                                   d_basisOperationsPtrDevice,
                                                   d_BLASWrapperPtr,
                                                   d_densityDofHandlerIndex,
@@ -5108,12 +5120,12 @@ namespace dftfe
                                                   *d_dftParamsPtr);
 #endif
         if (!d_dftParamsPtr->useDevice)
-          computeAuxProjectedDensityMatrixFromPSI(d_eigenVectorsFlattenedHost,
+          computeAuxProjectedDensityMatrixFromPSI(eigenVectorsFlattenedHost,
                                                   d_numEigenValues,
-                                                  eigenValues,
-                                                  fermiEnergy,
-                                                  fermiEnergyUp,
-                                                  fermiEnergyDown,
+                                                  eigenValues_,
+                                                  fermiEnergy_,
+                                                  fermiEnergyUp_,
+                                                  fermiEnergyDown_,
                                                   d_basisOperationsPtrHost,
                                                   d_BLASWrapperPtr,
                                                   d_densityDofHandlerIndex,

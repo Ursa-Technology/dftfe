@@ -46,6 +46,8 @@ namespace dftfe
     bool        poissonGPU;
     bool        vselfGPU;
     std::string modelXCInputFile;
+    std::string auxBasisTypeXC;
+    std::string auxBasisDataXC;
 
     double radiusAtomBall, mixingParameter, spinMixingEnhancementFactor;
     bool   adaptAndersonMixingParameter;

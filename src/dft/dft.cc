@@ -4923,7 +4923,7 @@ namespace dftfe
       d_basisOperationsPtrHost->nQuadsPerCell();
     const unsigned int spinPolarizedFactor = 1 + d_dftParamsPtr->spinPolarized;
 
-    if (d_dftParamsPtr->XCAuxBasisType == "FE")
+    if (d_dftParamsPtr->AuxBasisTypeXC == "FE")
       {
         std::vector<double> densityValsForXC(2 * totalLocallyOwnedCells *
                                                nQuadsPerCell,
@@ -5086,7 +5086,7 @@ namespace dftfe
 
         auxDensityMatrixXCPtr->projectDensityEnd();
       }
-    else if (d_dftParamsPtr->XCAuxBasisType == "SlaterAE")
+    else if (d_dftParamsPtr->AuxBasisTypeXC == "SlaterAE")
       {}
   }
 

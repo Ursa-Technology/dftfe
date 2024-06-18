@@ -640,6 +640,17 @@ namespace dftfe
           dealii::Patterns::Anything(),
           "[Developer] File that contains both the pytorch ML-XC NN model (.ptc file) and the tolerances. This is an experimental feature to test out any new XC functional developed using machine learning.");
 
+        prm.declare_entry(
+          "AUX BASIS TYPE",
+          "FE",
+          dealii::Patterns::Selection("FE|SLATER|PW"),
+          "[Developer] Auxiliary basis for projecting the Kohn-Sham density or density matrix for XC evaluation. FE is the default option.");
+
+        prm.declare_entry(
+          "AUX BASIS DATA",
+          "",
+          dealii::Patterns::Anything(),
+          "[Developer] File that contains additional information for the Auxiliary basis selected in AUX BASIS TYPE.");
 
         prm.declare_entry(
           "NET CHARGE",
@@ -1166,6 +1177,8 @@ namespace dftfe
     xc_id                                      = 1;
     spinPolarized                              = 0;
     modelXCInputFile                           = "";
+    auxBasisTypeXC                             = "";
+    auxBasisDataXC                             = "";
     nkx                                        = 1;
     nky                                        = 1;
     nkz                                        = 1;
@@ -1558,6 +1571,8 @@ namespace dftfe
       xc_id                 = prm.get_integer("EXCHANGE CORRELATION TYPE");
       spinPolarized         = prm.get_integer("SPIN POLARIZATION");
       modelXCInputFile      = prm.get("MODEL XC INPUT FILE");
+      auxBasisTypeXC        = prm.get("AUX BASIS TYPE");
+      auxBasisDataXC        = prm.get("AUX BASIS DATA");
       start_magnetization   = prm.get_double("START MAGNETIZATION");
       pspCutoffImageCharges = prm.get_double("PSP CUTOFF IMAGE CHARGES");
       netCharge             = prm.get_double("NET CHARGE");

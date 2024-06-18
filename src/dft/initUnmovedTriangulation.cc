@@ -312,9 +312,9 @@ namespace dftfe
                           (d_dftParamsPtr->spinPolarized == 1) ? true : false,
                           d_dftParamsPtr->modelXCInputFile);
 
-    if (d_dftParamsPtr->XCAuxBasisType == "FE")
+    if (d_dftParamsPtr->AuxBasisTypeXC == "FE")
       d_auxDensityMatrixInPtr = std::make_shared<AuxDensityFE>();
-    else if (d_dftParamsPtr->XCAuxBasisType == "SlaterAE")
+    else if (d_dftParamsPtr->AuxBasisTypeXC == "SlaterAE")
       d_auxDensityMatrixInPtr = std::make_shared<AuxDensityMatrixSlater>();
 
 

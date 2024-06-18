@@ -5100,7 +5100,8 @@ namespace dftfe
       }
     else if (d_dftParamsPtr->AuxBasisTypeXC == "SlaterAE")
       {
-#ifdef DFTFE_WITH_DEVICE
+#ifndef USE_COMPLEX
+#  ifdef DFTFE_WITH_DEVICE
         if (d_dftParamsPtr->useDevice)
           computeAuxProjectedDensityMatrixFromPSI(eigenVectorsFlattenedDevice,
                                                   d_numEigenValues,
@@ -5118,7 +5119,7 @@ namespace dftfe
                                                   interpoolcomm,
                                                   interBandGroupComm,
                                                   *d_dftParamsPtr);
-#endif
+#  endif
         if (!d_dftParamsPtr->useDevice)
           computeAuxProjectedDensityMatrixFromPSI(eigenVectorsFlattenedHost,
                                                   d_numEigenValues,
@@ -5136,9 +5137,9 @@ namespace dftfe
                                                   interpoolcomm,
                                                   interBandGroupComm,
                                                   *d_dftParamsPtr);
+#endif
       }
   }
-
 
 #include "dft.inst.cc"
 } // namespace dftfe

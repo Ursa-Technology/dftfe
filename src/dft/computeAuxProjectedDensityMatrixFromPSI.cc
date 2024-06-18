@@ -163,6 +163,17 @@ namespace dftfe
 
     auxDensityMatrixRepresentation.evalOverlapMatrixEnd(domaincomm);
 
+    std::unordered_map<std::string, std::vector<double>>
+                         densityMatrixProjectionInputs;
+    std::vector<double> &wfcQuadPointDataBatchHost =
+      densityMatrixProjectionInputs["psiFunc"];
+    std::vector<double> &quadPointsBatch =
+      densityMatrixProjectionInputs["quadpts"];
+    std::vector<double> &quadWeightsBatch =
+      densityMatrixProjectionInputs["quadWt"];
+    std::vector<double> &fValuesBatch =
+      densityMatrixProjectionInputs["fValues"];
+
     for (unsigned int kPoint = 0; kPoint < kPointWeights.size(); ++kPoint)
       for (unsigned int spinIndex = 0; spinIndex < numSpinComponents;
            ++spinIndex)
@@ -219,6 +230,7 @@ namespace dftfe
 #if defined(DFTFE_WITH_DEVICE)
                   partialOccupVec.copyFrom(partialOccupVecHost);
 #endif
+                  fValuesBatch.copyFrom(partialOccupVecHost);
                   if (memorySpace == dftfe::utils::MemorySpace::HOST)
                     for (unsigned int iNode = 0; iNode < numLocalDofs; ++iNode)
                       std::memcpy(flattenedArrayBlock->data() +
@@ -261,10 +273,11 @@ namespace dftfe
                           const unsigned int startingCellId =
                             iblock * cellsBlockSize;
 
-                          std::vector<double> quadPointsBatch(
-                            currentCellsBlockSize * numQuadPoints * 3);
-                          std::vector<double> quadWeightsBatch(
-                            currentCellsBlockSize * numQuadPoints);
+
+                          quadPointsBatch.resize(currentCellsBlockSize *
+                                                 numQuadPoints * 3);
+                          quadWeightsBatch.resize(currentCellsBlockSize *
+                                                  numQuadPoints);
                           for (unsigned int iQuad = 0;
                                iQuad < currentCellsBlockSize * numQuadPoints;
                                ++iQuad)
@@ -288,14 +301,13 @@ namespace dftfe
                               startingCellId,
                               startingCellId + currentCellsBlockSize));
 
-                          wfcQuadPointDataHost.copyFrom(wfcQuadPointData);
+
+
+                          wfcQuadPointDataBatchHost.copyFrom(wfcQuadPointData);
 
                           auxDensityMatrixRepresentation
-                            .projectDensityMatrixStart(quadPtsBatch,
-                                                       quadWeightsBatch,
-                                                       wfcQuadPointDataHost,
-                                                       partialOccupVecHost,
-                                                       spinIndex);
+                            .projectDensityMatrixStart(
+                              densityMatrixProjectionInputs, spinIndex);
 
                         } // non-trivial cell block check
                     }     // cells block loop
@@ -338,8 +350,8 @@ namespace dftfe
 
   template void
   computeAuxProjectedDensityMatrixFromPSI(
-    const dftfe::utils::MemoryStorage<NumberType,
-                                      dftfe::utils::MemorySpace::HOST> &X,
+    const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      &                                     X,
     const unsigned int                      totalNumWaveFunctions,
     const std::vector<std::vector<double>> &eigenValues,
     const double                            fermiEnergy,
@@ -347,7 +359,7 @@ namespace dftfe
     const double                            fermiEnergyDown,
     std::shared_ptr<
       dftfe::basis::
-        FEBasisOperations<NumberType, double, dftfe::utils::MemorySpace::HOST>>
+        FEBasisOperations<double, double, dftfe::utils::MemorySpace::HOST>>
       &basisOperationsPtr,
     std::shared_ptr<
       dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>

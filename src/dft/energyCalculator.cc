@@ -976,8 +976,8 @@ namespace dftfe
 
     for (unsigned int iCell = 0; iCell < nCells; ++iCell)
       {
-        std::vector<double> quadPointsInCell;
-        std::vector<double> quadWeightsInCell;
+        std::vector<double> quadPointsInCell(numberQuadraturePointsPerCell * 3);
+        std::vector<double> quadWeightsInCell(numberQuadraturePointsPerCell);
         for (unsigned int iQuad = 0; iQuad < numberQuadraturePointsPerCell;
              ++iQuad)
           {

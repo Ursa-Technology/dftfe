@@ -140,12 +140,28 @@ namespace dftfe
           {
             const unsigned int startingCellId = iblock * cellsBlockSize;
 
-            auxDensityMatrixRepresentation.computeSStart(quadPointsBatch,
-                                                         quadWeightsBatch);
+            std::vector<double> quadPointsBatch(currentCellsBlockSize *
+                                                numQuadPoints * 3);
+            std::vector<double> quadWeightsBatch(currentCellsBlockSize *
+                                                 numQuadPoints);
+            for (unsigned int iQuad = 0;
+                 iQuad < currentCellsBlockSize * numQuadPoints;
+                 ++iQuad)
+              {
+                for (unsigned int idim = 0; idim < 3; ++idim)
+                  quadPointsInCell[3 * iQuad + idim] =
+                    allQuadPointsHost[startingCellId * numQuadPoints * 3 +
+                                      3 * iQuad + idim];
+                quadWeightsInCell[iQuad] =
+                  allQuadWeightsHost[startingCellId * numQuadPoints + iQuad];
+              }
+
+            auxDensityMatrixRepresentation.evalOverlapMatrixStart(
+              quadPointsBatch, quadWeightsBatch);
           } // non-trivial cell block check
       }     // cells block loop
 
-    auxDensityMatrixRepresentation.computeSEnd(domaincomm);
+    auxDensityMatrixRepresentation.evalOverlapMatrixEnd(domaincomm);
 
     for (unsigned int kPoint = 0; kPoint < kPointWeights.size(); ++kPoint)
       for (unsigned int spinIndex = 0; spinIndex < numSpinComponents;
@@ -245,6 +261,25 @@ namespace dftfe
                           const unsigned int startingCellId =
                             iblock * cellsBlockSize;
 
+                          std::vector<double> quadPointsBatch(
+                            currentCellsBlockSize * numQuadPoints * 3);
+                          std::vector<double> quadWeightsBatch(
+                            currentCellsBlockSize * numQuadPoints);
+                          for (unsigned int iQuad = 0;
+                               iQuad < currentCellsBlockSize * numQuadPoints;
+                               ++iQuad)
+                            {
+                              for (unsigned int idim = 0; idim < 3; ++idim)
+                                quadPointsInCell[3 * iQuad + idim] =
+                                  allQuadPointsHost[startingCellId *
+                                                      numQuadPoints * 3 +
+                                                    3 * iQuad + idim];
+                              quadWeightsInCell[iQuad] =
+                                allQuadWeightsHost[startingCellId *
+                                                     numQuadPoints +
+                                                   iQuad];
+                            }
+
                           basisOperationsPtr->interpolateKernel(
                             *(flattenedArrayBlock),
                             wfcQuadPointData.data(),
@@ -255,18 +290,18 @@ namespace dftfe
 
                           wfcQuadPointDataHost.copyFrom(wfcQuadPointData);
 
-                          auxDensityMatrixRepresentation.projectStart(
-                            quadPtsBatch,
-                            quadWeightsBatch,
-                            wfcQuadPointDataHost,
-                            partialOccupVecHost,
-                            spinIndex);
+                          auxDensityMatrixRepresentation
+                            .projectDensityMatrixStart(quadPtsBatch,
+                                                       quadWeightsBatch,
+                                                       wfcQuadPointDataHost,
+                                                       partialOccupVecHost,
+                                                       spinIndex);
 
                         } // non-trivial cell block check
                     }     // cells block loop
                 }
             }
-        }
+        } // spin loop
 
 
 
@@ -274,12 +309,13 @@ namespace dftfe
     MPI_Comm_size(interpoolcomm, &size);
     if (size > 1)
       {
-        auxDensityMatrixRepresentation.projectEnd(interpoolcomm);
+        auxDensityMatrixRepresentation.projectDensityMatrixEnd(interpoolcomm);
       }
     MPI_Comm_size(interBandGroupComm, &size);
     if (size > 1)
       {
-        auxDensityMatrixRepresentation.projectEnd(interBandGroupComm);
+        auxDensityMatrixRepresentation.projectDensityMatrixEnd(
+          interBandGroupComm);
       }
     auxDensityMatrixRepresentation.projectEnd(domainComm);
 

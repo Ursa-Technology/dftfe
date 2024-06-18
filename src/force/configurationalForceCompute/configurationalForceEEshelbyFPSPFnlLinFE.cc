@@ -664,8 +664,8 @@ namespace dftfe
                     const unsigned int subCellIndex =
                       dftPtr->d_basisOperationsPtrHost->cellIndex(subCellId);
 
-                    std::vector<double> quadPointsInCell;
-                    std::vector<double> quadWeightsInCell;
+                    std::vector<double> quadPointsInCell(numberQuadPoints * 3);
+                    std::vector<double> quadWeightsInCell(numQuadPoints);
                     for (unsigned int iQuad = 0; iQuad < numQuadPoints; ++iQuad)
                       {
                         for (unsigned int idim = 0; idim < 3; ++idim)

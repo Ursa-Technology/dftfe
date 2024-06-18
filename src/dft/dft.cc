@@ -2301,6 +2301,7 @@ namespace dftfe
     //
     unsigned int scfIter                  = 0;
     double       norm                     = 1.0;
+    double       energyResidual           = 1.0;
     d_rankCurrentLRD                      = 0;
     d_relativeErrorJacInvApproxPrevScfLRD = 100.0;
     // CAUTION: Choosing a looser tolerance might lead to failed tests
@@ -2310,8 +2311,7 @@ namespace dftfe
     pcout << std::endl;
     if (d_dftParamsPtr->verbosity == 0)
       pcout << "Starting SCF iterations...." << std::endl;
-    while ((norm > d_dftParamsPtr->selfConsistentSolverTolerance) &&
-           (scfIter < d_dftParamsPtr->numSCFIterations))
+    while (!scfConverged && (scfIter < d_dftParamsPtr->numSCFIterations))
       {
         dealii::Timer local_timer(d_mpiCommParent, true);
         if (d_dftParamsPtr->verbosity >= 1)
@@ -2542,7 +2542,10 @@ namespace dftfe
           d_phiTotRhoIn = d_phiTotRhoOut;
         computing_timer.leave_subsection("density mixing");
 
-        if (!(norm > d_dftParamsPtr->selfConsistentSolverTolerance))
+        if (!((norm > d_dftParamsPtr->selfConsistentSolverTolerance) ||
+              (d_dftParamsPtr->useEnergyResidualTolerance &&
+               energyResidual >
+                 d_dftParamsPtr->selfConsistentSolverEnergyTolerance)))
           scfConverged = true;
 
         if (d_dftParamsPtr->multipoleBoundaryConditions)
@@ -3318,8 +3321,9 @@ namespace dftfe
         //
         // phiTot with rhoOut
         //
-        if (d_dftParamsPtr->computeEnergyEverySCF &&
-            d_numEigenValuesRR == d_numEigenValues)
+        if ((d_dftParamsPtr->computeEnergyEverySCF &&
+             d_numEigenValuesRR == d_numEigenValues) ||
+            d_dftParamsPtr->useEnergyResidualTolerance)
           {
             if (d_dftParamsPtr->verbosity >= 2)
               pcout
@@ -3421,25 +3425,44 @@ namespace dftfe
               d_phiTotRhoOut,
               d_phiOutQuadValues,
               dummy);
-
-
-            //
-            // impose integral phi equals 0
-            //
-            /*
-            if(d_dftParamsPtr->periodicX && d_dftParamsPtr->periodicY &&
-            d_dftParamsPtr->periodicZ && !d_dftParamsPtr->pinnedNodeForPBC)
-            {
-              if(d_dftParamsPtr->verbosity>=2)
-                pcout<<"Value of integPhiOut:
-            "<<totalCharge(d_dofHandlerPRefined,d_phiTotRhoOut);
-            }
-            */
-
             computing_timer.leave_subsection("phiTot solve");
-
-            const dealii::Quadrature<3> &quadrature =
-              matrix_free_data.get_quadrature(d_densityQuadratureId);
+          }
+        if (d_dftParamsPtr->useEnergyResidualTolerance)
+          {
+            computing_timer.enter_subsection("Energy residual computation");
+            energyResidual = energyCalc.computeEnergyResidual(
+              d_basisOperationsPtrHost,
+              d_basisOperationsPtrElectroHost,
+              d_densityQuadratureId,
+              d_densityQuadratureIdElectro,
+              d_smearedChargeQuadratureIdElectro,
+              d_lpspQuadratureIdElectro,
+              d_excManagerPtr,
+              d_phiInQuadValues,
+              d_phiOutQuadValues,
+              d_phiTotRhoIn,
+              d_phiTotRhoOut,
+              d_densityInQuadValues,
+              d_densityOutQuadValues,
+              d_gradDensityInQuadValues,
+              d_gradDensityOutQuadValues,
+              d_rhoCore,
+              d_gradRhoCore,
+              d_bQuadValuesAllAtoms,
+              d_bCellNonTrivialAtomIds,
+              d_localVselfs,
+              d_atomNodeIdToChargeMap,
+              d_dftParamsPtr->smearedNuclearCharges);
+            if (d_dftParamsPtr->verbosity >= 1)
+              pcout << "Energy residual  : " << energyResidual << std::endl;
+            if (d_dftParamsPtr->reproducible_output)
+              pcout << "Energy residual  : " << std::setprecision(4)
+                    << energyResidual << std::endl;
+            computing_timer.leave_subsection("Energy residual computation");
+          }
+        if (d_dftParamsPtr->computeEnergyEverySCF &&
+            d_numEigenValuesRR == d_numEigenValues)
+          {
             d_dispersionCorr.computeDispresionCorrection(
               atomLocations, d_domainBoundingVectors);
             const double totalEnergy = energyCalc.computeEnergy(

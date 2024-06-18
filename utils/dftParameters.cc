@@ -735,6 +735,12 @@ namespace dftfe
           "[Standard] SCF iterations stopping tolerance in terms of $L_2$ norm of the electron-density difference between two successive iterations. The default tolerance of is set to a tight value of 1e-5 for accurate ionic forces and cell stresses keeping structural optimization and molecular dynamics in mind. A tolerance of 1e-4 would be accurate enough for calculations without structural optimization and dynamics. CAUTION: A tolerance close to 1e-7 or lower can deteriorate the SCF convergence due to the round-off error accumulation.");
 
         prm.declare_entry(
+          "ENERGY TOLERANCE",
+          "1e-07",
+          dealii::Patterns::Double(1e-12, 1.0),
+          "[Standard] SCF iterations stopping tolerance in terms of difference between Harris-Foulkes and Kohn-Sham energies. The default tolerance of is set to a tight value of 1e-7 for accurate ionic forces and cell stresses keeping structural optimization and molecular dynamics in mind. A tolerance of 1e-6 would be accurate enough for calculations without structural optimization and dynamics.");
+
+        prm.declare_entry(
           "MIXING HISTORY",
           "10",
           dealii::Patterns::Integer(1, 1000),
@@ -749,7 +755,7 @@ namespace dftfe
         prm.declare_entry(
           "SPIN MIXING ENHANCEMENT FACTOR",
           "4.0",
-          dealii::Patterns::Double(-1e-12, 10.0),
+          dealii::Patterns::Double(-1e-12, 100.0),
           "[Standard] Scales the mixing parameter for the spin densities as SPIN MIXING ENHANCEMENT FACTOR times MIXING PARAMETER. This parameter is not used for LOW\_RANK\_DIELECM\_PRECOND mixing method.");
 
         prm.declare_entry(
@@ -801,6 +807,12 @@ namespace dftfe
           "false",
           dealii::Patterns::Bool(),
           "[Advanced] Boolean parameter specifying whether to compute the total energy at the end of every SCF. Setting it to false can lead to some computational time savings. Default value is false but is internally set to true if VERBOSITY==5");
+
+        prm.declare_entry(
+          "USE ENERGY RESIDUAL METRIC",
+          "false",
+          dealii::Patterns::Bool(),
+          "[Advanced] Boolean parameter specifying whether to use the energy residual metric (equation 7.23 of Richard Matrin second edition) for convergence check. Setting it to false can lead to some computational time savings. Default value is false");
 
 
         prm.enter_subsection("LOW RANK DIELECM PRECOND");
@@ -1557,19 +1569,21 @@ namespace dftfe
       TVal                          = prm.get_double("TEMPERATURE");
       numSCFIterations              = prm.get_integer("MAXIMUM ITERATIONS");
       selfConsistentSolverTolerance = prm.get_double("TOLERANCE");
-      mixingHistory                 = prm.get_integer("MIXING HISTORY");
-      mixingParameter               = prm.get_double("MIXING PARAMETER");
+      selfConsistentSolverEnergyTolerance = prm.get_double("ENERGY TOLERANCE");
+      mixingHistory                       = prm.get_integer("MIXING HISTORY");
+      mixingParameter                     = prm.get_double("MIXING PARAMETER");
       spinMixingEnhancementFactor =
         prm.get_double("SPIN MIXING ENHANCEMENT FACTOR");
       adaptAndersonMixingParameter =
         prm.get_bool("ADAPT ANDERSON MIXING PARAMETER");
-      kerkerParameter         = prm.get_double("KERKER MIXING PARAMETER");
-      restaFermiWavevector    = prm.get_double("RESTA FERMI WAVEVECTOR");
-      restaScreeningLength    = prm.get_double("RESTA SCREENING LENGTH");
-      mixingMethod            = prm.get("MIXING METHOD");
-      constraintMagnetization = prm.get_bool("CONSTRAINT MAGNETIZATION");
-      startingWFCType         = prm.get("STARTING WFC");
-      computeEnergyEverySCF   = prm.get_bool("COMPUTE ENERGY EACH ITER");
+      kerkerParameter            = prm.get_double("KERKER MIXING PARAMETER");
+      restaFermiWavevector       = prm.get_double("RESTA FERMI WAVEVECTOR");
+      restaScreeningLength       = prm.get_double("RESTA SCREENING LENGTH");
+      mixingMethod               = prm.get("MIXING METHOD");
+      constraintMagnetization    = prm.get_bool("CONSTRAINT MAGNETIZATION");
+      startingWFCType            = prm.get("STARTING WFC");
+      computeEnergyEverySCF      = prm.get_bool("COMPUTE ENERGY EACH ITER");
+      useEnergyResidualTolerance = prm.get_bool("USE ENERGY RESIDUAL METRIC");
 
       prm.enter_subsection("LOW RANK DIELECM PRECOND");
       {

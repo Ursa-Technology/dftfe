@@ -28,7 +28,7 @@ namespace dftfe
   template <typename NumberType, dftfe::utils::MemorySpace memorySpace>
   void
   computeAuxProjectedDensityMatrixFromPSI(
-    const dftfe::utils::MemoryStorage<NumberType, memorySpace> *X,
+    const dftfe::utils::MemoryStorage<NumberType, memorySpace> &X,
     const unsigned int                      totalNumWaveFunctions,
     const std::vector<std::vector<double>> &eigenValues,
     const double                            fermiEnergy,

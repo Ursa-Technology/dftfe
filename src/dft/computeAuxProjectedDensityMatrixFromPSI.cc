@@ -36,7 +36,7 @@ namespace dftfe
   template <typename NumberType, dftfe::utils::MemorySpace memorySpace>
   void
   computeAuxProjectedDensityMatrixFromPSI(
-    const dftfe::utils::MemoryStorage<NumberType, memorySpace> *X,
+    const dftfe::utils::MemoryStorage<NumberType, memorySpace> &X,
     const unsigned int                      totalNumWaveFunctions,
     const std::vector<std::vector<double>> &eigenValues,
     const double                            fermiEnergy,
@@ -207,7 +207,7 @@ namespace dftfe
                     for (unsigned int iNode = 0; iNode < numLocalDofs; ++iNode)
                       std::memcpy(flattenedArrayBlock->data() +
                                     iNode * currentBlockSize,
-                                  X->data() +
+                                  X.data() +
                                     numLocalDofs * totalNumWaveFunctions *
                                       (numSpinComponents * kPoint + spinIndex) +
                                     iNode * totalNumWaveFunctions + jvec,
@@ -220,8 +220,8 @@ namespace dftfe
                         totalNumWaveFunctions,
                         numLocalDofs,
                         jvec,
-                        X->data() + numLocalDofs * totalNumWaveFunctions *
-                                      (numSpinComponents * kPoint + spinIndex),
+                        X.data() + numLocalDofs * totalNumWaveFunctions *
+                                     (numSpinComponents * kPoint + spinIndex),
                         flattenedArrayBlock->data());
 #endif
 
@@ -303,7 +303,7 @@ namespace dftfe
   template void
   computeAuxProjectedDensityMatrixFromPSI(
     const dftfe::utils::MemoryStorage<NumberType,
-                                      dftfe::utils::MemorySpace::HOST> *X,
+                                      dftfe::utils::MemorySpace::HOST> &X,
     const unsigned int                      totalNumWaveFunctions,
     const std::vector<std::vector<double>> &eigenValues,
     const double                            fermiEnergy,

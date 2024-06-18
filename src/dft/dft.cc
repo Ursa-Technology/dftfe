@@ -5087,7 +5087,44 @@ namespace dftfe
         auxDensityMatrixXCPtr->projectDensityEnd();
       }
     else if (d_dftParamsPtr->AuxBasisTypeXC == "SlaterAE")
-      {}
+      {
+#ifdef DFTFE_WITH_DEVICE
+        if (d_dftParamsPtr->useDevice)
+          computeAuxProjectedDensityMatrixFromPSI(d_eigenVectorsFlattenedDevice,
+                                                  d_numEigenValues,
+                                                  eigenValues,
+                                                  fermiEnergy,
+                                                  fermiEnergyUp,
+                                                  fermiEnergyDown,
+                                                  d_basisOperationsPtrDevice,
+                                                  d_BLASWrapperPtr,
+                                                  d_densityDofHandlerIndex,
+                                                  d_gllQuadratureId,
+                                                  d_kPointWeights,
+                                                  auxDensityMatrixXCPtr,
+                                                  d_mpiCommParent,
+                                                  interpoolcomm,
+                                                  interBandGroupComm,
+                                                  *d_dftParamsPtr);
+#endif
+        if (!d_dftParamsPtr->useDevice)
+          computeAuxProjectedDensityMatrixFromPSI(d_eigenVectorsFlattenedHost,
+                                                  d_numEigenValues,
+                                                  eigenValues,
+                                                  fermiEnergy,
+                                                  fermiEnergyUp,
+                                                  fermiEnergyDown,
+                                                  d_basisOperationsPtrHost,
+                                                  d_BLASWrapperPtr,
+                                                  d_densityDofHandlerIndex,
+                                                  d_gllQuadratureId,
+                                                  d_kPointWeights,
+                                                  auxDensityMatrixXCPtr,
+                                                  d_mpiCommParent,
+                                                  interpoolcomm,
+                                                  interBandGroupComm,
+                                                  *d_dftParamsPtr);
+      }
   }
 
 

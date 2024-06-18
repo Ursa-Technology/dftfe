@@ -181,9 +181,9 @@ namespace dftfe
         &gradDensityInValues,
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &                                                  gradDensityOutValues,
-      const std::map<dealii::CellId, std::vector<double>> &rhoCoreValues,
-      const std::map<dealii::CellId, std::vector<double>> &gradRhoCoreValues,
+        &                               gradDensityOutValues,
+      std::shared_ptr<AuxDensityMatrix> auxDensityXCInRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix> auxDensityXCOutRepresentationPtr,
       const std::map<dealii::CellId, std::vector<double>> &smearedbValues,
       const std::map<dealii::CellId, std::vector<unsigned int>>
         &                                     smearedbNonTrivialAtomIds,

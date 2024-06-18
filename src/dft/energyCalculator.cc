@@ -791,9 +791,9 @@ namespace dftfe
       &gradDensityInValues,
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-      &                                                  gradDensityOutValues,
-    const std::map<dealii::CellId, std::vector<double>> &rhoCoreValues,
-    const std::map<dealii::CellId, std::vector<double>> &gradRhoCoreValues,
+      &                               gradDensityOutValues,
+    std::shared_ptr<AuxDensityMatrix> auxDensityXCInRepresentationPtr,
+    std::shared_ptr<AuxDensityMatrix> auxDensityXCOutRepresentationPtr,
     const std::map<dealii::CellId, std::vector<double>> &smearedbValues,
     const std::map<dealii::CellId, std::vector<unsigned int>>
       &                                     smearedbNonTrivialAtomIds,
@@ -825,61 +825,55 @@ namespace dftfe
                                                 densityQuadratureIDElectro,
                                                 phiTotRhoInValues,
                                                 densityInValues[0]));
-    if (d_dftParams.spinPolarized == 1)
-      computeXCEnergyTermsSpinPolarized(basisOperationsPtr,
-                                        densityQuadratureID,
-                                        excManagerPtr,
-                                        densityInValues,
-                                        densityInValues,
-                                        gradDensityInValues,
-                                        gradDensityInValues,
-                                        rhoCoreValues,
-                                        gradRhoCoreValues,
-                                        exchangeEnergy,
-                                        correlationEnergy,
-                                        excCorrPotentialTimesRho);
-    else
-      computeXCEnergyTerms(basisOperationsPtr,
-                           densityQuadratureID,
-                           excManagerPtr,
-                           densityInValues,
-                           densityInValues,
-                           gradDensityInValues,
-                           gradDensityInValues,
-                           rhoCoreValues,
-                           gradRhoCoreValues,
-                           exchangeEnergy,
-                           correlationEnergy,
-                           excCorrPotentialTimesRho);
+
+    std::vector<
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+      densityInQuadValuesSpinPolarized = densityInValues;
+    std::vector<
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+      gradDensityInQuadValuesSpinPolarized = gradDensityInValues;
+    std::vector<
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+      gradDensityOutQuadValuesSpinPolarized = gradDensityOutValues;
+
+    if (d_dftParams.spinPolarized == 0)
+      {
+        densityInQuadValuesSpinPolarized.push_back(
+          dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
+            densityInValues[0].size(), 0.0));
+        gradDensityInQuadValuesSpinPolarized.push_back(
+          dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
+            gradDensityInValues[0].size(), 0.0));
+        gradDensityOutQuadValuesSpinPolarized.push_back(
+          dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
+            gradDensityOutValues[0].size(), 0.0));
+      }
+
+    computeXCEnergyTermsSpinPolarized(basisOperationsPtr,
+                                      densityQuadratureID,
+                                      excManagerPtr,
+                                      densityInValuesSpinPolarized,
+                                      gradDensityInValuesSpinPolarized,
+                                      auxDensityXCInRepresentationPtr,
+                                      auxDensityXCInRepresentationPtr,
+                                      exchangeEnergy,
+                                      correlationEnergy,
+                                      excCorrPotentialTimesRho);
+
+
     excCorrPotentialTimesRho *= -1.0;
     exchangeEnergy *= -1.0;
     correlationEnergy *= -1.0;
-    if (d_dftParams.spinPolarized == 1)
-      computeXCEnergyTermsSpinPolarized(basisOperationsPtr,
-                                        densityQuadratureID,
-                                        excManagerPtr,
-                                        densityInValues,
-                                        densityOutValues,
-                                        gradDensityInValues,
-                                        gradDensityOutValues,
-                                        rhoCoreValues,
-                                        gradRhoCoreValues,
-                                        exchangeEnergy,
-                                        correlationEnergy,
-                                        excCorrPotentialTimesRho);
-    else
-      computeXCEnergyTerms(basisOperationsPtr,
-                           densityQuadratureID,
-                           excManagerPtr,
-                           densityInValues,
-                           densityOutValues,
-                           gradDensityInValues,
-                           gradDensityOutValues,
-                           rhoCoreValues,
-                           gradRhoCoreValues,
-                           exchangeEnergy,
-                           correlationEnergy,
-                           excCorrPotentialTimesRho);
+    computeXCEnergyTermsSpinPolarized(basisOperationsPtr,
+                                      densityQuadratureID,
+                                      excManagerPtr,
+                                      densityInValuesSpinPolarized,
+                                      gradDensityOutValuesSpinPolarized,
+                                      auxDensityXCInRepresentationPtr,
+                                      auxDensityXCOutRepresentationPtr,
+                                      exchangeEnergy,
+                                      correlationEnergy,
+                                      excCorrPotentialTimesRho);
     const double potentialTimesRho =
       excCorrPotentialTimesRho + electrostaticPotentialTimesRho;
     const double nuclearElectrostaticEnergy =

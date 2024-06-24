@@ -8,6 +8,8 @@
 #include <vector>
 #include <utility>
 #include <map>
+#include <unordered_map>
+#include <mpi.h>
 
 namespace dftfe
 {

@@ -26,13 +26,13 @@ namespace dftfe
   class excDensityLDAClass : public excDensityBaseClass
   {
   public:
-    excDensityLDAClass(xc_func_type *funcXPtr, xc_func_type *funcCPtr)
+    excDensityLDAClass(xc_func_type *funcXPtr, xc_func_type *funcCPtr);
 
-      excDensityLDAClass(xc_func_type *funcXPtr,
-                         xc_func_type *funcCPtr,
-                         std::string   modelXCInputFile)
+    excDensityLDAClass(xc_func_type *funcXPtr,
+                       xc_func_type *funcCPtr,
+                       std::string   modelXCInputFile);
 
-        ~excDensityLDAClass();
+    ~excDensityLDAClass();
 
     void
     computeExcVxcFxc(

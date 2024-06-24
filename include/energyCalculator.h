@@ -20,7 +20,7 @@
 #include <excManager.h>
 #include "dftParameters.h"
 #include <FEBasisOperations.h>
-#include <auxDensityMatrixSlater.h>
+#include <AuxDensityMatrix.h>
 #ifndef energyCalculator_H_
 #  define energyCalculator_H_
 
@@ -182,8 +182,8 @@ namespace dftfe
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &                               gradDensityOutValues,
-      std::shared_ptr<AuxDensityMatrix> auxDensityXCInRepresentationPtr,
-      std::shared_ptr<AuxDensityMatrix> auxDensityXCOutRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix> AuxDensityXCInRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix> AuxDensityXCOutRepresentationPtr,
       const std::map<dealii::CellId, std::vector<double>> &smearedbValues,
       const std::map<dealii::CellId, std::vector<unsigned int>>
         &                                     smearedbNonTrivialAtomIds,
@@ -208,7 +208,7 @@ namespace dftfe
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &                               gradDensityOutValues,
-      std::shared_ptr<AuxDensityMatrix> auxDensityXCInRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix> AuxDensityXCInRepresentationPtr,
       std::shared_ptr<AuxDensityMatrix> auxDensityXCOutRepresentationPtr,
       double &                          exchangeEnergy,
       double &                          correlationEnergy,

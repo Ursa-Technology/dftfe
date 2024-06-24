@@ -25,7 +25,7 @@ namespace dftfe
     const std::vector<DensityDescriptorDataAttributes>
       &densityDescriptorAttributesList)
     : d_densityDescriptorAttributesList(densityDescriptorAttributesList)
-    , d_densityFamilyType(familyType)
+    , d_familyType(familyType)
   {}
 
 
@@ -36,7 +36,7 @@ namespace dftfe
   }
 
   const std::vector<DensityDescriptorDataAttributes> &
-  excDensityBaseClass::getDensityBasedFamilyType() const
+  excDensityBaseClass::getDensityDescriptorAttributesList() const
   {
     return d_densityDescriptorAttributesList;
   }

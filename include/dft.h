@@ -25,6 +25,7 @@
 #include <MemoryStorage.h>
 #include <FEBasisOperations.h>
 #include <BLASWrapper.h>
+#include <AuxDensityMatrix.h>
 
 #include <complex>
 #include <deque>

@@ -25,7 +25,7 @@
 #include <BLASWrapper.h>
 #include <FEBasisOperations.h>
 #include <oncvClass.h>
-#include <auxDensityMatrixSlater.h>
+#include <AuxDensityMatrix.h>
 
 namespace dftfe
 {

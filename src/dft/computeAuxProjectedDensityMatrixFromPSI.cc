@@ -149,10 +149,10 @@ namespace dftfe
                  ++iQuad)
               {
                 for (unsigned int idim = 0; idim < 3; ++idim)
-                  quadPointsInCell[3 * iQuad + idim] =
+                  quadPointsBatch[3 * iQuad + idim] =
                     allQuadPointsHost[startingCellId * numQuadPoints * 3 +
                                       3 * iQuad + idim];
-                quadWeightsInCell[iQuad] =
+                quadWeightsBatch[iQuad] =
                   allQuadWeightsHost[startingCellId * numQuadPoints + iQuad];
               }
 
@@ -283,11 +283,11 @@ namespace dftfe
                                ++iQuad)
                             {
                               for (unsigned int idim = 0; idim < 3; ++idim)
-                                quadPointsInCell[3 * iQuad + idim] =
+                                quadPointsBatch[3 * iQuad + idim] =
                                   allQuadPointsHost[startingCellId *
                                                       numQuadPoints * 3 +
                                                     3 * iQuad + idim];
-                              quadWeightsInCell[iQuad] =
+                              quadWeightsBatch[iQuad] =
                                 allQuadWeightsHost[startingCellId *
                                                      numQuadPoints +
                                                    iQuad];
@@ -369,7 +369,7 @@ namespace dftfe
     const std::vector<double> &kPointWeights,
     AuxDensityMatrix &         auxDensityMatrixRepresentation,
     const MPI_Comm &           mpiCommParent,
-    const MPI_Comm &           domaincomm,
+    const MPI_Comm &           domainComm,
     const MPI_Comm &           interpoolcomm,
     const MPI_Comm &           interBandGroupComm,
     const dftParameters &      dftParams);

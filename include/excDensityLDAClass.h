@@ -43,6 +43,11 @@ namespace dftfe
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
       const override;
 
+    void
+    checkInputOutputDataAttributesConsistency(
+      const std::vector<xcOutputDataAttributes> &outputDataAttributes)
+      const override;
+
 
   private:
     NNLDA *       d_NNLDAPtr;

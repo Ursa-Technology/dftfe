@@ -20,6 +20,7 @@
 #include <excDensityLDAClass.h>
 #include <NNLDA.h>
 #include <Exceptions.h>
+#include <dftfeDataTypes.h>
 
 namespace dftfe
 {
@@ -60,7 +61,7 @@ namespace dftfe
 
   void
   excDensityLDAClass::checkInputOutputDataAttributesConsistency(
-    const std::vector<xcOutputDataAttributes> &outputDataAttributes)
+    const std::vector<xcOutputDataAttributes> &outputDataAttributes) const
   {
     const std::vector<xcOutputDataAttributes> allowedOutputDataAttributes =
     { xcOutputDataAttributes::e,
@@ -90,7 +91,7 @@ namespace dftfe
     const double *                                         quadWeights,
     const unsigned int                                     numQuadPoints,
     std::map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
-    std::map<xcOutputDataAttributes, std::vector<double>> &cDataout) const;
+    std::map<xcOutputDataAttributes, std::vector<double>> &cDataout)
   {
     std::vector<xcOutputDataAttributes> outputDataAttributes;
     for (const auto &element : xDataOut)

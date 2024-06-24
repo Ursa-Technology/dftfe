@@ -30,6 +30,12 @@ namespace dftfe
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
       const override;
 
+    void
+    checkInputOutputDataAttributesConsistency(
+      const std::vector<xcOutputDataAttributes> &outputDataAttributes)
+      const override;
+
+
   private:
     NNLLMGGA *          d_NNLLMGGAPtr;
     xc_func_type *      d_funcXPtr;

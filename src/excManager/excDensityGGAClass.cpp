@@ -64,7 +64,7 @@ namespace dftfe
 
   void
   excDensityGGAClass::checkInputOutputDataAttributesConsistency(
-    const std::vector<xcOutputDataAttributes> &outputDataAttributes)
+    const std::vector<xcOutputDataAttributes> &outputDataAttributes) const
   {
     const std::vector<xcOutputDataAttributes> allowedOutputDataAttributes =
     { xcOutputDataAttributes::e,

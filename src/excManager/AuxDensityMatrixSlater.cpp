@@ -4,6 +4,8 @@
 
 #include "AuxDensityMatrixSlater.h"
 #include <stdexcept>
+#include <cmath>
+#include <linearAlgebraOperations.h>
 
 namespace dftfe
 {
@@ -63,7 +65,7 @@ namespace dftfe
   AuxDensityMatrixSlater::evalOverlapMatrixEnd(const MPI_Comm &mpiComm)
   {
     // MPI All Reduce
-    MPI_AllReduce(d_SMatrix.data(),
+    MPI_Allreduce(d_SMatrix.data(),
                   d_SMatrix.data(),
                   d_SMatrix.size(),
                   MPI_DOUBLE,
@@ -215,7 +217,7 @@ namespace dftfe
   AuxDensityMatrixSlater::projectDensityMatrixEnd(const MPI_Comm &mpiComm)
   {
     // MPI All Reduce d_SWFC
-    MPI_AllReduce(d_SWFC.data(),
+    MPI_Allreduce(d_SWFC.data(),
                   d_SWFC.data(),
                   d_SWFC.size(),
                   MPI_DOUBLE,

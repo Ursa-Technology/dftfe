@@ -44,6 +44,10 @@ namespace dftfe
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
       const override;
 
+    void
+    checkInputOutputDataAttributesConsistency(
+      const std::vector<xcOutputDataAttributes> &outputDataAttributes)
+      const override;
 
   private:
     NNGGA *             d_NNGGAPtr;

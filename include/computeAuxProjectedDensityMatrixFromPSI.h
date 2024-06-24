@@ -19,9 +19,9 @@
 #define computeAuxProjectedDensityMatrixFromPSI_H_
 
 #include <headers.h>
-#include "dftParameters.h"
-#include "FEBasisOperations.h"
-#include "AuxDensityMatrix"
+#include <dftParameters.h>
+#include <FEBasisOperations.h>
+#include <AuxDensityMatrix.h>
 
 namespace dftfe
 {

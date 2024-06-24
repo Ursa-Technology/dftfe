@@ -2754,19 +2754,19 @@ namespace dftfe
                       d_numEigenValues :
                       d_numEigenValuesRR)));
 
-            updateAuxDensityMatrix(d_densityInQuadValues,
-                                   d_gradDensityInQuadValues,
-                                   d_rhoCore,
-                                   d_gradRhoCore,
-                                   d_eigenVectorsFlattenedHost,
+            updateAuxDensityXCMatrix(d_densityInQuadValues,
+                                     d_gradDensityInQuadValues,
+                                     d_rhoCore,
+                                     d_gradRhoCore,
+                                     d_eigenVectorsFlattenedHost,
 #ifdef DFTFE_WITH_DEVICE
-                                   d_eigenVectorsFlattenedDevice,
+                                     d_eigenVectorsFlattenedDevice,
 #endif
-                                   eigenValues,
-                                   fermiEnergy,
-                                   fermiEnergyUp,
-                                   fermiEnergyDown,
-                                   d_auxDensityMatrixXCInPtr);
+                                     eigenValues,
+                                     fermiEnergy,
+                                     fermiEnergyUp,
+                                     fermiEnergyDown,
+                                     d_auxDensityMatrixXCInPtr);
 
             for (unsigned int s = 0; s < 2; ++s)
               {
@@ -3047,19 +3047,19 @@ namespace dftfe
                   d_numEigenValues :
                   d_numEigenValuesRR);
 
-            updateAuxDensityMatrix(d_densityInQuadValues,
-                                   d_gradDensityInQuadValues,
-                                   d_rhoCore,
-                                   d_gradRhoCore,
-                                   d_eigenVectorsFlattenedHost,
+            updateAuxDensityXCMatrix(d_densityInQuadValues,
+                                     d_gradDensityInQuadValues,
+                                     d_rhoCore,
+                                     d_gradRhoCore,
+                                     d_eigenVectorsFlattenedHost,
 #ifdef DFTFE_WITH_DEVICE
-                                   d_eigenVectorsFlattenedDevice,
+                                     d_eigenVectorsFlattenedDevice,
 #endif
-                                   eigenValues,
-                                   fermiEnergy,
-                                   fermiEnergyUp,
-                                   fermiEnergyDown,
-                                   d_auxDensityMatrixInXCPtr);
+                                     eigenValues,
+                                     fermiEnergy,
+                                     fermiEnergyUp,
+                                     fermiEnergyDown,
+                                     d_auxDensityMatrixInXCPtr);
 
             computing_timer.enter_subsection("VEff Computation");
             kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixInXCPtr,
@@ -3581,19 +3581,19 @@ namespace dftfe
           }
       }
 
-    updateAuxDensityMatrix(d_densityOutQuadValues,
-                           d_gradDensityOutQuadValues,
-                           d_rhoCore,
-                           d_gradRhoCore,
-                           d_eigenVectorsFlattenedHost,
+    updateAuxDensityXCMatrix(d_densityOutQuadValues,
+                             d_gradDensityOutQuadValues,
+                             d_rhoCore,
+                             d_gradRhoCore,
+                             d_eigenVectorsFlattenedHost,
 #ifdef DFTFE_WITH_DEVICE
-                           d_eigenVectorsFlattenedDevice,
+                             d_eigenVectorsFlattenedDevice,
 #endif
-                           eigenValues,
-                           fermiEnergy,
-                           fermiEnergyUp,
-                           fermiEnergyDown,
-                           d_auxDensityMatrixOutXCPtr);
+                             eigenValues,
+                             fermiEnergy,
+                             fermiEnergyUp,
+                             fermiEnergyDown,
+                             d_auxDensityMatrixOutXCPtr);
 
     const unsigned int numberBandGroups =
       dealii::Utilities::MPI::n_mpi_processes(interBandGroupComm);
@@ -4905,7 +4905,7 @@ namespace dftfe
 
 
   void
-  dftClass<FEOrder, FEOrderElectro, memorySpace>::updateAuxDensityMatrix(
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::updateAuxDensityXCMatrix(
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       &densityQuadValues,

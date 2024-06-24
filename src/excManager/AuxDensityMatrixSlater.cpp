@@ -295,8 +295,9 @@ namespace dftfe
 
   void
   AuxDensityMatrixSlater::applyLocalOperations(
-    const std::vector<double> &                                     Points,
-    std::map<DensityDescriptorDataAttributes, std::vector<double>> &densityData)
+    const std::vector<double> &Points,
+    std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
+      &densityData)
   {
     int                       DMSpinOffset = d_nBasis * d_nBasis;
     std::pair<size_t, size_t> indexRange;

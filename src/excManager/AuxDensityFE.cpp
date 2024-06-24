@@ -33,8 +33,9 @@ namespace dftfe
 
   void
   AuxDensityFE::applyLocalOperations(
-    const std::vector<double> &                                     points,
-    std::map<DensityDescriptorDataAttributes, std::vector<double>> &densityData)
+    const std::vector<double> &points,
+    std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
+      &densityData)
   {
     std::pair<size_t, size_t> indexRangeVal;
     std::pair<size_t, size_t> indexRangeGrad;
@@ -74,7 +75,7 @@ namespace dftfe
     if (densityData.find(DensityDescriptorDataAttributes::valuesTotal) ==
         densityData.end())
       {
-        this->fillDensityAttributeData(
+        fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::valuesTotal],
           d_densityValsTotalAllQuads,
           indexRangeVal);
@@ -83,7 +84,7 @@ namespace dftfe
     if (densityData.find(DensityDescriptorDataAttributes::valuesSpinUp) ==
         densityData.end())
       {
-        this->fillDensityAttributeData(
+        fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::valuesSpinUp],
           d_densityValsSpinUpAllQuads,
           indexRangeVal);
@@ -92,7 +93,7 @@ namespace dftfe
     if (densityData.find(DensityDescriptorDataAttributes::valuesSpinDown) ==
         densityData.end())
       {
-        this->fillDensityAttributeData(
+        fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::valuesSpinDown],
           d_densityValsSpinDownAllQuads,
           indexRangeVal);
@@ -101,7 +102,7 @@ namespace dftfe
     if (densityData.find(DensityDescriptorDataAttributes::gradValueSpinUp) ==
         densityData.end())
       {
-        this->fillDensityAttributeData(
+        fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::gradValueSpinUp],
           d_gradDensityValsSpinUpAllQuads,
           indexRangeGrad);
@@ -110,7 +111,7 @@ namespace dftfe
     if (densityData.find(DensityDescriptorDataAttributes::gradValueSpinDown) ==
         densityData.end())
       {
-        this->fillDensityAttributeData(
+        fillDensityAttributeData(
           densityData[DensityDescriptorDataAttributes::gradValueSpinDown],
           d_gradDensityValsSpinDownAllQuads,
           indexRangeGrad);
@@ -119,7 +120,8 @@ namespace dftfe
 
   void
   AuxDensityFE::projectDensityMatrixStart(
-    std::unordered_map<std::string, std::vector<double>> &projectionInputs)
+    std::unordered_map<std::string, std::vector<double>> &projectionInputs,
+    int                                                   iSpin)
 
   {
     std::string errMsg = "Not implemented";
@@ -127,7 +129,7 @@ namespace dftfe
   }
 
   void
-  AuxDensityFE::projectDensityMatrixEnd()
+  AuxDensityFE::projectDensityMatrixEnd(const MPI_Comm &mpiComm)
   {
     std::string errMsg = "Not implemented";
     dftfe::utils::throwException(false, errMsg);
@@ -137,15 +139,14 @@ namespace dftfe
 
   void
   AuxDensityFE::projectDensityStart(
-    std::unordered_map<std::string, std::vector<double>> &projectionInputs);
-
+    std::unordered_map<std::string, std::vector<double>> &projectionInputs)
   {
     d_quadPointsAll  = projectionInputs["quadpts"];
     d_quadWeightsAll = projectionInputs["quadWt"];
     const std::vector<double> &densityVals =
-      projectionInputs["densityFunc"]->second;
+      projectionInputs.find("densityFunc")->second;
     const unsigned int nQ = d_quadPointsAll.size();
-    d_densityValsTotalAllquads.resize(nQ, 0);
+    d_densityValsTotalAllQuads.resize(nQ, 0);
     d_densityValsSpinUpAllQuads.resize(nQ, 0);
     d_densityValsSpinDownAllQuads.resize(nQ, 0);
     for (unsigned int iquad = 0; iquad < nQ; iquad++)
@@ -166,12 +167,12 @@ namespace dftfe
         d_gradDensityValsSpinDownAllQuads.resize(nQ * 3, 0);
 
         for (unsigned int iquad = 0; iquad < nQ; iquad++)
-          for (idim = 0; idim < 3; idim++)
+          for (unsigned int idim = 0; idim < 3; idim++)
             d_gradDensityValsSpinUpAllQuads[3 * iquad + idim] =
               gradDensityVals[3 * iquad + idim];
 
         for (unsigned int iquad = 0; iquad < nQ; iquad++)
-          for (idim = 0; idim < 3; idim++)
+          for (unsigned idim = 0; idim < 3; idim++)
             d_gradDensityValsSpinDownAllQuads[3 * iquad + idim] =
               gradDensityVals[3 * nQ + 3 * iquad + idim];
       }

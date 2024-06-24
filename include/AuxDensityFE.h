@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <utility>
-#include <AuxDensityMatrix>
+#include <AuxDensityMatrix.h>
 
 namespace dftfe
 {
@@ -27,13 +27,11 @@ namespace dftfe
 
     void
     projectDensityMatrixStart(
-      std::unordered_map<std::string, std::vector<double>> &projectionInputs)
-      override;
-
-    void
-    projectDensityMatrixEnd(
       std::unordered_map<std::string, std::vector<double>> &projectionInputs,
       int                                                   iSpin) override;
+
+    void
+    projectDensityMatrixEnd(const MPI_Comm &mpiComm) override;
 
     /**
      * @brief Projects the quadrature density to aux basis (L2 projection).

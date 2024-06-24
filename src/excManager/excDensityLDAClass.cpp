@@ -63,25 +63,25 @@ namespace dftfe
   excDensityLDAClass::checkInputOutputDataAttributesConsistency(
     const std::vector<xcOutputDataAttributes> &outputDataAttributes) const
   {
-    const std::vector<xcOutputDataAttributes> allowedOutputDataAttributes =
-    { xcOutputDataAttributes::e,
+    const std::vector<xcOutputDataAttributes> allowedOutputDataAttributes = {
+      xcOutputDataAttributes::e,
       xcOutputDataAttributes::pdeDensitySpinUp,
-      xcOutputDataAttributes::pdeDensitySpinDown }
+      xcOutputDataAttributes::pdeDensitySpinDown};
 
-    for (size_type i = 0; i < outputDataAttributes.size(); i++)
-    {
-      bool isFound = false;
-      for (size_type j = 0; j < allowedOutputDataAttributes.size(); j++)
-        {
-          if (outputDataAttributes[i] == allowedOutputDataAttributes[j])
-            isFound = true;
-        }
+    for (unsigned int i = 0; i < outputDataAttributes.size(); i++)
+      {
+        bool isFound = false;
+        for (unsigned int j = 0; j < allowedOutputDataAttributes.size(); j++)
+          {
+            if (outputDataAttributes[i] == allowedOutputDataAttributes[j])
+              isFound = true;
+          }
 
 
-      std::string errMsg =
-        "xcOutputDataAttributes do not matched allowed choices for the family type.";
-      throwException(isFound, errMsg);
-    }
+        std::string errMsg =
+          "xcOutputDataAttributes do not matched allowed choices for the family type.";
+        dftfe::utils::throwException(isFound, errMsg);
+      }
   }
 
   void

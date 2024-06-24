@@ -230,7 +230,7 @@ namespace dftfe
 #if defined(DFTFE_WITH_DEVICE)
                   partialOccupVec.copyFrom(partialOccupVecHost);
 #endif
-                  fValuesBatch.copyFrom(partialOccupVecHost);
+                  partialOccupVecHost.copyTo(fValuesBatch);
                   if (memorySpace == dftfe::utils::MemorySpace::HOST)
                     for (unsigned int iNode = 0; iNode < numLocalDofs; ++iNode)
                       std::memcpy(flattenedArrayBlock->data() +

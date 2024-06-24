@@ -20,8 +20,8 @@ namespace dftfe
   class AuxDensityMatrixSlater : public AuxDensityMatrix
   {
   private:
-    int d_nSpin;
-
+    int             d_nQuad;
+    int             d_nSpin;
     SlaterBasisSet  d_sbs;
     SlaterBasisData d_sbd;
 
@@ -32,6 +32,11 @@ namespace dftfe
     std::vector<double> d_SMatrix;
     std::vector<double> d_SMatrixInv;
     std::vector<double> d_SWFC;
+    std::vector<double> d_fValues;
+
+    int d_nWFC;
+    int d_iSpin;
+
 
     void
     evalOverlapMatrixInv();
@@ -46,42 +51,39 @@ namespace dftfe
     virtual ~AuxDensityMatrixSlater();
 
     void
-    applyLocalOperations(
-      const std::vector<double> &Points,
-      std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
-        &densityData) override;
+    applyLocalOperations(const std::vector<double> &    Points,
+                         std::map<DensityDescriptorDataAttributes,
+                                  std::vector<double>> &densityData) override;
 
     void
     reinitAuxDensityMatrix(
       const std::vector<std::pair<std::string, std::vector<double>>>
-        &                        atomCoords,
-      const std::string &        auxBasisFile,
-      const std::vector<double> &quadpts,
-      const int                  nSpin,
-      const int                  maxDerOrder);
+        &                atomCoords,
+      const std::string &auxBasisFile,
+      const int          nSpin,
+      const int          maxDerOrder) override;
 
     void
-    evalOverlapMatrixStart(const std::vector<double> &quadWt) override;
+    evalOverlapMatrixStart(const std::vector<double> &quadpts,
+                           const std::vector<double> &quadWt) override;
 
     void
-    evalOverlapMatrixEnd() override;
+    evalOverlapMatrixEnd(const MPI_Comm &mpiComm) override;
 
     void
     projectDensityMatrixStart(
-      std::unordered_map<std::string, std::vector<double>> &projectionInputs)
-      override;
-
-    void
-    projectDensityMatrixEnd(
       std::unordered_map<std::string, std::vector<double>> &projectionInputs,
       int                                                   iSpin) override;
+
+    void
+    projectDensityMatrixEnd(const MPI_Comm &mpiComm) override;
 
     void
     projectDensityStart(std::unordered_map<std::string, std::vector<double>>
                           &projectionInputs) override;
 
     void
-    projectDensityEnd() override;
+    projectDensityEnd(const MPI_Comm &mpiComm) override;
   };
 } // namespace dftfe
 

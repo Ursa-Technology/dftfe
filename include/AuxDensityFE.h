@@ -61,7 +61,7 @@ namespace dftfe
                           &projectionInputs) override;
 
     void
-    projectDensityEnd() override;
+    projectDensityEnd(const MPI_Comm &mpiComm) override;
 
 
   private:

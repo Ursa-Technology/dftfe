@@ -179,7 +179,7 @@ namespace dftfe
 
 
   void
-  AuxDensityFE::projectDensityEnd()
+  AuxDensityFE::projectDensityEnd(const MPI_Comm &mpiComm)
   {}
 
 

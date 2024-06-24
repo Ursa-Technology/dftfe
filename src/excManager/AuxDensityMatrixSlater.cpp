@@ -20,22 +20,23 @@ namespace dftfe
   void
   AuxDensityMatrixSlater::reinitAuxDensityMatrix(
     const std::vector<std::pair<std::string, std::vector<double>>> &atomCoords,
-    const std::string &        auxBasisFile,
-    const std::vector<double> &quadpts,
-    const int                  nSpin,
-    const int                  maxDerOrder)
+    const std::string &auxBasisFile,
+    const int          nSpin,
+    const int          maxDerOrder)
   {
     d_sbs.constructBasisSet(atomCoords, auxBasisFile);
-    d_nBasis = d_sbs.getSlaterBasisSize();
-    d_nSpin  = nSpin;
+    d_nBasis      = d_sbs.getSlaterBasisSize();
+    d_nSpin       = nSpin;
+    d_maxDerOrder = maxDerOrder;
     d_DM.assign(d_nSpin * d_nBasis * d_nBasis, 0.0);
-    d_sbd.evalBasisData(quadpts, d_sbs, maxDerOrder);
   }
 
   void
   AuxDensityMatrixSlater::evalOverlapMatrixStart(
+    const std::vector<double> &quadpts,
     const std::vector<double> &quadWt)
   {
+    d_sbd.evalBasisData(quadpts, d_sbs, d_maxDerOrder);
     d_SMatrix = std::vector<double>(d_nBasis * d_nBasis, 0.0);
 
     for (int i = 0; i < d_nBasis; ++i)
@@ -59,15 +60,22 @@ namespace dftfe
   }
 
   void
-  AuxDensityMatrixSlater::evalOverlapMatrixEnd()
+  AuxDensityMatrixSlater::evalOverlapMatrixEnd(const MPI_Comm &mpiComm)
   {
     // MPI All Reduce
+    MPI_AllReduce(d_SMatrix.data(),
+                  d_SMatrix.data(),
+                  d_SMatrix.size(),
+                  MPI_DOUBLE,
+                  MPI_SUM,
+                  mpiComm);
     evalOverlapMatrixInv();
   }
 
   void
   AuxDensityMatrixSlater::evalOverlapMatrixInv()
   {
+    d_SMatrixInv = d_SMatrix;
     // Invert using Cholesky
     int info;
     // Compute the Cholesky factorization of SMatrix
@@ -97,17 +105,16 @@ namespace dftfe
                                  "Matrix may not be positive definite.");
       }
 
-    // Fill the upper triangular part of the inverted matrix
+    // Copy the upper triangular part to the lower triangular part
     for (int i = 0; i < d_nBasis; ++i)
       {
         for (int j = i + 1; j < d_nBasis; ++j)
           {
-            d_SMatrixInv[i * d_nBasis + j] = d_SMatrixInv[j * d_nBasis + i];
+            d_SMatrixInv[j * d_nBasis + i] = d_SMatrixInv[i * d_nBasis + j];
           }
       }
 
     // Multiply SMatrix and SMatrixInv using dgemm_
-
     double              alpha = 1.0;
     double              beta  = 0.0;
     std::vector<double> CMatrix(d_nBasis * d_nBasis, 0.0);
@@ -124,6 +131,8 @@ namespace dftfe
                   &beta,
                   CMatrix.data(),
                   reinterpret_cast<const unsigned int *>(&d_nBasis));
+
+
 
     double frobenius_norm = 0.0;
     for (int i = 0; i < d_nBasis; ++i)
@@ -143,8 +152,10 @@ namespace dftfe
           }
       }
     frobenius_norm = std::sqrt(frobenius_norm);
-    if (frobenius_norm > 1E-6)
+    if (frobenius_norm > 1E-8)
       {
+        std::cout << "frobenius norm of inversion : " << frobenius_norm
+                  << std::endl;
         throw std::runtime_error("SMatrix Inversion"
                                  "using Cholesky Factors failed"
                                  "to pass check!");
@@ -159,20 +170,23 @@ namespace dftfe
 
   void
   AuxDensityMatrixSlater::projectDensityMatrixStart(
-    std::unordered_map<std::string, std::vector<double>> &projectionInputs)
+    std::unordered_map<std::string, std::vector<double>> &projectionInputs,
+    int                                                   iSpin)
   {
     // eval <SlaterBasis|WFC> matrix d_SWFC
 
-    auto &              psiFunc                = projectionInputs["psiFunc"];
-    auto &              quadWt                 = projectionInputs["quadWt"];
+    d_iSpin                                    = iSpin;
+    auto &psiFunc                              = projectionInputs["psiFunc"];
+    auto &quadWt                               = projectionInputs["quadWt"];
+    d_fValues                                  = projectionInputs["fValues"];
     std::vector<double> SlaterBasisValWeighted = d_sbd.getBasisValuesAll();
 
-    auto nQuad = quadWt.size();
-    auto nWFC  = psiFunc.size() / nQuad;
-    d_SWFC     = std::vector<double>(d_nBasis * nWFC, 0.0);
+    d_nQuad = quadWt.size();
+    d_nWFC  = psiFunc.size() / d_nQuad;
+    d_SWFC  = std::vector<double>(d_nBasis * d_nWFC, 0.0);
 
 
-    for (int i = 0; i < nQuad; ++i)
+    for (int i = 0; i < d_nQuad; ++i)
       {
         for (int j = 0; j < d_nBasis; ++j)
           {
@@ -185,39 +199,38 @@ namespace dftfe
     dftfe::dgemm_("N",
                   "T",
                   reinterpret_cast<const unsigned int *>(&d_nBasis),
-                  reinterpret_cast<const unsigned int *>(&nWFC),
-                  reinterpret_cast<const unsigned int *>(&nQuad),
+                  reinterpret_cast<const unsigned int *>(&d_nWFC),
+                  reinterpret_cast<const unsigned int *>(&d_nQuad),
                   &alpha,
                   SlaterBasisValWeighted.data(),
                   reinterpret_cast<const unsigned int *>(&d_nBasis),
                   psiFunc.data(),
-                  reinterpret_cast<const unsigned int *>(&nWFC),
+                  reinterpret_cast<const unsigned int *>(&d_nWFC),
                   &beta,
                   d_SWFC.data(),
                   reinterpret_cast<const unsigned int *>(&d_nBasis));
   }
 
   void
-  AuxDensityMatrixSlater::projectDensityMatrixEnd(
-    std::unordered_map<std::string, std::vector<double>> &projectionInputs,
-    int                                                   iSpin)
+  AuxDensityMatrixSlater::projectDensityMatrixEnd(const MPI_Comm &mpiComm)
   {
     // MPI All Reduce d_SWFC
+    MPI_AllReduce(d_SWFC.data(),
+                  d_SWFC.data(),
+                  d_SWFC.size(),
+                  MPI_DOUBLE,
+                  MPI_SUM,
+                  mpiComm);
 
-    auto  SlaterOverlapInv = this->getOverlapMatrixInv();
-    auto  nQuad            = projectionInputs["quadWt"].size();
-    auto  nWFC             = projectionInputs["psiFunc"].size() / nQuad;
-    auto &fValues          = projectionInputs["fValues"];
-
-
+    auto SlaterOverlapInv = this->getOverlapMatrixInv();
     // Multiply S^(-1) * <S|W> = BB
-    std::vector<double> BB(d_nBasis * nWFC, 0.0);
+    std::vector<double> BB(d_nBasis * d_nWFC, 0.0);
     double              alpha = 1.0;
     double              beta  = 0.0;
     dftfe::dgemm_("N",
                   "N",
                   reinterpret_cast<const unsigned int *>(&d_nBasis),
-                  reinterpret_cast<const unsigned int *>(&nWFC),
+                  reinterpret_cast<const unsigned int *>(&d_nWFC),
                   reinterpret_cast<const unsigned int *>(&d_nBasis),
                   &alpha,
                   SlaterOverlapInv.data(),
@@ -230,11 +243,11 @@ namespace dftfe
 
     // BF = BB * F^(1/2)
     std::vector<double> BF = BB;
-    for (int i = 0; i < nWFC; i++)
+    for (int i = 0; i < d_nWFC; i++)
       {
         for (int j = 0; j < d_nBasis; j++)
           {
-            BF[i * d_nBasis + j] *= std::sqrt(fValues[i]);
+            BF[i * d_nBasis + j] *= std::sqrt(d_fValues[i]);
           }
       }
 
@@ -243,14 +256,14 @@ namespace dftfe
                   "T",
                   reinterpret_cast<const unsigned int *>(&d_nBasis),
                   reinterpret_cast<const unsigned int *>(&d_nBasis),
-                  reinterpret_cast<const unsigned int *>(&nWFC),
+                  reinterpret_cast<const unsigned int *>(&d_nWFC),
                   &alpha,
                   BF.data(),
                   reinterpret_cast<const unsigned int *>(&d_nBasis),
                   BF.data(),
                   reinterpret_cast<const unsigned int *>(&d_nBasis),
                   &beta,
-                  d_DM.data() + iSpin * d_nBasis * d_nBasis,
+                  d_DM.data() + d_iSpin * d_nBasis * d_nBasis,
                   reinterpret_cast<const unsigned int *>(&d_nBasis));
   }
 
@@ -508,7 +521,7 @@ namespace dftfe
   }
 
   void
-  AuxDensityMatrixSlater::projectDensityEnd()
+  AuxDensityMatrixSlater::projectDensityEnd(const MPI_Comm &mpiComm)
   {
     // projectDensity implementation
     std::cout << "Error : No implementation yet" << std::endl;

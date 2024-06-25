@@ -593,25 +593,24 @@ namespace dftfe
                       {
                         for (unsigned int idim = 0; idim < 3; ++idim)
                           quadPointsInCell[3 * iQuad + idim] =
-                            quadPointsAll[iCell *
-                                            numberQuadraturePointsPerCell * 3 +
+                            quadPointsAll[subCellIndex * numQuadPoints * 3 +
                                           3 * iQuad + idim];
                         quadWeightsInCell[iQuad] =
-                          quadWeightsAll[iCell * numberQuadraturePointsPerCell +
-                                         iQuad];
+                          quadWeightsAll[subCellIndex * numQuadPoints + iQuad];
                       }
 
 
-                    dftPtr->excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
-                      auxDensityXCOutRepresentation,
-                      quadPointsAllStdVec,
-                      quadWeightsAllStdVec,
-                      xDensityOutDataOut,
-                      cDensityOutDataOut);
+                    dftPtr->d_excManagerPtr->getExcDensityObj()
+                      ->computeExcVxcFxc(*(dftPtr->d_auxDensityMatrixXCOutPtr),
+                                         quadPointsInCell,
+                                         quadWeightsInCell,
+                                         xDensityOutDataOut,
+                                         cDensityOutDataOut);
 
                     std::vector<double> pdexDensityOutSigma;
                     std::vector<double> pdecDensityOutSigma;
-                    if (isGGA)
+                    if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
+                        densityFamilyType::GGA)
                       {
                         pdexDensityOutSigma =
                           xDensityOutDataOut[xcOutputDataAttributes::pdeSigma];
@@ -641,8 +640,8 @@ namespace dftfe
                           std::vector<double>();
                       }
 
-                    dftPtr->d_auxDensityMatrixXCOutPtr >
-                      applyLocalOperations(quadPointsOutCell, densityXCOutData);
+                    dftPtr->d_auxDensityMatrixXCOutPtr->applyLocalOperations(
+                      quadPointsInCell, densityXCOutData);
 
                     if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
                         densityFamilyType::GGA)
@@ -657,28 +656,6 @@ namespace dftfe
                       {
                         rhoXCQuadsVect[q][iSubCell] =
                           densityXCOutSpinUp[q] + densityXCOutSpinDown[q];
-                      }
-
-                    const auto &rhoTotalOutValues = rhoOutValues[0];
-                    const auto &rhoMagOutValues   = rhoOutValues[1];
-                    for (unsigned int q = 0; q < numQuadPoints; ++q)
-                      {
-                        rhoTotalCellQuadValues[q] =
-                          rhoTotalOutValues[subCellIndex * numQuadPoints + q];
-                        rhoSpinPolarizedCellQuadValues[2 * q + 0] =
-                          (rhoTotalOutValues[subCellIndex * numQuadPoints + q] +
-                           rhoMagOutValues[subCellIndex * numQuadPoints + q]) /
-                          2.0;
-                        rhoSpinPolarizedCellQuadValues[2 * q + 1] =
-                          (rhoTotalOutValues[subCellIndex * numQuadPoints + q] -
-                           rhoMagOutValues[subCellIndex * numQuadPoints + q]) /
-                          2.0;
-                      }
-
-                    rhoOutQuadsXC = rhoSpinPolarizedCellQuadValues;
-                    for (unsigned int q = 0; q < numQuadPoints; ++q)
-                      {
-                        rhoXCQuadsVect[q][iSubCell] = rhoTotalCellQuadValues[q];
                       }
 
                     if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==

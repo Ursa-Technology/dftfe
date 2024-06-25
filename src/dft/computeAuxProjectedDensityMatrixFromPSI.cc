@@ -52,7 +52,7 @@ namespace dftfe
     const std::vector<double> &kPointWeights,
     AuxDensityMatrix &         auxDensityMatrixRepresentation,
     const MPI_Comm &           mpiCommParent,
-    const MPI_Comm &           domaincomm,
+    const MPI_Comm &           domainComm,
     const MPI_Comm &           interpoolcomm,
     const MPI_Comm &           interBandGroupComm,
     const dftParameters &      dftParams)
@@ -161,7 +161,7 @@ namespace dftfe
           } // non-trivial cell block check
       }     // cells block loop
 
-    auxDensityMatrixRepresentation.evalOverlapMatrixEnd(domaincomm);
+    auxDensityMatrixRepresentation.evalOverlapMatrixEnd(domainComm);
 
     std::unordered_map<std::string, std::vector<double>>
                          densityMatrixProjectionInputs;
@@ -303,7 +303,7 @@ namespace dftfe
 
 
 
-                          wfcQuadPointDataBatchHost.copyFrom(wfcQuadPointData);
+                          wfcQuadPointData.copyTo(wfcQuadPointDataBatchHost);
 
                           auxDensityMatrixRepresentation
                             .projectDensityMatrixStart(
@@ -329,7 +329,7 @@ namespace dftfe
         auxDensityMatrixRepresentation.projectDensityMatrixEnd(
           interBandGroupComm);
       }
-    auxDensityMatrixRepresentation.projectEnd(domainComm);
+    auxDensityMatrixRepresentation.projectDensityMatrixEnd(domainComm);
 
 #if defined(DFTFE_WITH_DEVICE)
     if (memorySpace == dftfe::utils::MemorySpace::DEVICE)

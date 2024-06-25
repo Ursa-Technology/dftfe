@@ -673,8 +673,8 @@ namespace dftfe
     computeXCEnergyTermsSpinPolarized(basisOperationsPtr,
                                       densityQuadratureID,
                                       excManagerPtr,
-                                      densityInValuesSpinPolarized,
-                                      gradDensityOutValuesSpinPolarized,
+                                      densityInQuadValuesSpinPolarized,
+                                      gradDensityOutQuadValuesSpinPolarized,
                                       auxDensityXCInRepresentationPtr,
                                       auxDensityXCOutRepresentationPtr,
                                       exchangeEnergy,
@@ -852,8 +852,8 @@ namespace dftfe
     computeXCEnergyTermsSpinPolarized(basisOperationsPtr,
                                       densityQuadratureID,
                                       excManagerPtr,
-                                      densityInValuesSpinPolarized,
-                                      gradDensityInValuesSpinPolarized,
+                                      densityInQuadValuesSpinPolarized,
+                                      gradDensityInQuadValuesSpinPolarized,
                                       auxDensityXCInRepresentationPtr,
                                       auxDensityXCInRepresentationPtr,
                                       exchangeEnergy,
@@ -867,8 +867,8 @@ namespace dftfe
     computeXCEnergyTermsSpinPolarized(basisOperationsPtr,
                                       densityQuadratureID,
                                       excManagerPtr,
-                                      densityInValuesSpinPolarized,
-                                      gradDensityOutValuesSpinPolarized,
+                                      densityInQuadValuesSpinPolarized,
+                                      gradDensityOutQuadValuesSpinPolarized,
                                       auxDensityXCInRepresentationPtr,
                                       auxDensityXCOutRepresentationPtr,
                                       exchangeEnergy,
@@ -948,7 +948,8 @@ namespace dftfe
     std::vector<double> &pdecDensityInSpinDown =
       cDensityInDataOut[xcOutputDataAttributes::pdeDensitySpinDown];
 
-    if (isGGA)
+    if (excManagerPtr->getDensityBasedFamilyType() ==
+            densityFamilyType::GGA)
       {
         xDensityInDataOut[xcOutputDataAttributes::pdeSigma] =
           std::vector<double>();
@@ -1005,7 +1006,8 @@ namespace dftfe
 
         std::vector<double> pdexDensityInSigma;
         std::vector<double> pdecDensityInSigma;
-        if (isGGA)
+        if (excManagerPtr->getDensityBasedFamilyType() ==
+            densityFamilyType::GGA)
           {
             pdexDensityInSigma =
               xDensityInDataOut[xcOutputDataAttributes::pdeSigma];
@@ -1020,7 +1022,8 @@ namespace dftfe
         std::vector<double> &gradDensityXCInSpinDown =
           densityXCInData[DensityDescriptorDataAttributes::gradValuesSpinDown];
 
-        if (isGGA)
+        if (excManagerPtr->getDensityBasedFamilyType() ==
+            densityFamilyType::GGA)
           auxDensityXCInRepresentation->applyLocalOperations(quadPointsInCell,
                                                              densityXCInData);
 

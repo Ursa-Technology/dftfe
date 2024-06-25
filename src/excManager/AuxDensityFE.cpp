@@ -99,20 +99,20 @@ namespace dftfe
           indexRangeVal);
       }
 
-    if (densityData.find(DensityDescriptorDataAttributes::gradValueSpinUp) ==
+    if (densityData.find(DensityDescriptorDataAttributes::gradValuesSpinUp) ==
         densityData.end())
       {
         fillDensityAttributeData(
-          densityData[DensityDescriptorDataAttributes::gradValueSpinUp],
+          densityData[DensityDescriptorDataAttributes::gradValuesSpinUp],
           d_gradDensityValsSpinUpAllQuads,
           indexRangeGrad);
       }
 
-    if (densityData.find(DensityDescriptorDataAttributes::gradValueSpinDown) ==
+    if (densityData.find(DensityDescriptorDataAttributes::gradValuesSpinDown) ==
         densityData.end())
       {
         fillDensityAttributeData(
-          densityData[DensityDescriptorDataAttributes::gradValueSpinDown],
+          densityData[DensityDescriptorDataAttributes::gradValuesSpinDown],
           d_gradDensityValsSpinDownAllQuads,
           indexRangeGrad);
       }

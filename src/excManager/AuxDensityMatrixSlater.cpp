@@ -451,21 +451,21 @@ namespace dftfe
         indexRange = std::make_pair(iQuad * 3, iQuad * 3 + 2);
 
         if (densityData.find(
-              DensityDescriptorDataAttributes::gradValueSpinUp) ==
+              DensityDescriptorDataAttributes::gradValuesSpinUp) ==
             densityData.end())
           {
             fillDensityAttributeData(
-              densityData[DensityDescriptorDataAttributes ::gradValueSpinUp],
+              densityData[DensityDescriptorDataAttributes ::gradValuesSpinUp],
               gradrhoUp,
               indexRange);
           }
 
         if (densityData.find(
-              DensityDescriptorDataAttributes::gradValueSpinDown) ==
+              DensityDescriptorDataAttributes::gradValuesSpinDown) ==
             densityData.end())
           {
             fillDensityAttributeData(
-              densityData[DensityDescriptorDataAttributes ::gradValueSpinDown],
+              densityData[DensityDescriptorDataAttributes ::gradValuesSpinDown],
               gradrhoDown,
               indexRange);
           }

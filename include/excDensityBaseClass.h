@@ -52,6 +52,12 @@ namespace dftfe
     excDensityBaseClass(const densityFamilyType familyType,
                         const std::vector<DensityDescriptorDataAttributes>
                           &densityDescriptorAttributesList);
+    densityFamilyType
+    getDensityBasedFamilyType() const;
+
+    const std::vector<DensityDescriptorDataAttributes> &
+    getDensityDescriptorAttributesList() const;
+
     /**
      * x and c denotes exchange and correlation respectively
      */
@@ -63,12 +69,6 @@ namespace dftfe
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
       const = 0;
-
-    densityFamilyType
-    getDensityBasedFamilyType() const;
-
-    const std::vector<DensityDescriptorDataAttributes> &
-    getDensityDescriptorAttributesList() const;
 
   protected:
     virtual void

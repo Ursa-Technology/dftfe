@@ -3059,7 +3059,7 @@ namespace dftfe
                                      fermiEnergy,
                                      fermiEnergyUp,
                                      fermiEnergyDown,
-                                     d_auxDensityMatrixInXCPtr);
+                                     d_auxDensityMatrixXCInPtr);
 
             computing_timer.enter_subsection("VEff Computation");
             kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixInXCPtr,
@@ -3450,10 +3450,10 @@ namespace dftfe
               d_phiTotRhoOut,
               d_densityInQuadValues,
               d_densityOutQuadValues,
-              d_gradDensityInQuadValues,
               d_gradDensityOutQuadValues,
-              d_auxDensityMatrixInXCPtr,
-              d_auxDensityMatrixOutXCPtr,
+              d_densityTotalOutValuesLpspQuad,
+              d_auxDensityMatrixXCInPtr,
+              d_auxDensityMatrixXCOutPtr,
               d_bQuadValuesAllAtoms,
               d_bCellNonTrivialAtomIds,
               d_localVselfs,
@@ -3491,11 +3491,10 @@ namespace dftfe
               d_phiTotRhoOut,
               d_densityInQuadValues,
               d_densityOutQuadValues,
-              d_gradDensityInQuadValues,
               d_gradDensityOutQuadValues,
               d_densityTotalOutValuesLpspQuad,
-              d_rhoCore,
-              d_gradRhoCore,
+              d_auxDensityMatrixXCInPtr,
+              d_auxDensityMatrixXCOutPtr,
               d_bQuadValuesAllAtoms,
               d_bCellNonTrivialAtomIds,
               d_localVselfs,
@@ -3593,7 +3592,7 @@ namespace dftfe
                              fermiEnergy,
                              fermiEnergyUp,
                              fermiEnergyDown,
-                             d_auxDensityMatrixOutXCPtr);
+                             d_auxDensityMatrixXCOutPtr);
 
     const unsigned int numberBandGroups =
       dealii::Utilities::MPI::n_mpi_processes(interBandGroupComm);
@@ -3763,11 +3762,10 @@ namespace dftfe
       d_phiTotRhoOut,
       d_densityInQuadValues,
       d_densityOutQuadValues,
-      d_gradDensityInQuadValues,
       d_gradDensityOutQuadValues,
       d_densityTotalOutValuesLpspQuad,
-      d_auxDensityMatrixInXCPtr,
-      d_auxDensityMatrixOutXCPtr,
+      d_auxDensityMatrixXCInPtr,
+      d_auxDensityMatrixXCOutPtr,
       d_bQuadValuesAllAtoms,
       d_bCellNonTrivialAtomIds,
       d_localVselfs,
@@ -4940,10 +4938,6 @@ namespace dftfe
 
     if (d_dftParamsPtr->auxBasisTypeXC == "FE")
       {
-        std::vector<double> densityValsForXC(2 * totalLocallyOwnedCells *
-                                               nQuadsPerCell,
-                                             0);
-
         std::unordered_map<std::string, std::vector<double>>
                              densityProjectionInputs;
         std::vector<double> &densityValsForXC =
@@ -4952,11 +4946,12 @@ namespace dftfe
 
         if (spinPolarizedFactor == 1)
           {
-            const double *cellRhoValues =
-              densityQuadValues[0].data() + iCell * nQuadsPerCell;
             for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells;
                  ++iCell)
               {
+                const double *cellRhoValues =
+                  densityQuadValues[0].data() + iCell * nQuadsPerCell;
+
                 for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
                   densityValsForXC[iCell * nQuadsPerCell + iQuad] =
                     cellRhoValues[iQuad] / 2.0;

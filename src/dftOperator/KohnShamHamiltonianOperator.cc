@@ -291,7 +291,7 @@ namespace dftfe
           }
 
         d_excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
-          auxDensityXCRepresentation,
+          *auxDensityXCRepresentation,
           quadPointsInCell,
           quadWeightsInCell,
           xDataOut,

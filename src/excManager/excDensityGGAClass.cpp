@@ -91,10 +91,10 @@ namespace dftfe
   void
   excDensityGGAClass::computeExcVxcFxc(
     AuxDensityMatrix &                                     auxDensityMatrix,
-    const double *                                         quadPoints,
-    const double *                                         quadWeights,
-    std::map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
-    std::map<xcOutputDataAttributes, std::vector<double>> &cDataout) const;
+    const std::vector<double> &                                         quadPoints,
+    const std::vector<double> &                                         quadWeights,
+    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
+    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout) const
   {
     std::vector<xcOutputDataAttributes> outputDataAttributes;
     for (const auto &element : xDataOut)

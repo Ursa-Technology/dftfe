@@ -87,11 +87,10 @@ namespace dftfe
   void
   excDensityLDAClass::computeExcVxcFxc(
     AuxDensityMatrix &                                     auxDensityMatrix,
-    const double *                                         quadPoints,
-    const double *                                         quadWeights,
-    const unsigned int                                     numQuadPoints,
-    std::map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
-    std::map<xcOutputDataAttributes, std::vector<double>> &cDataout)
+    const std::vector<double> &                                         quadPoints,
+    const std::vector<double> &                                         quadWeights,
+    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
+    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout) const
   {
     std::vector<xcOutputDataAttributes> outputDataAttributes;
     for (const auto &element : xDataOut)
@@ -103,10 +102,10 @@ namespace dftfe
     std::map<DensityDescriptorDataAttributes, std::vector<double>>
       densityDescriptorData;
 
-    for (size_type i = 0; i < d_densityDescriptorAttributesList.size(); i++)
+    for (unsigned int i = 0; i < d_densityDescriptorAttributesList.size(); i++)
       {
         densityDescriptorData[d_densityDescriptorAttributesList[i]] =
-          std::vector<double>(quadGrid.getLocalSize(), 0);
+          std::vector<double>(quadWeights.size(), 0);
       }
 
     auxDensityRepContainer.applyLocalOperations(quadGrid,

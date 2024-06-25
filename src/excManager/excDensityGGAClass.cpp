@@ -90,11 +90,12 @@ namespace dftfe
 
   void
   excDensityGGAClass::computeExcVxcFxc(
-    AuxDensityMatrix &                                     auxDensityMatrix,
-    const std::vector<double> &                                         quadPoints,
-    const std::vector<double> &                                         quadWeights,
+    AuxDensityMatrix &         auxDensityMatrix,
+    const std::vector<double> &quadPoints,
+    const std::vector<double> &quadWeights,
     std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
-    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout) const
+    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
+    const
   {
     std::vector<xcOutputDataAttributes> outputDataAttributes;
     for (const auto &element : xDataOut)
@@ -103,7 +104,7 @@ namespace dftfe
     checkInputOutputDataAttributesConsistency(outputDataAttributes);
 
 
-    std::map<DensityDescriptorDataAttributes, std::vector<double>>
+    std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
       densityDescriptorData;
 
     for (size_type i = 0; i < d_densityDescriptorAttributesList.size(); i++)
@@ -113,17 +114,16 @@ namespace dftfe
               d_densityDescriptorAttributesList[i] =
                 DensityDescriptorDataAttributes::valuesSpinDown)
           densityDescriptorData[d_densityDescriptorAttributesList[i]] =
-            std::vector<double>(quadGrid.getLocalSize(), 0);
+            std::vector<double>(quadWeights.size(), 0);
         else if (d_densityDescriptorAttributesList[i] =
                    DensityDescriptorDataAttributes::gradValueSpinUp ||
                    d_densityDescriptorAttributesList[i] =
                      DensityDescriptorDataAttributes::gradValueSpinDown)
           densityDescriptorData[d_densityDescriptorAttributesList[i]] =
-            std::vector<double>(3 * quadGrid.getLocalSize(), 0);
+            std::vector<double>(3 * quadWeights.size(), 0);
       }
 
-    auxDensityRepContainer.applyLocalOperations(quadGrid,
-                                                densityDescriptorData);
+    auxDensityMatrix.applyLocalOperations(quadPoints, densityDescriptorData);
 
 
     auto &densityValuesSpinUp =
@@ -144,21 +144,21 @@ namespace dftfe
 
 
 
-    std::vector<double> densityValues(2 * quadGrid.getLocalSize(), 0);
-    std::vector<double> sigmaValues(3 * quadGrid.getLocalSize(), 0);
+    std::vector<double> densityValues(2 * quadWeights.size(), 0);
+    std::vector<double> sigmaValues(3 * quadWeights.size(), 0);
 
-    std::vector<double> exValues(quadGrid.getLocalSize(), 0);
-    std::vector<double> ecValues(quadGrid.getLocalSize(), 0);
-    std::vector<double> pdexDensityValuesNonNN(2 * quadGrid.getLocalSize(), 0);
-    std::vector<double> pdecDensityValuesNonNN(2 * quadGrid.getLocalSize(), 0);
-    std::vector<double> pdexDensitySpinUpValues(quadGrid.getLocalSize(), 0);
-    std::vector<double> pdexDensitySpinDownValues(quadGrid.getLocalSize(), 0);
-    std::vector<double> pdecDensitySpinUpValues(quadGrid.getLocalSize(), 0);
-    std::vector<double> pdecDensitySpinDownValues(quadGrid.getLocalSize(), 0);
-    std::vector<double> pdexSigmaValues(3 * quadGrid.getLocalSize(), 0);
-    std::vector<double> pdecSigmaValues(3 * quadGrid.getLocalSize(), 0);
+    std::vector<double> exValues(quadWeights.size(), 0);
+    std::vector<double> ecValues(quadWeights.size(), 0);
+    std::vector<double> pdexDensityValuesNonNN(2 * quadWeights.size(), 0);
+    std::vector<double> pdecDensityValuesNonNN(2 * quadWeights.size(), 0);
+    std::vector<double> pdexDensitySpinUpValues(quadWeights.size(), 0);
+    std::vector<double> pdexDensitySpinDownValues(quadWeights.size(), 0);
+    std::vector<double> pdecDensitySpinUpValues(quadWeights.size(), 0);
+    std::vector<double> pdecDensitySpinDownValues(quadWeights.size(), 0);
+    std::vector<double> pdexSigmaValues(3 * quadWeights.size(), 0);
+    std::vector<double> pdecSigmaValues(3 * quadWeights.size(), 0);
 
-    for (size_type i = 0; i < quadGrid.getLocalSize(); i++)
+    for (size_type i = 0; i < quadWeights.size(); i++)
       {
         densityValues[2 * i + 0] = densityValuesSpinUp[i];
         densityValues[2 * i + 1] = densityValuesSpinDown[i];
@@ -174,21 +174,21 @@ namespace dftfe
       }
 
     xc_gga_exc_vxc(d_funcXPtr,
-                   quadGrid.getLocalSize(),
+                   quadWeights.size(),
                    &densityValues[0],
                    &sigmaValues[0],
                    &exValues[0],
                    &pdexDensityValuesNonNN[0],
                    &pdexSigmaValues[0]);
     xc_gga_exc_vxc(d_funcCPtr,
-                   quadGrid.getLocalSize(),
+                   quadWeights.size(),
                    &densityValues[0],
                    &sigmaValues[0],
                    &ecValues[0],
                    &pdexDensityValuesNonNN[0],
                    &pdecSigmaValues[0]);
 
-    for (size_type i = 0; i < quadGrid.getLocalSize(); i++)
+    for (size_type i = 0; i < quadWeights.size(); i++)
       {
         pdexDensitySpinUpValues[i]   = pdexDensityValuesNonNN[2 * i + 0];
         pdexDensitySpinDownValues[i] = pdexDensityValuesNonNN[2 * i + 1];
@@ -199,17 +199,18 @@ namespace dftfe
 #ifdef DFTFE_WITH_TORCH
     if (d_NNGGAPtr != nullptr)
       {
-        std::vector<double> excValuesFromNN(quadGrid.getLocalSize(), 0);
+        std::vector<double> excValuesFromNN(quadWeights.size(), 0);
         const size_type     numDescriptors =
           d_densityDescriptorAttributesList.size();
-        std::vector<double> pdexcDescriptorValuesFromNN(
-          numDescriptors * quadGrid.getLocalSize(), 0);
+        std::vector<double> pdexcDescriptorValuesFromNN(numDescriptors *
+                                                          quadWeights.size(),
+                                                        0);
         d_NNGGAPtr->evaluatevxc(&(densityValues[0]),
                                 &sigmaValues[0],
-                                quadGrid.getLocalSize(),
+                                quadWeights.size(),
                                 &excValuesFromNN[0],
                                 &pdexcDescriptorValuesFromNN[0]);
-        for (size_type i = 0; i < quadGrid.getLocalSize(); i++)
+        for (size_type i = 0; i < quadWeights.size(); i++)
           {
             exValues[i] += excValuesFromNN[i];
             pdexDensitySpinUpValues[i] +=

@@ -77,11 +77,12 @@ namespace dftfe
 
   void
   excDensityGGAClass::computeExcVxcFxc(
-    AuxDensityMatrix &                                     auxDensityMatrix,
-    const std::vector<double> &                                        quadPoints,
-    const std::vector<double> &                                         quadWeights,
+    AuxDensityMatrix &         auxDensityMatrix,
+    const std::vector<double> &quadPoints,
+    const std::vector<double> &quadWeights,
     std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
-    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout) const
+    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
+    const
   {
     std::vector<xcOutputDataAttributes> outputDataAttributes;
     for (const auto &element : xDataOut)
@@ -89,7 +90,7 @@ namespace dftfe
 
     checkInputOutputDataAttributesConsistency(outputDataAttributes);
 
-    std::map<DensityDescriptorDataAttributes, std::vector<double>>
+    std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
       densityDescriptorData;
 
     // d_densityDescriptorAttributesList not defined
@@ -100,11 +101,11 @@ namespace dftfe
               d_densityDescriptorAttributesList[i] =
                 DensityDescriptorDataAttributes::valuesSpinDown)
           densityDescriptorData[d_densityDescriptorAttributesList[i]] =
-            std::vector<double>(quadGrid.getLocalSize(), 0);
+            std::vector<double>(quadWeights.size(), 0);
         else if (d_densityDescriptorAttributesList[i] =
                    DensityDescriptorDataAttributes::sigma)
           densityDescriptorData[d_densityDescriptorAttributesList[i]] =
-            std::vector<double>(3 * quadGrid.getLocalSize(), 0);
+            std::vector<double>(3 * quadWeights.size(), 0);
       }
 
     bool isVxcBeingComputed = false;
@@ -114,7 +115,7 @@ namespace dftfe
           outputDataAttributes.end())
       isVxcBeingComputed = true;
 
-    auxDensityMatrix.applyLocalOperations(quadGrid, densityDescriptorData);
+    auxDensityMatrix.applyLocalOperations(quadPoints, densityDescriptorData);
 
     auto &densityValuesSpinUp =
       densityDescriptorData.find(DensityDescriptorDataAttributes::valuesSpinUp)
@@ -141,23 +142,23 @@ namespace dftfe
         ->second;
 
 
-    std::vector<double> densityValues(2 * quadGrid.getLocalSize(), 0);
-    std::vector<double> sigmaValues(3 * quadGrid.getLocalSize(), 0);
-    std::vector<double> laplacianValues(2 * quadGrid.getLocalSize(), 0);
+    std::vector<double> densityValues(2 * quadWeights.size(), 0);
+    std::vector<double> sigmaValues(3 * quadWeights.size(), 0);
+    std::vector<double> laplacianValues(2 * quadWeights.size(), 0);
 
-    std::vector<double> exValues(quadGrid.getLocalSize(), 0);
-    std::vector<double> ecValues(quadGrid.getLocalSize(), 0);
-    std::vector<double> pdexDensityValuesNonNN(2 * quadGrid.getLocalSize(), 0);
-    std::vector<double> pdecDensityValuesNonNN(2 * quadGrid.getLocalSize(), 0);
-    std::vector<double> pdexDensitySpinUpValues(quadGrid.getLocalSize(), 0);
-    std::vector<double> pdexDensitySpinDownValues(quadGrid.getLocalSize(), 0);
-    std::vector<double> pdecDensitySpinUpValues(quadGrid.getLocalSize(), 0);
-    std::vector<double> pdecDensitySpinDownValues(quadGrid.getLocalSize(), 0);
-    std::vector<double> pdexSigmaValues(3 * quadGrid.getLocalSize(), 0);
-    std::vector<double> pdecSigmaValues(3 * quadGrid.getLocalSize(), 0);
+    std::vector<double> exValues(quadWeights.size(), 0);
+    std::vector<double> ecValues(quadWeights.size(), 0);
+    std::vector<double> pdexDensityValuesNonNN(2 * quadWeights.size(), 0);
+    std::vector<double> pdecDensityValuesNonNN(2 * quadWeights.size(), 0);
+    std::vector<double> pdexDensitySpinUpValues(quadWeights.size(), 0);
+    std::vector<double> pdexDensitySpinDownValues(quadWeights.size(), 0);
+    std::vector<double> pdecDensitySpinUpValues(quadWeights.size(), 0);
+    std::vector<double> pdecDensitySpinDownValues(quadWeights.size(), 0);
+    std::vector<double> pdexSigmaValues(3 * quadWeights.size(), 0);
+    std::vector<double> pdecSigmaValues(3 * quadWeights.size(), 0);
 
 
-    for (size_type i = 0; i < quadGrid.getLocalSize(); i++)
+    for (size_type i = 0; i < quadWeights.size(); i++)
       {
         densityValues[2 * i + 0] = densityValuesSpinUp[i];
         densityValues[2 * i + 1] = densityValuesSpinDown[i];
@@ -177,21 +178,21 @@ namespace dftfe
       }
 
     xc_gga_exc_vxc(d_funcXPtr,
-                   quadGrid.getLocalSize(),
+                   quadWeights.size(),
                    &densityValues[0],
                    &sigmaValues[0],
                    &exValues[0],
                    &pdexDensityValuesNonNN[0],
                    &pdexSigmaValues[0]);
     xc_gga_exc_vxc(d_funcCPtr,
-                   quadGrid.getLocalSize(),
+                   quadWeights.size(),
                    &densityValues[0],
                    &sigmaValues[0],
                    &ecValues[0],
                    &pdecDensityValuesNonNN[0],
                    &pdecSigmaValues[0]);
 
-    for (size_type i = 0; i < quadGrid.getLocalSize(); i++)
+    for (size_type i = 0; i < quadWeights.size(); i++)
       {
         pdexDensitySpinUpValues[i]   = pdexDensityValuesNonNN[2 * i + 0];
         pdexDensitySpinDownValues[i] = pdexDensityValuesNonNN[2 * i + 1];
@@ -203,20 +204,21 @@ namespace dftfe
 #ifdef DFTFE_WITH_TORCH
     if (d_NNLLMGGAPtr != nullptr)
       {
-        std::vector<double> excValuesFromNN(quadGrid.getLocalSize(), 0);
+        std::vector<double> excValuesFromNN(quadWeights.size(), 0);
         const size_type     numDescriptors =
           d_densityDescriptorAttributesList.size();
-        std::vector<double> pdexcDescriptorValuesFromNN(
-          numDescriptors * quadGrid.getLocalSize(), 0);
+        std::vector<double> pdexcDescriptorValuesFromNN(numDescriptors *
+                                                          quadWeights.size(),
+                                                        0);
 
         d_NNLLMGGAPtr->evaluatevxc(&(densityValues[0]),
                                    &sigmaValues[0],
                                    &laplacianValues[0],
-                                   quadGrid.getLocalSize(),
+                                   quadWeights.size(),
                                    &excValuesFromNN[0],
                                    &pdexcDescriptorValuesFromNN[0]);
 
-        for (size_type i = 0; i < quadGrid.getLocalSize(); i++)
+        for (size_type i = 0; i < quadWeights.size(); i++)
           {
             exValues[i] += excValuesFromNN[i];
             pdexDensitySpinUpValues[i] +=
@@ -227,62 +229,62 @@ namespace dftfe
       }
 #endif
 
-    std::vector<double> vxValuesSpinUp(quadGrid.getLocalSize(), 0);
-    std::vector<double> vcValuesSpinUp(quadGrid.getLocalSize(), 0);
-    std::vector<double> vxValuesSpinDown(quadGrid.getLocalSize(), 0);
-    std::vector<double> vcValuesSpinDown(quadGrid.getLocalSize(), 0);
+    std::vector<double> vxValuesSpinUp(quadWeights.size(), 0);
+    std::vector<double> vcValuesSpinUp(quadWeights.size(), 0);
+    std::vector<double> vxValuesSpinDown(quadWeights.size(), 0);
+    std::vector<double> vcValuesSpinDown(quadWeights.size(), 0);
 
     if (isVxcBeingComputed)
       {
         std::vector<double> pdexGradDensityidimSpinTotalStencil(
-          quadGrid.getLocalSize() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<double> pdecGradDensityidimSpinTotalStencil(
-          quadGrid.getLocalSize() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
 
         std::vector<double> pdexLapDensityidimSpinTotalStencil(
-          quadGrid.getLocalSize() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<double> pdecLapDensityidimSpinTotalStencil(
-          quadGrid.getLocalSize() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
 
         std::vector<std::vector<double>> laplacianTermsPdexLapDensitySpinTotal(
-          3, std::vector<double>(quadGrid.getLocalSize(), 0));
+          3, std::vector<double>(quadWeights.size(), 0));
         std::vector<std::vector<double>> laplacianTermsPdecLapDensitySpinTotal(
-          3, std::vector<double>(quadGrid.getLocalSize(), 0));
+          3, std::vector<double>(quadWeights.size(), 0));
 
 
         std::vector<double> pdexGradDensityidimSpinUpStencil(
-          quadGrid.getLocalSize() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<double> pdecGradDensityidimSpinUpStencil(
-          quadGrid.getLocalSize() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<std::vector<double>> divergenceTermsPdexGradDensitySpinUp(
-          3, std::vector<double>(quadGrid.getLocalSize(), 0));
+          3, std::vector<double>(quadWeights.size(), 0));
         std::vector<std::vector<double>> divergenceTermsPdecGradDensitySpinUp(
-          3, std::vector<double>(quadGrid.getLocalSize(), 0));
+          3, std::vector<double>(quadWeights.size(), 0));
         std::vector<double> pdexLapDensityidimSpinUpStencil(
-          quadGrid.getLocalSize() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<double> pdecLapDensityidimSpinUpStencil(
-          quadGrid.getLocalSize() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<std::vector<double>> laplacianTermsPdexLapDensitySpinUp(
-          3, std::vector<double>(quadGrid.getLocalSize(), 0));
+          3, std::vector<double>(quadWeights.size(), 0));
         std::vector<std::vector<double>> laplacianTermsPdecLapDensitySpinUp(
-          3, std::vector<double>(quadGrid.getLocalSize(), 0));
+          3, std::vector<double>(quadWeights.size(), 0));
 
         std::vector<double> pdexGradDensityidimSpinDownStencil(
-          quadGrid.getLocalSize() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<double> pdecGradDensityidimSpinDownStencil(
-          quadGrid.getLocalSize() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<std::vector<double>> divergenceTermsPdexGradDensitySpinDown(
-          3, std::vector<double>(quadGrid.getLocalSize(), 0));
+          3, std::vector<double>(quadWeights.size(), 0));
         std::vector<std::vector<double>> divergenceTermsPdecGradDensitySpinDown(
-          3, std::vector<double>(quadGrid.getLocalSize(), 0));
+          3, std::vector<double>(quadWeights.size(), 0));
         std::vector<double> pdexLapDensityidimSpinDownStencil(
-          quadGrid.getLocalSize() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<double> pdecLapDensityidimSpinDownStencil(
-          quadGrid.getLocalSize() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<std::vector<double>> laplacianTermsPdexLapDensitySpinDown(
-          3, std::vector<double>(quadGrid.getLocalSize(), 0));
+          3, std::vector<double>(quadWeights.size(), 0));
         std::vector<std::vector<double>> laplacianTermsPdecLapDensitySpinDown(
-          3, std::vector<double>(quadGrid.getLocalSize(), 0));
+          3, std::vector<double>(quadWeights.size(), 0));
 
 
 
@@ -293,23 +295,20 @@ namespace dftfe
         std::map<DensityDescriptorDataAttributes, std::vector<double>>
           densityDescriptorDataForFD;
 
-        std::vector<double> densityValuesFD(2 * quadGrid.getLocalSize(), 0);
-        std::vector<double> sigmaValuesFD(3 * quadGrid.getLocalSize(), 0);
-        std::vector<double> laplacianValuesFD(2 * quadGrid.getLocalSize(), 0);
+        std::vector<double> densityValuesFD(2 * quadWeights.size(), 0);
+        std::vector<double> sigmaValuesFD(3 * quadWeights.size(), 0);
+        std::vector<double> laplacianValuesFD(2 * quadWeights.size(), 0);
 
-        std::vector<double> exValuesFD(quadGrid.getLocalSize(), 0);
-        std::vector<double> ecValuesFD(quadGrid.getLocalSize(), 0);
-        std::vector<double> pdexDensityValuesNonNNFD(2 *
-                                                       quadGrid.getLocalSize(),
+        std::vector<double> exValuesFD(quadWeights.size(), 0);
+        std::vector<double> ecValuesFD(quadWeights.size(), 0);
+        std::vector<double> pdexDensityValuesNonNNFD(2 * quadWeights.size(),
                                                      0); // not used
-        std::vector<double> pdecDensityValuesNonNNFD(2 *
-                                                       quadGrid.getLocalSize(),
+        std::vector<double> pdecDensityValuesNonNNFD(2 * quadWeights.size(),
                                                      0); // not used
-        std::vector<double> pdexSigmaValuesFD(3 * quadGrid.getLocalSize(), 0);
-        std::vector<double> pdecSigmaValuesFD(3 * quadGrid.getLocalSize(), 0);
-        std::vector<double> pdexLaplacianValuesFD(2 * quadGrid.getLocalSize(),
-                                                  0);
-        std::vector<double> pdecLaplacianValuesFD(2 * quadGrid.getLocalSize(),
+        std::vector<double> pdexSigmaValuesFD(3 * quadWeights.size(), 0);
+        std::vector<double> pdecSigmaValuesFD(3 * quadWeights.size(), 0);
+        std::vector<double> pdexLaplacianValuesFD(2 * quadWeights.size(), 0);
+        std::vector<double> pdecLaplacianValuesFD(2 * quadWeights.size(),
                                                   0); // not used
 
 
@@ -321,8 +320,7 @@ namespace dftfe
                  istencil++)
               {
                 std::vector<double> quadShiftedFD = quadGrid;
-                for (size_type igrid = 0; igrid < quadGrid.getLocalSize();
-                     igrid++)
+                for (size_type igrid = 0; igrid < quadWeights.size(); igrid++)
                   {
                     // create FD grid
                     quadShiftedFD[3 * igrid + idim] =
@@ -360,7 +358,7 @@ namespace dftfe
                     .find(DensityDescriptorDataAttributes::laplacianSpinDown)
                     ->second;
 
-                for (size_type i = 0; i < quadGrid.getLocalSize(); i++)
+                for (size_type i = 0; i < quadWeights.size(); i++)
                   {
                     densityValuesFD[2 * i + 0] = densityValuesSpinUpFD[i];
                     densityValuesFD[2 * i + 1] = densityValuesSpinDownFD[i];
@@ -387,14 +385,14 @@ namespace dftfe
                   }
 
                 xc_gga_exc_vxc(d_funcXPtr,
-                               quadGrid.getLocalSize(),
+                               quadWeights.size(),
                                &densityValuesFD[0],
                                &sigmaValuesFD[0],
                                &exValuesFD[0],
                                &pdexDensityValuesNonNNFD[0],
                                &pdexSigmaValuesFD[0]);
                 xc_gga_exc_vxc(d_funcCPtr,
-                               quadGrid.getLocalSize(),
+                               quadWeights.size(),
                                &densityValuesFD[0],
                                &sigmaValuesFD[0],
                                &ecValuesFD[0],
@@ -404,23 +402,23 @@ namespace dftfe
 #ifdef DFTFE_WITH_TORCH
                 if (d_NNLLMGGAPtr != nullptr)
                   {
-                    std::vector<double> excValuesFromNNFD(
-                      quadGrid.getLocalSize(), 0);
-                    const size_type numDescriptors =
+                    std::vector<double> excValuesFromNNFD(quadWeights.size(),
+                                                          0);
+                    const size_type     numDescriptors =
                       d_densityDescriptorAttributesList.size();
                     std::vector<double> pdexcDescriptorValuesFromNNFD(
-                      numDescriptors * quadGrid.getLocalSize(), 0);
+                      numDescriptors * quadWeights.size(), 0);
 
 
                     d_NNLLMGGAPtr->evaluatevxc(
                       &(densityValuesFD[0]),
                       &sigmaValuesFD[0],
                       &laplacianValuesFD[0],
-                      quadGrid.getLocalSize(),
+                      quadWeights.size(),
                       &excValuesFromNNFD[0],
                       &pdexcDescriptorValuesFromNNFD[0]);
 
-                    for (size_type i = 0; i < quadGrid.getLocalSize(); i++)
+                    for (size_type i = 0; i < quadWeights.size(); i++)
                       {
                         pdexSigmaValuesFD[3 * i + 0] +=
                           pdexcDescriptorValuesFromNNFD[numDescriptors * i + 2];
@@ -436,17 +434,15 @@ namespace dftfe
                   }
 #endif
 
-                for (size_type igrid = 0; igrid < quadGrid.getLocalSize();
-                     igrid++)
+                for (size_type igrid = 0; igrid < quadWeights.size(); igrid++)
                   {
                     pdexGradDensityidimSpinUpStencil
                       [igrid * d_vxcDivergenceTermFDStencilSize + istencil] =
                         (2.0 * pdexSigmaValuesFD[3 * igrid] +
                          pdexSigmaValuesFD[3 * igrid + 1] +
                          2.0 * pdexSigmaValuesFD[3 * igrid + 2]) *
-                        (gradValuesSpinUpFD[idim * quadGrid.getLocalSize() +
-                                            igrid] +
-                         gradValuesSpinDownFD[idim * quadGrid.getLocalSize() +
+                        (gradValuesSpinUpFD[idim * quadWeights.size() + igrid] +
+                         gradValuesSpinDownFD[idim * quadWeights.size() +
                                               igrid]);
 
                     pdecGradDensityidimSpinUpStencil
@@ -454,9 +450,8 @@ namespace dftfe
                         (2.0 * pdecSigmaValuesFD[3 * igrid] +
                          pdecSigmaValuesFD[3 * igrid + 1] +
                          2.0 * pdecSigmaValuesFD[3 * igrid + 2]) *
-                        (gradValuesSpinUpFD[idim * quadGrid.getLocalSize() +
-                                            igrid] +
-                         gradValuesSpinDownFD[idim * quadGrid.getLocalSize() +
+                        (gradValuesSpinUpFD[idim * quadWeights.size() + igrid] +
+                         gradValuesSpinDownFD[idim * quadWeights.size() +
                                               igrid]);
 
                     pdexLapDensityidimSpinUpStencil
@@ -472,9 +467,8 @@ namespace dftfe
                         (2.0 * pdexSigmaValuesFD[3 * igrid] +
                          pdexSigmaValuesFD[3 * igrid + 1] +
                          2.0 * pdexSigmaValuesFD[3 * igrid + 2]) *
-                        (gradValuesSpinUpFD[idim * quadGrid.getLocalSize() +
-                                            igrid] +
-                         gradValuesSpinDownFD[idim * quadGrid.getLocalSize() +
+                        (gradValuesSpinUpFD[idim * quadWeights.size() + igrid] +
+                         gradValuesSpinDownFD[idim * quadWeights.size() +
                                               igrid]);
 
                     pdecGradDensityidimSpinDownStencil
@@ -482,9 +476,8 @@ namespace dftfe
                         (2.0 * pdecSigmaValuesFD[3 * igrid] +
                          pdecSigmaValuesFD[3 * igrid + 1] +
                          2.0 * pdecSigmaValuesFD[3 * igrid + 2]) *
-                        (gradValuesSpinUpFD[idim * quadGrid.getLocalSize() +
-                                            igrid] +
-                         gradValuesSpinDownFD[idim * quadGrid.getLocalSize() +
+                        (gradValuesSpinUpFD[idim * quadWeights.size() + igrid] +
+                         gradValuesSpinDownFD[idim * quadWeights.size() +
                                               igrid]);
 
                     pdexLapDensityidimSpinDownStencil
@@ -500,28 +493,28 @@ namespace dftfe
             utils::FiniteDifference::firstOrderDerivativeOneVariableCentral(
               d_vxcDivergenceTermFDStencilSize,
               d_spacingFDStencil,
-              quadGrid.getLocalSize(),
+              quadWeights.size(),
               &(pdexGradDensityidimSpinUpStencil[0]),
               &(divergenceTermsPdexGradDensitySpinUp[idim][0]));
 
             utils::FiniteDifference::firstOrderDerivativeOneVariableCentral(
               d_vxcDivergenceTermFDStencilSize,
               d_spacingFDStencil,
-              quadGrid.getLocalSize(),
+              quadWeights.size(),
               &(pdecGradDensityidimSpinUpStencil[0]),
               &(divergenceTermsPdecGradDensitySpinUp[idim][0]));
 
             utils::FiniteDifference::firstOrderDerivativeOneVariableCentral(
               d_vxcDivergenceTermFDStencilSize,
               d_spacingFDStencil,
-              quadGrid.getLocalSize(),
+              quadWeights.size(),
               &(pdexGradDensityidimSpinDownStencil[0]),
               &(divergenceTermsPdexGradDensitySpinDown[idim][0]));
 
             utils::FiniteDifference::firstOrderDerivativeOneVariableCentral(
               d_vxcDivergenceTermFDStencilSize,
               d_spacingFDStencil,
-              quadGrid.getLocalSize(),
+              quadWeights.size(),
               &(pdecGradDensityidimSpinDownStencil[0]),
               &(divergenceTermsPdecGradDensitySpinDown[idim][0]));
 
@@ -529,7 +522,7 @@ namespace dftfe
             utils::FiniteDifference::secondOrderDerivativeOneVariableCentral(
               d_vxcDivergenceTermFDStencilSize,
               d_spacingFDStencil,
-              quadGrid.getLocalSize(),
+              quadWeights.size(),
               &(pdexLapDensityidimSpinUpStencil[0]),
               &(laplacianTermsPdexLapDensitySpinUp[idim][0]));
 
@@ -537,7 +530,7 @@ namespace dftfe
             utils::FiniteDifference::secondOrderDerivativeOneVariableCentral(
                     d_vxcDivergenceTermFDStencilSize,
                     d_spacingFDStencil,
-                    quadGrid.getLocalSize(),
+                    quadWeights.size(),
                     &(pdecLapDensityidimSpinTotalStencil[0]),
                     &(laplacianTermsPdecLapDensitySpinTotal[idim][0]));
             */
@@ -545,7 +538,7 @@ namespace dftfe
             utils::FiniteDifference::secondOrderDerivativeOneVariableCentral(
               d_vxcDivergenceTermFDStencilSize,
               d_spacingFDStencil,
-              quadGrid.getLocalSize(),
+              quadWeights.size(),
               &(pdexLapDensityidimSpinDownStencil[0]),
               &(laplacianTermsPdexLapDensitySpinDown[idim][0]));
 
@@ -553,14 +546,14 @@ namespace dftfe
             utils::FiniteDifference::secondOrderDerivativeOneVariableCentral(
                     d_vxcDivergenceTermFDStencilSize,
                     d_spacingFDStencil,
-                    quadGrid.getLocalSize(),
+                    quadWeights.size(),
                     &(pdecLapDensityidimSpinDownStencil[0]),
                     &(laplacianTermsPdecLapDensitySpinDown[idim][0]));
             */
 
           } // dim loop
 
-        for (size_type igrid = 0; igrid < quadGrid.getLocalSize(); igrid++)
+        for (size_type igrid = 0; igrid < quadWeights.size(); igrid++)
           {
             vxValuesSpinUp[igrid] =
               pdexDensitySpinUpValues[igrid] -

@@ -948,8 +948,7 @@ namespace dftfe
     std::vector<double> &pdecDensityInSpinDown =
       cDensityInDataOut[xcOutputDataAttributes::pdeDensitySpinDown];
 
-    if (excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+    if (excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA)
       {
         xDensityInDataOut[xcOutputDataAttributes::pdeSigma] =
           std::vector<double>();
@@ -977,17 +976,15 @@ namespace dftfe
 
     for (unsigned int iCell = 0; iCell < nCells; ++iCell)
       {
-        std::vector<double> quadPointsInCell(numberQuadraturePointsPerCell * 3);
-        std::vector<double> quadWeightsInCell(numberQuadraturePointsPerCell);
-        for (unsigned int iQuad = 0; iQuad < numberQuadraturePointsPerCell;
-             ++iQuad)
+        std::vector<double> quadPointsInCell(nQuadsPerCell * 3);
+        std::vector<double> quadWeightsInCell(nQuadsPerCell);
+        for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
           {
             for (unsigned int idim = 0; idim < 3; ++idim)
               quadPointsInCell[3 * iQuad + idim] =
-                quadPointsAll[iCell * numberQuadraturePointsPerCell * 3 +
-                              3 * iQuad + idim];
+                quadPointsAll[iCell * nQuadsPerCell * 3 + 3 * iQuad + idim];
             quadWeightsInCell[iQuad] =
-              quadWeightsAll[iCell * numberQuadraturePointsPerCell + iQuad];
+              quadWeightsAll[iCell * nQuadsPerCell + iQuad];
           }
 
         excManagerPtr->getExcDensityObj()->computeExcVxcFxc(

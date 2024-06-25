@@ -4904,6 +4904,9 @@ namespace dftfe
   }
 
 
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
   void
   dftClass<FEOrder, FEOrderElectro, memorySpace>::updateAuxDensityXCMatrix(
     const std::vector<
@@ -4928,14 +4931,14 @@ namespace dftfe
     const double                            fermiEnergyDown_,
     std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixXCPtr)
   {
-    d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
+    d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureId);
     const unsigned int totalLocallyOwnedCells =
       d_basisOperationsPtrHost->nCells();
     const unsigned int nQuadsPerCell =
       d_basisOperationsPtrHost->nQuadsPerCell();
     const unsigned int spinPolarizedFactor = 1 + d_dftParamsPtr->spinPolarized;
 
-    if (d_dftParamsPtr->AuxBasisTypeXC == "FE")
+    if (d_dftParamsPtr->auxBasisTypeXC == "FE")
       {
         std::vector<double> densityValsForXC(2 * totalLocallyOwnedCells *
                                                nQuadsPerCell,
@@ -5096,9 +5099,9 @@ namespace dftfe
 
         auxDensityMatrixXCPtr->projectDensityStart(densityProjectionInputs);
 
-        auxDensityMatrixXCPtr->projectDensityEnd();
+        auxDensityMatrixXCPtr->projectDensityEnd(mpi_communicator);
       }
-    else if (d_dftParamsPtr->AuxBasisTypeXC == "SlaterAE")
+    else if (d_dftParamsPtr->auxBasisTypeXC == "SlaterAE")
       {
 #ifndef USE_COMPLEX
 #  ifdef DFTFE_WITH_DEVICE
@@ -5116,6 +5119,7 @@ namespace dftfe
                                                   d_kPointWeights,
                                                   auxDensityMatrixXCPtr,
                                                   d_mpiCommParent,
+                                                  mpi_communicator,
                                                   interpoolcomm,
                                                   interBandGroupComm,
                                                   *d_dftParamsPtr);
@@ -5134,6 +5138,7 @@ namespace dftfe
                                                   d_kPointWeights,
                                                   auxDensityMatrixXCPtr,
                                                   d_mpiCommParent,
+                                                  mpi_communicator,
                                                   interpoolcomm,
                                                   interBandGroupComm,
                                                   *d_dftParamsPtr);

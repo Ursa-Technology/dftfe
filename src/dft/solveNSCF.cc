@@ -675,7 +675,7 @@ namespace dftfe
                                  d_auxDensityMatrixXCInPtr);
 
         computing_timer.enter_subsection("VEff Computation");
-        kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixInXCPtr,
+        kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixXCInPtr,
                                              d_phiInQuadValues);
         computing_timer.leave_subsection("VEff Computation");
 
@@ -900,7 +900,7 @@ namespace dftfe
                              fermiEnergy,
                              fermiEnergyUp,
                              fermiEnergyDown,
-                             d_auxDensityMatrixOutXCPtr);
+                             d_auxDensityMatrixXCOutPtr);
 
     //
     // compute integral rhoOut
@@ -1059,8 +1059,8 @@ namespace dftfe
       d_densityOutQuadValues,
       d_gradDensityOutQuadValues,
       d_densityTotalOutValuesLpspQuad,
-      d_auxDensityMatrixInXCPtr,
-      d_auxDensityMatrixOutXCPtr,
+      d_auxDensityMatrixXCInPtr,
+      d_auxDensityMatrixXCOutPtr,
       d_bQuadValuesAllAtoms,
       d_bCellNonTrivialAtomIds,
       d_localVselfs,

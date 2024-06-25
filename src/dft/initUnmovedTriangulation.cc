@@ -29,7 +29,7 @@
 #include <dft.h>
 #include <dftUtils.h>
 #include <vectorUtilities.h>
-#include <AuxDensityMatrixFE.h>
+#include <AuxDensityFE.h>
 #include <AuxDensityMatrixSlater.h>
 
 namespace dftfe

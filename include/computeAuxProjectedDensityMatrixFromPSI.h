@@ -44,6 +44,7 @@ namespace dftfe
     const std::vector<double> &kPointWeights,
     AuxDensityMatrix &         auxDensityMatrixRepresentation,
     const MPI_Comm &           mpiCommParent,
+    const MPI_Comm &           domainComm,
     const MPI_Comm &           interpoolcomm,
     const MPI_Comm &           interBandGroupComm,
     const dftParameters &      dftParams);

@@ -251,18 +251,21 @@ namespace dftfe
       {
         computing_timer.enter_subsection("VEffPrime Computation");
 
-        updateAuxDensityMatrix(d_densityInQuadValues,
-                               d_gradDensityInQuadValues,
-                               d_rhoCore,
-                               d_gradRhoCore,
-                               d_eigenVectorsFlattenedHost,
+        updateAuxDensityXCMatrix(d_densityInQuadValues,
+                                 d_gradDensityInQuadValues,
+                                 d_rhoCore,
+                                 d_gradRhoCore,
+                                 d_eigenVectorsFlattenedHost,
 #ifdef DFTFE_WITH_DEVICE
-                               d_eigenVectorsFlattenedDevice,
+                                 d_eigenVectorsFlattenedDevice,
 #endif
-                               eigenValues,
-                               d_auxDensityMatrixInPtr);
+                                 eigenValues,
+                                 fermiEnergy,
+                                 fermiEnergyUp,
+                                 fermiEnergyDown,
+                                 d_auxDensityMatrixXCInPtr);
 
-        kohnShamDFTEigenOperator.computeVEffPrime(d_auxDensityMatrixInPtr,
+        kohnShamDFTEigenOperator.computeVEffPrime(d_auxDensityMatrixXCInPtr,
                                                   rhoPrimeValues,
                                                   gradRhoPrimeValues,
                                                   electrostaticPotPrimeValues,

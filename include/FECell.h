@@ -40,7 +40,8 @@ namespace dftfe
       using DealiiFECellIterator =
         typename dealii::DoFHandler<dim>::active_cell_iterator;
 
-      FECell( typename dealii::DoFHandler<dim>::active_cell_iterator dealiiFECellIter);
+      FECell( typename dealii::DoFHandler<dim>::active_cell_iterator dealiiFECellIter,
+             const dealii::FiniteElement< dim, dim > &fe);
 
       void reinit(DealiiFECellIterator dealiiFECellIter);
 
@@ -60,6 +61,12 @@ namespace dftfe
       DealiiFECellIterator &
       getDealiiFECellIter();
 
+      void getShapeFuncValues(unsigned int numPointsInCell,
+                         const std::vector<double> &coordinatesOfPointsInCell,
+                         std::vector<double> &shapeFuncValues,
+                         unsigned int cellShapeFuncStartIndex,
+                         unsigned int numDofsPerElement) const override;
+
     private:
 
       std::vector<double> d_lowerLeft;
@@ -68,6 +75,8 @@ namespace dftfe
       DealiiFECellIterator d_dealiiFECellIter;
 
       dealii::MappingQ1<dim,dim> d_mappingQ1;
+
+      const dealii::FiniteElement< dim, dim > &d_feCell;
 
     }; // end of class FECell
   } // end of namespace utils

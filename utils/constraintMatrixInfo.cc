@@ -504,6 +504,15 @@ namespace dftfe
                                           dftfe::utils::MemorySpace::HOST>
           &fieldVector) const;
 
+#if defined(USE_COMPLEX)
+    template void
+    constraintMatrixInfo<dftfe::utils::MemorySpace::HOST>::
+      distribute_slave_to_master(
+        dftfe::linearAlgebra::MultiVector<double,
+                                          dftfe::utils::MemorySpace::HOST>
+          &fieldVector) const;
+#endif
+
     template void
     constraintMatrixInfo<dftfe::utils::MemorySpace::HOST>::set_zero(
       dftfe::linearAlgebra::MultiVector<dataTypes::number,

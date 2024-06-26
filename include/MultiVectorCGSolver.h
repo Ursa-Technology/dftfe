@@ -32,9 +32,9 @@ namespace dftfe
     solve(MultiVectorLinearSolverProblem<memorySpace> &  problem,
           std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
                                                           BLASWrapperPtr,
-          dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+          dftfe::linearAlgebra::MultiVector<double ,
                                             memorySpace> &  x,
-          dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+          dftfe::linearAlgebra::MultiVector<double ,
                                             memorySpace> &  NDBCVec,
           unsigned int                      locallyOwned,
           unsigned int                      blockSize,

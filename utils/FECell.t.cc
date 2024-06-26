@@ -6,8 +6,10 @@ namespace dftfe
   {
     template <unsigned int dim>
     FECell<dim>::FECell(
-      typename dealii::DoFHandler<dim>::active_cell_iterator dealiiFECellIter):
-      d_mappingQ1()
+      typename dealii::DoFHandler<dim>::active_cell_iterator dealiiFECellIter,
+      const dealii::FiniteElement< dim, dim > &fe):
+      d_mappingQ1(),
+      d_feCell(fe)
     {
       this->reinit(dealiiFECellIter);
     }
@@ -84,7 +86,7 @@ namespace dftfe
       std::vector<double> paramPoint = this->getParametricPoint(point);
       for( unsigned int j = 0 ; j< dim; j++)
         {
-          if((paramPoint[j] < tol) || (paramPoint[j] > 1.0 + tol))
+          if((paramPoint[j] < -tol) || (paramPoint[j] > 1.0 + tol))
             {
               returnVal = false;
             }
@@ -111,6 +113,41 @@ namespace dftfe
         }
 
       return pointParam;
+    }
+
+    template <unsigned int dim>
+    void FECell<dim>::
+      getShapeFuncValues(unsigned int numPointsInCell,
+                       const std::vector<double> &coordinatesOfPointsInCell,
+                       std::vector<double> &shapeFuncValues,
+                       unsigned int cellShapeFuncStartIndex,
+                       unsigned int numDofsPerElement) const
+    {
+              for( size_type iPoint = 0 ;iPoint < numPointsInCell; iPoint++)
+                {
+
+                  dealii::Point<3, double> realCoord(coordinatesOfPointsInCell[3*iPoint+0],
+                                                          coordinatesOfPointsInCell[3*iPoint+1],
+                                                          coordinatesOfPointsInCell[3*iPoint+2]);
+
+                  dealii::Point<dim, double> pointParamDealii =
+                    d_mappingQ1.transform_real_to_unit_cell(d_dealiiFECellIter,realCoord);
+
+                  AssertThrow((pointParamDealii[0] > -1e-7) && (pointParamDealii[0] < 1 +  1e-7),
+                              dealii::ExcMessage("param point x coord is -ve\n"));
+                  AssertThrow((pointParamDealii[1] > -1e-7) && (pointParamDealii[1] < 1 +  1e-7),
+                              dealii::ExcMessage("param point y coord is -ve\n"));
+                  AssertThrow((pointParamDealii[2] > -1e-7) && (pointParamDealii[2] < 1 +  1e-7),
+                              dealii::ExcMessage("param point z coord is -ve\n"));
+
+                  for (unsigned int iNode = 0; iNode < numDofsPerElement;
+                       iNode++)
+                    {
+                      shapeFuncValues[cellShapeFuncStartIndex +
+                                        iNode +
+                                        iPoint * numDofsPerElement] = d_feCell.shape_value(iNode, pointParamDealii);
+                    }
+                }
     }
   } // end of namespace utils
 

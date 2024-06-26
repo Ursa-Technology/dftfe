@@ -20,8 +20,6 @@
 //
 // dft header
 //
-#include "InverseDFT.h"
-#include "inverseDFTParameters.h"
 
 #include "dftfeWrapper.h"
 #include "runParameters.h"
@@ -102,7 +100,6 @@ main(int argc, char *argv[])
                 "\n"));
   const std::string parameter_file = argv[1];
 
-  const std::string inverse_parameter_file = argv[2];
 
   dftfe::runParameters runParams;
   runParams.parse_parameters(parameter_file);
@@ -250,65 +247,6 @@ main(int argc, char *argv[])
                                        runParams.verbosity,
                                        runParams.useDevice);
       dftfeWrapped.run();
-    }
-  else if (runParams.solvermode == "INVERSE")
-    {
-
-      std::cout<<" running a inverse calc\n";
-      dftfe::dftfeWrapper dftfeWrapped(parameter_file,
-                                       MPI_COMM_WORLD,
-                                       true,
-                                       true,
-                                       "GS",
-                                       runParams.restartFilesPath,
-                                       runParams.verbosity,
-                                       runParams.useDevice);
-
-      auto dftBasePtr = dftfeWrapped.getDftfeBasePtr();
-
-      dftfe::dftParameters dftParams;
-      dftParams.parse_parameters(parameter_file,
-                                 MPI_COMM_WORLD,
-                                 true,
-                                 "GS",
-                                 runParams.restartFilesPath,
-                                 4,
-                                 false);
-
-      dftfe::inverseDFTParameters invParams;
-      invParams.parse_parameters(inverse_parameter_file,
-                                 MPI_COMM_WORLD,
-                                 true);
-
-      if ( runParams.useDevice == false)
-      {
-      dftfe::inverseDFT<4,4,dftfe::utils::MemorySpace::HOST> invDFTObj(*dftBasePtr,
-                                  dftParams,
-                                  invParams,
-                                  dftBasePtr->getMPIParent(),
-                                  dftBasePtr->getMPIDomain(),
-                                  dftBasePtr->getMPIInterBand(),
-                                  dftBasePtr->getMPIInterPool());
-
-      dftfeWrapped.run();
-      invDFTObj.run();
-      }
-
-#ifdef DFTFE_WITH_DEVICE
-      if ( runParams.useDevice == true)
-      {
-      dftfe::inverseDFT<4,4,dftfe::utils::MemorySpace::DEVICE> invDFTObj(*dftBasePtr,
-                                  dftParams,
-                                  invParams,
-                                  dftBasePtr->getMPIParent(),
-                                  dftBasePtr->getMPIDomain(),
-                                  dftBasePtr->getMPIInterBand(),
-                                  dftBasePtr->getMPIInterPool());
-
-      dftfeWrapped.run();
-      invDFTObj.run();
-      }
-#endif
     }
   else
     {

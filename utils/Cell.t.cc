@@ -92,6 +92,19 @@ namespace dftfe
       return pointParam;
     }
 
+//    template <unsigned int dim>
+//    void
+//    Cell<dim>::getShapeFuncValues(unsigned int numPointsInCell,
+//                                  const std::vector<double> &coordinatesOfPointsInCell,
+//                                  std::vector<double> &shapeFuncValues,
+//                                  unsigned int cellShapeFuncStartIndex,
+//                                  unsigned int numDofsPerElement) const
+//    {
+//      AssertThrow(false,
+//                  dealii::ExcMessage("getting shape function values is not possible for Cell\n"));
+//      exit(0);
+//    }
+
   } // end of namespace utils
 
 } // end of namespace dftfe

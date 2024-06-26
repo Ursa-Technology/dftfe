@@ -38,9 +38,9 @@ namespace dftfe
   void MultiVectorMinResSolver::solve(MultiVectorLinearSolverProblem<memorySpace> &  problem,
                                  std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
                                                                                  BLASWrapperPtr,
-                                 dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                                 dftfe::linearAlgebra::MultiVector<double ,
                                                                    memorySpace> &  xMemSpace,
-                                 dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                                 dftfe::linearAlgebra::MultiVector<double ,
                                                                    memorySpace> &  NDBCVec,
                                  unsigned int                      locallyOwned,
                                  unsigned int                      blockSize,
@@ -66,13 +66,13 @@ namespace dftfe
     d_onesMemSpace.resize(locallyOwned);
     d_onesMemSpace.setValue(1.0);
 
-    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    dftfe::linearAlgebra::MultiVector<double ,
                                       memorySpace> tempVec(xMemSpace,0.0);
 
     // TODO use dft parameters to get this
     const double rhsNormTolForZero = 1e-15;
     computing_timer.enter_subsection("Compute Rhs MPI");
-    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    dftfe::linearAlgebra::MultiVector<double ,
                                       memorySpace> & bMemSpace = problem.computeRhs(NDBCVec, xMemSpace, blockSize);
 
     pcout << "Compute rhs ... done \n";
@@ -83,44 +83,44 @@ namespace dftfe
     computing_timer.enter_subsection("MINRES initial MPI");
 
 
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> negOneHost(blockSize, -1.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> beta1Host(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> negOneHost(blockSize, -1.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> beta1Host(blockSize, 0.0);
 
 
-    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+    dftfe::utils::MemoryStorage<double , memorySpace>
       betaMemSpace(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+    dftfe::utils::MemoryStorage<double , memorySpace>
       beta1MemSpace(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+    dftfe::utils::MemoryStorage<double , memorySpace>
       alphaMemSpace(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+    dftfe::utils::MemoryStorage<double , memorySpace>
       negOneMemSpace(blockSize, -1.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+    dftfe::utils::MemoryStorage<double , memorySpace>
       oneMemSpace(blockSize, 1.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+    dftfe::utils::MemoryStorage<double , memorySpace>
       sMemSpace(blockSize, 1.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+    dftfe::utils::MemoryStorage<double , memorySpace>
       negBetaByBetaOldMemSpace(blockSize, 1.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+    dftfe::utils::MemoryStorage<double , memorySpace>
       negAlphaByBetaMemSpace(blockSize, 1.0);
 
 
-    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+    dftfe::utils::MemoryStorage<double , memorySpace>
       negOldepsMemSpace(blockSize, 1.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+    dftfe::utils::MemoryStorage<double , memorySpace>
       negDeltaMemSpace(blockSize, 1.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+    dftfe::utils::MemoryStorage<double , memorySpace>
       denomMemSpace(blockSize, 1.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+    dftfe::utils::MemoryStorage<double , memorySpace>
       phiMemSpace(blockSize, 1.0);
 
-    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+    dftfe::utils::MemoryStorage<double , memorySpace>
       coeffForXMemInMemSpace(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , memorySpace>
+    dftfe::utils::MemoryStorage<double , memorySpace>
       coeffForXTmpMemSpace(blockSize, 0.0);
 
     // allocate the vectors
-    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    dftfe::linearAlgebra::MultiVector<double ,
                                       memorySpace> xTmpMemSpace, yMemSpace, vMemSpace, r1MemSpace, r2MemSpace, wMemSpace, w1MemSpace, w2MemSpace;
     xTmpMemSpace.reinit(bMemSpace);
     yMemSpace.reinit(bMemSpace);
@@ -175,21 +175,21 @@ namespace dftfe
     for (unsigned int i = 0; i < blockSize; ++i)
       beta1Host[i] = std::sqrt(beta1Host[i]) + rhsNormTolForZero;
 
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> epsHost(blockSize, std::numeric_limits<double>::epsilon());
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> oldbHost(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> betaHost(beta1Host);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> dbarHost(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> epslnHost(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> oldepsHost(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> qrnormHost(beta1Host);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> phiHost(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> phibarHost(beta1Host);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> csHost(blockSize, -1.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> snHost(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> alphaHost(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> gammaHost(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> deltaHost(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> gbarHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> epsHost(blockSize, std::numeric_limits<double>::epsilon());
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> oldbHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> betaHost(beta1Host);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> dbarHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> epslnHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> oldepsHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> qrnormHost(beta1Host);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> phiHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> phibarHost(beta1Host);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> csHost(blockSize, -1.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> snHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> alphaHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> gammaHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> deltaHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> gbarHost(blockSize, 0.0);
     dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> rnormHost(blockSize, 0.0);
 
 
@@ -202,12 +202,12 @@ namespace dftfe
 
     bool                      hasAllConverged = false;
     dftfe::utils::MemoryStorage<bool , dftfe::utils::MemorySpace::HOST>         hasConvergedHost(blockSize, false);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST>       sHost(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST>       negBetaByBetaOldHost(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST>       negAlphaByBetaHost(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST>      denomHost(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST>       negOldepsHost(blockSize, 0.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST>       negDeltaHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST>       sHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST>       negBetaByBetaOldHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST>       negAlphaByBetaHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST>      denomHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST>       negOldepsHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST>       negDeltaHost(blockSize, 0.0);
     dftfe::utils::MemoryStorage<unsigned int , dftfe::utils::MemorySpace::HOST> lanczosSizeHost(blockSize, 0);
     unsigned int              iter = 0;
     computing_timer.leave_subsection("MINRES initial MPI");
@@ -402,8 +402,8 @@ namespace dftfe
 
         //pcout << " iter = " << iter << "\n";
         bool                updateFlag = false;
-        dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> coeffForXMemHost(blockSize, 1.0);
-        dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> coeffForXTmpHost(blockSize, 0.0);
+        dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> coeffForXMemHost(blockSize, 1.0);
+        dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> coeffForXTmpHost(blockSize, 0.0);
         for (unsigned int i = 0; i < blockSize; ++i)
           {
 		  //pcout << " res = " << rnormHost[i] << "\n";
@@ -452,8 +452,8 @@ namespace dftfe
     computing_timer.enter_subsection("MINRES dist MPI");
 
     bool                updateUncovergedFlag = false;
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST>coeffForXMemHost(blockSize, 1.0);
-    dftfe::utils::MemoryStorage<dataTypes::number , dftfe::utils::MemorySpace::HOST> coeffForXTmpHost(blockSize, 0.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST>coeffForXMemHost(blockSize, 1.0);
+    dftfe::utils::MemoryStorage<double , dftfe::utils::MemorySpace::HOST> coeffForXTmpHost(blockSize, 0.0);
     for (unsigned int i = 0; i < blockSize; ++i)
       {
         if (hasConvergedHost[i] == false)
@@ -518,9 +518,9 @@ namespace dftfe
   template void MultiVectorMinResSolver::solve<dftfe::utils::MemorySpace::HOST>(MultiVectorLinearSolverProblem<dftfe::utils::MemorySpace::HOST> &  problem,
                                                                   std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
                                                                                                                   BLASWrapperPtr,
-                                                                  dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                                                                  dftfe::linearAlgebra::MultiVector<double ,
                                                                                                     dftfe::utils::MemorySpace::HOST> &  xMemSpace,
-                                                                  dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                                                                  dftfe::linearAlgebra::MultiVector<double ,
                                                                                                     dftfe::utils::MemorySpace::HOST> &  NDBCVec,
                                                                   unsigned int                      locallyOwned,
                                                                   unsigned int                      blockSize,
@@ -535,9 +535,9 @@ namespace dftfe
    template void MultiVectorMinResSolver::solve<dftfe::utils::MemorySpace::DEVICE>(MultiVectorLinearSolverProblem<dftfe::utils::MemorySpace::DEVICE> &  problem,
                                                                   std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
                                                                                                                   BLASWrapperPtr,
-                                                                  dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                                                                  dftfe::linearAlgebra::MultiVector<double ,
                                                                                                     dftfe::utils::MemorySpace::DEVICE> &  xMemSpace,
-                                                                  dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                                                                  dftfe::linearAlgebra::MultiVector<double ,
                                                                                                     dftfe::utils::MemorySpace::DEVICE> &  NDBCVec,
                                                                   unsigned int                      locallyOwned,
                                                                   unsigned int                      blockSize,

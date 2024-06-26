@@ -579,12 +579,12 @@ namespace dftfe
     getBasisOperationsMemSpace();
 
     std::shared_ptr<
-      dftfe::basis::FEBasisOperations<dataTypes::number,
+      dftfe::basis::FEBasisOperations<double,
                                       double,
                                       dftfe::utils::MemorySpace::HOST>> getBasisOperationsElectroHost();
 
     std::shared_ptr<
-      dftfe::basis::FEBasisOperations<dataTypes::number,
+      dftfe::basis::FEBasisOperations<double,
                                       double,
                                       memorySpace>>
     getBasisOperationsElectroMemSpace();

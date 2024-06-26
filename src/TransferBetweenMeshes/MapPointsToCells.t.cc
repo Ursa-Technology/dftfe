@@ -110,7 +110,7 @@ namespace dftfe
       pointsToCell(std::vector<std::shared_ptr<const Cell<dim>>> & srcCells,
                    const std::vector<std::vector<double>> & targetPts,
                    std::vector<std::vector<size_type>> & cellFoundIds,
-                   std::vector<std::vector<double>> & cellParamCoords,
+                   std::vector<std::vector<double>> & cellRealCoords,
                    std::vector<bool> & pointsFound,
                    const double paramCoordsTol)
       {
@@ -119,7 +119,7 @@ namespace dftfe
         pointsFound.resize(targetPts.size());
         std::fill(pointsFound.begin(), pointsFound.end(), false);
         cellFoundIds.resize(numCells, std::vector<size_type>(0));
-        cellParamCoords.resize(numCells, std::vector<double>(0));
+        cellRealCoords.resize(numCells, std::vector<double>(0));
         for(size_type iCell = 0; iCell < numCells; iCell++)
           {
             auto bbCell = srcCells[iCell]->getBoundingBox();
@@ -131,21 +131,21 @@ namespace dftfe
                 size_type pointIndex = targetPointList[iPoint];
                 if(!pointsFound[pointIndex])
                   {
-                    auto paramPoint = srcCells[iCell]->getParametricPoint(targetPts[pointIndex]);
-                    bool pointInside = true;
-                    for( unsigned int j = 0 ; j <dim; j++)
-                      {
-                        if((paramPoint[j] < -paramCoordsTol) || (paramPoint[j] > 1.0 + paramCoordsTol))
-                          {
-                            pointInside = false;
-                          }
-                      }
+//                    auto paramPoint = srcCells[iCell]->getParametricPoint(targetPts[pointIndex]);
+                    bool pointInside = srcCells[iCell]->isPointInside(targetPts[pointIndex],paramCoordsTol);
+//                    for( unsigned int j = 0 ; j <dim; j++)
+//                      {
+//                        if((paramPoint[j] < -paramCoordsTol) || (paramPoint[j] > 1.0 + paramCoordsTol))
+//                          {
+//                            pointInside = false;
+//                          }
+//                      }
                     if (pointInside)
                       {
                         pointsFound[pointIndex] = true;
                         for(size_type iDim = 0; iDim < dim; iDim++)
                           {
-                            cellParamCoords[iCell].push_back(paramPoint[iDim]);
+                            cellRealCoords[iCell].push_back(targetPts[pointIndex][iDim]);
                           }
                         cellFoundIds[iCell].push_back(pointIndex);
                       }
@@ -223,7 +223,8 @@ namespace dftfe
                     const MPI_Comm & mpiComm)
       {
 
-        size_type thisRankId = dealii::Utilities::MPI::this_mpi_process(mpiComm);
+        int thisRankId;
+        MPI_Comm_rank(mpiComm, &thisRankId);
         dftfe::utils::mpi::MPIRequestersNBX mpiRequestersNBX(sendToProcIds, mpiComm);
         std::vector<size_type> receiveFromProcIds = mpiRequestersNBX.getRequestingRankIds();
 
@@ -455,18 +456,17 @@ namespace dftfe
 
     template<size_type dim, size_type M>
     MapPointsToCells<dim,M>::MapPointsToCells(const MPI_Comm & mpiComm)
-      :d_mpiComm(mpiComm),
-      d_numMPIRank(dealii::Utilities::MPI::n_mpi_processes(d_mpiComm)),
-      d_thisRank(dealii::Utilities::MPI::this_mpi_process(d_mpiComm))
+      :d_mpiComm(mpiComm)
     {
-
+      MPI_Comm_rank(d_mpiComm, &d_thisRank);
+      MPI_Comm_size(d_mpiComm, &d_numMPIRank);
     }
 
     template <size_type dim, size_type M>
     void
     MapPointsToCells<dim, M>::init(std::vector<std::shared_ptr<const Cell<dim>>> srcCells,
                                    const std::vector<std::vector<double>> & targetPts,
-                                   std::vector<std::vector<double>> &mapCellsToParamCoordinates,
+                                   std::vector<std::vector<double>> &mapCellsToRealCoordinates,
                                    std::vector<std::vector<size_type>> &mapCellLocalToProcLocal,
                                    std::pair<global_size_type,global_size_type> &locallyOwnedRange,
                                    std::vector<global_size_type> & ghostGlobalIds,
@@ -478,7 +478,7 @@ namespace dftfe
       size_type numCells =  srcCells.size();
       size_type numPoints = targetPts.size();
       mapCellLocalToProcLocal.resize(numCells,std::vector<size_type>(0));
-      mapCellsToParamCoordinates.resize(numCells,std::vector<double>(0));
+      mapCellsToRealCoordinates.resize(numCells,std::vector<double>(0));
 
       std::vector<std::vector<global_size_type>> mapCellLocalToGlobal;
       mapCellLocalToGlobal.resize(numCells,std::vector<global_size_type>(0));
@@ -512,11 +512,11 @@ namespace dftfe
 
       std::vector<bool> pointsFoundLocally(numPoints,false);
       std::vector<std::vector<size_type>> cellLocalFoundIds;
-      std::vector<std::vector<double>> cellLocalFoundParamCoords;
+      std::vector<std::vector<double>> cellLocalFoundRealCoords;
       pointsToCell<dim,M>(srcCells,
                            targetPts,
                            cellLocalFoundIds,
-                           cellLocalFoundParamCoords,
+                           cellLocalFoundRealCoords,
                            pointsFoundLocally,
                            paramCoordsTol);
 
@@ -550,8 +550,8 @@ namespace dftfe
             }
 
 
-          appendToVec(mapCellsToParamCoordinates[iCell],
-                      cellLocalFoundParamCoords[iCell]);
+          appendToVec(mapCellsToRealCoordinates[iCell],
+                      cellLocalFoundRealCoords[iCell]);
         }
 
       //            std::cout<<" In rank = "<<d_thisRank<<" num points foudn locally  = "<<numLocallyFoundPoints<<"\n";
@@ -636,12 +636,12 @@ namespace dftfe
 
       size_type numTotalPointsReceived = receivedPointsCoords.size();
       std::vector<std::vector<size_type>> cellReceivedPointsFoundIds;
-      std::vector<std::vector<double>> cellReceivedPointsFoundParamCoords;
+      std::vector<std::vector<double>> cellReceivedPointsFoundRealCoords;
       std::vector<bool> receivedPointsFound(numTotalPointsReceived, false);
       pointsToCell<dim,M>(srcCells,
                            receivedPointsCoords,
                            cellReceivedPointsFoundIds,
-                           cellReceivedPointsFoundParamCoords,
+                           cellReceivedPointsFoundRealCoords,
                            receivedPointsFound,
                            paramCoordsTol);
 
@@ -674,8 +674,8 @@ namespace dftfe
 
             }
 
-          appendToVec(mapCellsToParamCoordinates[iCell],
-                      cellReceivedPointsFoundParamCoords[iCell]);
+          appendToVec(mapCellsToRealCoordinates[iCell],
+                      cellReceivedPointsFoundRealCoords[iCell]);
         }
 
       MPI_Barrier(d_mpiComm);
@@ -738,413 +738,3 @@ namespace dftfe
     }
   } // end of namespace utils
 } // end of namespace dftfe
-
-//for(size_type iCell = 0; iCell < numCells; iCell++)
-//{
-//    auto bbCell = srcCells[iCell]->getBoundingBox();
-//    auto targetPointList = rTreePoint.getPointIdsInsideBox(bbCell.first,
-//            bbCell.second); // TODO it should return an empty vector if no point inside cell
-
-//    for(size_type iPoint = 0; iPoint < targetPointList.size(); iPoint++)
-//    {
-//        size_type pointIndex = targetPointList[iPoint];
-//        if(!pointsFoundLocally[pointIndex])
-//        {
-//            auto paramPoint = srcCells.getParametricPoint(targetPts[pointIndex]); // TODO this will throw an error
-//            bool pointInside = true;
-//            for( unsigned int j = 0 ; j <dim; j++)
-//            {
-//                if((paramPoint[j] < -paramCoordsTol) || (paramPoint[j] > 1.0 + paramCoordsTol))
-//                {
-//                    pointInside = false;
-//                }
-//            }
-//            if (pointInside)
-//            {
-//                pointsFoundLocally[pointIndex] = true;
-//                for(size_type iDim = 0; iDim < dim; iDim++)
-//                {
-//                    mapCellsToParamCoordinates[iCell].push_back(paramPoint[iDim]);
-//                }
-//                mapCellLocalToProcLocal[iCell].push_back(pointIndex);
-//                mapCellLocalToGlobal[iCell].push_back(pointIndex+locallyOwnedStart);
-//            }
-//        }
-//    }
-//}
-
-
-//RTreePoint rTreePointNonLocal(nonLocalPointCoordinates);
-//for (size_type iProc = 0 ; iProc < d_numMPIRank; iProc++)
-//{
-//    if(iProc != d_thisRank)
-//    {
-//        auto bbCell = srcCells[iCell]->getBoundingBox();
-//        std::vector<double> llProc(dim,0.0);
-//        std::vector<double> urProc(dim,0.0);
-//        for(size_type iDim = 0; iDim < dim; iDim++)
-//        {
-//            llProc[iDim] = allProcsBoundingBoxes[2*dim*iProc+j];
-//            urProc[iDim] = allProcsBoundingBoxes[2*dim*iProc+dim+j];
-//        }
-//        auto targetPointList = rTreePointNonLocal.getPointIdsInsideBox(llProc,
-//                urProc); // TODO if no points it should return an empty vector ??
-
-//        size_type numTargetPointsToSend = targetPointList.size();
-//        std::vector<size_type> globalPointList;
-//        globalPointList.resize(numTargetPointsToSend);
-//        if(numtargetPointsToSend>0)
-//        {
-//            sendToProcIds.push_back(iProc);
-//            std::vector<double> pointCoordinates;
-//            for(size_type iPoint = 0; iPoint < targetPointList.size(); iPoint++)
-//            {
-//                size_type pointIndex = targetPointList[iPoint];
-//                for(size_type iDim = 0; iDim  <dim; iDim++)
-//                {
-//                    pointCoordinates.push_back(nonLocalPointCoordinates[pointIndex][idim]);
-//                }
-//                globalPointList[iPoint] = locallyOwnedStart + nonLocalPointIds[targetPointList[iPoint]];
-//            }
-//            // also have to send the coordinates and the indices.
-//            targetPointListToSend[iProc] = globalPointList;
-//            targetPointCoordinatesToSend[iProc] = pointCoordinates;
-//        }
-//    }
-//}
-
-//// Not you know what coordinates to send to what procs
-//// Use the NBx algorithm to create the communication pattern and
-//// send the data.
-//// Similarly, receive data other processors.
-//MPIRequestersNBX mpiRequestersNBX(sendToProcIds, d_mpiComm);
-//std::vector<size_type> receiveFromProcIds = mpiRequestersNBX.getRequestingRankIds();
-
-
-//std::vector<size_type> numPointsReceived(receiveFromProcIds.size());
-
-//std::vector<MPI_Request> sendRequests(sendToProcIds.size());
-//std::vector<MPI_Status>  sendStatuses(sendToProcIds.size());
-//std::vector<MPI_Request> recvRequests(receiveFromProcIds.size());
-//std::vector<MPI_Status>  recvStatuses(receivedFromProcIds.size());
-//const int tag = static_cast<int>(MPITags::MPI_P2P_PATTERN_TAG);
-//for(size_type i = 0; i < sendToProcIds.size(); ++i)
-//{
-//    size_type procId = sendToProcIds[i];
-//    size_type nPointsToSend = targetPointListToSend[procId].size();
-//    MPI_Isend(&nPointsToSend, 1, MPI_UNSIGNED, procId, tag, d_mpiComm,
-//            &sendRequests[i]);
-//}
-
-//for(size_type i = 0; i < receiveFromProcIds.size(); ++i)
-//{
-//    size_type procId = receiveFromProcIds[i];
-//    MPI_Irecv(&numPointsReceived[i], 1, MPI_UNSIGNED, procId,
-//            tag,
-//            d_mpiComm,
-//            &recvRequests[i]);
-//}
-//if (sendRequests.size() > 0)
-//{
-//    err    = MPI_Waitall(sendToProcIds.size(),
-//            sendRequests.data(),
-//            sendStatuses.data());
-//    errMsg = "Error occured while using MPI_Waitall. "
-//        "Error code: " +
-//        std::to_string(err);
-//    throwException(err == MPI_SUCCESS, errMsg);
-//}
-
-//if (recvRequests.size() > 0)
-//{
-//    err    = MPI_Waitall(receiveFromProcIds.size(),
-//            recvRequests.data(),
-//            recvStatuses.data());
-//    errMsg = "Error occured while using MPI_Waitall. "
-//        "Error code: " +
-//        std::to_string(err);
-//    throwException(err == MPI_SUCCESS, errMsg);
-//}
-
-//// send the point coordinates and the global ids.
-//std::vector<MPI_Request> sendRequestsCoordinates(sendToProcIds.size());
-//std::vector<MPI_Status>  sendStatusesCoordinates(sendToProcIds.size());
-//std::vector<MPI_Request> recvRequestsCoordinates(receiveFromProcIds.size());
-//std::vector<MPI_Status>  recvStatusesCoordinates(receivedFromProcIds.size());
-//// preferably a different value as before.
-//const int tagCoordinates = static_cast<int>(MPITags::MPI_P2P_PATTERN_TAG) + 5;
-
-//std::vector<MPI_Request> sendRequestsGlobalIds(sendToProcIds.size());
-//std::vector<MPI_Status>  sendStatusesGlobalIds(sendToProcIds.size());
-//std::vector<MPI_Request> recvRequestsGlobalIds(receiveFromProcIds.size());
-//std::vector<MPI_Status>  recvStatusesGlobalIds(receivedFromProcIds.size());
-//const int tagGlobalIds = static_cast<int>(MPITags::MPI_P2P_PATTERN_TAG) + 10;
-
-//for(size_type i = 0; i < sendToProcIds.size(); ++i)
-//{
-//    size_type procId = sendToProcIds[i];
-//    size_type nPointsToSend = targetPointListToSend[procId].size();
-//    MPI_Isend(&targetPointCoordinatesToSend[procId][0], nPointsToSend*dim, MPI_DOUBLE, procId, tagCoordinates, d_mpiComm,
-//            &sendRequestsCoordinates[i]);
-
-//    MPI_Isend(&targetPointListToSend[procId][0], nPointsToSend, MPI_UNSIGNED, procId, tagGlobalIds, d_mpiComm,
-//            &sendRequestsGlobalIds[i]);
-//}
-
-//for(size_type i = 0; i < receiveFromProcIds.size(); ++i)
-//{
-//    size_type procId = receiveFromProcIds[i];
-//    receivedPointList[procId] = std::vector<double>(0);
-//    receivedPointList[procId].resize(numPointsReceived[i]);
-//    receivedPointListCoordinates[procId] = std::vector<double>(0);
-//    receivedPointListCoordinates[procId].resize(numPointsReceived[i]*dim);
-
-//    MPI_Irecv(&receivedPointListCoordinates[procId][0], numPointsReceived[i]*dim, MPI_DOUBLE, procId,
-//            tagCoordinates,
-//            d_mpiComm,
-//            &recvRequestsCoordinates[i]);
-
-//    MPI_Irecv(&receivedPointList[procId][0], numPointsReceived[i], MPI_UNSIGNED, procId,
-//            tagGlobalIds,
-//            d_mpiComm,
-//            &recvRequestsGlobalIds[i]);
-//}
-
-//if (sendRequestsCoordinates.size() > 0)
-//{
-//    err    = MPI_Waitall(sendToProcIds.size(),
-//            sendRequestsCoordinates.data(),
-//            sendStatusesCoordinates.data());
-//    errMsg = "Error occured while using MPI_Waitall. "
-//        "Error code: " +
-//        std::to_string(err);
-//    throwException(err == MPI_SUCCESS, errMsg);
-//}
-
-//if (recvRequestsCoordinates.size() > 0)
-//{
-//    err    = MPI_Waitall(receiveFromProcIds.size(),
-//            recvRequestsCoordinates.data(),
-//            recvStatusesCoordinates.data());
-//    errMsg = "Error occured while using MPI_Waitall. "
-//        "Error code: " +
-//        std::to_string(err);
-//    throwException(err == MPI_SUCCESS, errMsg);
-//}
-
-//if (sendRequestsGlobalIds.size() > 0)
-//{
-//    err    = MPI_Waitall(sendToProcIds.size(),
-//            sendRequestsGlobalIds.data(),
-//            sendStatusesGlobalIds.data());
-//    errMsg = "Error occured while using MPI_Waitall. "
-//        "Error code: " +
-//        std::to_string(err);
-//    throwException(err == MPI_SUCCESS, errMsg);
-//}
-
-//if (recvRequestsGlobalIds.size() > 0)
-//{
-//    err    = MPI_Waitall(receiveFromProcIds.size(),
-//            recvRequestsGlobalIds.data(),
-//            recvStatusesGlobalIds.data());
-//    errMsg = "Error occured while using MPI_Waitall. "
-//        "Error code: " +
-//        std::to_string(err);
-//    throwException(err == MPI_SUCCESS, errMsg);
-//}
-
-
-//std::vector<std::vector<double> pointsReceived(numTotalPointsReceived,
-//        std::vector<double>(dim,0.0));
-//std::vector<global_size_type> pointsReceivedGlobalIds(numTotalPointsReceived, -1);
-//size_type pointIndex = 0;
-//for(size_type i = 0; i <receiveFromProcIds.size(); i++)
-//{
-//    size_type iProc = receiveFromProcIds[i];
-//    std::vector<size_type> & pointList = receivedPointList[iProc];
-//    std::vector<double> & pointsCoord = receivedPointListCoordinates[iProc];
-//    for( size_type iPoint = 0 ; iPoint< pointList.size(); iPoint++)
-//    {
-//        std::vector<double> coord(dim);
-//        pointsReceivedGlobalIds[pointIndex] = pointList[iPoint];
-//        for(size_type iDim = 0; iDim  <dim; iDim++)
-//        {
-//            coord[iDim] = pointsCoord[dim*iPoint + iDim];
-//        }
-//        pointsReceived[pointIndex] = coord;
-//        pointIndex++;
-//    }
-//}
-
-
-//// search through the points
-//RTreePoint rTreeReceivedPoint(pointCoordsReceived);
-//std::vector<bool> receivedPointsFoundInACell(numTotalPointsReceived, false);
-//for(size_type iCell = 0; iCell < numCells; iCell++)
-//{
-//    auto bbCell = srcCells[iCell]->getBoundingBox();
-
-//    auto otherProcPointList = rTreeReceivedPoint.getPointIdsInsideBox(bbCell.first,
-//            bbCell.second); // TODO it should return an empty vector if no point inside cell
-
-//    for(size_type iPoint = 0; iPoint < otherProcPointList.size(); iPoint++)
-//    {
-//        size_type pointIndex = otherPointList[iPoint];
-//        if(!receivedPointsFoundInACell[pointIndex])
-//        {
-//            auto paramPoint = srcCells.getParametricPoint(pointCoordsReceived[pointIndex]); // TODO this will throw an error
-//            bool pointInside = true;
-//            for( unsigned int j = 0 ; j <dim; j++)
-//            {
-//                if((paramPoint[j] < -paramCoordsTol) || (paramPoint[j] > 1.0 + paramCoordsTol))
-//                {
-//                    pointInside = false;
-//                }
-//            }
-//            if(pointInside)
-//            {
-//                receivedPointsFoundInACell[pointIndex] = true;
-//                for(size_type iDim = 0; iDim < dim; iDim++)
-//                {
-//                    mapCellsToParamCoordinates[iCell].push_back(paramPoint[iDim]);
-//                }
-//                ghostGlobalIdsSet.insert(pointGlobalIdsReceived[pointIndex]);
-//                mapCellLocalToGlobal[iCell].push_back(pointGlobalIdsReceived[pointIndex]);
-//            }
-//        }
-//    }
-//}
-//            // check if the ghost indices are in ascending order.
-//
-////        sendToProcIds,
-////                sendToPointsGlobalIds,
-////                sendToPointsCoords
-//
-//        {
-//            size_type numProcsToSendDummy = sendToProcIds.size();
-//
-//            for( size_type iProc = 0 ; iProc < numProcsToSendDummy; iProc++)
-//            {
-//                size_type numPointsToSend =  sendToPointsGlobalIds[iProc].size();
-//
-//                bool ghostIdsInAscending = true;
-//                double errorAtCoord = 0.0;
-//                for (size_type iPoint = 0; iPoint < numPointsToSend ; iPoint++)
-//                {
-//                    if (iPoint > 0 )
-//                        if(sendToPointsGlobalIds[iProc][iPoint] <=  sendToPointsGlobalIds[iProc][iPoint-1])
-//                        {
-//                            ghostIdsInAscending = false;
-//                        }
-//
-//                    size_type localNodeIdDummy = sendToPointsGlobalIds[iProc][iPoint] - locallyOwnedStart;
-//                    errorAtCoord += (sendToPointsCoords[iProc][3*iPoint + 0] - targetPts[localNodeIdDummy][0])*
-//                                    (sendToPointsCoords[iProc][3*iPoint + 0] - targetPts[localNodeIdDummy][0])
-//
-//                                    + (sendToPointsCoords[iProc][3*iPoint + 1] - targetPts[localNodeIdDummy][1])*
-//                                      (sendToPointsCoords[iProc][3*iPoint + 1] - targetPts[localNodeIdDummy][1])
-//
-//                                    + (sendToPointsCoords[iProc][3*iPoint + 2] - targetPts[localNodeIdDummy][2])*
-//                                      (sendToPointsCoords[iProc][3*iPoint + 2] - targetPts[localNodeIdDummy][2]);
-//
-//                }
-//
-//                errorAtCoord = std::sqrt(errorAtCoord);
-//
-//                std::cout<<" sending from proc "<<d_thisRank<<" to "<<sendToProcIds[iProc]<<" ghost are ascending "<<ghostIdsInAscending<<"\n";
-//
-//                std::cout<<" sending from proc "<<d_thisRank<<" to "<<sendToProcIds[iProc]<<" error at coord = "<<errorAtCoord<<"\n";
-//
-//
-//            }
-//        }
-//
-//
-//            // check if the data being sent is correct
-//
-//
-//            // check the received data and ghost global ids are correct
-//
-//        {
-//            bool ghostIdsInAscending = true;
-//            for (size_type iPoint = 0; iPoint < receivedPointsGlobalIds.size() ; iPoint++)
-//            {
-//                if (iPoint > 0 )
-//                    if(receivedPointsGlobalIds[iPoint] <=  receivedPointsGlobalIds[iPoint-1])
-//                    {
-//                        ghostIdsInAscending = false;
-//                    }
-//            }
-//
-//            std::cout<<" received data in proc "<<d_thisRank<<" ghost are ascending "<<ghostIdsInAscending<<"\n";
-//        }
-//
-//            // check the coordinates are correct
-//
-//
-//        std::cout<<std::flush;
-//        MPI_Barrier(d_mpiComm);
-//
-//        {
-//            if (d_thisRank == 0) {
-//
-//                for (size_type iPoint = 0; iPoint< 10;iPoint++)
-//                {
-//                    std::cout<<" receive "<<iPoint
-//                             <<" "<<receivedPointsCoords[iPoint][0]
-//                             <<" "<<receivedPointsCoords[iPoint][1]
-//                             <<" "<<receivedPointsCoords[iPoint][2]<<"\n";
-//                }
-//
-//            }
-//
-//            std::cout << std::flush;
-//            MPI_Barrier(d_mpiComm);
-//
-//            if (d_thisRank == 1) {
-//
-//                for (size_type iPoint = 0; iPoint< 10;iPoint++)
-//                {
-//                    std::cout<<" send "<<iPoint
-//                    <<" "<<sendToPointsCoords[0][3*iPoint +0]
-//                    <<" "<<sendToPointsCoords[0][3*iPoint +1]
-//                    <<" "<<sendToPointsCoords[0][3*iPoint +2]<<"\n";
-//                }
-//
-//            }
-//        }
-//
-//        std::cout<<std::flush;
-//        MPI_Barrier(d_mpiComm);
-
-
-// get the list of locally owned and make sure it is correct before and after accumulate insert
-//        {
-//            ghostIdCoords.resize(ghostSetSize,std::vector<double>(dim,0.0));
-//
-//            for( size_type iPoint = 0; iPoint < ghostSetSize; iPoint++)
-//            {
-//                global_size_type globalIdVal = ghostGlobalIds[iPoint];
-//
-//                size_type globalIdIndex  = -1;
-//
-//                bool idFound = false;
-//                for( size_type receivedId = 0; receivedId < receivedPointsGlobalIds.size(); receivedId++)
-//                {
-//                    if(receivedPointsGlobalIds[receivedId] == globalIdVal)
-//                    {
-//                        globalIdIndex = receivedId;
-//                        idFound = true;
-//                    }
-//                }
-//
-//                if( !idFound)
-//                {
-//                    std::cout<<" Errrorrr global id not found in received list \n";
-//                }
-//                ghostIdCoords[iPoint][0] = receivedPointsCoords[globalIdIndex][0];
-//                ghostIdCoords[iPoint][1] = receivedPointsCoords[globalIdIndex][1];
-//                ghostIdCoords[iPoint][2] = receivedPointsCoords[globalIdIndex][2];
-//            }
-//        }

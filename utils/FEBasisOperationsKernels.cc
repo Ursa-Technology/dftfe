@@ -289,7 +289,7 @@ namespace dftfe
 
           auto jxwHost = d_JxWData.find(d_quadratureID)->second;
           std::cout<<" nVec = "<<d_nVectors<<" quads per cell = "<< d_nQuadsPerCell[d_quadratureIndex]<<
-            " jxw size = "<<jxwHost.size()<<" tempCellValuesBlock size = "<<tempCellValuesBlock.size();
+            " jxw size = "<<jxwHost.size()<<" tempCellValuesBlockCoeff size = "<<tempCellValuesBlockCoeff.size();
           std::cout<<" mapQuadIdToProcId size = "<<mapQuadIdToProcId.size()<<"\n";
 
 //          for ( unsigned int iQuad = 0; iQuad < d_nQuadsPerCell[d_quadratureIndex]*(cellRange.second - cellRange.first); iQuad++)
@@ -306,9 +306,9 @@ namespace dftfe
             d_nVectors,
             d_nQuadsPerCell[d_quadratureIndex]*(cellRange.second - cellRange.first),
             1.0,
-            d_JxWData.find(d_quadratureID)->second.data() + cellRange.first*d_nQuadsPerCell[d_quadratureIndex],
+            this->JxWBasisData().data() + cellRange.first*d_nQuadsPerCell[d_quadratureIndex],
             quadratureValues,
-            tempCellValuesBlock.data(),
+            tempCellValuesBlockCoeff.data(),
             mapQuadIdToProcId.data() + cellRange.first*d_nQuadsPerCell[d_quadratureIndex]);
 
 //          for( unsigned int iCell = cellRange.first ;iCell < cellRange.second; iCell++)
@@ -339,7 +339,7 @@ namespace dftfe
             d_nDofsPerCell,
             d_nQuadsPerCell[d_quadratureIndex],
             &scalarCoeffAlpha,
-            tempCellValuesBlock.data(),
+            tempCellValuesBlockCoeff.data(),
             d_nVectors,
             d_nVectors * d_nQuadsPerCell[d_quadratureIndex],
             d_shapeFunctionData.find(d_quadratureID)->second.data(),
@@ -496,13 +496,24 @@ namespace dftfe
         d_flattenedCellDofIndexToProcessDofIndexMap.begin() +
           cellRange.first * d_nDofsPerCell);
     }
-    template class FEBasisOperations<dataTypes::number,
+#if defined(USE_COMPLEX)
+    template class FEBasisOperations<std::complex<double>,
+                                     double,
+                                     dftfe::utils::MemorySpace::HOST>;
+#endif
+
+    template class FEBasisOperations<double,
                                      double,
                                      dftfe::utils::MemorySpace::HOST>;
 #if defined(DFTFE_WITH_DEVICE)
-    template class FEBasisOperations<dataTypes::number,
+    template class FEBasisOperations<double,
                                      double,
                                      dftfe::utils::MemorySpace::DEVICE>;
+#if defined(USE_COMPLEX)
+    template class FEBasisOperations<std::complex<double>,
+                                     double,
+                                     dftfe::utils::MemorySpace::DEVICE>;
+#endif
 #endif
 
   } // namespace basis

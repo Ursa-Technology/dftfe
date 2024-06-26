@@ -32,6 +32,36 @@ namespace unitTest
       val        = x * x + y * y + z * z;
       return val;
     }
+
+    double real_part(double &a)
+    {
+      return a;
+    }
+
+    double imaginary_part(double &a)
+    {
+      return 0.0;
+    }
+
+    double real_part(std::complex<double> &a)
+    {
+      return std::real(a);
+    }
+
+    double imaginary_part(std::complex<double> &a)
+    {
+      return std::imag(a);
+    }
+
+    double conj_compl(double& a)
+    {
+      return a;
+    }
+
+    std::complex<double> conj_compl(std::complex<double>& a)
+    {
+      return std::conj(a);
+    }
   }
 
   void testAccumulateInsert(const MPI_Comm & mpiComm)
@@ -339,7 +369,7 @@ namespace unitTest
                              constraintMatrixVxc,
                              gaussQuadLow);
 
-    dftfe::distributedCPUMultiVec<double> parentVec, childVec;
+    dftfe::distributedCPUMultiVec<dftfe::dataTypes::number> parentVec, childVec;
 
     unsigned int blockSize = 1;
 
@@ -497,9 +527,10 @@ namespace unitTest
     for (unsigned int iQuad = 0; iQuad < quadValuesChildAnalytical.size();
          iQuad++)
       {
+        dftfe::dataTypes::number diff = quadValuesChildComputed[iQuad] - quadValuesChildAnalytical[iQuad];
+        dftfe::dataTypes::number errorVal = conj_compl(diff) * diff;
         l2Error +=
-          ((quadValuesChildComputed[iQuad] - quadValuesChildAnalytical[iQuad]) *
-           (quadValuesChildComputed[iQuad] - quadValuesChildAnalytical[iQuad]));
+          real_part(errorVal);
       }
     MPI_Allreduce(
       MPI_IN_PLACE, &l2Error, 1, MPI_DOUBLE, MPI_SUM, mpi_comm_domain);
@@ -521,7 +552,7 @@ namespace unitTest
     multiVectorConstraintsChild.initialize(
       matrixFreeDataVxc.get_vector_partitioner(0), constraintMatrixVxc);
 
-    dftfe::utils::MemoryStorage<double,
+    dftfe::utils::MemoryStorage<dftfe::dataTypes::number,
                                 dftfe::utils::MemorySpace::HOST>
       quadValuesParentAnalytical, quadValuesParentComputed;
 
@@ -597,7 +628,7 @@ namespace unitTest
     fullFlattenedArrayCellLocalProcIndexIdMapChildMemStorage.copyFrom(fullFlattenedArrayCellLocalProcIndexIdMapChild);
 
     double startTimeMesh2ToMesh1 = MPI_Wtime();
-    inverseDftDoFManagerObj.interpolateMesh2DataToMesh1QuadPoints<double>(BLASWrapperPtr,
+    inverseDftDoFManagerObj.interpolateMesh2DataToMesh1QuadPoints(BLASWrapperPtr,
       childVec, blockSize, fullFlattenedArrayCellLocalProcIndexIdMapChildMemStorage, quadValuesParentComputed, true);
 
     std::cout<<std::flush;
@@ -646,12 +677,12 @@ namespace unitTest
     for (unsigned int iQuad = 0; iQuad < quadValuesParentAnalytical.size();
          iQuad++)
       {
-        double diff = ((quadValuesParentComputed[iQuad] -
-                        quadValuesParentAnalytical[iQuad]) *
-                       (quadValuesParentComputed[iQuad] -
-                        quadValuesParentAnalytical[iQuad]));
+        dftfe::dataTypes::number diff = (quadValuesParentComputed[iQuad] -
+                        quadValuesParentAnalytical[iQuad]);
 
-        l2Error += diff;
+        dftfe::dataTypes::number errorVal = conj_compl(diff) * diff;
+        l2Error +=
+          real_part(errorVal);
 
 //                if ( diff > 1e-5)
 //                  {

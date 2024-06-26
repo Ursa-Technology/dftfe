@@ -38,9 +38,9 @@ namespace dftfe
   MultiVectorCGSolver::solve(MultiVectorLinearSolverProblem<memorySpace> &  problem,
                              std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
                                                                              BLASWrapperPtr,
-        dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+        dftfe::linearAlgebra::MultiVector<double ,
                                           memorySpace> &  x,
-        dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+        dftfe::linearAlgebra::MultiVector<double ,
                                           memorySpace> &  NDBCVec,
         unsigned int                      locallyOwned,
         unsigned int                      blockSize,
@@ -62,18 +62,18 @@ namespace dftfe
     bool   iterate = true;
     double omega   = 0.3;
     computing_timer.enter_subsection("Compute Rhs MPI");
-    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    dftfe::linearAlgebra::MultiVector<double ,
                                       memorySpace> rhs_one;
-    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    dftfe::linearAlgebra::MultiVector<double ,
                                       memorySpace> & rhs = problem.computeRhs(NDBCVec, x, blockSize);
     computing_timer.leave_subsection("Compute Rhs MPI");
 
     computing_timer.enter_subsection("CG solver MPI");
 
-    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    dftfe::linearAlgebra::MultiVector<double ,
                                       memorySpace> g, d, h;
 
-    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    dftfe::linearAlgebra::MultiVector<double ,
                                       memorySpace> tempVec(x,0);
 
 
@@ -247,9 +247,9 @@ namespace dftfe
   template void MultiVectorCGSolver::solve<dftfe::utils::MemorySpace::HOST>(MultiVectorLinearSolverProblem<dftfe::utils::MemorySpace::HOST> &  problem,
                                                                   std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
                                                                                                                                       BLASWrapperPtr,
-                                                                  dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                                                                  dftfe::linearAlgebra::MultiVector<double ,
                                                                                                     dftfe::utils::MemorySpace::HOST> &  x,
-                                                                  dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                                                                  dftfe::linearAlgebra::MultiVector<double ,
                                                                                                     dftfe::utils::MemorySpace::HOST> &  NDBCVec,
                                                                   unsigned int                      locallyOwned,
                                                                   unsigned int                      blockSize,

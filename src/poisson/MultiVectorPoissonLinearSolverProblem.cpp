@@ -76,7 +76,7 @@ namespace dftfe
   std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
     BLASWrapperPtr,
     std::shared_ptr<
-      dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
+      dftfe::basis::FEBasisOperations<double, double, memorySpace>>
       basisOperationsPtr,
     const dealii::AffineConstraints<double> &constraintMatrix,
     const unsigned int                       matrixFreeVectorComponent,
@@ -287,9 +287,9 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   MultiVectorPoissonLinearSolverProblem<memorySpace>::vmult
-    (dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    (dftfe::linearAlgebra::MultiVector<double ,
                                           memorySpace> &Ax,
-        dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+        dftfe::linearAlgebra::MultiVector<double ,
                                           memorySpace> &x,
         unsigned int               blockSize)
   {
@@ -343,9 +343,9 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  MultiVectorPoissonLinearSolverProblem<memorySpace>::precondition_JacobiSqrt(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+  MultiVectorPoissonLinearSolverProblem<memorySpace>::precondition_JacobiSqrt(dftfe::linearAlgebra::MultiVector<double ,
                                                                                                                  memorySpace> &      dst,
-                                                                              const dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                                                                              const dftfe::linearAlgebra::MultiVector<double ,
                                                                                                                       memorySpace> &src,
                                                                               const double omega) const
   {
@@ -363,9 +363,9 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  MultiVectorPoissonLinearSolverProblem<memorySpace>::precondition_Jacobi(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+  MultiVectorPoissonLinearSolverProblem<memorySpace>::precondition_Jacobi(dftfe::linearAlgebra::MultiVector<double ,
                                                                                                                  memorySpace> &      dst,
-                                                                              const dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                                                                              const dftfe::linearAlgebra::MultiVector<double ,
                                                                                                                       memorySpace> &src,
                                                                               const double omega) const
   {
@@ -497,7 +497,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  MultiVectorPoissonLinearSolverProblem<memorySpace>::tempRhsVecCalc(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+  MultiVectorPoissonLinearSolverProblem<memorySpace>::tempRhsVecCalc(dftfe::linearAlgebra::MultiVector<double ,
                                                    memorySpace> &      rhs)
   {
     //
@@ -599,12 +599,12 @@ namespace dftfe
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
-  dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+  dftfe::linearAlgebra::MultiVector<double ,
                                     memorySpace> &
   MultiVectorPoissonLinearSolverProblem<memorySpace>::computeRhs(
-             dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+             dftfe::linearAlgebra::MultiVector<double ,
                                                memorySpace> &       NDBCVec,
-             dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+             dftfe::linearAlgebra::MultiVector<double ,
                                                memorySpace> &       outputVec,
              unsigned int                      blockSizeInput)
   {
@@ -657,7 +657,7 @@ namespace dftfe
 
 
     pcout<<" starting rhs \n";
-    dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+    dftfe::utils::MemoryStorage<double, memorySpace>
       xCellLLevelNodalData, rhsCellLLevelNodalData;
 
     xCellLLevelNodalData.resize(d_numCells*d_numberDofsPerElement*d_blockSize);
@@ -809,7 +809,7 @@ namespace dftfe
     distributedCPUVec<double> rhs;
     phiTotalSolverProblem.computeRhs(rhs);
 
-    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    dftfe::linearAlgebra::MultiVector<double ,
                                       memorySpace> rhsTempVec;
    d_basisOperationsPtr->createMultiVector(d_blockSize,rhsTempVec);
 //    dftfe::linearAlgebra::createMultiVectorFromDealiiPartitioner(

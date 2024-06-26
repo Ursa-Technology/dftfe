@@ -70,10 +70,10 @@ namespace unitTest
     rhoQuadInputValuesHost.resize(totalLocallyOwnedCells*numQuadsPerCell*blockSizeInput);
 
     std::shared_ptr<
-      dftfe::basis::FEBasisOperations<dftfe::dataTypes::number,
+      dftfe::basis::FEBasisOperations<double,
                                       double,
                                       dftfe::utils::MemorySpace::HOST>>
-      basisOpHost = std::make_shared<dftfe::basis::FEBasisOperations<dftfe::dataTypes::number,
+      basisOpHost = std::make_shared<dftfe::basis::FEBasisOperations<double,
       double,
       dftfe::utils::MemorySpace::HOST>>(BLASWrapperPtr);
 

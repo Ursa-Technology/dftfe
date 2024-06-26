@@ -708,6 +708,13 @@ namespace dftfe
                                               d_nDofsPerCell * d_cellsBlockSize)
             tempCellValuesBlock.resize(d_nQuadsPerCell[d_quadratureIndex] *
                                        d_nDofsPerCell * d_cellsBlockSize);
+
+          if (tempCellValuesBlockCoeff.size() != d_nQuadsPerCell[d_quadratureIndex] *
+                                                   d_nDofsPerCell * d_cellsBlockSize)
+            {
+              tempCellValuesBlockCoeff.resize(d_nQuadsPerCell[d_quadratureIndex] *
+                                              d_nDofsPerCell * d_cellsBlockSize);
+            }
           if (tempCellGradientsBlock.size() !=
               d_nQuadsPerCell[d_quadratureIndex] * d_nDofsPerCell *
                 d_cellsBlockSize * 3)

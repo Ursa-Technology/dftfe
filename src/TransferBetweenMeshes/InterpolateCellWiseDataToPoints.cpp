@@ -57,9 +57,11 @@ namespace dftfe
                                                                                  dftfe::utils::MemorySpace::HOST> &inputVec,
                                          const unsigned int                    numberOfVectors,
                                          const unsigned int                    numCells,
-                                         const unsigned int                    numDofsPerElement,
+      const unsigned int totalDofsInCells,
+                                         const std::vector<unsigned int>                   &numDofsPerElement,
+      const std::vector<unsigned int>                   &cumulativeDofsPerElement,
                                          const std::vector<size_type> &numPointsInCell,
-                                         const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
+                                         const dftfe::utils::MemoryStorage<dftfe::global_size_type,
                                                                            dftfe::utils::MemorySpace::HOST>&
                                            mapVecToCells,
                                          const  dftfe::utils::MemoryStorage<T,
@@ -77,54 +79,55 @@ namespace dftfe
                                                                      dftfe::utils::MemorySpace::HOST> &outputData)
     {
       const char         transA = 'N', transB = 'N';
-      const double       scalarCoeffAlpha = 1.0;
-      const double       scalarCoeffBeta  = 0.0;
+      const T       scalarCoeffAlpha = 1.0;
+      const T       scalarCoeffBeta  = 0.0;
 
-      std::vector<double> cellLevelOutputPoints;
+      std::vector<T> cellLevelOutputPoints;
       const size_type inc = 1;
       
-       cellLevelParentNodalMemSpace.resize(numberOfVectors*numDofsPerElement);
+
 
       for( size_type iElemSrc = 0 ; iElemSrc < numCells; iElemSrc++)
         {
+          cellLevelParentNodalMemSpace.resize(numberOfVectors*numDofsPerElement[iElemSrc]);
           unsigned int numberOfPointsInSrcCell =
             numPointsInCell[iElemSrc];
           cellLevelOutputPoints.resize(numberOfPointsInSrcCell*numberOfVectors);
 
-          for (unsigned int iNode = 0; iNode < numDofsPerElement;
+          for (unsigned int iNode = 0; iNode < numDofsPerElement[iElemSrc];
                iNode++)
             {
-              dcopy_(&numberOfVectors,
+              BLASWrapperPtr->xcopy(numberOfVectors,
                      inputVec.data() +
                        mapVecToCells
-                         [iElemSrc * numDofsPerElement + iNode],
-                     &inc,
+                         [cumulativeDofsPerElement[iElemSrc] + iNode],
+                     inc,
                      &cellLevelParentNodalMemSpace[numberOfVectors * iNode],
-                     &inc);
+                     inc);
             }
 
-          xgemm(&transA,
-                &transB,
-                &numberOfVectors,
-                &numberOfPointsInSrcCell,
-                &numDofsPerElement,
+          BLASWrapperPtr->xgemm(transA,
+                transB,
+                numberOfVectors,
+                numberOfPointsInSrcCell,
+                numDofsPerElement[iElemSrc],
                 &scalarCoeffAlpha,
                 &cellLevelParentNodalMemSpace[0],
-                &numberOfVectors,
+                numberOfVectors,
                 &shapeFuncValues[cellShapeFuncStartIndex[iElemSrc]],
-                &numDofsPerElement,
+                numDofsPerElement[iElemSrc],
                 &scalarCoeffBeta,
                 &cellLevelOutputPoints[0],
-                &numberOfVectors);
+                numberOfVectors);
 
           for (unsigned int iPoint = 0; iPoint < numberOfPointsInSrcCell;
                iPoint++)
             {
-              dcopy_(&numberOfVectors,
+              BLASWrapperPtr->xcopy(numberOfVectors,
                      &cellLevelOutputPoints[iPoint*numberOfVectors],
-                     &inc,
+                     inc,
                      &outputData[mapCellLocalToProcLocal[iElemSrc][iPoint]*numberOfVectors],
-                     &inc);
+                     inc);
             }
         }
     }
@@ -139,9 +142,11 @@ namespace dftfe
                                                                                  dftfe::utils::MemorySpace::DEVICE> &inputVec,
                                          const unsigned int                    numberOfVectors,
                                          const unsigned int                    numCells,
-                                         const unsigned int                    numDofsPerElement,
+      const unsigned int totalDofsInCells,
+      const std::vector<unsigned int>                   &numDofsPerElement,
+      const std::vector<unsigned int>                   &cumulativeDofsPerElement,
                                          const std::vector<size_type> &numPointsInCell,
-                                         const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
+                                         const dftfe::utils::MemoryStorage<dftfe::global_size_type,
                                                                            dftfe::utils::MemorySpace::DEVICE>&
                                            mapVecToCells,
                                          const  dftfe::utils::MemoryStorage<T,
@@ -160,15 +165,15 @@ namespace dftfe
     {
 
       const char         transA = 'N', transB = 'N';
-      const double       scalarCoeffAlpha = 1.0;
-      const double       scalarCoeffBeta  = 0.0;
+      const T       scalarCoeffAlpha = 1.0;
+      const T       scalarCoeffBeta  = 0.0;
       size_type pointsFoundInProc =  std::accumulate(numPointsInCell.begin(), numPointsInCell.end(),0.0);
       //cellLevelParentNodalMemSpace.resize(numCells*numberOfVectors*numDofsPerElement);
       
       
       dftfe::utils::deviceKernelsGeneric::stridedCopyToBlock(
         numberOfVectors,
-        numCells * numDofsPerElement,
+        totalDofsInCells,
         inputVec.data(),
         cellLevelParentNodalMemSpace.begin(),
         mapVecToCells.begin());
@@ -190,11 +195,11 @@ namespace dftfe
                 transB,
                   numberOfVectors,
                   numPointsInCell[iCell],
-                  numDofsPerElement,
+                  numDofsPerElement[iCell],
                   &scalarCoeffAlpha,
-                  cellLevelParentNodalMemSpace.data() + numberOfVectors*numDofsPerElement*iCell,
+                  cellLevelParentNodalMemSpace.data() + numberOfVectors*cumulativeDofsPerElement[iCell],
                   numberOfVectors,
-                  shapeFuncValues.data() + pointStartIndex*numDofsPerElement,
+                  shapeFuncValues.data() + cellShapeFuncStartIndex[iCell],
                   numDofsPerElement,
                 &scalarCoeffBeta,
                   tempOutputdata.data() + pointStartIndex*numberOfVectors,
@@ -227,9 +232,10 @@ namespace dftfe
 
   }
 
-  template <dftfe::utils::MemorySpace memorySpace>
-  InterpolateCellWiseDataToPoints<memorySpace>::InterpolateCellWiseDataToPoints(const dealii::DoFHandler<3> &doFHandlerSrc,
+  template <typename T, dftfe::utils::MemorySpace memorySpace>
+  InterpolateCellWiseDataToPoints<T,memorySpace>::InterpolateCellWiseDataToPoints(const std::vector<std::shared_ptr<const dftfe::utils::Cell<3>>> &srcCells,
                                                                              const std::vector<std::vector<double>> & targetPts,
+                                                                             const std::vector<unsigned int> &numDofsPerElem,
                                                                              const MPI_Comm & mpiComm)
     :d_mapPoints(mpiComm),
     d_mpiComm(mpiComm)
@@ -241,22 +247,8 @@ namespace dftfe
     size_type numInitialTargetPoints = targetPts.size();
 
 
-    std::vector<std::vector<double>> paramPoints;
+    std::vector<std::vector<double>> coordinatesOfPointsInCell;
 
-    typename dealii::DoFHandler<3>::active_cell_iterator
-      cellSrcStart = doFHandlerSrc.begin_active(),
-      cellSrcEnd = doFHandlerSrc.end();
-
-    std::vector<std::shared_ptr<const dftfe::utils::Cell<3>>> srcCells(0);
-    for (; cellSrcStart != cellSrcEnd; cellSrcStart++)
-      {
-        if (cellSrcStart->is_locally_owned())
-          {
-            auto srcCellPtr = std::make_shared<dftfe::utils::FECell<3>>(cellSrcStart);
-            srcCells.push_back(srcCellPtr);
-          }
-
-      }
     MPI_Barrier(d_mpiComm);
     double startMapPoints = MPI_Wtime();
 
@@ -284,7 +276,7 @@ namespace dftfe
     // create the RTree and the
     d_mapPoints.init(srcCells,
                      targetPts,
-                     paramPoints,
+                       coordinatesOfPointsInCell,
                      d_mapCellLocalToProcLocal,
                      d_localRange,
                      d_ghostGlobalIds,
@@ -301,31 +293,39 @@ namespace dftfe
 
     d_numPointsLocal = 0;
 
-    d_numDofsPerElement = doFHandlerSrc.get_fe().dofs_per_cell;
+    d_numDofsPerElement = numDofsPerElem; //doFHandlerSrc.get_fe().dofs_per_cell;
 
+    d_cumulativeDofs.resize(d_numCells);
     d_numPointsInCell.resize(d_numCells);
 
-    const dealii::FiniteElement<3> &feSrc  = doFHandlerSrc.get_fe();
+//    const dealii::FiniteElement<3> &feSrc  = doFHandlerSrc.get_fe();
 
     d_pointsFoundInProc = 0;
+    d_cumulativeDofs[0] = 0;
+    global_size_type shapeFuncSize = 0;
     for(size_type iCell = 0 ;iCell < d_numCells; iCell++)
       {
-        d_numPointsInCell[iCell] = paramPoints[iCell].size()/3;
+        d_numPointsInCell[iCell] = coordinatesOfPointsInCell[iCell].size()/3;
         d_pointsFoundInProc += d_numPointsInCell[iCell];
+
+        shapeFuncSize += (global_size_type)(d_numPointsInCell[iCell]*d_numDofsPerElement[iCell]);
         //        std::cout<<" num points in cell = "<<d_numPointsInCell[iCell]<<'\n';
         if(iCell > 0 )
           {
             d_cellPointStartIndex[iCell] = d_cellPointStartIndex[iCell-1] + d_numPointsInCell[iCell-1];
             d_cellShapeFuncStartIndex[iCell] = d_cellShapeFuncStartIndex[iCell-1] +
-                                               d_numDofsPerElement*(d_numPointsInCell[iCell-1]);
+                                               d_numDofsPerElement[iCell-1]*(d_numPointsInCell[iCell-1]);
+            d_cumulativeDofs[iCell] = d_cumulativeDofs[iCell -1] + d_numDofsPerElement[iCell-1];
           }
         else
           {
             d_cellPointStartIndex[0] = 0;
             d_cellShapeFuncStartIndex[0]  = 0;
+            d_cumulativeDofs[0] = 0;
           }
 
       }
+    totalDofsInCells = std::accumulate(d_numDofsPerElement.begin(), d_numDofsPerElement.end(),0.0);
 
     MPI_Barrier(d_mpiComm);
     double startShapeFunc = MPI_Wtime();
@@ -333,7 +333,7 @@ namespace dftfe
     //    std::cout<<" ghost size = "<<d_ghostGlobalIds.size()<<"\n";
 
     d_numPointsLocal = targetPts.size() + d_ghostGlobalIds.size();
-    d_shapeFuncValues.resize(d_pointsFoundInProc*d_numDofsPerElement);
+    d_shapeFuncValues.resize(shapeFuncSize);
     std::fill(d_shapeFuncValues.begin(),d_shapeFuncValues.end(),0.0);
 
 
@@ -348,43 +348,49 @@ namespace dftfe
     //      std::cout<<" size of shape func vec = "<<shapeFuncSizeDebug<<"\n";
     for(size_type iCell = 0 ;iCell < d_numCells; iCell++)
       {
+        srcCells[iCell]->getShapeFuncValues(d_numPointsInCell[iCell],
+                                            coordinatesOfPointsInCell[iCell],
+                                            d_shapeFuncValues,
+                                            d_cellShapeFuncStartIndex[iCell],
+                                            d_numDofsPerElement[iCell]);
         //          if( (d_cellShapeFuncStartIndex[iCell] - iCell*quadPointSizeDebug*d_numDofsPerElement) > 0 )
         //          {
         //              std::cout<<" error in cell start \n";
         //          }
-        for( size_type iPoint = 0 ;iPoint < d_numPointsInCell[iCell]; iPoint++)
-          {
-            dealii::Point<3, double> pointParamCoord(paramPoints[iCell][3*iPoint+0],
-                                                     paramPoints[iCell][3*iPoint+1],
-                                                     paramPoints[iCell][3*iPoint+2]);
-
-            if ((paramPoints[iCell][3*iPoint+0] < -1e-7 ) || (paramPoints[iCell][3*iPoint+0] > 1 + 1e-7 ))
-              {
-                std::cout<<" param point x coord is -ve\n";
-              }
-            if ((paramPoints[iCell][3*iPoint+1] < -1e-7 ) || (paramPoints[iCell][3*iPoint+1] > 1 + 1e-7 ))
-              {
-                std::cout<<" param point y coord is -ve\n";
-              }
-            if ((paramPoints[iCell][3*iPoint+2] < -1e-7 ) || (paramPoints[iCell][3*iPoint+2] > 1 + 1e-7 ))
-              {
-                std::cout<<" param point z coord is -ve\n";
-              }
-            for (unsigned int iNode = 0; iNode < d_numDofsPerElement;
-                 iNode++)
-              {
-
-                //                if(d_cellShapeFuncStartIndex[iCell] +
-                //                   iNode +
-                //                   iPoint * d_numDofsPerElement > shapeFuncSizeDebug-1)
-                //                {
-                //                    std::cout<<" error in point id \n";
-                //                }
-                d_shapeFuncValues[d_cellShapeFuncStartIndex[iCell] +
-                                  iNode +
-                                  iPoint * d_numDofsPerElement] = feSrc.shape_value(iNode, pointParamCoord);
-              }
-          }
+//        for( size_type iPoint = 0 ;iPoint < d_numPointsInCell[iCell]; iPoint++)
+//          {
+            //
+//            dealii::Point<3, double> pointParamCoord(paramPoints[iCell][3*iPoint+0],
+//                                                     paramPoints[iCell][3*iPoint+1],
+//                                                     paramPoints[iCell][3*iPoint+2]);
+//
+//            if ((paramPoints[iCell][3*iPoint+0] < -1e-7 ) || (paramPoints[iCell][3*iPoint+0] > 1 + 1e-7 ))
+//              {
+//                std::cout<<" param point x coord is -ve\n";
+//              }
+//            if ((paramPoints[iCell][3*iPoint+1] < -1e-7 ) || (paramPoints[iCell][3*iPoint+1] > 1 + 1e-7 ))
+//              {
+//                std::cout<<" param point y coord is -ve\n";
+//              }
+//            if ((paramPoints[iCell][3*iPoint+2] < -1e-7 ) || (paramPoints[iCell][3*iPoint+2] > 1 + 1e-7 ))
+//              {
+//                std::cout<<" param point z coord is -ve\n";
+//              }
+//            for (unsigned int iNode = 0; iNode < d_numDofsPerElement;
+//                 iNode++)
+//              {
+//
+//                //                if(d_cellShapeFuncStartIndex[iCell] +
+//                //                   iNode +
+//                //                   iPoint * d_numDofsPerElement > shapeFuncSizeDebug-1)
+//                //                {
+//                //                    std::cout<<" error in point id \n";
+//                //                }
+//                d_shapeFuncValues[d_cellShapeFuncStartIndex[iCell] +
+//                                  iNode +
+//                                  iPoint * d_numDofsPerElement] = feSrc.shape_value(iNode, pointParamCoord);
+//              }
+//          }
       }
 
     //    std::cout<<" local range start = "<<d_localRange.first<<" final = "<<d_localRange.second<<" ghost size = "<<d_ghostGlobalIds.size();
@@ -399,7 +405,7 @@ namespace dftfe
                   MPI_SUM,
                   d_mpiComm);
 
-    global_size_type numTargetPointsFound = (global_size_type)d_shapeFuncValues.size()/d_numDofsPerElement;
+    global_size_type numTargetPointsFound = (global_size_type)d_pointsFoundInProc;
     MPI_Allreduce(MPI_IN_PLACE,
                   &numTargetPointsFound,
                   1,
@@ -443,7 +449,7 @@ namespace dftfe
         for ( size_type iPoint = 0 ;iPoint < d_numPointsInCell[iCell]; iPoint++)
           {
             cellLocalToProcLocal[pointIndex] = d_mapCellLocalToProcLocal[iCell][iPoint];
-            shapeFuncIndex[pointIndex] = d_cellShapeFuncStartIndex[iCell] + iPoint * d_numDofsPerElement;
+            shapeFuncIndex[pointIndex] = d_cellShapeFuncStartIndex[iCell] + iPoint * d_numDofsPerElement[iCell];
             pointToCellIndex[pointIndex] = iCell;
             pointIndex++;
           }
@@ -484,13 +490,14 @@ namespace dftfe
 
   }
 
-  template <dftfe::utils::MemorySpace memorySpace>
-  template <typename T>
-  void InterpolateCellWiseDataToPoints<memorySpace>::
+  template <typename T,dftfe::utils::MemorySpace memorySpace>
+  void InterpolateCellWiseDataToPoints<T,memorySpace>::
     interpolateSrcDataToTargetPoints(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
+        BLASWrapperPtr,
       const distributedCPUVec<T> &inputVec,
       const unsigned int                    numberOfVectors,
-      const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
+      const dftfe::utils::MemoryStorage<dftfe::global_size_type,
                                         dftfe::utils::MemorySpace::HOST>&                  mapVecToCells,
       dftfe::utils::MemoryStorage<T,
                                   dftfe::utils::MemorySpace::HOST> &outputData, // this is not std::vector
@@ -498,89 +505,85 @@ namespace dftfe
   {
     if(resizeData)
       {
-        d_mpiCommP2PPtr = std::make_shared<dftfe::utils::mpi::MPICommunicatorP2P<dataTypes::number,dftfe::utils::MemorySpace::HOST>>(d_mpiPatternP2PPtr,numberOfVectors);
+        d_mpiCommP2PPtr = std::make_shared<dftfe::utils::mpi::MPICommunicatorP2P<T,dftfe::utils::MemorySpace::HOST>>(d_mpiPatternP2PPtr,numberOfVectors);
 	d_mpiCommP2PPtr->setCommunicationPrecision(dftfe::utils::mpi::communicationPrecision::full);
         outputData.resize(d_numPointsLocal*numberOfVectors);
       }
 
     std::fill(outputData.begin(),outputData.end(),0.0);
-    const double       scalarCoeffAlpha = 1.0;
-    const double       scalarCoeffBeta  = 0.0;
+    const T       scalarCoeffAlpha = 1.0;
+    const T       scalarCoeffBeta  = 0.0;
     const char         transA = 'N', transB = 'N';
     const unsigned int inc = 1;
 
 
     unsigned int iElemSrc = 0;
 
-    std::vector<double> cellLevelOutputPoints;
-    std::vector<double> cellLevelInputVec(d_numDofsPerElement *
-                                            numberOfVectors,
-                                          0.0);
+    std::vector<T> cellLevelOutputPoints;
+
     for( size_type iElemSrc = 0 ; iElemSrc < d_numCells; iElemSrc++)
       {
+        std::vector<T> cellLevelInputVec(d_numDofsPerElement[iElemSrc] *
+                                           numberOfVectors,
+                                         0.0);
         unsigned int numberOfPointsInSrcCell =
           d_numPointsInCell[iElemSrc];
         cellLevelOutputPoints.resize(numberOfPointsInSrcCell*numberOfVectors);
 
-        for (unsigned int iNode = 0; iNode < d_numDofsPerElement;
+        for (unsigned int iNode = 0; iNode < d_numDofsPerElement[iElemSrc];
              iNode++)
           {
-            dcopy_(&numberOfVectors,
+            BLASWrapperPtr->xcopy(numberOfVectors,
                    inputVec.begin() +
                      mapVecToCells
-                       [iElemSrc * d_numDofsPerElement + iNode],
-                   &inc,
+                       [d_cumulativeDofs[iElemSrc] + iNode],
+                   inc,
                    &cellLevelInputVec[numberOfVectors * iNode],
-                   &inc);
+                   inc);
           }
 
-        xgemm(&transA,
-              &transB,
-              &numberOfVectors,
-              &numberOfPointsInSrcCell,
-              &d_numDofsPerElement,
+        BLASWrapperPtr->xgemm(transA,
+              transB,
+              numberOfVectors,
+              numberOfPointsInSrcCell,
+              d_numDofsPerElement[iElemSrc],
               &scalarCoeffAlpha,
               &cellLevelInputVec[0],
-              &numberOfVectors,
+              numberOfVectors,
               &d_shapeFuncValues[d_cellShapeFuncStartIndex[iElemSrc]],
-              &d_numDofsPerElement,
+              d_numDofsPerElement[iElemSrc],
               &scalarCoeffBeta,
               &cellLevelOutputPoints[0],
-              &numberOfVectors);
+              numberOfVectors);
 
         for (unsigned int iPoint = 0; iPoint < numberOfPointsInSrcCell;
              iPoint++)
           {
-            dcopy_(&numberOfVectors,
+            BLASWrapperPtr->xcopy(numberOfVectors,
                    &cellLevelOutputPoints[iPoint*numberOfVectors],
-                   &inc,
+                   inc,
                    &outputData[d_mapCellLocalToProcLocal[iElemSrc][iPoint]*numberOfVectors],
-                   &inc);
+                   inc);
           }
       }
 
     d_mpiCommP2PPtr->accumulateInsertLocallyOwned(outputData);
   }
 
-  template <dftfe::utils::MemorySpace memorySpace>
-  template <typename T>
-  void InterpolateCellWiseDataToPoints<memorySpace>::
+  template <typename T,dftfe::utils::MemorySpace memorySpace>
+  void InterpolateCellWiseDataToPoints<T,memorySpace>::
     interpolateSrcDataToTargetPoints(
       const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>> &
         BLASWrapperPtr,
       const dftfe::linearAlgebra::MultiVector<T,
                                                     memorySpace> &inputVec,
       const unsigned int                    numberOfVectors,
-      const dftfe::utils::MemoryStorage<dealii::types::global_dof_index, memorySpace>
+      const dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
                                                                    &                  mapVecToCells,
       dftfe::utils::MemoryStorage<T,
                                   memorySpace> &outputData, // this is not std::vector
       bool resizeData )
   {
-	  if( dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0 )
-      {
-          std::cout<<" resizeData inside InterpolateCellWiseDataToPoints = "<<resizeData<<"\n";
-      }
 
 #if defined(DFTFE_WITH_DEVICE)
     if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
@@ -593,7 +596,7 @@ namespace dftfe
         d_mpiCommPtrMemSpace = std::make_unique<dftfe::utils::mpi::MPICommunicatorP2P<T,memorySpace>>(d_mpiP2PPtrMemSpace,numberOfVectors);
 	d_mpiCommPtrMemSpace->setCommunicationPrecision(dftfe::utils::mpi::communicationPrecision::full);
         outputData.resize(d_numPointsLocal*numberOfVectors);
-        d_cellLevelParentNodalMemSpace.resize(d_numCells*d_numDofsPerElement*numberOfVectors);
+        d_cellLevelParentNodalMemSpace.resize(totalDofsInCells*numberOfVectors);
    
        std::vector<global_size_type> cellLocalToProcLocal;
     cellLocalToProcLocal.resize(d_pointsFoundInProc);
@@ -629,7 +632,9 @@ namespace dftfe
       inputVec,
                                          numberOfVectors,
                                          d_numCells,
+      totalDofsInCells,
                                          d_numDofsPerElement,
+      d_cumulativeDofs,
                                          d_numPointsInCell,
                                          mapVecToCells,
                                          d_shapeValuesMemSpace,
@@ -648,7 +653,6 @@ namespace dftfe
 #endif
           MPI_Barrier(d_mpiComm);
           double endCompTime = MPI_Wtime();
-// TODO uncomment the following line after testing
     d_mpiCommPtrMemSpace->accumulateInsertLocallyOwned(outputData);
   
     #if defined(DFTFE_WITH_DEVICE)
@@ -658,196 +662,21 @@ namespace dftfe
           MPI_Barrier(d_mpiComm);
           double endCommTime = MPI_Wtime();
 
-if( dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0 )
+          int thisRankId;
+          MPI_Comm_rank(d_mpiComm, &thisRankId);
+if( thisRankId == 0 )
       {
 	  std::cout<<" resize Time = "<<endResizeTime-startTime<<" Comp time = "<<endCompTime-endResizeTime<<" comm time = "<<endCommTime-endCompTime<<"\n";
       }
   }
 
-  template
-  void InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::HOST>::interpolateSrcDataToTargetPoints(
-      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
-        BLASWrapperPtr,
-    const dftfe::linearAlgebra::MultiVector<dataTypes::number,
-                                              dftfe::utils::MemorySpace::HOST> &inputVec,
-    const unsigned int                    numberOfVectors,
-    const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
-                                        dftfe::utils::MemorySpace::HOST> &mapVecToCells,
-    dftfe::utils::MemoryStorage<dataTypes::number,
-                                  dftfe::utils::MemorySpace::HOST> &outputData,
-    bool resizeData) ;
 
-  template
-  void InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::HOST>::interpolateSrcDataToTargetPoints(
-    const distributedCPUVec<dataTypes::number> &inputVec,
-    const unsigned int                    numberOfVectors,
-    const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
-                                      dftfe::utils::MemorySpace::HOST>&                  mapVecToCells,
-    dftfe::utils::MemoryStorage<dataTypes::number,
-                                dftfe::utils::MemorySpace::HOST> &outputData,
-    bool resizeData) ;
-
-  template class InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::HOST>;
+  template class InterpolateCellWiseDataToPoints<dftfe::dataTypes::number, dftfe::utils::MemorySpace::HOST>;
 
 
 #ifdef DFTFE_WITH_DEVICE
 
-    template
-  void InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::DEVICE>::interpolateSrcDataToTargetPoints(
-      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>> &
-        BLASWrapperPtr,
-    const dftfe::linearAlgebra::MultiVector<dataTypes::number,
-                                              dftfe::utils::MemorySpace::DEVICE> &inputVec,
-    const unsigned int                    numberOfVectors,
-    const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
-                                        dftfe::utils::MemorySpace::DEVICE> &mapVecToCells,
-    dftfe::utils::MemoryStorage<dataTypes::number,
-                                  dftfe::utils::MemorySpace::DEVICE> &outputData,
-    bool resizeData) ;
-
-  template
-  void InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::DEVICE>::interpolateSrcDataToTargetPoints(
-    const distributedCPUVec<dataTypes::number> &inputVec,
-    const unsigned int                    numberOfVectors,
-    const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
-                                      dftfe::utils::MemorySpace::HOST>&                  mapVecToCells,
-    dftfe::utils::MemoryStorage<dataTypes::number,
-                                dftfe::utils::MemorySpace::HOST> &outputData,
-    bool resizeData) ;
-
-  template class InterpolateCellWiseDataToPoints<dftfe::utils::MemorySpace::DEVICE>;
+  template class InterpolateCellWiseDataToPoints<dftfe::dataTypes::number,dftfe::utils::MemorySpace::DEVICE>;
 #endif
 }
-
-//    double errorGhostPoints = 0.0;
-//      std::vector<double> valuesAtGhostPoints ;
-//      size_type ghostNumPoints = d_ghostGlobalIds.size();
-//      valuesAtGhostPoints.resize(ghostNumPoints,0.0);
-//
-//      for(size_type iPoint = 0; iPoint < ghostNumPoints; iPoint++)
-//      {
-//          valuesAtGhostPoints[iPoint] = value(d_ghostIdRealCoords[iPoint][0],d_ghostIdRealCoords[iPoint][1],d_ghostIdRealCoords[iPoint][2],1);
-//
-//          errorGhostPoints += (valuesAtGhostPoints[iPoint] - outputData[(iPoint + d_numLocalPtsSze)*numberOfVectors + 0 ])*
-//                  (valuesAtGhostPoints[iPoint] - outputData[(iPoint + d_numLocalPtsSze)*numberOfVectors + 0 ]);
-//      }
-//
-//      MPI_Allreduce(MPI_IN_PLACE,
-//                    &errorGhostPoints,
-//                    1,
-//                    MPI_DOUBLE,
-//                    MPI_SUM,
-//                    d_mpiComm);
-//
-//      std::cout<<" Error in ghost pts = "<<errorGhostPoints<<"\n";
-//
-//
-//      size_type thisRankId = dealii::Utilities::MPI::this_mpi_process(d_mpiComm);
-
-//      for( size_type iPoint = 0; iPoint < d_numLocalPtsSze; iPoint++)
-//      {
-//          outputData[(iPoint*numberOfVectors) + 0 ] = d_localRange.first + iPoint;
-//      }
-//
-//      for(size_type iPoint = 0; iPoint < ghostNumPoints; iPoint++)
-//      {
-//          outputData[(iPoint + d_numLocalPtsSze)*numberOfVectors + 0 ] = d_ghostGlobalIds[iPoint];
-//          std::cout<<" rank = "<<thisRankId<<" local Id = "<<iPoint + d_numLocalPtsSze<<" ghost Id = "<<d_ghostGlobalIds[iPoint]<<" output = "<<outputData[(iPoint + d_numLocalPtsSze)*numberOfVectors + 0 ]<<"\n";
-//      }
-//
-//      d_mpiCommP2PPtr->accumulateInsertLocallyOwned(outputData);
-//
-//
-//      double errorLocalPts = 0.0;
-//
-//      double errorLocallyOwnedPts = 0.0;
-//      double errorLocallyOwnedFromGhostPts = 0.0;
-//
-//      std::cout<<" rank = "<<thisRankId<<" num Local pts = "<<d_numLocalPtsSze<<" local start = "<<d_localRange.first<<"\n";
-//      for( size_type iPoint = 0; iPoint < d_numLocalPtsSze; iPoint++)
-//      {
-//          errorLocalPts += (outputData[(iPoint*numberOfVectors) + 0 ] - (d_localRange.first + iPoint))*
-//                  (outputData[(iPoint*numberOfVectors) + 0 ] - (d_localRange.first + iPoint));
-//
-//          if(d_foundLocally[iPoint])
-//          {
-//              errorLocallyOwnedPts += (outputData[(iPoint*numberOfVectors) + 0 ] - (d_localRange.first + iPoint))*
-//                                      (outputData[(iPoint*numberOfVectors) + 0 ] - (d_localRange.first + iPoint));
-//          }
-//          else
-//          {
-//              errorLocallyOwnedFromGhostPts += (outputData[(iPoint*numberOfVectors) + 0 ] - (d_localRange.first + iPoint))*
-//                                      (outputData[(iPoint*numberOfVectors) + 0 ] - (d_localRange.first + iPoint));
-//          }
-//      }
-//
-//
-//      std::cout<<" rank = "<<thisRankId<<" errorLocallyOwnedPts = "<<errorLocallyOwnedPts<<"\n";
-//      std::cout<<" rank = "<<thisRankId<<" errorLocallyOwnedFromGhostPts = "<<errorLocallyOwnedFromGhostPts<<"\n";
-////      MPI_Allreduce(MPI_IN_PLACE,
-////                    &errorLocalPts,
-////                    1,
-////                    MPI_DOUBLE,
-////                    MPI_SUM,
-////                    d_mpiComm);
-//
-//      std::cout<<" rank = "<<thisRankId<<" Error in accumulate insert pts = "<<errorLocalPts<<"\n";
-//
-//
-//      for( size_type iPoint = 0; iPoint < d_numLocalPtsSze; iPoint++)
-//      {
-//          outputData[(iPoint*numberOfVectors) + 0 ] = 0.0;
-//      }
-//
-//      for(size_type iPoint = 0; iPoint < ghostNumPoints; iPoint++)
-//      {
-//          outputData[(iPoint + d_numLocalPtsSze)*numberOfVectors + 0 ] = d_ghostGlobalIds[iPoint];
-//      }
-//
-//      d_mpiCommP2PPtr->accumulateAddLocallyOwned(outputData);
-//
-//
-//      errorLocalPts = 0.0;
-//
-//      errorLocallyOwnedPts = 0.0;
-//      errorLocallyOwnedFromGhostPts = 0.0;
-//
-//      for( size_type iPoint = 0; iPoint < d_numLocalPtsSze; iPoint++)
-//      {
-//
-//
-//          if(d_foundLocally[iPoint])
-//          {
-//              errorLocalPts += (outputData[(iPoint*numberOfVectors) + 0 ] )*
-//                               (outputData[(iPoint*numberOfVectors) + 0 ] );
-//
-//              errorLocallyOwnedPts += (outputData[(iPoint*numberOfVectors) + 0 ] )*
-//                                      (outputData[(iPoint*numberOfVectors) + 0 ] );
-//          }
-//          else
-//          {
-//              errorLocalPts += (outputData[(iPoint*numberOfVectors) + 0 ] - (d_localRange.first + iPoint))*
-//                               (outputData[(iPoint*numberOfVectors) + 0 ] - (d_localRange.first + iPoint));
-//
-//              if( std::abs(outputData[(iPoint*numberOfVectors) + 0 ] - (d_localRange.first + iPoint)) > 0.5)
-//              {
-//                  std::cout<<" rank = "<<thisRankId<<" Id "<<iPoint<<" outDat "<<outputData[(iPoint*numberOfVectors) + 0 ]<<" correct "<<(d_localRange.first + iPoint)<<"\n";
-//
-//              }
-//              errorLocallyOwnedFromGhostPts += (outputData[(iPoint*numberOfVectors) + 0 ] - (d_localRange.first + iPoint))*
-//                                               (outputData[(iPoint*numberOfVectors) + 0 ] - (d_localRange.first + iPoint));
-//          }
-//      }
-//
-//
-//      std::cout<<" rank = "<<thisRankId<<" errorLocallyOwnedPts = "<<errorLocallyOwnedPts<<"\n";
-//      std::cout<<" rank = "<<thisRankId<<" errorLocallyOwnedFromGhostPts = "<<errorLocallyOwnedFromGhostPts<<"\n";
-////      MPI_Allreduce(MPI_IN_PLACE,
-////                    &errorLocalPts,
-////                    1,
-////                    MPI_DOUBLE,
-////                    MPI_SUM,
-////                    d_mpiComm);
-//
-//      std::cout<<" rank = "<<thisRankId<<" Error in accumulate insert pts = "<<errorLocalPts<<"\n";
 

@@ -57,6 +57,12 @@ namespace dftfe
       virtual std::vector<double>
       getParametricPoint(const std::vector<double> &realPoint)const;
 
+      virtual void getShapeFuncValues(unsigned int numPointsInCell,
+                         const std::vector<double> &coordinatesOfPointsInCell,
+                         std::vector<double> &shapeFuncValues,
+                         unsigned int cellShapeFuncStartIndex,
+                         unsigned int numDofsPerElement) const = 0;
+
     private :
 
       std::vector<double> d_lowerLeft, d_upperRight;

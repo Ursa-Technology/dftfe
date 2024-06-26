@@ -32,33 +32,34 @@
 
 namespace dftfe
 {
-  template <dftfe::utils::MemorySpace memorySpace>
+  template <typename T,dftfe::utils::MemorySpace memorySpace>
   class InterpolateCellWiseDataToPoints
   {
   public:
 
-    InterpolateCellWiseDataToPoints(const dealii::DoFHandler<3> &doFHandlerSrc,
-                                         const std::vector<std::vector<double>> & targetPts,
-                                         const MPI_Comm & mpiComm);
+    InterpolateCellWiseDataToPoints(const std::vector<std::shared_ptr<const dftfe::utils::Cell<3>>> &srcCells,
+                                    const std::vector<std::vector<double>> & targetPts,
+                                    const std::vector<unsigned int> &numDofsPerElem,
+                                    const MPI_Comm & mpiComm);
 
-    template <typename T>
     void interpolateSrcDataToTargetPoints(
       const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>> &
         BLASWrapperPtr,
       const dftfe::linearAlgebra::MultiVector<T,
                                               memorySpace> &inputVec,
       const unsigned int                    numberOfVectors,
-      const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
+      const dftfe::utils::MemoryStorage<dftfe::global_size_type,
                                         memorySpace> &mapVecToCells,
       dftfe::utils::MemoryStorage<T,
                                   memorySpace> &outputData,
       bool resizeData = false) ;
 
-    template <typename T>
     void interpolateSrcDataToTargetPoints(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
+        BLASWrapperPtr,
       const distributedCPUVec<T> &inputVec,
       const unsigned int                    numberOfVectors,
-      const dftfe::utils::MemoryStorage<dealii::types::global_dof_index,
+      const dftfe::utils::MemoryStorage<dftfe::global_size_type,
                                         dftfe::utils::MemorySpace::HOST>&                  mapVecToCells,
       dftfe::utils::MemoryStorage<T,
                                   dftfe::utils::MemorySpace::HOST> &outputData,
@@ -66,16 +67,16 @@ namespace dftfe
 
   private:
     dftfe::utils::MapPointsToCells<3,8> d_mapPoints;/// TODO check if M=8 is optimal
-    std::vector<double> d_shapeFuncValues;
+    std::vector<T> d_shapeFuncValues;
     std::vector<size_type> d_cellPointStartIndex, d_cellShapeFuncStartIndex;
     const MPI_Comm d_mpiComm;
 
     std::shared_ptr<dftfe::utils::mpi::MPIPatternP2P<dftfe::utils::MemorySpace::HOST>> d_mpiPatternP2PPtr;
 
-    std::shared_ptr<dftfe::utils::mpi::MPICommunicatorP2P<dataTypes::number,dftfe::utils::MemorySpace::HOST>> d_mpiCommP2PPtr;
+    std::shared_ptr<dftfe::utils::mpi::MPICommunicatorP2P<T,dftfe::utils::MemorySpace::HOST>> d_mpiCommP2PPtr;
 
     std::shared_ptr<dftfe::utils::mpi::MPIPatternP2P<memorySpace>> d_mpiP2PPtrMemSpace;
-    std::unique_ptr<dftfe::utils::mpi::MPICommunicatorP2P<dataTypes::number,
+    std::unique_ptr<dftfe::utils::mpi::MPICommunicatorP2P<T,
                                                           memorySpace>> d_mpiCommPtrMemSpace;
 
     dftfe::utils::MemoryStorage<size_type, memorySpace>
@@ -97,7 +98,9 @@ namespace dftfe
 
     size_type d_numPointsLocal;
     size_type d_numCells;
-    size_type d_numDofsPerElement;
+    std::vector<unsigned int> d_numDofsPerElement;
+    std::vector<unsigned int> d_cumulativeDofs;
+    size_type totalDofsInCells;
 
     std::vector<size_type> d_numPointsInCell;
 

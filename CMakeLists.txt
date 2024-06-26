@@ -176,19 +176,19 @@ SET(TARGET_SRC
   ./src/atom/AtomCenteredSphericalFunctionCoreDensitySpline.cc
   ./src/atom/AtomCenteredSphericalFunctionLocalPotentialSpline.cc
   ./src/atom/AtomCenteredSphericalFunctionProjectorSpline.cc
-        ./src/inverseSrc/gaussianFunctionContainer.cpp
-        ./src/inverseSrc/gaussianFunctionManager.cpp
+    #    ./src/inverseSrc/gaussianFunctionContainer.cpp
+    #    ./src/inverseSrc/gaussianFunctionManager.cpp
         ./src/TransferBetweenMeshes/TransferBetweenMeshesIncompatiblePartitioning.cpp
         ./src/TransferBetweenMeshes/InterpolateCellWiseDataToPoints.cpp
 	./utils/NodalData.cpp
 	./utils/CompositeData.cpp
         ./src/unitTests/testMultiVectorCGForPoisson.cpp
-        ./src/unitTests/testDataTransfer.cpp
-        ./src/inverseSrc/InverseDFTSolverFunction.cpp
-        ./src/inverseSrc/InverseClass.cpp
-        ./src/solvers/BFGSInverseDFTSolver.cpp
-        ./src/inverseSrc/TriangulationManagerVxc.cpp
-        ./src/inverseSrc/inverseDFTParameters.cpp)
+        ./src/unitTests/testDataTransfer.cpp)
+     #   ./src/inverseSrc/InverseDFTSolverFunction.cpp
+     #   ./src/inverseSrc/InverseClass.cpp
+     #   ./src/solvers/BFGSInverseDFTSolver.cpp
+   #     ./src/inverseSrc/TriangulationManagerVxc.cpp
+#        ./src/inverseSrc/inverseDFTParameters.cpp)
 	#        ./src/poisson/MultiVectorAdjointLinearSolverProblem.cpp)
 
 IF ("${GPU_LANG}" STREQUAL "cuda")

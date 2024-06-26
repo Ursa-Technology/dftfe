@@ -41,48 +41,49 @@ namespace dftfe
                                                       const unsigned int matrixFreeMesh2QuadratureComponent,
                                                       const MPI_Comm & mpiComm);
 
-    template <typename T>
     void
     interpolateMesh1DataToMesh2QuadPoints(
       const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>> &
         BLASWrapperPtr,
-      const dftfe::linearAlgebra::MultiVector<T,
+      const dftfe::linearAlgebra::MultiVector<dftfe::dataTypes::number,
                                               memorySpace> &inputVec,
       const unsigned int                    numberOfVectors,
       const dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace> &fullFlattenedArrayCellLocalProcIndexIdMapMesh1,
-      dftfe::utils::MemoryStorage<T, memorySpace> &outputQuadData,
+      dftfe::utils::MemoryStorage<dftfe::dataTypes::number, memorySpace> &outputQuadData,
       bool resizeOutputVec); // override;
 
-    template <typename T>
       void
       interpolateMesh2DataToMesh1QuadPoints(
       const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>> &
         BLASWrapperPtr,
-        const dftfe::linearAlgebra::MultiVector<T,
+        const dftfe::linearAlgebra::MultiVector<dftfe::dataTypes::number,
                                                 memorySpace> &inputVec,
         const unsigned int                    numberOfVectors,
         const dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace> &fullFlattenedArrayCellLocalProcIndexIdMapMesh1,
-      dftfe::utils::MemoryStorage<T, memorySpace> &                 outputQuadData,
+      dftfe::utils::MemoryStorage<dftfe::dataTypes::number, memorySpace> &                 outputQuadData,
         bool resizeOutputVec); // override;
 
-    template <typename T>
+
     void
     interpolateMesh1DataToMesh2QuadPoints(
-      const distributedCPUVec<T> &inputVec,
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
+        BLASWrapperPtr,
+      const distributedCPUVec<dftfe::dataTypes::number> &inputVec,
       const unsigned int numberOfVectors,
       const dftfe::utils::MemoryStorage<dftfe::global_size_type,
                                         dftfe::utils::MemorySpace::HOST> &fullFlattenedArrayCellLocalProcIndexIdMapParent,
-      dftfe::utils::MemoryStorage<T,
+      dftfe::utils::MemoryStorage<dftfe::dataTypes::number,
                                   dftfe::utils::MemorySpace::HOST> &outputQuadData,
       bool resizeOutputVec) ; //override;
 
-    template <typename T>
     void
     interpolateMesh2DataToMesh1QuadPoints(
-      const distributedCPUVec<T> &inputVec,
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
+        BLASWrapperPtr,
+      const distributedCPUVec<dftfe::dataTypes::number> &inputVec,
       const unsigned int               numberOfVectors,
       const dftfe::utils::MemoryStorage<dftfe::global_size_type, dftfe::utils::MemorySpace::HOST> &mapVecToCells,
-      dftfe::utils::MemoryStorage<T,
+      dftfe::utils::MemoryStorage<dftfe::dataTypes::number,
                                   dftfe::utils::MemorySpace::HOST> &            outputQuadData,
       bool resizeOutputVec) ; //override;
 
@@ -95,8 +96,8 @@ namespace dftfe
 
     size_type d_matrixFreeMesh2VectorComponent, d_matrixFreeMesh2QuadratureComponent;
 
-    std::shared_ptr<InterpolateCellWiseDataToPoints<memorySpace>> d_mesh1toMesh2;
-    std::shared_ptr<InterpolateCellWiseDataToPoints<memorySpace>> d_mesh2toMesh1;
+    std::shared_ptr<InterpolateCellWiseDataToPoints<dftfe::dataTypes::number,memorySpace>> d_mesh1toMesh2;
+    std::shared_ptr<InterpolateCellWiseDataToPoints<dftfe::dataTypes::number,memorySpace>> d_mesh2toMesh1;
 
     const MPI_Comm d_mpiComm;
 

@@ -91,6 +91,7 @@ namespace dftfe
         tempCellMatrixBlock;
       mutable dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
         zeroIndexVec;
+      mutable dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace> tempCellValuesBlockCoeff;
       std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
         d_BLASWrapperPtr;
 

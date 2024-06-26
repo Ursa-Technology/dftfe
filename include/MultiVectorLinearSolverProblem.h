@@ -33,12 +33,12 @@ namespace dftfe
      * @param rhs vector for the right hand side values
      */
 
-    virtual dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    virtual dftfe::linearAlgebra::MultiVector<double ,
                                               memorySpace> &
     computeRhs(
-               dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+               dftfe::linearAlgebra::MultiVector<double ,
                                                  memorySpace> &       NDBCVec,
-               dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+               dftfe::linearAlgebra::MultiVector<double ,
                                                  memorySpace> &       outputVec,
                unsigned int                      blockSizeInput) = 0;
 
@@ -46,9 +46,9 @@ namespace dftfe
      * @brief Compute A matrix multipled by x.
      *
      */
-    virtual void vmult(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    virtual void vmult(dftfe::linearAlgebra::MultiVector<double ,
                                              memorySpace> &Ax,
-           dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+           dftfe::linearAlgebra::MultiVector<double ,
                                              memorySpace> &x,
           unsigned int               blockSize) = 0;
 
@@ -64,9 +64,9 @@ namespace dftfe
      *
      */
     virtual void
-    precondition_Jacobi(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    precondition_Jacobi(dftfe::linearAlgebra::MultiVector<double ,
                                                           memorySpace> &      dst,
-                        const dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                        const dftfe::linearAlgebra::MultiVector<double ,
                                                                 memorySpace> &src,
                         const double                     omega) const = 0;
 
@@ -75,9 +75,9 @@ namespace dftfe
      *
      */
     virtual void
-    precondition_JacobiSqrt(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    precondition_JacobiSqrt(dftfe::linearAlgebra::MultiVector<double ,
                                                                memorySpace> &      dst,
-                            const dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                            const dftfe::linearAlgebra::MultiVector<double ,
                                                                     memorySpace> &src,
                             const double omega) const = 0 ;
 

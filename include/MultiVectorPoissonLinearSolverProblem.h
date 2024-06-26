@@ -41,7 +41,7 @@ namespace dftfe
       std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
         BLASWrapperPtr,
         std::shared_ptr<
-          dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
+          dftfe::basis::FEBasisOperations<double, double, memorySpace>>
           basisOperationsPtr,
         const dealii::AffineConstraints<double> &constraintMatrix,
         const unsigned int                       matrixFreeVectorComponent,
@@ -53,12 +53,12 @@ namespace dftfe
      *
      * @param rhs vector for the right hand side values
      */
-    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    dftfe::linearAlgebra::MultiVector<double ,
                                       memorySpace> &
     computeRhs(
-               dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+               dftfe::linearAlgebra::MultiVector<double ,
                                                  memorySpace> &       NDBCVec,
-               dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+               dftfe::linearAlgebra::MultiVector<double ,
                                                  memorySpace> &       outputVec,
                unsigned int                      blockSizeInput) override;
 
@@ -66,9 +66,9 @@ namespace dftfe
      * @brief Compute A matrix multipled by x.
      *
      */
-    void vmult(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    void vmult(dftfe::linearAlgebra::MultiVector<double ,
                                             memorySpace> &Ax,
-          dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+          dftfe::linearAlgebra::MultiVector<double ,
                                             memorySpace> &x,
           unsigned int               blockSize) override;
 
@@ -84,9 +84,9 @@ namespace dftfe
      *
      */
     void
-    precondition_Jacobi(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    precondition_Jacobi(dftfe::linearAlgebra::MultiVector<double ,
                                                           memorySpace> &      dst,
-                        const dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                        const dftfe::linearAlgebra::MultiVector<double ,
                                                                 memorySpace> &src,
                         const double                     omega) const  override;
 
@@ -96,9 +96,9 @@ namespace dftfe
      *
      */
     void
-    precondition_JacobiSqrt(dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    precondition_JacobiSqrt(dftfe::linearAlgebra::MultiVector<double ,
                                                                memorySpace> &      dst,
-                            const dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+                            const dftfe::linearAlgebra::MultiVector<double ,
                                                                     memorySpace> &src,
                             const double omega) const override ;
 
@@ -111,7 +111,7 @@ namespace dftfe
   private:
 
     void
-    tempRhsVecCalc(dftfe::linearAlgebra::MultiVector<dataTypes::number ,memorySpace> &      rhs);
+    tempRhsVecCalc(dftfe::linearAlgebra::MultiVector<double ,memorySpace> &      rhs);
 
     void preComputeShapeFunction();
 
@@ -128,7 +128,7 @@ namespace dftfe
 
     /// the vector that stores the output obtained by solving the poisson
     /// problem
-    dftfe::linearAlgebra::MultiVector<dataTypes::number ,
+    dftfe::linearAlgebra::MultiVector<double ,
                                       memorySpace> *d_blockedXPtr, *d_blockedNDBCPtr, d_rhsVec;
 
     unsigned int d_matrixFreeQuadratureComponentRhs;
@@ -142,7 +142,7 @@ namespace dftfe
       d_BLASWrapperPtr;
 
     std::shared_ptr<
-      dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
+      dftfe::basis::FEBasisOperations<double, double, memorySpace>>
       d_basisOperationsPtr;
 
     /// pointer to dealii MatrixFree object

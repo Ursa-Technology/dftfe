@@ -220,33 +220,33 @@ namespace dftfe
 
     std::cout<<" d_phiTotDofHandlerIndexElectro = "<<d_phiTotDofHandlerIndexElectro<<"\n";
     /* function to test the accuracy of the multivector poisson sover */
-    unitTest::testMultiVectorPoissonSolver(d_basisOperationsPtrElectroHost,
-                                           d_matrixFreeDataPRefined,
-                                           d_BLASWrapperPtrHost,
-                  d_constraintsVectorElectro,
-                  d_densityInQuadValues[0],
-                  d_phiTotDofHandlerIndexElectro,
-                  d_densityQuadratureIdElectro,
-                  d_phiTotAXQuadratureIdElectro,
-                  d_mpiCommParent,
-                  mpi_communicator);
+//    unitTest::testMultiVectorPoissonSolver(d_basisOperationsPtrElectroHost,
+//                                           d_matrixFreeDataPRefined,
+//                                           d_BLASWrapperPtrHost,
+//                  d_constraintsVectorElectro,
+//                  d_densityInQuadValues[0],
+//                  d_phiTotDofHandlerIndexElectro,
+//                  d_densityQuadratureIdElectro,
+//                  d_phiTotAXQuadratureIdElectro,
+//                  d_mpiCommParent,
+//                  mpi_communicator);
 
 //    unitTest::testAccumulateInsert(mpi_communicator);
-//    unitTest::testTransferFromParentToChildIncompatiblePartitioning(
-//    d_BLASWrapperPtrHost,
-//      d_mpiCommParent,
-//      mpi_communicator,
-//      interpoolcomm,
-//      interBandGroupComm,
-//      d_dftParamsPtr->finiteElementPolynomialOrder,
-//      *d_dftParamsPtr,
-//      atomLocations,
-//      d_imagePositionsAutoMesh,
-//      d_imageIds,
-//      d_nearestAtomDistances,
-//      d_domainBoundingVectors,
-//      false, // bool generateSerialTria,
-//      false); //bool generateElectrostaticsTria)
+    unitTest::testTransferFromParentToChildIncompatiblePartitioning(
+    d_BLASWrapperPtrHost,
+      d_mpiCommParent,
+      mpi_communicator,
+      interpoolcomm,
+      interBandGroupComm,
+      d_dftParamsPtr->finiteElementPolynomialOrder,
+      *d_dftParamsPtr,
+      atomLocations,
+      d_imagePositionsAutoMesh,
+      d_imageIds,
+      d_nearestAtomDistances,
+      d_domainBoundingVectors,
+      false, // bool generateSerialTria,
+      false); //bool generateElectrostaticsTria)
   }
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
@@ -5133,7 +5133,7 @@ namespace dftfe
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
   std::shared_ptr<
-    dftfe::basis::FEBasisOperations<dataTypes::number,
+    dftfe::basis::FEBasisOperations<double,
                                     double,
                                     dftfe::utils::MemorySpace::HOST>>
   dftClass<FEOrder, FEOrderElectro, memorySpace>::getBasisOperationsElectroHost()
@@ -5145,7 +5145,7 @@ namespace dftfe
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
   std::shared_ptr<
-    dftfe::basis::FEBasisOperations<dataTypes::number,
+    dftfe::basis::FEBasisOperations<double,
                                     double,
                                     memorySpace>>
   dftClass<FEOrder, FEOrderElectro, memorySpace>::getBasisOperationsElectroMemSpace()

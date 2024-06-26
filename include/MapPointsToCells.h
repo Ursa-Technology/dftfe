@@ -44,7 +44,7 @@ namespace dftfe
 
       void init(std::vector<std::shared_ptr<const Cell<dim>>> srcCells,
            const std::vector<std::vector<double>> & targetPts,
-           std::vector<std::vector<double>> &mapCellsToParamCoordinates,
+           std::vector<std::vector<double>> &mapCellsToRealCoordinates,
            std::vector<std::vector<size_type>> &mapCellLocalToProcLocal,
            std::pair<global_size_type,global_size_type> &locallyOwnedRange,
            std::vector<global_size_type> & ghostGlobalIds,
@@ -53,8 +53,8 @@ namespace dftfe
 
     private :
       const MPI_Comm d_mpiComm;
-      unsigned int d_numMPIRank;
-      unsigned int d_thisRank;
+      int d_numMPIRank;
+      int d_thisRank;
 
       //          std::map<size_type, std::vector<size_type>> d_mapCellsToLocalPoints;
       //          std::map<size_type, std::vector<std::pair<size_type,size_type>>> d_mapCellsToNonLocalPoints;

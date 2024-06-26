@@ -63,7 +63,7 @@ namespace dftfe
 
       void getShapeFuncValues(unsigned int numPointsInCell,
                          const std::vector<double> &coordinatesOfPointsInCell,
-                         std::vector<double> &shapeFuncValues,
+                         std::vector<dataTypes::number> &shapeFuncValues,
                          unsigned int cellShapeFuncStartIndex,
                          unsigned int numDofsPerElement) const override;
 

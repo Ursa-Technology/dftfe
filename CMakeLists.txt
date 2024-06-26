@@ -178,6 +178,7 @@ SET(TARGET_SRC
   ./src/atom/AtomCenteredSphericalFunctionProjectorSpline.cc
     #    ./src/inverseSrc/gaussianFunctionContainer.cpp
     #    ./src/inverseSrc/gaussianFunctionManager.cpp
+        ./src/TransferBetweenMeshes/InterpolateFromCellToLocalPoints.cpp
         ./src/TransferBetweenMeshes/TransferBetweenMeshesIncompatiblePartitioning.cpp
         ./src/TransferBetweenMeshes/InterpolateCellWiseDataToPoints.cpp
 	./utils/NodalData.cpp

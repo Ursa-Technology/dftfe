@@ -21,6 +21,7 @@
 
 #include "TransferBetweenMeshesIncompatiblePartitioning.h"
 #include "FECell.h"
+#include "InterpolateFromCellToLocalPoints.h"
 
 namespace dftfe
 {
@@ -94,6 +95,7 @@ namespace dftfe
 
     std::vector<std::shared_ptr<const dftfe::utils::Cell<3>>> srcCellsMesh1(0);
 
+    std::vector<std::shared_ptr<InterpolateFromCellToLocalPoints<memorySpace>>> interpolateLocalMesh1(0), interpolateLocalMesh2(0);
     // iterate through child cells
     size_type iElemIndex = 0;
     for (; cellMesh1 != endcMesh1; cellMesh1++)
@@ -103,6 +105,8 @@ namespace dftfe
             numberDofsPerCell1[iElemIndex] = dofHandlerMesh1->get_fe().dofs_per_cell;
             auto srcCellPtr = std::make_shared<dftfe::utils::FECell<3>>(cellMesh1,feMesh1);
             srcCellsMesh1.push_back(srcCellPtr);
+
+            interpolateLocalMesh1.push_back(std::make_shared<InterpolateFromCellToLocalPoints<memorySpace>>(srcCellPtr,numberDofsPerCell1[iElemIndex]));
             fe_valuesMesh1.reinit(cellMesh1);
             for (unsigned int iQuad = 0; iQuad < numberQuadraturePointsMesh1; iQuad++)
               {
@@ -139,6 +143,7 @@ namespace dftfe
             auto srcCellPtr = std::make_shared<dftfe::utils::FECell<3>>(cellMesh2,feMesh2);
             srcCellsMesh2.push_back(srcCellPtr);
 
+            interpolateLocalMesh2.push_back(std::make_shared<InterpolateFromCellToLocalPoints<memorySpace>>(srcCellPtr,numberDofsPerCell2[iElemIndex]));
             fe_valuesMesh2.reinit(cellMesh2);
             for (unsigned int iQuad = 0; iQuad < numberQuadraturePointsMesh2; iQuad++)
               {
@@ -161,6 +166,7 @@ namespace dftfe
     double startMapMesh1To2 = MPI_Wtime();
 
     d_mesh1toMesh2 = std::make_shared<InterpolateCellWiseDataToPoints<dftfe::dataTypes::number,memorySpace>>(srcCellsMesh1,
+                                                                                                              interpolateLocalMesh1,
                                                                             quadPointsMesh2,
                                                                             numberDofsPerCell1,
                                                                             d_mpiComm);
@@ -170,6 +176,7 @@ namespace dftfe
     double endMapMesh1To2 = MPI_Wtime();
 
     d_mesh2toMesh1 = std::make_shared<InterpolateCellWiseDataToPoints<dftfe::dataTypes::number,memorySpace>>(srcCellsMesh2,
+                                                                                                              interpolateLocalMesh2,
                                                                             quadPointsMesh1,
                                                                             numberDofsPerCell2,
                                                                             d_mpiComm);

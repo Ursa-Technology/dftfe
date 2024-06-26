@@ -28,6 +28,7 @@
 #include "BLASWrapper.h"
 #include "MapPointsToCells.h"
 #include "Cell.h"
+#include "InterpolateFromCellToLocalPoints.h"
 
 
 namespace dftfe
@@ -38,6 +39,7 @@ namespace dftfe
   public:
 
     InterpolateCellWiseDataToPoints(const std::vector<std::shared_ptr<const dftfe::utils::Cell<3>>> &srcCells,
+                                    std::vector<std::shared_ptr<InterpolateFromCellToLocalPoints<memorySpace>>> interpolateLocalObj,
                                     const std::vector<std::vector<double>> & targetPts,
                                     const std::vector<unsigned int> &numDofsPerElem,
                                     const MPI_Comm & mpiComm);
@@ -67,7 +69,7 @@ namespace dftfe
 
   private:
     dftfe::utils::MapPointsToCells<3,8> d_mapPoints;/// TODO check if M=8 is optimal
-    std::vector<T> d_shapeFuncValues;
+//    std::vector<T> d_shapeFuncValues;
     std::vector<size_type> d_cellPointStartIndex, d_cellShapeFuncStartIndex;
     const MPI_Comm d_mpiComm;
 
@@ -79,18 +81,18 @@ namespace dftfe
     std::unique_ptr<dftfe::utils::mpi::MPICommunicatorP2P<T,
                                                           memorySpace>> d_mpiCommPtrMemSpace;
 
-    dftfe::utils::MemoryStorage<size_type, memorySpace>
-      d_mapPointToShapeFuncIndexMemSpace;
+//    dftfe::utils::MemoryStorage<size_type, memorySpace>
+//      d_mapPointToShapeFuncIndexMemSpace;
 
-    dftfe::utils::MemoryStorage<size_type, memorySpace>
-      d_mapPointToCellIndexMemSpace;
+//    dftfe::utils::MemoryStorage<size_type, memorySpace>
+//      d_mapPointToCellIndexMemSpace;
 
     dftfe::utils::MemoryStorage<global_size_type, memorySpace>
       d_mapPointToProcLocalMemSpace;
 
-    dftfe::utils::MemoryStorage<dataTypes::number,
-                                memorySpace>
-      d_shapeValuesMemSpace;
+//    dftfe::utils::MemoryStorage<dataTypes::number,
+//                                memorySpace>
+//      d_shapeValuesMemSpace;
 
     dftfe::utils::MemoryStorage<dataTypes::number,
                                 memorySpace>
@@ -117,6 +119,8 @@ namespace dftfe
     dftfe::utils::MemoryStorage<dataTypes::number,
                                 memorySpace>
       d_tempOutputMemSpace;
+
+    std::vector<std::shared_ptr<InterpolateFromCellToLocalPoints<memorySpace>>> d_interpolateLocalObj;
   }; // end of class InterpolateCellWiseDataToPoints
 } // end of namespace dftfe
 

@@ -5,14 +5,15 @@
 #ifndef DFTFE_AUXDM_AUXDENSITYMATRIXSLATER_H
 #define DFTFE_AUXDM_AUXDENSITYMATRIXSLATER_H
 
+#ifdef DFTFE_WITH_TORCH
 
-#include "AuxDensityMatrix.h"
-#include "SlaterBasisSet.h"
-#include "SlaterBasisData.h"
-#include <vector>
-#include <utility>
-#include <map>
-#include <algorithm>
+#  include "AuxDensityMatrix.h"
+#  include "SlaterBasisSet.h"
+#  include "SlaterBasisData.h"
+#  include <vector>
+#  include <utility>
+#  include <map>
+#  include <algorithm>
 
 
 namespace dftfe
@@ -87,5 +88,5 @@ namespace dftfe
     projectDensityEnd(const MPI_Comm &mpiComm) override;
   };
 } // namespace dftfe
-
+#endif
 #endif // DFTFE_AUXDM_AUXDENSITYMATRIXSLATER_H

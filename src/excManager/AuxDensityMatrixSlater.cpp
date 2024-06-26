@@ -1,11 +1,11 @@
 //
 // Created by Arghadwip Paul.
 //
-
-#include "AuxDensityMatrixSlater.h"
-#include <stdexcept>
-#include <cmath>
-#include <linearAlgebraOperations.h>
+#ifdef DFTFE_WITH_TORCH
+#  include "AuxDensityMatrixSlater.h"
+#  include <stdexcept>
+#  include <cmath>
+#  include <linearAlgebraOperations.h>
 
 namespace dftfe
 {
@@ -530,3 +530,4 @@ namespace dftfe
     std::cout << "Error : No implementation yet" << std::endl;
   }
 } // namespace dftfe
+#endif

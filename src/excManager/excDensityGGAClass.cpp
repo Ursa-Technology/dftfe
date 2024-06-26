@@ -20,7 +20,6 @@
 #include "excDensityGGAClass.h"
 #include "NNGGA.h"
 #include "Exceptions.h"
-#include "FiniteDifference.h"
 
 namespace dftfe
 {

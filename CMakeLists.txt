@@ -119,6 +119,7 @@ SET(TARGET_SRC
   ./utils/MPIWriteOnFile.cpp
   ./utils/QuadDataCompositeWrite.cpp
   ./utils/PeriodicTable.cc
+  ./utils/FiniteDifference.cc
   ./src/dft/dftd.cc
   ./src/mdi/MDIEngine.cpp
   ./src/mdi/libraryMDI.cpp

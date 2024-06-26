@@ -1054,7 +1054,5 @@ namespace dftfe
     };
   } // end of namespace basis
 } // end of namespace dftfe
-// #include "../utils/FEBasisOperations.t.cc"
-// #include "../utils/FEBasisOperationsKernels.t.cc"
 
 #endif // dftfeBasisOperations_h

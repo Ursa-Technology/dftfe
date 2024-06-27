@@ -489,10 +489,7 @@ namespace dftfe
     dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::DEVICE>
       d_cellHamMatrixTimesWaveMatrixNonLocalDevice;
     dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::DEVICE>
-      d_sphericalFnTimesVectorAllCellsDevice;
-
-    std::vector<unsigned int> d_atomNumberingMapCurrentProcess;
-
+                           d_sphericalFnTimesVectorAllCellsDevice;
     std::vector<ValueType> d_sphericalFnTimesVectorAllCellsReduction;
     dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::DEVICE>
       d_sphericalFnTimesVectorAllCellsReductionDevice;

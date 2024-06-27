@@ -1509,7 +1509,6 @@ namespace dftfe
     vec.update_ghost_values();
     d_SphericalFunctionKetTimesVectorPar.resize(1);
     d_SphericalFunctionKetTimesVectorPar[0].reinit(vec);
-    d_atomNumberingMapCurrentProcess.resize(atomIdsInCurrentProcess.size());
     std::vector<std::pair<unsigned int, unsigned int>> localIds;
     for (int iAtom = 0; iAtom < atomIdsInCurrentProcess.size(); iAtom++)
       {
@@ -1524,8 +1523,6 @@ namespace dftfe
         localIds.push_back(std::pair<unsigned int, unsigned int>(id, iAtom));
       }
     std::sort(localIds.begin(), localIds.end());
-    for (int iAtom = 0; iAtom < atomIdsInCurrentProcess.size(); iAtom++)
-      d_atomNumberingMapCurrentProcess[iAtom] = localIds[iAtom].second;
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>

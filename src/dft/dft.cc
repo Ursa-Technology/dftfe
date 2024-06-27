@@ -1106,6 +1106,9 @@ namespace dftfe
       {
         d_BLASWrapperPtr = std::make_shared<dftfe::linearAlgebra::BLASWrapper<
           dftfe::utils::MemorySpace::DEVICE>>();
+#  ifdef DFTFE_WITH_DEVICE_LANG_CUDA
+        d_BLASWrapperPtr->setMathMode(dftfe::utils::DEVICEBLAS_DEFAULT_MATH);
+#  endif
         d_basisOperationsPtrDevice = std::make_shared<
           dftfe::basis::FEBasisOperations<dataTypes::number,
                                           double,
@@ -1223,7 +1226,8 @@ namespace dftfe
                                  d_densityQuadratureIdElectro,
                                  d_excManagerPtr,
                                  atomLocations,
-                                 d_numEigenValues);
+                                 d_numEigenValues,
+                                 d_dftParamsPtr->useSinglePrecCheby);
 
 
     //
@@ -1846,72 +1850,14 @@ namespace dftfe
     else if (d_dftParamsPtr->solverMode == "GS")
       {
         solve(true, true, d_isRestartGroundStateCalcFromChk);
-
-
-//            std::vector<std::vector<double> >
-//            partialOccupancies(d_kPointWeights.size(),std::vector<double>((1+d_dftParamsPtr->spinPolarized)*d_numEigenValues,0.0));
-//            for (unsigned int spinIndex=0;
-//            spinIndex<(1+d_dftParamsPtr->spinPolarized);++spinIndex)
-//              for(unsigned int kPoint = 0; kPoint < d_kPointWeights.size();
-//              ++kPoint)
-//                for (unsigned int iWave=0; iWave<d_numEigenValues;++iWave)
-//                  {
-//                    const double
-//                    eigenValue=eigenValues[kPoint][d_numEigenValues*spinIndex+iWave];
-//                    partialOccupancies[kPoint][d_numEigenValues*spinIndex+iWave]
-//                      =dftUtils::getPartialOccupancy(eigenValue,
-//                                                      fermiEnergy,
-//                                                      C_kb,
-//                                                      d_dftParamsPtr->TVal);
-//
-//                    if(d_dftParamsPtr->constraintMagnetization)
-//                      {
-//                        partialOccupancies[kPoint][d_numEigenValues*spinIndex+iWave]
-//                        = 1.0; if (spinIndex==0)
-//                          {
-//                            if (eigenValue> fermiEnergyUp)
-//                              partialOccupancies[kPoint][d_numEigenValues*spinIndex+iWave]
-//                              = 0.0 ;
-//                          }
-//                        else if (spinIndex==1)
-//                          {
-//                            if (eigenValue > fermiEnergyDown)
-//                              partialOccupancies[kPoint][d_numEigenValues*spinIndex+iWave]
-//                              = 0.0 ;
-//                          }
-//                      }
-//                  }
-//        dealii::AffineConstraints<double> & constraintsAdjoint =
-//        d_constraintsVector[d_densityDofHandlerIndex];
-//
-//        testMultiVectorAdjointProblem<2,2,dftfe::utils::MemorySpace::HOST>(
-//          d_basisOperationsPtrHost,
-//          matrix_free_data,
-//          d_BLASWrapperPtrHost,
-//          *d_kohnShamDFTOperatorPtr,
-//          constraintsNone,
-//          d_constraintsVector,
-//          constraintsAdjoint,
-//          d_densityOutQuadValues,
-//          d_eigenVectorsFlattenedHost,
-//          eigenValues,
-//          partialOccupancies,
-//          1 +
-//            d_dftParamsPtr->spinPolarized,
-//          d_kPointWeights.size(),
-//          d_numEigenValues,
-//          d_densityDofHandlerIndex,
-//          d_densityDofHandlerIndex,
-//          d_densityQuadratureId,
-//          d_mpiCommParent,
-//          mpi_communicator,
-//          interpoolcomm);
-
+        if (d_dftParamsPtr->writeBandsFile)
+          writeBands();
       }
     else if (d_dftParamsPtr->solverMode == "NSCF")
       {
         solveNoSCF();
-        writeBands();
+        if (d_dftParamsPtr->writeBandsFile)
+          writeBands();
       }
 
     if (d_dftParamsPtr->writeStructreEnergyForcesFileForPostProcess)
@@ -2397,6 +2343,7 @@ namespace dftfe
     //
     unsigned int scfIter                  = 0;
     double       norm                     = 1.0;
+    double       energyResidual           = 1.0;
     d_rankCurrentLRD                      = 0;
     d_relativeErrorJacInvApproxPrevScfLRD = 100.0;
     // CAUTION: Choosing a looser tolerance might lead to failed tests
@@ -2406,8 +2353,7 @@ namespace dftfe
     pcout << std::endl;
     if (d_dftParamsPtr->verbosity == 0)
       pcout << "Starting SCF iterations...." << std::endl;
-    while ((norm > d_dftParamsPtr->selfConsistentSolverTolerance) &&
-           (scfIter < d_dftParamsPtr->numSCFIterations))
+    while (!scfConverged && (scfIter < d_dftParamsPtr->numSCFIterations))
       {
         dealii::Timer local_timer(d_mpiCommParent, true);
         if (d_dftParamsPtr->verbosity >= 1)
@@ -2638,7 +2584,10 @@ namespace dftfe
           d_phiTotRhoIn = d_phiTotRhoOut;
         computing_timer.leave_subsection("density mixing");
 
-        if (!(norm > d_dftParamsPtr->selfConsistentSolverTolerance))
+        if (!((norm > d_dftParamsPtr->selfConsistentSolverTolerance) ||
+              (d_dftParamsPtr->useEnergyResidualTolerance &&
+               energyResidual >
+                 d_dftParamsPtr->selfConsistentSolverEnergyTolerance)))
           scfConverged = true;
 
         if (d_dftParamsPtr->multipoleBoundaryConditions)
@@ -3400,8 +3349,9 @@ namespace dftfe
         //
         // phiTot with rhoOut
         //
-        if (d_dftParamsPtr->computeEnergyEverySCF &&
-            d_numEigenValuesRR == d_numEigenValues)
+        if ((d_dftParamsPtr->computeEnergyEverySCF &&
+             d_numEigenValuesRR == d_numEigenValues) ||
+            d_dftParamsPtr->useEnergyResidualTolerance)
           {
             if (d_dftParamsPtr->verbosity >= 2)
               pcout
@@ -3503,25 +3453,44 @@ namespace dftfe
               d_phiTotRhoOut,
               d_phiOutQuadValues,
               dummy);
-
-
-            //
-            // impose integral phi equals 0
-            //
-            /*
-            if(d_dftParamsPtr->periodicX && d_dftParamsPtr->periodicY &&
-            d_dftParamsPtr->periodicZ && !d_dftParamsPtr->pinnedNodeForPBC)
-            {
-              if(d_dftParamsPtr->verbosity>=2)
-                pcout<<"Value of integPhiOut:
-            "<<totalCharge(d_dofHandlerPRefined,d_phiTotRhoOut);
-            }
-            */
-
             computing_timer.leave_subsection("phiTot solve");
-
-            const dealii::Quadrature<3> &quadrature =
-              matrix_free_data.get_quadrature(d_densityQuadratureId);
+          }
+        if (d_dftParamsPtr->useEnergyResidualTolerance)
+          {
+            computing_timer.enter_subsection("Energy residual computation");
+            energyResidual = energyCalc.computeEnergyResidual(
+              d_basisOperationsPtrHost,
+              d_basisOperationsPtrElectroHost,
+              d_densityQuadratureId,
+              d_densityQuadratureIdElectro,
+              d_smearedChargeQuadratureIdElectro,
+              d_lpspQuadratureIdElectro,
+              d_excManagerPtr,
+              d_phiInQuadValues,
+              d_phiOutQuadValues,
+              d_phiTotRhoIn,
+              d_phiTotRhoOut,
+              d_densityInQuadValues,
+              d_densityOutQuadValues,
+              d_gradDensityInQuadValues,
+              d_gradDensityOutQuadValues,
+              d_rhoCore,
+              d_gradRhoCore,
+              d_bQuadValuesAllAtoms,
+              d_bCellNonTrivialAtomIds,
+              d_localVselfs,
+              d_atomNodeIdToChargeMap,
+              d_dftParamsPtr->smearedNuclearCharges);
+            if (d_dftParamsPtr->verbosity >= 1)
+              pcout << "Energy residual  : " << energyResidual << std::endl;
+            if (d_dftParamsPtr->reproducible_output)
+              pcout << "Energy residual  : " << std::setprecision(4)
+                    << energyResidual << std::endl;
+            computing_timer.leave_subsection("Energy residual computation");
+          }
+        if (d_dftParamsPtr->computeEnergyEverySCF &&
+            d_numEigenValuesRR == d_numEigenValues)
+          {
             d_dispersionCorr.computeDispresionCorrection(
               atomLocations, d_domainBoundingVectors);
             const double totalEnergy = energyCalc.computeEnergy(
@@ -3606,8 +3575,33 @@ namespace dftfe
             << scfIter << " iterations." << std::endl;
       }
     else
-      pcout << "SCF iterations converged to the specified tolerance after: "
-            << scfIter << " iterations." << std::endl;
+      {
+        pcout << "SCF iterations converged to the specified tolerance after: "
+              << scfIter << " iterations." << std::endl;
+
+        if (dealii::Utilities::MPI::this_mpi_process(d_mpiCommParent) == 0)
+          {
+            if (d_dftParamsPtr->solverMode == "GS" &&
+                d_dftParamsPtr->saveRhoData)
+              {
+                FILE *fermiFile;
+                fermiFile = fopen("fermiEnergy.out", "w");
+                if (d_dftParamsPtr->constraintMagnetization)
+                  {
+                    fprintf(fermiFile,
+                            "%.14g\n%.14g\n%.14g\n ",
+                            fermiEnergy,
+                            fermiEnergyUp,
+                            fermiEnergyDown);
+                  }
+                else
+                  {
+                    fprintf(fermiFile, "%.14g\n", fermiEnergy);
+                  }
+                fclose(fermiFile);
+              }
+          }
+      }
 
     const unsigned int numberBandGroups =
       dealii::Utilities::MPI::n_mpi_processes(interBandGroupComm);
@@ -4420,7 +4414,7 @@ namespace dftfe
       {
         FILE *pFile;
         pFile = fopen("bands.out", "w");
-        fprintf(pFile, "%d %d %.14g\n", totkPoints, numberEigenValues, FE);
+        fprintf(pFile, "%d %d \n", totkPoints, numberEigenValues);
         for (unsigned int kPoint = 0;
              kPoint < totkPoints / (1 + d_dftParamsPtr->spinPolarized);
              ++kPoint)

@@ -129,9 +129,9 @@ namespace dftfe
               (quadratureGradients + (iCell - cellRange.first) *
                                        d_nQuadsPerCell[d_quadratureIndex] * 3 *
                                        d_nVectors),
-	    std::pair<unsigned int, unsigned int>(
+            std::pair<unsigned int, unsigned int>(
               iCell, std::min(d_nCells, iCell + d_cellsBlockSize)));
-	}
+        }
     }
     template <typename ValueTypeBasisCoeff,
               typename ValueTypeBasisData,

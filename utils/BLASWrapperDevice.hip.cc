@@ -657,6 +657,35 @@ namespace dftfe
                          beta);
     }
 
+    template <typename ValueType0,
+              typename ValueType1,
+              typename ValueType2,
+              typename ValueType3,
+              typename ValueType4>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::ApaBD(
+      const unsigned int m,
+      const unsigned int n,
+      const ValueType0   alpha,
+      const ValueType1 * A,
+      const ValueType2 * B,
+      const ValueType3 * D,
+      ValueType4 *       C) const
+    {
+      hipLaunchKernelGGL(ApaBDDeviceKernel,
+                         (n * m / dftfe::utils::DEVICE_BLOCK_SIZE) + 1,
+                         dftfe::utils::DEVICE_BLOCK_SIZE,
+                         0,
+                         0,
+                         m,
+                         n,
+                         alpha,
+                         dftfe::utils::makeDataTypeDeviceCompatible(A),
+                         dftfe::utils::makeDataTypeDeviceCompatible(B),
+                         dftfe::utils::makeDataTypeDeviceCompatible(D),
+                         dftfe::utils::makeDataTypeDeviceCompatible(C));
+    }
+
 
     template <typename ValueType>
     void
@@ -681,7 +710,7 @@ namespace dftfe
                          addToVecStartingContiguousBlockIds);
     }
 
-    template <typename ValueType1, typename ValueType2>
+    template <typename ValueType1, typename ValueType2, typename ValueType3>
     void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::axpyStridedBlockAtomicAdd(
       const dftfe::size_type         contiguousBlockSize,
@@ -689,7 +718,7 @@ namespace dftfe
       const ValueType1               a,
       const ValueType1 *             s,
       const ValueType2 *             addFromVec,
-      ValueType2 *                   addToVec,
+      ValueType3 *                   addToVec,
       const dftfe::global_size_type *addToVecStartingContiguousBlockIds) const
     {
       hipLaunchKernelGGL(axpyStridedBlockAtomicAddDeviceKernel,
@@ -1446,24 +1475,6 @@ namespace dftfe
         dftfe::utils::makeDataTypeDeviceCompatible(copyToVecBlock),
         copyFromVecStartingContiguousBlockIds);
     }
-    template void
-    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleCopy(
-      const dftfe::size_type         contiguousBlockSize,
-      const dftfe::size_type         numContiguousBlocks,
-      const double                   a,
-      const double *                 s,
-      const double *                 copyFromVec,
-      double *                       copyToVecBlock,
-      const dftfe::global_size_type *addToVecStartingContiguousBlockIds);
-    template void
-    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleCopy(
-      const dftfe::size_type         contiguousBlockSize,
-      const dftfe::size_type         numContiguousBlocks,
-      const double                   a,
-      const double *                 s,
-      const std::complex<double> *   copyFromVec,
-      std::complex<double> *         copyToVecBlock,
-      const dftfe::global_size_type *addToVecStartingContiguousBlockIds);
 
     void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::add(
@@ -1866,5 +1877,6 @@ namespace dftfe
       const double *         imagArr,
       std::complex<double> * complexArr);
 
+#include "./BLASWrapperDevice.inst.cc"
   } // End of namespace linearAlgebra
 } // End of namespace dftfe

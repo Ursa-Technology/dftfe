@@ -182,6 +182,7 @@ namespace dftfe
     // push back into Constraint Matrices
     d_constraintsVector.push_back(&constraintsNone);
 
+#ifdef DFTFE_WITH_CUSTOMIZED_DEALII
     if (d_dftParamsPtr->constraintsParallelCheck)
       {
         dealii::IndexSet locally_active_dofs_debug;
@@ -199,7 +200,7 @@ namespace dftfe
           dealii::ExcMessage(
             "DFT-FE Error: Constraints are not consistent in parallel."));
       }
-
+#endif
     //
     // create matrix free structure
     //

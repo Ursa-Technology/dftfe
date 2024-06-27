@@ -1066,7 +1066,7 @@ namespace dftfe
                           "[Advanced] Toggle GPU MODE in Poisson solve.");
 
         prm.declare_entry("VSELF GPU MODE",
-                          "false",
+                          "true",
                           dealii::Patterns::Bool(),
                           "[Advanced] Toggle GPU MODE in vself Poisson solve.");
       }
@@ -1177,6 +1177,7 @@ namespace dftfe
     numSCFIterations                           = 1;
     maxLinearSolverIterations                  = 1;
     poissonGPU                                 = true;
+    vselfGPU                                   = true;
     mixingHistory                              = 1;
     npool                                      = 1;
     maxLinearSolverIterationsHelmholtz         = 1;

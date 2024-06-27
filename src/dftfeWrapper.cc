@@ -21,6 +21,7 @@
 // deal.II header
 //
 #include <deal.II/base/data_out_base.h>
+#include <deal.II/base/multithread_info.h>
 #include <p4est_bits.h>
 
 #ifdef USE_PETSC

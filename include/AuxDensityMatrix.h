@@ -40,13 +40,6 @@ namespace dftfe
       const std::vector<double> &Points,
       std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
         &densityData) = 0;
-    virtual void
-    reinitAuxDensityMatrix(
-      const std::vector<std::pair<std::string, std::vector<double>>>
-        &                atomCoords,
-      const std::string &auxBasisFile,
-      const int          nSpin,
-      const int          maxDerOrder) = 0;
 
     virtual void
     evalOverlapMatrixStart(const std::vector<double> &quadpts,

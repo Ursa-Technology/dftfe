@@ -63,7 +63,7 @@ namespace dftfe
         &                atomCoords,
       const std::string &auxBasisFile,
       const int          nSpin,
-      const int          maxDerOrder) override;
+      const int          maxDerOrder);
 
     void
     evalOverlapMatrixStart(const std::vector<double> &quadpts,

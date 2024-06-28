@@ -31,7 +31,7 @@ namespace dftfe
   {
     LDA,
     GGA,
-    LaplacianMGGA,
+    LLMGGA,
   };
 
   enum class xcOutputDataAttributes

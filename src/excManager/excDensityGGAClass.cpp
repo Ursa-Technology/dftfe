@@ -20,17 +20,19 @@
 #include "excDensityGGAClass.h"
 #include "NNGGA.h"
 #include "Exceptions.h"
+#include <dftfeDataTypes.h>
 
 namespace dftfe
 {
   excDensityGGAClass::excDensityGGAClass(xc_func_type *funcXPtr,
                                          xc_func_type *funcCPtr)
-    : excDensityBaseClass(densityFamilyType::GGA,
-                          std::vector<DensityDescriptorDataAttributes>{
-                            DensityDescriptorDataAttributes::valuesSpinUp,
-                            DensityDescriptorDataAttributes::valuesSpinDown,
-                            DensityDescriptorDataAttributes::gradValueSpinUp,
-                            DensityDescriptorDataAttributes::gradValueSpinDown})
+    : excDensityBaseClass(
+        densityFamilyType::GGA,
+        std::vector<DensityDescriptorDataAttributes>{
+          DensityDescriptorDataAttributes::valuesSpinUp,
+          DensityDescriptorDataAttributes::valuesSpinDown,
+          DensityDescriptorDataAttributes::gradValuesSpinUp,
+          DensityDescriptorDataAttributes::gradValuesSpinDown})
   {
     d_funcXPtr = funcXPtr;
     d_funcCPtr = funcCPtr;
@@ -41,12 +43,13 @@ namespace dftfe
   excDensityGGAClass::excDensityGGAClass(xc_func_type *funcXPtr,
                                          xc_func_type *funcCPtr,
                                          std::string   modelXCInputFile)
-    : excDensityBaseClass(densityFamilyType::GGA,
-                          std::vector<DensityDescriptorDataAttributes>{
-                            DensityDescriptorDataAttributes::valuesSpinUp,
-                            DensityDescriptorDataAttributes::valuesSpinDown,
-                            DensityDescriptorDataAttributes::gradValueSpinUp,
-                            DensityDescriptorDataAttributes::gradValueSpinDown})
+    : excDensityBaseClass(
+        densityFamilyType::GGA,
+        std::vector<DensityDescriptorDataAttributes>{
+          DensityDescriptorDataAttributes::valuesSpinUp,
+          DensityDescriptorDataAttributes::valuesSpinDown,
+          DensityDescriptorDataAttributes::gradValuesSpinUp,
+          DensityDescriptorDataAttributes::gradValuesSpinDown})
   {
     d_funcXPtr = funcXPtr;
     d_funcCPtr = funcCPtr;
@@ -65,26 +68,26 @@ namespace dftfe
   excDensityGGAClass::checkInputOutputDataAttributesConsistency(
     const std::vector<xcOutputDataAttributes> &outputDataAttributes) const
   {
-    const std::vector<xcOutputDataAttributes> allowedOutputDataAttributes =
-    { xcOutputDataAttributes::e,
+    const std::vector<xcOutputDataAttributes> allowedOutputDataAttributes = {
+      xcOutputDataAttributes::e,
       xcOutputDataAttributes::pdeDensitySpinUp,
       xcOutputDataAttributes::pdeDensitySpinDown,
-      xcOutputDataAttributes::pdeSigma }
+      xcOutputDataAttributes::pdeSigma};
 
-    for (size_type i = 0; i < outputDataAttributes.size(); i++)
-    {
-      bool isFound = false;
-      for (size_type j = 0; j < allowedOutputDataAttributes.size(); j++)
-        {
-          if (outputDataAttributes[i] == allowedOutputDataAttributes[j])
-            isFound = true;
-        }
+    for (size_t i = 0; i < outputDataAttributes.size(); i++)
+      {
+        bool isFound = false;
+        for (size_t j = 0; j < allowedOutputDataAttributes.size(); j++)
+          {
+            if (outputDataAttributes[i] == allowedOutputDataAttributes[j])
+              isFound = true;
+          }
 
 
-      std::string errMsg =
-        "xcOutputDataAttributes do not matched allowed choices for the family type.";
-      throwException(isFound, errMsg);
-    }
+        std::string errMsg =
+          "xcOutputDataAttributes do not matched allowed choices for the family type.";
+        dftfe::utils::throwException(isFound, errMsg);
+      }
   }
 
   void
@@ -93,7 +96,7 @@ namespace dftfe
     const std::vector<double> &quadPoints,
     const std::vector<double> &quadWeights,
     std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
-    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
+    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataOut)
     const
   {
     std::vector<xcOutputDataAttributes> outputDataAttributes;
@@ -106,18 +109,18 @@ namespace dftfe
     std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
       densityDescriptorData;
 
-    for (size_type i = 0; i < d_densityDescriptorAttributesList.size(); i++)
+    for (size_t i = 0; i < d_densityDescriptorAttributesList.size(); i++)
       {
-        if (d_densityDescriptorAttributesList[i] =
+        if (d_densityDescriptorAttributesList[i] ==
               DensityDescriptorDataAttributes::valuesSpinUp ||
-              d_densityDescriptorAttributesList[i] =
-                DensityDescriptorDataAttributes::valuesSpinDown)
+            d_densityDescriptorAttributesList[i] ==
+              DensityDescriptorDataAttributes::valuesSpinDown)
           densityDescriptorData[d_densityDescriptorAttributesList[i]] =
             std::vector<double>(quadWeights.size(), 0);
-        else if (d_densityDescriptorAttributesList[i] =
-                   DensityDescriptorDataAttributes::gradValueSpinUp ||
-                   d_densityDescriptorAttributesList[i] =
-                     DensityDescriptorDataAttributes::gradValueSpinDown)
+        else if (d_densityDescriptorAttributesList[i] ==
+                   DensityDescriptorDataAttributes::gradValuesSpinUp ||
+                 d_densityDescriptorAttributesList[i] ==
+                   DensityDescriptorDataAttributes::gradValuesSpinDown)
           densityDescriptorData[d_densityDescriptorAttributesList[i]] =
             std::vector<double>(3 * quadWeights.size(), 0);
       }
@@ -134,11 +137,11 @@ namespace dftfe
         ->second;
     auto &gradValuesSpinUp =
       densityDescriptorData
-        .find(DensityDescriptorDataAttributes::gradValueSpinUp)
+        .find(DensityDescriptorDataAttributes::gradValuesSpinUp)
         ->second;
     auto &gradValuesSpinDown =
       densityDescriptorData
-        .find(DensityDescriptorDataAttributes::gradValueSpinDown)
+        .find(DensityDescriptorDataAttributes::gradValuesSpinDown)
         ->second;
 
 
@@ -157,11 +160,11 @@ namespace dftfe
     std::vector<double> pdexSigmaValues(3 * quadWeights.size(), 0);
     std::vector<double> pdecSigmaValues(3 * quadWeights.size(), 0);
 
-    for (size_type i = 0; i < quadWeights.size(); i++)
+    for (size_t i = 0; i < quadWeights.size(); i++)
       {
         densityValues[2 * i + 0] = densityValuesSpinUp[i];
         densityValues[2 * i + 1] = densityValuesSpinDown[i];
-        for (size_type j = 0; j < 3; j++)
+        for (size_t j = 0; j < 3; j++)
           {
             sigmaValues[3 * i + 0] +=
               gradValuesSpinUp[3 * i + j] * gradValuesSpinUp[3 * i + j];
@@ -187,7 +190,7 @@ namespace dftfe
                    &pdexDensityValuesNonNN[0],
                    &pdecSigmaValues[0]);
 
-    for (size_type i = 0; i < quadWeights.size(); i++)
+    for (size_t i = 0; i < quadWeights.size(); i++)
       {
         pdexDensitySpinUpValues[i]   = pdexDensityValuesNonNN[2 * i + 0];
         pdexDensitySpinDownValues[i] = pdexDensityValuesNonNN[2 * i + 1];
@@ -199,8 +202,7 @@ namespace dftfe
     if (d_NNGGAPtr != nullptr)
       {
         std::vector<double> excValuesFromNN(quadWeights.size(), 0);
-        const size_type     numDescriptors =
-          d_densityDescriptorAttributesList.size();
+        const size_t numDescriptors = d_densityDescriptorAttributesList.size();
         std::vector<double> pdexcDescriptorValuesFromNN(numDescriptors *
                                                           quadWeights.size(),
                                                         0);
@@ -209,7 +211,7 @@ namespace dftfe
                                 quadWeights.size(),
                                 &excValuesFromNN[0],
                                 &pdexcDescriptorValuesFromNN[0]);
-        for (size_type i = 0; i < quadWeights.size(); i++)
+        for (size_t i = 0; i < quadWeights.size(); i++)
           {
             exValues[i] += excValuesFromNN[i];
             pdexDensitySpinUpValues[i] +=
@@ -226,7 +228,7 @@ namespace dftfe
       }
 #endif
 
-    for (size_type i = 0; i < outputDataAttributes.size(); i++)
+    for (size_t i = 0; i < outputDataAttributes.size(); i++)
       {
         if (outputDataAttributes[i] == xcOutputDataAttributes::e)
           {

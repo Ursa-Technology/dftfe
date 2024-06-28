@@ -12,7 +12,7 @@ namespace dftfe
     public:
       static std::vector<double>
       getStencilGridOneVariableCentral(const unsigned int totalStencilSize,
-                                       const double       h) const;
+                                       const double       h);
 
 
 
@@ -24,7 +24,15 @@ namespace dftfe
         const double       h,
         const unsigned int numQuadPoints,
         const double *     stencilDataAllQuadPoints,
-        double *           firstOrderDerivative) const;
+        double *           firstOrderDerivative);
+
+      static void
+      firstOrderDerivativeOneVariableCentral(
+        const unsigned int totalStencilSize,
+        const double *     h,
+        const unsigned int numQuadPoints,
+        const double *     stencilDataAllQuadPoints,
+        double *           firstOrderDerivative);
 
 
       // stencil index is the fastest index in stencilDataAllQuadPoints
@@ -35,7 +43,15 @@ namespace dftfe
         const double       h,
         const unsigned int numQuadPoints,
         const double *     stencilDataAllQuadPoints,
-        double *           secondOrderDerivative) const;
+        double *           secondOrderDerivative);
+
+      static void
+      secondOrderDerivativeOneVariableCentral(
+        const unsigned int totalStencilSize,
+        const double *     h,
+        const unsigned int numQuadPoints,
+        const double *     stencilDataAllQuadPoints,
+        double *           secondOrderDerivative);
     };
   } // namespace utils
 } // namespace dftfe

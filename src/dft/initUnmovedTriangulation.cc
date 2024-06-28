@@ -319,8 +319,10 @@ namespace dftfe
       }
     else if (d_dftParamsPtr->auxBasisTypeXC == "SlaterAE")
       {
+#ifdef DFTFE_WITH_TORCH
         d_auxDensityMatrixXCInPtr  = std::make_shared<AuxDensityMatrixSlater>();
-        d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityFE>();
+        d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityMatrixSlater>();
+#endif        
       }
 
 

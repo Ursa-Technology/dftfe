@@ -1762,7 +1762,7 @@ namespace dftfe
         dftfe::utils::makeDataTypeDeviceCompatible(beta),
         dftfe::utils::makeDataTypeDeviceCompatible(z));
     }
-
+/*
     // for stridedBlockScale
     template void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScale(
@@ -1843,7 +1843,7 @@ namespace dftfe
       const double           a,
       const double *         s,
       std::complex<float> *  x);
-
+*/
     // stridedBlockScaleColumnWise
 
     template void
@@ -2058,6 +2058,7 @@ namespace dftfe
       const std::complex<float> *  beta,
       std::complex<float> *  z);
 */
+/* 
     // axpyStridedBlockAtomicAdd
     template void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::axpyStridedBlockAtomicAdd(
@@ -2111,6 +2112,8 @@ namespace dftfe
       const double                beta,
       std::complex<double> *      y) const;
 
+    */
+    /*
     // for xscal
     template void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::xscal(
@@ -2141,8 +2144,8 @@ namespace dftfe
       std::complex<double> * x,
       const double           a,
       const dftfe::size_type n) const;
-
-
+*/
+/*
     template void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::hadamardProduct(
       const unsigned int m,
@@ -2156,7 +2159,8 @@ namespace dftfe
       const float *           X,
       const float *       Y,
       float * output) const;
-
+*/
+    /*
     template void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedCopyToBlock(
       const dftfe::size_type         contiguousBlockSize,
@@ -2205,8 +2209,8 @@ namespace dftfe
       std::complex<float> *          copyToVecBlock,
       const dftfe::global_size_type *copyFromVecStartingContiguousBlockIds);
 
-
-
+*/
+/*
     template void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
       copyValueType1ArrToValueType2Arr(const dftfe::size_type size,
@@ -2254,7 +2258,7 @@ namespace dftfe
       const double *         realArr,
       const double *         imagArr,
       std::complex<double> * complexArr);
-
+*/
 #include "./BLASWrapperDevice.inst.cc"
   } // End of namespace linearAlgebra
 } // End of namespace dftfe

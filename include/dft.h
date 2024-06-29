@@ -654,7 +654,7 @@ namespace dftfe
 
     unsigned int     getSmearedChargeQuadratureIdElectro();
 
-    dealii::AffineConstraints<double> &
+   const dealii::AffineConstraints<double> *
     getConstraintsVectorElectro();
 
 //    void

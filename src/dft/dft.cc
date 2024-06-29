@@ -5288,10 +5288,10 @@ namespace dftfe
     template <unsigned int              FEOrder,
               unsigned int              FEOrderElectro,
               dftfe::utils::MemorySpace memorySpace>
-    dealii::AffineConstraints<double> &
+    const dealii::AffineConstraints<double> *
     dftClass<FEOrder, FEOrderElectro, memorySpace>::getConstraintsVectorElectro()
     {
-      return *d_constraintsVectorElectro[d_phiTotDofHandlerIndexElectro];
+      return d_constraintsVectorElectro[d_phiTotDofHandlerIndexElectro];
     }
 
 

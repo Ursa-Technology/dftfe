@@ -455,3 +455,19 @@ BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::copyRealArrsToComplexArr(
   const double *         realArr,
   const double *         imagArr,
   std::complex<double> * complexArr);
+
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::hadamardProduct(
+      const unsigned int m,
+      const double *           X,
+      const double *       Y,
+      double * output) const;
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::hadamardProduct(
+      const unsigned int m,
+      const float *           X,
+      const float *       Y,
+      float * output) const;
+

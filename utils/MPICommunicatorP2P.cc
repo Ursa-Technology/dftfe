@@ -1141,7 +1141,8 @@ namespace dftfe
 
             if (d_commProtocol != communicationProtocol::nccl)
               {
-                for (size_type i = 0; i < (d_mpiPatternP2P->getTargetProcIds()).size();
+                for (size_type i = 0;
+                     i < (d_mpiPatternP2P->getTargetProcIds()).size();
                      ++i)
                   {
                     const int err = MPI_Irecv(
@@ -1281,7 +1282,8 @@ namespace dftfe
         else
           {
             // initiate non-blocking receives from target processors
-            typename singlePrecType<ValueType>::type *recvArrayStartPtr =
+            typename dftfe::dataTypes::singlePrecType<ValueType>::type
+              *recvArrayStartPtr =
               d_sendRecvBufferSinglePrec.data();
 
 #ifdef DFTFE_WITH_DEVICE
@@ -1304,7 +1306,7 @@ namespace dftfe
                     d_mpiPatternP2P->getNumOwnedIndicesForTargetProcs()
                         .data()[i] *
                       d_blockSize *
-                      sizeof(typename singlePrecType<ValueType>::type),
+                      sizeof(typename dftfe::dataTypes::singlePrecType<ValueType>::type),
                     MPI_BYTE,
                     d_mpiPatternP2P->getTargetProcIds().data()[i],
                     static_cast<size_type>(
@@ -1344,7 +1346,7 @@ namespace dftfe
                   d_ghostDataCopySinglePrec.data());
 
             // initiate non-blocking sends to ghost processors
-            typename singlePrecType<ValueType>::type *sendArrayStartPtr =
+            typename dftfe::dataTypes::singlePrecType<ValueType>::type *sendArrayStartPtr =
               d_ghostDataCopySinglePrec.data();
 
 #ifdef DFTFE_WITH_DEVICE
@@ -1387,7 +1389,7 @@ namespace dftfe
                            d_mpiPatternP2P->getGhostLocalIndicesRanges()
                              .data()[2 * i]) *
                             d_blockSize *
-                            (sizeof(typename singlePrecType<ValueType>::type) /
+                            (sizeof(typename dftfe::dataTypes::singlePrecType<ValueType>::type) /
                              4),
                           ncclFloat,
                           d_mpiPatternP2P->getGhostProcIds().data()[i],
@@ -1412,7 +1414,7 @@ namespace dftfe
                           d_mpiPatternP2P->getNumOwnedIndicesForTargetProcs()
                               .data()[i] *
                             d_blockSize *
-                            (sizeof(typename singlePrecType<ValueType>::type) /
+                            (sizeof(typename dftfe::dataTypes::singlePrecType<ValueType>::type) /
                              4),
                           ncclFloat,
                           d_mpiPatternP2P->getTargetProcIds().data()[i],
@@ -1440,7 +1442,7 @@ namespace dftfe
                      d_mpiPatternP2P->getGhostLocalIndicesRanges()
                        .data()[2 * i]) *
                       d_blockSize *
-                      sizeof(typename singlePrecType<ValueType>::type),
+                      sizeof(typename dftfe::dataTypes::singlePrecType<ValueType>::type),
                     MPI_BYTE,
                     d_mpiPatternP2P->getGhostProcIds().data()[i],
                     static_cast<size_type>(

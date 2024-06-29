@@ -5256,6 +5256,46 @@ namespace dftfe
 //                     d_dftParamsPtr->verbosity);
 //    }
 
+    /// map of atom node number and atomic weight
+    template <unsigned int              FEOrder,
+              unsigned int              FEOrderElectro,
+              dftfe::utils::MemorySpace memorySpace>
+    std::map<dealii::types::global_dof_index, double> &
+    dftClass<FEOrder, FEOrderElectro, memorySpace>::getAtomNodeToChargeMap()
+    {
+      return d_atomNodeIdToChargeMap;
+    }
+
+    /// non-intersecting smeared charges of all atoms at quad points
+    template <unsigned int              FEOrder,
+              unsigned int              FEOrderElectro,
+              dftfe::utils::MemorySpace memorySpace>
+    std::map<dealii::CellId, std::vector<double>> &
+    dftClass<FEOrder, FEOrderElectro, memorySpace>::getBQuadValuesAllAtoms()
+    {
+      return d_bQuadValuesAllAtoms;
+    }
+
+
+    template <unsigned int              FEOrder,
+              unsigned int              FEOrderElectro,
+              dftfe::utils::MemorySpace memorySpace>
+    unsigned int dftClass<FEOrder, FEOrderElectro, memorySpace>::getSmearedChargeQuadratureIdElectro()
+    {
+      return d_smearedChargeQuadratureIdElectro;
+    }
+
+    template <unsigned int              FEOrder,
+              unsigned int              FEOrderElectro,
+              dftfe::utils::MemorySpace memorySpace>
+    dealii::AffineConstraints<double> &
+    dftClass<FEOrder, FEOrderElectro, memorySpace>::getConstraintsVectorElectro()
+    {
+      return *d_constraintsVectorElectro[d_phiTotDofHandlerIndexElectro];
+    }
+
+
+
     template <unsigned int              FEOrder,
               unsigned int              FEOrderElectro,
               dftfe::utils::MemorySpace memorySpace>

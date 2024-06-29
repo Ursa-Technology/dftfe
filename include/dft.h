@@ -646,6 +646,17 @@ namespace dftfe
                 &        quadratureGradValueData,
       const bool isEvaluateGradData = false);
 
+    /// map of atom node number and atomic weight
+    std::map<dealii::types::global_dof_index, double> & getAtomNodeToChargeMap();
+
+    /// non-intersecting smeared charges of all atoms at quad points
+    std::map<dealii::CellId, std::vector<double>> & getBQuadValuesAllAtoms();
+
+    unsigned int     getSmearedChargeQuadratureIdElectro();
+
+    dealii::AffineConstraints<double> &
+    getConstraintsVectorElectro();
+
 //    void
 //    solvePhiTotalAllElectronNonPeriodic(
 //      distributedCPUVec<double> &                          x,

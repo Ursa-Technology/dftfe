@@ -10,22 +10,23 @@ namespace dftfe
   namespace
   {
     void
-    fillDensityAttributeData(std::vector<double> &            attributeData,
-                             const std::vector<double> &      values,
-                             const std::pair<size_t, size_t> &indexRange)
+    fillDensityAttributeData(
+      std::vector<double> &                        attributeData,
+      const std::vector<double> &                  values,
+      const std::pair<unsigned int, unsigned int> &indexRange)
     {
-      size_t startIndex = indexRange.first;
-      size_t endIndex   = indexRange.second;
+      unsigned int startIndex = indexRange.first;
+      unsigned int endIndex   = indexRange.second;
 
-      if (startIndex > endIndex || endIndex >= attributeData.size() ||
-          endIndex >= values.size())
+      if (startIndex > endIndex || endIndex > attributeData.size() ||
+          endIndex > values.size())
         {
           throw std::invalid_argument("Invalid index range for densityData");
         }
 
-      for (size_t i = startIndex; i <= endIndex; ++i)
+      for (unsigned int i = startIndex; i < endIndex; ++i)
         {
-          attributeData[i] = values[i];
+          attributeData[i - startIndex] = values[i];
         }
     }
   } // namespace
@@ -37,42 +38,29 @@ namespace dftfe
     std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
       &densityData)
   {
-    std::pair<size_t, size_t> indexRangeVal;
-    std::pair<size_t, size_t> indexRangeGrad;
+    std::pair<unsigned int, unsigned int> indexRangeVal;
+    std::pair<unsigned int, unsigned int> indexRangeGrad;
 
     unsigned int minIndex = 0;
     for (unsigned int i = 0; i < d_quadWeightsAll.size(); i++)
       {
-        if (std::abs(points[0] - d_quadPointsAll[3 * i + 0]) +
-              std::abs(points[1] - d_quadPointsAll[3 * i + 1]) +
-              std::abs(points[2] - d_quadPointsAll[3 * i + 2]) <
-            1e-6)
+        if ((std::abs(points[0] - d_quadPointsAll[3 * i + 0]) +
+             std::abs(points[1] - d_quadPointsAll[3 * i + 1]) +
+             std::abs(points[2] - d_quadPointsAll[3 * i + 2])) < 1e-6)
           {
             minIndex = i;
             break;
           }
       }
 
-    unsigned int maxIndex = 0;
-    for (unsigned int i = 0; i < d_quadWeightsAll.size(); i++)
-      {
-        if (std::abs(points[points.size() - 3] - d_quadPointsAll[3 * i + 0]) +
-              std::abs(points[points.size() - 2] - d_quadPointsAll[3 * i + 1]) +
-              std::abs(points[points.size() - 1] - d_quadPointsAll[3 * i + 2]) <
-            1e-6)
-          {
-            maxIndex = i;
-            break;
-          }
-      }
 
     indexRangeVal.first  = minIndex;
-    indexRangeVal.second = maxIndex;
+    indexRangeVal.second = minIndex + points.size() / 3;
 
     indexRangeGrad.first  = minIndex * 3;
-    indexRangeGrad.second = maxIndex * 3;
+    indexRangeGrad.second = minIndex + points.size();
 
-    if (densityData.find(DensityDescriptorDataAttributes::valuesTotal) ==
+    if (densityData.find(DensityDescriptorDataAttributes::valuesTotal) !=
         densityData.end())
       {
         fillDensityAttributeData(
@@ -81,7 +69,7 @@ namespace dftfe
           indexRangeVal);
       }
 
-    if (densityData.find(DensityDescriptorDataAttributes::valuesSpinUp) ==
+    if (densityData.find(DensityDescriptorDataAttributes::valuesSpinUp) !=
         densityData.end())
       {
         fillDensityAttributeData(
@@ -90,7 +78,7 @@ namespace dftfe
           indexRangeVal);
       }
 
-    if (densityData.find(DensityDescriptorDataAttributes::valuesSpinDown) ==
+    if (densityData.find(DensityDescriptorDataAttributes::valuesSpinDown) !=
         densityData.end())
       {
         fillDensityAttributeData(
@@ -99,7 +87,7 @@ namespace dftfe
           indexRangeVal);
       }
 
-    if (densityData.find(DensityDescriptorDataAttributes::gradValuesSpinUp) ==
+    if (densityData.find(DensityDescriptorDataAttributes::gradValuesSpinUp) !=
         densityData.end())
       {
         fillDensityAttributeData(
@@ -108,7 +96,7 @@ namespace dftfe
           indexRangeGrad);
       }
 
-    if (densityData.find(DensityDescriptorDataAttributes::gradValuesSpinDown) ==
+    if (densityData.find(DensityDescriptorDataAttributes::gradValuesSpinDown) !=
         densityData.end())
       {
         fillDensityAttributeData(

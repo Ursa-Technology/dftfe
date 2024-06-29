@@ -646,12 +646,12 @@ namespace dftfe
                 &        quadratureGradValueData,
       const bool isEvaluateGradData = false);
 
-    void
-    solvePhiTotalAllElectronNonPeriodic(
-      distributedCPUVec<double> &                          x,
-      const dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST> &rhoValues,
-      const MPI_Comm &                                     mpiComm_parent,
-      const MPI_Comm &                                     mpiComm_domain) const;
+//    void
+//    solvePhiTotalAllElectronNonPeriodic(
+//      distributedCPUVec<double> &                          x,
+//      const dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST> &rhoValues,
+//      const MPI_Comm &                                     mpiComm_parent,
+//      const MPI_Comm &                                     mpiComm_domain) const;
 
     const MPI_Comm &
     getMPIDomain() const override;

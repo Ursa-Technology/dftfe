@@ -5198,63 +5198,63 @@ namespace dftfe
       return d_densityOutQuadValues;
     }
 
-    template <unsigned int              FEOrder,
-              unsigned int              FEOrderElectro,
-              dftfe::utils::MemorySpace memorySpace>
-    void
-    dftClass<FEOrder, FEOrderElectro, memorySpace>::solvePhiTotalAllElectronNonPeriodic(
-      distributedCPUVec<double> &                          x,
-      const dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST> &rhoValues,
-      const MPI_Comm &                                     mpiComm_parent,
-      const MPI_Comm &                                     mpiComm_domain) const
-    {
-      // create the poisson solver problem
-      poissonSolverProblem<FEOrder, FEOrderElectro> poissonSolverObj(
-        mpiComm_domain);
-
-      // create the dealii solver
-
-      dealiiLinearSolver CGSolver(mpiComm_parent,
-                                  mpiComm_domain,
-                                  dealiiLinearSolver::CG);
-
-
-      vectorTools::createDealiiVector<double>(
-        d_matrixFreeDataPRefined.get_vector_partitioner(
-          d_phiTotDofHandlerIndexElectro),
-        1,
-        x);
-
-      x = 0.0;
-
-      poissonSolverObj.reinit(
-        d_basisOperationsPtrElectroHost,
-        x,
-        *d_constraintsVectorElectro[d_phiTotDofHandlerIndexElectro],
-        d_phiTotDofHandlerIndexElectro,
-        d_densityQuadratureIdElectro,
-        d_phiTotAXQuadratureIdElectro,
-        d_atomNodeIdToChargeMap,
-        d_bQuadValuesAllAtoms,
-        d_smearedChargeQuadratureIdElectro,
-        rhoValues, // rhoValues,
-        true,      // isComputeDiagonalA
-        false,     // isComputeMeanValueConstraints,
-        d_dftParamsPtr->smearedNuclearCharges,
-        true,  // isRhoValues
-        false, // isGradSmearedChargeRhs
-        0,
-        false, // storeSmearedChargeRhs
-        false, // reuseSmearedChargeRhs
-        true   // reinitializeFastConstraints
-      );
-
-      // use the CG solver
-      CGSolver.solve(poissonSolverObj,
-                     d_dftParamsPtr->absLinearSolverTolerance,
-                     d_dftParamsPtr->maxLinearSolverIterations,
-                     d_dftParamsPtr->verbosity);
-    }
+//    template <unsigned int              FEOrder,
+//              unsigned int              FEOrderElectro,
+//              dftfe::utils::MemorySpace memorySpace>
+//    void
+//    dftClass<FEOrder, FEOrderElectro, memorySpace>::solvePhiTotalAllElectronNonPeriodic(
+//      distributedCPUVec<double> &                          x,
+//      const dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST> &rhoValues,
+//      const MPI_Comm &                                     mpiComm_parent,
+//      const MPI_Comm &                                     mpiComm_domain) const
+//    {
+//      // create the poisson solver problem
+//      poissonSolverProblem<FEOrder, FEOrderElectro> poissonSolverObj(
+//        mpiComm_domain);
+//
+//      // create the dealii solver
+//
+//      dealiiLinearSolver CGSolver(mpiComm_parent,
+//                                  mpiComm_domain,
+//                                  dealiiLinearSolver::CG);
+//
+//
+//      vectorTools::createDealiiVector<double>(
+//        d_matrixFreeDataPRefined.get_vector_partitioner(
+//          d_phiTotDofHandlerIndexElectro),
+//        1,
+//        x);
+//
+//      x = 0.0;
+//
+//      poissonSolverObj.reinit(
+//        d_basisOperationsPtrElectroHost,
+//        x,
+//        *d_constraintsVectorElectro[d_phiTotDofHandlerIndexElectro],
+//        d_phiTotDofHandlerIndexElectro,
+//        d_densityQuadratureIdElectro,
+//        d_phiTotAXQuadratureIdElectro,
+//        d_atomNodeIdToChargeMap,
+//        d_bQuadValuesAllAtoms,
+//        d_smearedChargeQuadratureIdElectro,
+//        rhoValues, // rhoValues,
+//        true,      // isComputeDiagonalA
+//        false,     // isComputeMeanValueConstraints,
+//        d_dftParamsPtr->smearedNuclearCharges,
+//        true,  // isRhoValues
+//        false, // isGradSmearedChargeRhs
+//        0,
+//        false, // storeSmearedChargeRhs
+//        false, // reuseSmearedChargeRhs
+//        true   // reinitializeFastConstraints
+//      );
+//
+//      // use the CG solver
+//      CGSolver.solve(poissonSolverObj,
+//                     d_dftParamsPtr->absLinearSolverTolerance,
+//                     d_dftParamsPtr->maxLinearSolverIterations,
+//                     d_dftParamsPtr->verbosity);
+//    }
 
     template <unsigned int              FEOrder,
               unsigned int              FEOrderElectro,

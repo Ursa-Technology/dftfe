@@ -309,7 +309,7 @@ namespace dftfe
 
 
     d_excManagerPtr->init(d_dftParamsPtr->xc_id,
-                          (d_dftParamsPtr->spinPolarized == 1) ? true : false,
+                          true,
                           d_dftParamsPtr->modelXCInputFile);
 
     if (d_dftParamsPtr->auxBasisTypeXC == "FE")

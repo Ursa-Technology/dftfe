@@ -271,8 +271,7 @@ namespace dftfe
 
     auto quadWeightsAll = d_basisOperationsPtrHost->JxW();
 
-
-
+    // double check = 0;
     for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells; ++iCell)
       {
         std::vector<double> quadPointsInCell(numberQuadraturePointsPerCell * 3);
@@ -296,9 +295,9 @@ namespace dftfe
           cDataOut);
 
         const std::vector<double> &pdexDensitySpinIndex =
-          spinIndex == 1 ? pdexDensitySpinUp : pdexDensitySpinDown;
+          spinIndex == 0 ? pdexDensitySpinUp : pdexDensitySpinDown;
         const std::vector<double> &pdecDensitySpinIndex =
-          spinIndex == 1 ? pdecDensitySpinUp : pdecDensitySpinDown;
+          spinIndex == 0 ? pdecDensitySpinUp : pdecDensitySpinDown;
 
         std::vector<double> pdexSigma;
         std::vector<double> pdecSigma;
@@ -320,9 +319,9 @@ namespace dftfe
                                                            densityData);
 
         const std::vector<double> &gradDensityXCSpinIndex =
-          spinIndex == 1 ? gradDensitySpinUp : gradDensitySpinDown;
+          spinIndex == 0 ? gradDensitySpinUp : gradDensitySpinDown;
         const std::vector<double> &gradDensityXCOtherSpinIndex =
-          spinIndex == 1 ? gradDensitySpinDown : gradDensitySpinUp;
+          spinIndex == 0 ? gradDensitySpinDown : gradDensitySpinUp;
 
 
         const double *tempPhi =
@@ -337,6 +336,9 @@ namespace dftfe
               (tempPhi[iQuad] + pdexDensitySpinIndex[iQuad] +
                pdecDensitySpinIndex[iQuad]) *
               cellJxWPtr[iQuad];
+            // check +=
+            // (pdexDensitySpinIndex[iQuad]+0*pdecDensitySpinIndex[iQuad]) *
+            // cellJxWPtr[iQuad];
           }
 
         if (isGGA)
@@ -401,8 +403,9 @@ namespace dftfe
                                   gradDensityOtherQuadPtr[iDim] * termoff);
                   }
               }
-          }
-      }
+          } // GGA
+      }     // cell loop
+            // std::cout << "check: " << check << std::endl;
 #if defined(DFTFE_WITH_DEVICE)
     d_VeffJxW.resize(d_VeffJxWHost.size());
     d_VeffJxW.copyFrom(d_VeffJxWHost);

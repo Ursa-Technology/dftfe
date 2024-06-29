@@ -511,13 +511,19 @@ namespace dftfe
 
         std::vector<
           dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-          gradDensityOutValuesSpinPolarized = gradRhoOutValues;
+          gradDensityOutValuesSpinPolarized;
 
-        if (d_dftParams.spinPolarized == 0)
-          gradDensityOutValuesSpinPolarized.push_back(
-            dftfe::utils::MemoryStorage<double,
-                                        dftfe::utils::MemorySpace::HOST>(
-              gradRhoOutValues[0].size(), 0.0));
+        if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
+            densityFamilyType::GGA)
+          {
+            gradDensityOutValuesSpinPolarized = gradRhoOutValues;
+
+            if (d_dftParams.spinPolarized == 0)
+              gradDensityOutValuesSpinPolarized.push_back(
+                dftfe::utils::MemoryStorage<double,
+                                            dftfe::utils::MemorySpace::HOST>(
+                  gradRhoOutValues[0].size(), 0.0));
+          }
 
         std::vector<double> rhoTotalCellQuadValues(numQuadPoints, 0);
         std::vector<double> rhoSpinPolarizedCellQuadValues(numQuadPoints * 2,

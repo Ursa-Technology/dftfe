@@ -3432,6 +3432,20 @@ namespace dftfe
               d_phiOutQuadValues,
               dummy);
             computing_timer.leave_subsection("phiTot solve");
+
+            updateAuxDensityXCMatrix(d_densityOutQuadValues,
+                                     d_gradDensityOutQuadValues,
+                                     d_rhoCore,
+                                     d_gradRhoCore,
+                                     d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                                     d_eigenVectorsFlattenedDevice,
+#endif
+                                     eigenValues,
+                                     fermiEnergy,
+                                     fermiEnergyUp,
+                                     fermiEnergyDown,
+                                     d_auxDensityMatrixXCOutPtr);
           }
         if (d_dftParamsPtr->useEnergyResidualTolerance)
           {
@@ -4929,6 +4943,8 @@ namespace dftfe
     const double                            fermiEnergyDown_,
     std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixXCPtr)
   {
+    const bool isGGA =
+      d_excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA;
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureId);
     const unsigned int totalLocallyOwnedCells =
       d_basisOperationsPtrHost->nCells();
@@ -5003,8 +5019,7 @@ namespace dftfe
                     tempRhoCore[iQuad] / 2.0;
               }
           }
-        if (d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+        if (isGGA)
           {
             std::vector<double> &gradDensityValsForXC =
               densityProjectionInputs["gradDensityFunc"];
@@ -5108,8 +5123,7 @@ namespace dftfe
         for (unsigned int iQuad = 0; iQuad < quadWeightsStdVec.size(); ++iQuad)
           {
             for (unsigned int idim = 0; idim < 3; ++idim)
-              quadPointsStdVec[3 * iQuad + idim] =
-                std::real(quadPoints[3 * iQuad + idim]);
+              quadPointsStdVec[3 * iQuad + idim] = quadPoints[3 * iQuad + idim];
             quadWeightsStdVec[iQuad] = std::real(quadWeights[iQuad]);
           }
 

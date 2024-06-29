@@ -152,6 +152,10 @@ namespace dftfe
 
     for (unsigned int i = 0; i < quadWeights.size(); i++)
       {
+        exValues[i] =
+          exValues[i] * (densityValues[2 * i + 0] + densityValues[2 * i + 1]);
+        ecValues[i] =
+          ecValues[i] * (densityValues[2 * i + 0] + densityValues[2 * i + 1]);
         pdexDensitySpinUpValues[i]   = pdexDensityValuesNonNN[2 * i + 0];
         pdexDensitySpinDownValues[i] = pdexDensityValuesNonNN[2 * i + 1];
         pdecDensitySpinUpValues[i]   = pdecDensityValuesNonNN[2 * i + 0];

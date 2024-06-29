@@ -4,6 +4,7 @@
 
 #include "AuxDensityFE.h"
 #include <Exceptions.h>
+#include <iostream>
 
 namespace dftfe
 {
@@ -18,8 +19,8 @@ namespace dftfe
       unsigned int startIndex = indexRange.first;
       unsigned int endIndex   = indexRange.second;
 
-      if (startIndex > endIndex || endIndex > attributeData.size() ||
-          endIndex > values.size())
+      attributeData.resize(endIndex - startIndex);
+      if (startIndex > endIndex || endIndex > values.size())
         {
           throw std::invalid_argument("Invalid index range for densityData");
         }
@@ -150,7 +151,7 @@ namespace dftfe
     d_quadWeightsAll = projectionInputs["quadWt"];
     const std::vector<double> &densityVals =
       projectionInputs.find("densityFunc")->second;
-    const unsigned int nQ = d_quadPointsAll.size();
+    const unsigned int nQ = d_quadWeightsAll.size();
     d_densityValsTotalAllQuads.resize(nQ, 0);
     d_densityValsSpinUpAllQuads.resize(nQ, 0);
     d_densityValsSpinDownAllQuads.resize(nQ, 0);

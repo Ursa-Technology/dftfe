@@ -655,16 +655,22 @@ namespace dftfe
       densityOutQuadValuesSpinPolarized = densityOutValues;
     std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-      gradDensityOutQuadValuesSpinPolarized = gradDensityOutValues;
+      gradDensityOutQuadValuesSpinPolarized;
 
     if (d_dftParams.spinPolarized == 0)
+      densityOutQuadValuesSpinPolarized.push_back(
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
+          densityOutValues[0].size(), 0.0));
+
+    if (excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA)
       {
-        densityOutQuadValuesSpinPolarized.push_back(
-          dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
-            densityOutValues[0].size(), 0.0));
-        gradDensityOutQuadValuesSpinPolarized.push_back(
-          dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
-            gradDensityOutValues[0].size(), 0.0));
+        gradDensityOutQuadValuesSpinPolarized = gradDensityOutValues;
+
+        if (d_dftParams.spinPolarized == 0)
+          gradDensityOutQuadValuesSpinPolarized.push_back(
+            dftfe::utils::MemoryStorage<double,
+                                        dftfe::utils::MemorySpace::HOST>(
+              gradDensityOutValues[0].size(), 0.0));
       }
 
     computeXCEnergyTermsSpinPolarized(basisOperationsPtr,
@@ -749,7 +755,6 @@ namespace dftfe
                               d_dftParams.verbosity,
                               d_dftParams);
       }
-
     return totalEnergy;
   }
 
@@ -831,10 +836,16 @@ namespace dftfe
       densityOutQuadValuesSpinPolarized = densityOutValues;
     std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-      gradDensityInQuadValuesSpinPolarized = gradDensityInValues;
+      gradDensityInQuadValuesSpinPolarized;
     std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-      gradDensityOutQuadValuesSpinPolarized = gradDensityOutValues;
+      gradDensityOutQuadValuesSpinPolarized;
+
+    if (excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA)
+      {
+        gradDensityInQuadValuesSpinPolarized  = gradDensityInValues;
+        gradDensityOutQuadValuesSpinPolarized = gradDensityOutValues;
+      }
 
     if (d_dftParams.spinPolarized == 0)
       {
@@ -844,12 +855,19 @@ namespace dftfe
         densityOutQuadValuesSpinPolarized.push_back(
           dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
             densityOutValues[0].size(), 0.0));
-        gradDensityInQuadValuesSpinPolarized.push_back(
-          dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
-            gradDensityInValues[0].size(), 0.0));
-        gradDensityOutQuadValuesSpinPolarized.push_back(
-          dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
-            gradDensityOutValues[0].size(), 0.0));
+
+        if (excManagerPtr->getDensityBasedFamilyType() ==
+            densityFamilyType::GGA)
+          {
+            gradDensityInQuadValuesSpinPolarized.push_back(
+              dftfe::utils::MemoryStorage<double,
+                                          dftfe::utils::MemorySpace::HOST>(
+                gradDensityInValues[0].size(), 0.0));
+            gradDensityOutQuadValuesSpinPolarized.push_back(
+              dftfe::utils::MemoryStorage<double,
+                                          dftfe::utils::MemorySpace::HOST>(
+                gradDensityOutValues[0].size(), 0.0));
+          }
       }
 
     computeXCEnergyTermsSpinPolarized(basisOperationsPtr,
@@ -1025,8 +1043,6 @@ namespace dftfe
           auxDensityXCInRepresentationPtr->applyLocalOperations(
             quadPointsInCell, densityXCInData);
 
-        auto cellId = basisOperationsPtr->cellID(iCell);
-
         std::vector<double> gradXCRhoInDotgradRhoOut;
         if (excManagerPtr->getDensityBasedFamilyType() ==
             densityFamilyType::GGA)
@@ -1069,7 +1085,7 @@ namespace dftfe
                       dot3(gradXCRhoIn2, gradRhoOut2);
                   }
               }
-          }
+          } // GGA
 
         for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
           {
@@ -1082,7 +1098,7 @@ namespace dftfe
                2.0) *
               basisOperationsPtr->JxWBasisData()[iCell * nQuadsPerCell + iQuad];
 
-            Vxc = pdexDensityInSpinDown[iQuad] + pdexDensityInSpinUp[iQuad];
+            Vxc = pdexDensityInSpinDown[iQuad] + pdecDensityInSpinDown[iQuad];
             excCorrPotentialTimesRho +=
               Vxc *
               ((densityOutValues[0][iCell * nQuadsPerCell + iQuad] -

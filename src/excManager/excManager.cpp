@@ -85,6 +85,8 @@ namespace dftfe
         case 1:
           exceptParamX = xc_func_init(d_funcXPtr, XC_LDA_X, XC_POLARIZED);
           exceptParamC = xc_func_init(d_funcCPtr, XC_LDA_C_PZ, XC_POLARIZED);
+          // xc_func_set_dens_threshold(d_funcXPtr,1e-6);
+          // xc_func_set_dens_threshold(d_funcCPtr,1e-6);
           d_excDensityObjPtr = new excDensityLDAClass(d_funcXPtr, d_funcCPtr);
 
           d_excWavefunctionObjPtr =

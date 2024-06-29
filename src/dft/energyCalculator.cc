@@ -959,11 +959,9 @@ namespace dftfe
           std::vector<double>();
       }
 
-    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-      quadPointsAll = basisOperationsPtr->quadPoints();
+    auto quadPointsAll = basisOperationsPtr->quadPoints();
 
-    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-      quadWeightsAll = basisOperationsPtr->JxW();
+    auto quadWeightsAll = basisOperationsPtr->JxW();
 
 
     auto dot3 = [](const std::array<double, 3> &a,
@@ -987,7 +985,7 @@ namespace dftfe
               quadPointsInCell[3 * iQuad + idim] =
                 quadPointsAll[iCell * nQuadsPerCell * 3 + 3 * iQuad + idim];
             quadWeightsInCell[iQuad] =
-              quadWeightsAll[iCell * nQuadsPerCell + iQuad];
+              std::real(quadWeightsAll[iCell * nQuadsPerCell + iQuad]);
           }
 
         excManagerPtr->getExcDensityObj()->computeExcVxcFxc(

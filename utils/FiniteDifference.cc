@@ -15,7 +15,9 @@ namespace dftfe
       std::vector<double> stencil(totalStencilSize, 0);
 
       std::string errMsg = "Stencil size invalid. ";
-      dftfe::utils::throwException(totalStencilSize > 2 && totalStencilSize % 2 == 1, errMsg);
+      dftfe::utils::throwException(totalStencilSize > 2 &&
+                                     totalStencilSize % 2 == 1,
+                                   errMsg);
 
       for (unsigned int i = 0; i < totalStencilSize; i++)
         stencil[i] = (-std::floor(totalStencilSize / 2) * h + i * h);
@@ -33,7 +35,9 @@ namespace dftfe
       double *           firstOrderDerivative)
     {
       std::string errMsg = "Stencil size invalid. ";
-      dftfe::utils::throwException(totalStencilSize > 2 && totalStencilSize % 2 == 1, errMsg);
+      dftfe::utils::throwException(totalStencilSize > 2 &&
+                                     totalStencilSize % 2 == 1,
+                                   errMsg);
 
       switch (totalStencilSize)
         {
@@ -173,7 +177,9 @@ namespace dftfe
       double *           firstOrderDerivative)
     {
       std::string errMsg = "Stencil size invalid. ";
-      dftfe::utils::throwException(totalStencilSize > 2 && totalStencilSize % 2 == 1, errMsg);
+      dftfe::utils::throwException(totalStencilSize > 2 &&
+                                     totalStencilSize % 2 == 1,
+                                   errMsg);
 
       switch (totalStencilSize)
         {
@@ -313,7 +319,9 @@ namespace dftfe
       double *           secondOrderDerivative)
     {
       std::string errMsg = "Stencil size invalid. ";
-      dftfe::utils::throwException(totalStencilSize > 2 && totalStencilSize % 2 == 1, errMsg);
+      dftfe::utils::throwException(totalStencilSize > 2 &&
+                                     totalStencilSize % 2 == 1,
+                                   errMsg);
 
       switch (totalStencilSize)
         {
@@ -465,7 +473,9 @@ namespace dftfe
       double *           secondOrderDerivative)
     {
       std::string errMsg = "Stencil size invalid. ";
-      dftfe::utils::throwException(totalStencilSize > 2 && totalStencilSize % 2 == 1, errMsg);
+      dftfe::utils::throwException(totalStencilSize > 2 &&
+                                     totalStencilSize % 2 == 1,
+                                   errMsg);
 
       switch (totalStencilSize)
         {

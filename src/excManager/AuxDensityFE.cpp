@@ -118,6 +118,23 @@ namespace dftfe
       }
   }
 
+
+  void
+  AuxDensityFE::evalOverlapMatrixStart(const std::vector<double> &quadpts,
+                                       const std::vector<double> &quadWt)
+  {
+    std::string errMsg = "Not implemented";
+    dftfe::utils::throwException(false, errMsg);
+  }
+
+  void
+  AuxDensityFE::evalOverlapMatrixEnd(const MPI_Comm &mpiComm)
+  {
+    std::string errMsg = "Not implemented";
+    dftfe::utils::throwException(false, errMsg);
+  }
+
+
   void
   AuxDensityFE::projectDensityMatrixStart(
     std::unordered_map<std::string, std::vector<double>> &projectionInputs,

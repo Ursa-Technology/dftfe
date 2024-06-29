@@ -98,7 +98,7 @@ namespace dftfe
     const unsigned int numQuadPoints = basisOperationsPtr->nQuadsPerCell();
 
     dftfe::utils::MemoryStorage<NumberType, memorySpace> wfcQuadPointData;
-    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+    dftfe::utils::MemoryStorage<NumberType, dftfe::utils::MemorySpace::HOST>
       wfcQuadPointDataHost;
 
 
@@ -122,11 +122,11 @@ namespace dftfe
     dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
       allQuadPointsHost = basisOperationsPtr->quadPoints();
 
-    dftfe::utils::MemoryStorage<double, memorySpace> allQuadWeightsMemorySpace =
-      basisOperationsPtr->JxW();
+    dftfe::utils::MemoryStorage<NumberType, memorySpace>
+      allQuadWeightsMemorySpace = basisOperationsPtr->JxW();
 
 
-    dftfe::utils::MemoryStorage<double, memorySpace> allQuadWeightsHost;
+    dftfe::utils::MemoryStorage<NumberType, memorySpace> allQuadWeightsHost;
     allQuadWeightsHost.copyFrom(allQuadWeightsMemorySpace);
 
     //
@@ -347,19 +347,20 @@ namespace dftfe
   }
 
 
-
+#ifndef USE_COMPLEX
   template void
   computeAuxProjectedDensityMatrixFromPSI(
-    const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-      &                                     X,
+    const dftfe::utils::MemoryStorage<dataTypes::number,
+                                      dftfe::utils::MemorySpace::HOST> &X,
     const unsigned int                      totalNumWaveFunctions,
     const std::vector<std::vector<double>> &eigenValues,
     const double                            fermiEnergy,
     const double                            fermiEnergyUp,
     const double                            fermiEnergyDown,
     std::shared_ptr<
-      dftfe::basis::
-        FEBasisOperations<double, double, dftfe::utils::MemorySpace::HOST>>
+      dftfe::basis::FEBasisOperations<dataTypes::number,
+                                      double,
+                                      dftfe::utils::MemorySpace::HOST>>
       &basisOperationsPtr,
     std::shared_ptr<
       dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
@@ -373,4 +374,5 @@ namespace dftfe
     const MPI_Comm &           interpoolcomm,
     const MPI_Comm &           interBandGroupComm,
     const dftParameters &      dftParams);
+#endif
 } // namespace dftfe

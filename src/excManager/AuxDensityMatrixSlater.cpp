@@ -9,16 +9,6 @@
 
 namespace dftfe
 {
-  AuxDensityMatrixSlater::AuxDensityMatrixSlater()
-  {
-    // Constructor implementation
-  }
-
-  AuxDensityMatrixSlater::~AuxDensityMatrixSlater()
-  {
-    // Destructor implementation
-  }
-
   void
   AuxDensityMatrixSlater::reinitAuxDensityMatrix(
     const std::vector<std::pair<std::string, std::vector<double>>> &atomCoords,

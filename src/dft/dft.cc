@@ -5096,14 +5096,22 @@ namespace dftfe
               }
           }
 
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-          quadPoints = d_basisOperationsPtrHost->quadPoints();
+        auto quadPoints = d_basisOperationsPtrHost->quadPoints();
 
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-          quadWeights = d_basisOperationsPtrHost->JxW();
-
-        quadPoints.copyTo(densityProjectionInputs["quadpts"]);
-        quadWeights.copyTo(densityProjectionInputs["quadWt"]);
+        auto                 quadWeights = d_basisOperationsPtrHost->JxW();
+        std::vector<double> &quadPointsStdVec =
+          densityProjectionInputs["quadpts"];
+        quadPointsStdVec.resize(quadPoints.size());
+        std::vector<double> &quadWeightsStdVec =
+          densityProjectionInputs["quadWt"];
+        quadWeightsStdVec.resize(quadWeights.size());
+        for (unsigned int iQuad = 0; iQuad < quadWeightsStdVec.size(); ++iQuad)
+          {
+            for (unsigned int idim = 0; idim < 3; ++idim)
+              quadPointsStdVec[3 * iQuad + idim] =
+                std::real(quadPoints[3 * iQuad + idim]);
+            quadWeightsStdVec[iQuad] = std::real(quadWeights[iQuad]);
+          }
 
 
         auxDensityMatrixXCPtr->projectDensityStart(densityProjectionInputs);

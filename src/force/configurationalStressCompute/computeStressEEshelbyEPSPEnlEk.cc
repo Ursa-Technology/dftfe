@@ -526,11 +526,9 @@ namespace dftfe
           }
 
 
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-          quadPointsAll = dftPtr->d_basisOperationsPtrHost->quadPoints();
+        auto quadPointsAll = dftPtr->d_basisOperationsPtrHost->quadPoints();
 
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-          quadWeightsAll = dftPtr->d_basisOperationsPtrHost->JxW();
+        auto quadWeightsAll = dftPtr->d_basisOperationsPtrHost->JxW();
 
         for (unsigned int cell = 0; cell < matrixFreeData.n_cell_batches();
              ++cell)
@@ -595,8 +593,8 @@ namespace dftfe
                           quadPointsInCell[3 * iQuad + idim] =
                             quadPointsAll[subCellIndex * numQuadPoints * 3 +
                                           3 * iQuad + idim];
-                        quadWeightsInCell[iQuad] =
-                          quadWeightsAll[subCellIndex * numQuadPoints + iQuad];
+                        quadWeightsInCell[iQuad] = std::real(
+                          quadWeightsAll[subCellIndex * numQuadPoints + iQuad]);
                       }
 
 
@@ -711,11 +709,9 @@ namespace dftfe
                         excQuads[q][iSubCell] =
                           xEnergyDensityOut[q] + cEnergyDensityOut[q];
                         vxcRhoOutSpin0Quads[q][iSubCell] =
-                          pdexEnergyDensityOutSpinUp[q] +
-                          pdecEnergyDensityOutSpinUp[q];
+                          pdexDensityOutSpinUp[q] + pdecDensityOutSpinUp[q];
                         vxcRhoOutSpin1Quads[q][iSubCell] =
-                          pdexEnergyDensityOutSpinDown[q] +
-                          pdecEnergyDensityOutSpinDown[q];
+                          pdexDensityOutSpinDown[q] + pdecDensityOutSpinDown[q];
                       }
 
                     if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
@@ -747,7 +743,7 @@ namespace dftfe
                                   [q][idim][iSubCell] +=
                                   (pdexDensityOutSigma[3 * q + 1] +
                                    pdecDensityOutSigma[3 * q + 1]) *
-                                  gradDensityXCOutSpinUp[q][idim];
+                                  gradDensityXCOutSpinUp[3 * q + idim];
                               }
                           }
                       }

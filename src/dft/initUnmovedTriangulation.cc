@@ -322,7 +322,7 @@ namespace dftfe
 #ifdef DFTFE_WITH_TORCH
         d_auxDensityMatrixXCInPtr  = std::make_shared<AuxDensityMatrixSlater>();
         d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityMatrixSlater>();
-#endif        
+#endif
       }
 
 

@@ -45,12 +45,6 @@ namespace dftfe
     getOverlapMatrixInv();
 
   public:
-    // Constructor
-    AuxDensityMatrixSlater();
-
-    // Destructor
-    virtual ~AuxDensityMatrixSlater();
-
     void
     applyLocalOperations(
       const std::vector<double> &Points,

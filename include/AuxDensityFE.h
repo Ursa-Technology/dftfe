@@ -14,9 +14,6 @@ namespace dftfe
   class AuxDensityFE : public AuxDensityMatrix
   {
   public:
-    // Constructor
-    AuxDensityFE();
-
     // CAUTION: points have to be a contiguous subset of d_quadPointsSet
     void
     applyLocalOperations(
@@ -24,6 +21,12 @@ namespace dftfe
       std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
         &densityData) override;
 
+    void
+    evalOverlapMatrixStart(const std::vector<double> &quadpts,
+                           const std::vector<double> &quadWt) override;
+
+    void
+    evalOverlapMatrixEnd(const MPI_Comm &mpiComm) override;
 
     void
     projectDensityMatrixStart(

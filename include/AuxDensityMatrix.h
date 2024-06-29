@@ -30,9 +30,6 @@ namespace dftfe
   class AuxDensityMatrix
   {
   public:
-    // Virtual destructor
-    virtual ~AuxDensityMatrix();
-
     // Pure virtual functions
 
     virtual void

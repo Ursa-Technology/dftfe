@@ -267,11 +267,9 @@ namespace dftfe
         cDataOut[xcOutputDataAttributes::pdeSigma] = std::vector<double>();
       }
 
-    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-      quadPointsAll = d_basisOperationsPtrHost->quadPoints();
+    auto quadPointsAll = d_basisOperationsPtrHost->quadPoints();
 
-    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-      quadWeightsAll = d_basisOperationsPtrHost->JxW();
+    auto quadWeightsAll = d_basisOperationsPtrHost->JxW();
 
 
 
@@ -286,8 +284,8 @@ namespace dftfe
               quadPointsInCell[3 * iQuad + idim] =
                 quadPointsAll[iCell * numberQuadraturePointsPerCell * 3 +
                               3 * iQuad + idim];
-            quadWeightsInCell[iQuad] =
-              quadWeightsAll[iCell * numberQuadraturePointsPerCell + iQuad];
+            quadWeightsInCell[iQuad] = std::real(
+              quadWeightsAll[iCell * numberQuadraturePointsPerCell + iQuad]);
           }
 
         d_excManagerPtr->getExcDensityObj()->computeExcVxcFxc(

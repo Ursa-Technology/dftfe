@@ -631,8 +631,9 @@ namespace dftfe
         prm.declare_entry(
           "EXCHANGE CORRELATION TYPE",
           "GGA-PBE",
-          dealii::Patterns::Anything(),
-          R"([Standard] Parameter specifying the type of exchange-correlation to be used: LDA-PZ (Perdew Zunger Ceperley Alder correlation with Slater Exchange[PRB. 23, 5048 (1981)]), LDA-PW (Perdew-Wang 92 functional with Slater Exchange [PRB. 45, 13244 (1992)]), LDA-VWN (Vosko, Wilk \& Nusair with Slater Exchange[Can. J. Phys. 58, 1200 (1980)]), GGA-PBE (Perdew-Burke-Ernzerhof functional [PRL. 77, 3865 (1996)], GGA-RPBE (RPBE: B. Hammer, L. B. Hansen, and J. K. Nørskov, Phys. Rev. B 59, 7413 (1999)), MLXC-NNLDA (LDA-PW + NN), MLXC-NNGGA (GGA-PBE + NN), MLXC-NNLLMGGA (GGA-PBE + NNLLMGGA). Caution: MLXC options are experimental.)");
+          dealii::Patterns::Selection(
+            "LDA-PZ|LDA-PW|LDA-VWN|GGA-PBE|GGA-RPBE|MLXC-NNLDA|MLXC-NNGGA|MLXC-NNLLMGGA"),
+          R"([Standard] Parameter specifying the type of exchange-correlation to be used: LDA-PZ (Perdew Zunger Ceperley Alder correlation with Slater Exchange[PRB. 23, 5048 (1981)]), LDA-PW (Perdew-Wang 92 functional with Slater Exchange [PRB. 45, 13244 (1992)]), LDA-VWN (Vosko, Wilk \& Nusair with Slater Exchange[Can. J. Phys. 58, 1200 (1980)]), GGA-PBE (Perdew-Burke-Ernzerhof functional [PRL. 77, 3865 (1996)]), GGA-RPBE (RPBE: B. Hammer, L. B. Hansen, and J. K. Nørskov, Phys. Rev. B 59, 7413 (1999)), MLXC-NNLDA (LDA-PW + NN-LDA), MLXC-NNGGA (GGA-PBE + NN-GGA), MLXC-NNLLMGGA (GGA-PBE + NN Laplacian level MGGA). Caution: MLXC options are experimental.)");
 
         prm.declare_entry(
           "MODEL XC INPUT FILE",

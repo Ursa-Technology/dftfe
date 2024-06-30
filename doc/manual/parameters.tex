@@ -512,16 +512,16 @@
 
 \index[prmindex]{EXCHANGE CORRELATION TYPE}
 \index[prmindexfull]{DFT functional parameters!EXCHANGE CORRELATION TYPE}
-{\it Value:} 1
+{\it Value:} GGA-PBE
 
 
-{\it Default:} 1
+{\it Default:} GGA-PBE
 
 
-{\it Description:} [Standard] Parameter specifying the type of exchange-correlation to be used: 1(LDA: Perdew Zunger Ceperley Alder correlation with Slater Exchange[PRB. 23, 5048 (1981)]), 2(LDA: Perdew-Wang 92 functional with Slater Exchange [PRB. 45, 13244 (1992)]), 3(LDA: Vosko, Wilk \& Nusair with Slater Exchange[Can. J. Phys. 58, 1200 (1980)]), 4(GGA: Perdew-Burke-Ernzerhof functional [PRL. 77, 3865 (1996)], 5(RPBE: B. Hammer, L. B. Hansen, and J. K. Nørskov, Phys. Rev. B 59, 7413 (1999)), 6(ML-XC NNLDA: LDA-PW + NN), 7(ML-XC NNGGA: GGA-PBE + NN). Caution: options 6-7 are experimental and only accessible to the DFT-FE developers currently.
+{\it Description:} [Standard] Parameter specifying the type of exchange-correlation to be used: LDA-PZ (Perdew Zunger Ceperley Alder correlation with Slater Exchange[PRB. 23, 5048 (1981)]), LDA-PW (Perdew-Wang 92 functional with Slater Exchange [PRB. 45, 13244 (1992)]), LDA-VWN (Vosko, Wilk \& Nusair with Slater Exchange[Can. J. Phys. 58, 1200 (1980)]), GGA-PBE (Perdew-Burke-Ernzerhof functional [PRL. 77, 3865 (1996)]), GGA-RPBE (RPBE: B. Hammer, L. B. Hansen, and J. K. Nørskov, Phys. Rev. B 59, 7413 (1999)), MLXC-NNLDA (LDA-PW + NN-LDA), MLXC-NNGGA (GGA-PBE + NN-GGA), MLXC-NNLLMGGA (GGA-PBE + NN Laplacian level MGGA). Caution: MLXC options are experimental.
 
 
-{\it Possible values:} An integer $n$ such that $1\leq n \leq 8$
+{\it Possible values:} Any one of LDA-PZ, LDA-PW, LDA-VWN, GGA-PBE, GGA-RPBE, MLXC-NNLDA, MLXC-NNGGA, and MLXC-NNLLMGGA
 \item {\it Parameter name:} {\tt MODEL XC INPUT FILE}
 \phantomsection\label{parameters:DFT functional parameters/MODEL XC INPUT FILE}
 \label{parameters:DFT_20functional_20parameters/MODEL_20XC_20INPUT_20FILE}
@@ -535,8 +535,40 @@
 {\it Default:} 
 
 
-{\it Description:} [Developer] File that contains both the pytorch ML-XC NN model (.ptc file) and the tolerances. This is an experimental feature to test out any new XC functional developed using machine learning.
+{\it Description:} [Developer] File that contains both the pytorch MLXC NN model (.ptc file) and the tolerances. This is an experimental feature to test out any new XC functional developed using machine learning.
 
+{\it Possible values:} Any string
+\item {\it Parameter name:} {\tt AUX BASIS TYPE}
+\phantomsection\label{parameters:DFT functional parameters/AUX BASIS TYPE}
+\label{parameters:DFT_20functional_20parameters/AUX_20BASIS_20TYPE}
+
+
+\index[prmindex]{AUX BASIS TYPE}
+\index[prmindexfull]{DFT functional parameters!AUX BASIS TYPE}
+{\it Value:} FE
+
+
+{\it Default:} FE
+
+
+{\it Description:} [Developer] Auxiliary basis for projecting the Kohn-Sham density or density matrix for XC evaluation. FE is the default option.
+
+
+{\it Possible values:} Any one of FE, SLATER, and PW
+\item {\it Parameter name:} {\tt AUX BASIS DATA}
+\phantomsection\label{parameters:DFT functional parameters/AUX BASIS DATA}
+\label{parameters:DFT_20functional_20parameters/AUX_20BASIS_20DATA}
+
+
+\index[prmindex]{AUX BASIS DATA}
+\index[prmindexfull]{DFT functional parameters!AUX BASIS DATA}
+{\it Value:} 
+
+
+{\it Default:} 
+
+
+{\it Description:} [Developer] [Developer] File that contains additional information for the Auxiliary basis selected in AUX BASIS TYPE.
 
 {\it Possible values:} Any string
 \item {\it Parameter name:} {\tt NET CHARGE}

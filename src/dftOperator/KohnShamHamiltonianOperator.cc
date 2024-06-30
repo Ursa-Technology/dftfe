@@ -271,7 +271,6 @@ namespace dftfe
 
     auto quadWeightsAll = d_basisOperationsPtrHost->JxW();
 
-    // double check = 0;
     for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells; ++iCell)
       {
         std::vector<double> quadPointsInCell(numberQuadraturePointsPerCell * 3);
@@ -309,6 +308,10 @@ namespace dftfe
 
         std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
                              densityData;
+        std::vector<double> &densitySpinUp =
+          densityData[DensityDescriptorDataAttributes::valuesSpinUp];
+        std::vector<double> &densitySpinDown =
+          densityData[DensityDescriptorDataAttributes::valuesSpinDown];
         std::vector<double> &gradDensitySpinUp =
           densityData[DensityDescriptorDataAttributes::gradValuesSpinUp];
         std::vector<double> &gradDensitySpinDown =
@@ -336,9 +339,6 @@ namespace dftfe
               (tempPhi[iQuad] + pdexDensitySpinIndex[iQuad] +
                pdecDensitySpinIndex[iQuad]) *
               cellJxWPtr[iQuad];
-            // check +=
-            // (pdexDensitySpinIndex[iQuad]+0*pdecDensitySpinIndex[iQuad]) *
-            // cellJxWPtr[iQuad];
           }
 
         if (isGGA)
@@ -405,7 +405,6 @@ namespace dftfe
               }
           } // GGA
       }     // cell loop
-            // std::cout << "check: " << check << std::endl;
 #if defined(DFTFE_WITH_DEVICE)
     d_VeffJxW.resize(d_VeffJxWHost.size());
     d_VeffJxW.copyFrom(d_VeffJxWHost);

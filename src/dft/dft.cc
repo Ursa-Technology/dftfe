@@ -5062,7 +5062,7 @@ namespace dftfe
                       gradDensityQuadValues[0].data() +
                       iCell * nQuadsPerCell * 3;
                     const double *cellGradMagValues =
-                      gradDensityQuadValues[0].data() +
+                      gradDensityQuadValues[1].data() +
                       iCell * nQuadsPerCell * 3;
 
 

@@ -55,7 +55,6 @@ namespace dftfe
     /// exchange-correlation and psp part of the ELoc Eshelby tensor
     dealii::Tensor<2, 3, dealii::VectorizedArray<double>>
     getELocXcEshelbyTensor(
-      const dealii::VectorizedArray<double> &                      rho,
       const dealii::Tensor<1, 3, dealii::VectorizedArray<double>> &gradRhoSpin0,
       const dealii::Tensor<1, 3, dealii::VectorizedArray<double>> &gradRhoSpin1,
       const dealii::VectorizedArray<double> &                      exc,

@@ -187,7 +187,7 @@ namespace dftfe
                    &densityValues[0],
                    &sigmaValues[0],
                    &ecValues[0],
-                   &pdexDensityValuesNonNN[0],
+                   &pdecDensityValuesNonNN[0],
                    &pdecSigmaValues[0]);
 
     for (size_t i = 0; i < quadWeights.size(); i++)

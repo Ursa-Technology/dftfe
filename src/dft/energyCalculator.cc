@@ -1073,17 +1073,14 @@ namespace dftfe
                       2.0;
                   }
 
-                for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
-                  {
-                    gradXCRhoInDotgradRhoOut[iQuad * 3 + 0] =
-                      dot3(gradXCRhoIn1, gradRhoOut1);
-                    gradXCRhoInDotgradRhoOut[iQuad * 3 + 1] =
-                      (dot3(gradXCRhoIn1, gradRhoOut2) +
-                       dot3(gradXCRhoIn2, gradRhoOut1)) /
-                      2.0;
-                    gradXCRhoInDotgradRhoOut[3 * iQuad + 2] =
-                      dot3(gradXCRhoIn2, gradRhoOut2);
-                  }
+                gradXCRhoInDotgradRhoOut[iQuad * 3 + 0] =
+                  dot3(gradXCRhoIn1, gradRhoOut1);
+                gradXCRhoInDotgradRhoOut[iQuad * 3 + 1] =
+                  (dot3(gradXCRhoIn1, gradRhoOut2) +
+                   dot3(gradXCRhoIn2, gradRhoOut1)) /
+                  2.0;
+                gradXCRhoInDotgradRhoOut[iQuad * 3 + 2] =
+                  dot3(gradXCRhoIn2, gradRhoOut2);
               }
           } // GGA
 

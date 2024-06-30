@@ -22,6 +22,8 @@ namespace dftfe
       attributeData.resize(endIndex - startIndex);
       if (startIndex > endIndex || endIndex > values.size())
         {
+          std::cout << "CHECK1: " << startIndex << std::endl;
+          std::cout << "CHECK1: " << endIndex << std::endl;
           throw std::invalid_argument("Invalid index range for densityData");
         }
 
@@ -59,7 +61,7 @@ namespace dftfe
     indexRangeVal.second = minIndex + points.size() / 3;
 
     indexRangeGrad.first  = minIndex * 3;
-    indexRangeGrad.second = minIndex + points.size();
+    indexRangeGrad.second = minIndex * 3 + points.size();
 
     if (densityData.find(DensityDescriptorDataAttributes::valuesTotal) !=
         densityData.end())

@@ -509,6 +509,10 @@ namespace dftfe
             numMacroCells,
             kptGroupLowHighPlusOneIndices);
 
+        dftPtr->d_basisOperationsPtrHost->reinit(0,
+                                                 0,
+                                                 dftPtr->d_densityQuadratureId,
+                                                 false);
         std::vector<
           dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
           gradDensityOutValuesSpinPolarized;
@@ -525,18 +529,6 @@ namespace dftfe
                   gradRhoOutValues[0].size(), 0.0));
           }
 
-        std::vector<double> rhoTotalCellQuadValues(numQuadPoints, 0);
-        std::vector<double> rhoSpinPolarizedCellQuadValues(numQuadPoints * 2,
-                                                           0);
-        std::vector<double> gradRhoTotalCellQuadValues(numQuadPoints * 3, 0);
-
-        std::vector<double> gradRhoSpinPolarizedCellQuadValues(numQuadPoints *
-                                                                 6,
-                                                               0);
-        dealii::AlignedVector<dealii::VectorizedArray<double>> rhoXCQuadsVect(
-          numQuadPoints, dealii::make_vectorized_array(0.0));
-        dealii::AlignedVector<dealii::VectorizedArray<double>>
-          phiTotRhoOutQuads(numQuadPoints, dealii::make_vectorized_array(0.0));
         dealii::AlignedVector<
           dealii::Tensor<1, 3, dealii::VectorizedArray<double>>>
           gradRhoSpin0QuadsVect(numQuadPoints, zeroTensor3);
@@ -613,12 +605,6 @@ namespace dftfe
               {
                 forceEval.reinit(cell);
 
-                std::fill(rhoXCQuadsVect.begin(),
-                          rhoXCQuadsVect.end(),
-                          dealii::make_vectorized_array(0.0));
-                std::fill(phiTotRhoOutQuads.begin(),
-                          phiTotRhoOutQuads.end(),
-                          dealii::make_vectorized_array(0.0));
                 std::fill(gradRhoSpin0QuadsVect.begin(),
                           gradRhoSpin0QuadsVect.end(),
                           zeroTensor3);
@@ -673,9 +659,9 @@ namespace dftfe
                     for (unsigned int iQuad = 0; iQuad < numQuadPoints; ++iQuad)
                       {
                         for (unsigned int idim = 0; idim < 3; ++idim)
-                          quadPointsInCell[3 * iQuad + idim] =
+                          quadPointsInCell[iQuad * 3 + idim] =
                             quadPointsAll[subCellIndex * numQuadPoints * 3 +
-                                          3 * iQuad + idim];
+                                          iQuad * 3 + idim];
                         quadWeightsInCell[iQuad] = std::real(
                           quadWeightsAll[subCellIndex * numQuadPoints + iQuad]);
                       }
@@ -702,11 +688,7 @@ namespace dftfe
 
                     std::unordered_map<DensityDescriptorDataAttributes,
                                        std::vector<double>>
-                                         densityXCOutData;
-                    std::vector<double> &densityXCOutSpinUp = densityXCOutData
-                      [DensityDescriptorDataAttributes::valuesSpinUp];
-                    std::vector<double> &densityXCOutSpinDown = densityXCOutData
-                      [DensityDescriptorDataAttributes::valuesSpinDown];
+                                        densityXCOutData;
                     std::vector<double> gradDensityXCOutSpinUp;
                     std::vector<double> gradDensityXCOutSpinDown;
 
@@ -733,11 +715,6 @@ namespace dftfe
                           [DensityDescriptorDataAttributes::gradValuesSpinDown];
                       }
 
-                    for (unsigned int q = 0; q < numQuadPoints; ++q)
-                      {
-                        rhoXCQuadsVect[q][iSubCell] =
-                          densityXCOutSpinUp[q] + densityXCOutSpinDown[q];
-                      }
 
 
                     if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
@@ -756,7 +733,7 @@ namespace dftfe
                         for (unsigned int q = 0; q < numQuadPoints; ++q)
                           for (unsigned int idim = 0; idim < 3; idim++)
                             {
-                              gradRhoSpinPolarizedCellQuadValues[6 * q + idim] =
+                              gradRhoSpin0QuadsVect[q][idim][iSubCell] =
                                 (gradRhoTotalOutValues[subCellIndex *
                                                          numQuadPoints * 3 +
                                                        q * 3 + idim] +
@@ -764,8 +741,7 @@ namespace dftfe
                                                        numQuadPoints * 3 +
                                                      q * 3 + idim]) /
                                 2.0;
-                              gradRhoSpinPolarizedCellQuadValues[6 * q + 3 +
-                                                                 idim] =
+                              gradRhoSpin1QuadsVect[q][idim][iSubCell] =
                                 (gradRhoTotalOutValues[subCellIndex *
                                                          numQuadPoints * 3 +
                                                        q * 3 + idim] -
@@ -773,17 +749,6 @@ namespace dftfe
                                                        numQuadPoints * 3 +
                                                      q * 3 + idim]) /
                                 2.0;
-                            }
-
-                        for (unsigned int q = 0; q < numQuadPoints; ++q)
-                          for (unsigned int idim = 0; idim < 3; idim++)
-                            {
-                              gradRhoSpin0QuadsVect[q][idim][iSubCell] =
-                                gradRhoSpinPolarizedCellQuadValues[6 * q +
-                                                                   idim];
-                              gradRhoSpin1QuadsVect[q][idim][iSubCell] =
-                                gradRhoSpinPolarizedCellQuadValues[6 * q + 3 +
-                                                                   idim];
                             }
                       }
 
@@ -879,12 +844,8 @@ namespace dftfe
 
                 for (unsigned int q = 0; q < numQuadPoints; ++q)
                   {
-                    const dealii::VectorizedArray<double> phiTot_q =
-                      phiTotRhoOutQuads[q];
-
                     dealii::Tensor<2, 3, dealii::VectorizedArray<double>> E =
                       eshelbyTensorSP::getELocXcEshelbyTensor(
-                        rhoXCQuadsVect[q],
                         gradRhoSpin0QuadsVect[q],
                         gradRhoSpin1QuadsVect[q],
                         excQuads[q],

@@ -308,7 +308,7 @@ namespace dftfe
       dftUtils::printCurrentMemoryUsage(mpi_communicator, "Force initUnmoved");
 
 
-    d_excManagerPtr->init(d_dftParamsPtr->xc_id,
+    d_excManagerPtr->init(d_dftParamsPtr->XCType,
                           true,
                           d_dftParamsPtr->modelXCInputFile);
 

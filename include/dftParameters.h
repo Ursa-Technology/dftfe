@@ -36,8 +36,8 @@ namespace dftfe
   public:
     unsigned int finiteElementPolynomialOrder,
       finiteElementPolynomialOrderElectrostatics, n_refinement_steps,
-      numberEigenValues, xc_id, spinPolarized, nkx, nky, nkz, offsetFlagX,
-      offsetFlagY, offsetFlagZ;
+      numberEigenValues, spinPolarized, nkx, nky, nkz, offsetFlagX, offsetFlagY,
+      offsetFlagZ;
     unsigned int chebyshevOrder, numPass, numSCFIterations,
       maxLinearSolverIterations, mixingHistory, npool,
       numberWaveFunctionsForEstimate, numLevels,
@@ -45,6 +45,7 @@ namespace dftfe
 
     bool        poissonGPU;
     bool        vselfGPU;
+    std::string XCType;
     std::string modelXCInputFile;
     std::string auxBasisTypeXC;
     std::string auxBasisDataXC;

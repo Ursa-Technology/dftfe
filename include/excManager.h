@@ -42,9 +42,9 @@ namespace dftfe
 
 
     void
-    init(unsigned int xc_id,
-         bool         isSpinPolarized,
-         std::string  modelXCInputFile);
+    init(std::string XCType,
+         bool        isSpinPolarized,
+         std::string modelXCInputFile);
 
     densityFamilyType
     getDensityBasedFamilyType() const;

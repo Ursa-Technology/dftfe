@@ -66,6 +66,7 @@ namespace dftfe
     void
     evalOverlapMatrixEnd(const MPI_Comm &mpiComm) override;
 
+    // FIXME: to be extended for complex valued wavefunctions
     void
     projectDensityMatrixStart(
       std::unordered_map<std::string, std::vector<double>> &projectionInputs,

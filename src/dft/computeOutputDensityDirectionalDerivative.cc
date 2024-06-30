@@ -246,6 +246,13 @@ namespace dftfe
               gradvSpin0Values[i] - gradvSpin1Values[i];
           }
       }
+    else
+      {
+        rhoPrimeValues[1].clear();
+        rhoPrimeValues[1].resize(rhoPrimeValues[0].size(), 0);
+        gradRhoPrimeValues[1].clear();
+        gradRhoPrimeValues[1].resize(gradRhoPrimeValues[0].size(), 0);
+      }
 
     for (unsigned int s = 0; s < (1 + d_dftParamsPtr->spinPolarized); ++s)
       {

@@ -327,21 +327,25 @@ namespace dftfe
         // data: atomic number, valence number,
         // and x,y,z cartesian coordiantes with respect to origin at domain
         // center
+        /*
         d_auxDensityMatrixXCInPtr->reinitAuxDensityMatrix(
           const std::vector<std::pair<std::string, std::vector<double>>>
             &atomCoords,
           d_dftParamsPtr->auxBasisTypeXC,
           2,
           5);
+        */
 
         d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityMatrixSlater>();
         // FIXME: with same comments as above
+        /*
         d_auxDensityMatrixXCOutPtr->reinitAuxDensityMatrix(
           const std::vector<std::pair<std::string, std::vector<double>>>
             &atomCoords,
           d_dftParamsPtr->auxBasisTypeXC,
           2,
           5);
+        */
 #endif
       }
 

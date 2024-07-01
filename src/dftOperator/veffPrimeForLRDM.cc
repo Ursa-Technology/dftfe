@@ -53,6 +53,7 @@ namespace dftfe
 #endif
     d_VeffJxWHost.resize(totalLocallyOwnedCells * numberQuadraturePointsPerCell,
                          0.0);
+    d_invJacderExcWithSigmaTimesGradRhoJxWHost.clear();
     d_invJacderExcWithSigmaTimesGradRhoJxWHost.resize(
       isGGA ? totalLocallyOwnedCells * numberQuadraturePointsPerCell * 3 : 0,
       0.0);
@@ -344,10 +345,10 @@ namespace dftfe
                       for (unsigned iDim = 0; iDim < 3; ++iDim)
                         d_invJacderExcWithSigmaTimesGradRhoJxWHost
                           [iCell * numberQuadraturePointsPerCell * 3 +
-                           iQuad * 3 + iDim] =
-                            veffCoeff * inverseJacobiansQuadPtr[iDim] *
-                            (2.0 * gradDensityQuadPtr[iDim] * term +
-                             gradDensityOtherQuadPtr[iDim] * termoff);
+                           iQuad * 3 + iDim] +=
+                          veffCoeff * inverseJacobiansQuadPtr[iDim] *
+                          (2.0 * gradDensityQuadPtr[iDim] * term +
+                           gradDensityOtherQuadPtr[iDim] * termoff);
                     }
                 }
             } // GGA

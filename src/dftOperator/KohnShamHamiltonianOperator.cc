@@ -243,6 +243,7 @@ namespace dftfe
 #endif
     d_VeffJxWHost.resize(totalLocallyOwnedCells * numberQuadraturePointsPerCell,
                          0.0);
+    d_invJacderExcWithSigmaTimesGradRhoJxWHost.clear();
     d_invJacderExcWithSigmaTimesGradRhoJxWHost.resize(
       isGGA ? totalLocallyOwnedCells * numberQuadraturePointsPerCell * 3 : 0,
       0.0);

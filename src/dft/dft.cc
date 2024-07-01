@@ -5163,7 +5163,7 @@ namespace dftfe
                                                   fermiEnergyUp_,
                                                   fermiEnergyDown_,
                                                   d_basisOperationsPtrHost,
-                                                  d_BLASWrapperPtr,
+                                                  d_BLASWrapperPtrHost,
                                                   d_densityDofHandlerIndex,
                                                   d_gllQuadratureId,
                                                   d_kPointWeights,

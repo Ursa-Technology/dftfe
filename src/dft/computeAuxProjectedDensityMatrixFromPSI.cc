@@ -348,6 +348,34 @@ namespace dftfe
 
 
 #ifndef USE_COMPLEX
+#if defined(DFTFE_WITH_DEVICE)
+  template void
+  computeAuxProjectedDensityMatrixFromPSI(
+    const dftfe::utils::MemoryStorage<dataTypes::number,
+                                      dftfe::utils::MemorySpace::DEVICE> &X,
+    const unsigned int                      totalNumWaveFunctions,
+    const std::vector<std::vector<double>> &eigenValues,
+    const double                            fermiEnergy,
+    const double                            fermiEnergyUp,
+    const double                            fermiEnergyDown,
+    std::shared_ptr<
+      dftfe::basis::FEBasisOperations<dataTypes::number,
+                                      double,
+                                      dftfe::utils::MemorySpace::DEVICE>>
+      &basisOperationsPtr,
+    std::shared_ptr<
+      dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+      &                        BLASWrapperPtr,
+    const unsigned int         matrixFreeDofhandlerIndex,
+    const unsigned int         quadratureIndex,
+    const std::vector<double> &kPointWeights,
+    AuxDensityMatrix &         auxDensityMatrixRepresentation,
+    const MPI_Comm &           mpiCommParent,
+    const MPI_Comm &           domainComm,
+    const MPI_Comm &           interpoolcomm,
+    const MPI_Comm &           interBandGroupComm,
+    const dftParameters &      dftParams);
+#endif
   template void
   computeAuxProjectedDensityMatrixFromPSI(
     const dftfe::utils::MemoryStorage<dataTypes::number,

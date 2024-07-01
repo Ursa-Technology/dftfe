@@ -348,7 +348,7 @@ namespace dftfe
 
 
 #ifndef USE_COMPLEX
-#if defined(DFTFE_WITH_DEVICE)
+#  if defined(DFTFE_WITH_DEVICE)
   template void
   computeAuxProjectedDensityMatrixFromPSI(
     const dftfe::utils::MemoryStorage<dataTypes::number,
@@ -375,7 +375,7 @@ namespace dftfe
     const MPI_Comm &           interpoolcomm,
     const MPI_Comm &           interBandGroupComm,
     const dftParameters &      dftParams);
-#endif
+#  endif
   template void
   computeAuxProjectedDensityMatrixFromPSI(
     const dftfe::utils::MemoryStorage<dataTypes::number,

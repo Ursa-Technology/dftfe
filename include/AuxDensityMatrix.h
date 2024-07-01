@@ -30,54 +30,55 @@ namespace dftfe
   class AuxDensityMatrix
   {
   public:
-    // Pure virtual functions
-
+    /**
+     * @brief compute local descriptors of the aux basis electron-density
+     * representation at the supplied set of points using
+     */
     virtual void
     applyLocalOperations(
       const std::vector<double> &Points,
       std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
         &densityData) = 0;
 
+    /**
+     * @brief Compute aux basis overlap matrix batchwise contribution from
+     * supplied set of quadrature points and their associated weights
+     */
     virtual void
     evalOverlapMatrixStart(const std::vector<double> &quadpts,
                            const std::vector<double> &quadWt) = 0;
 
+    /**
+     * @brief for MPI accumulation
+     */
     virtual void
     evalOverlapMatrixEnd(const MPI_Comm &mpiComm) = 0;
 
     /**
-     *
-     * @param projectionInputs is a map from string to inputs needed
-     *                          for projection.
-     *      eg - projectionInputs["quadpts"],
-     *          projectionInputs["quadWt"],
-     *          projectionInputs["psiFunc"],
-     *          projectionInputs["fValues"]
-     *
-     *      psiFunc The SCF wave function or eigen function in FE Basis.
-     *                psiFunc(quad_index, wfc_index),
-     *                quad_index is fastest.
-     *      fValues are the occupancies.
-     *
-     * @param iSpin indicates up (iSpin = 0) or down (iSpin = 0) spin.
-     *
+     * @brief Projects the KS density matrix to aux basis (L2 projection) batch wise
      */
     virtual void
     projectDensityMatrixStart(
       std::unordered_map<std::string, std::vector<double>> &projectionInputs,
       int                                                   iSpin) = 0;
 
+    /**
+     * @brief for MPI accumulation
+     */
     virtual void
     projectDensityMatrixEnd(const MPI_Comm &mpiComm) = 0;
 
 
     /**
-     * @brief Projects the quadrature density to aux basis (L2 projection).
+     * @brief Projects the quadrature density to aux basis (L2 projection) batch wise
      */
     virtual void
     projectDensityStart(std::unordered_map<std::string, std::vector<double>>
                           &projectionInputs) = 0;
 
+    /**
+     * @brief for MPI accumulation
+     */
     virtual void
     projectDensityEnd(const MPI_Comm &mpiComm) = 0;
   };

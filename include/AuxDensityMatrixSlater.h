@@ -67,6 +67,23 @@ namespace dftfe
     evalOverlapMatrixEnd(const MPI_Comm &mpiComm) override;
 
     // FIXME: to be extended for complex valued wavefunctions
+    /**
+     *
+     * @param projectionInputs is a map from string to inputs needed
+     *                          for projection.
+     *      eg - projectionInputs["quadpts"],
+     *          projectionInputs["quadWt"],
+     *          projectionInputs["psiFunc"],
+     *          projectionInputs["fValues"]
+     *
+     *      psiFunc The SCF wave function or eigen function in FE Basis.
+     *                psiFunc(quad_index, wfc_index),
+     *                quad_index is fastest.
+     *      fValues are the occupancies.
+     *
+     * @param iSpin indicates up (iSpin = 0) or down (iSpin = 0) spin.
+     *
+     */
     void
     projectDensityMatrixStart(
       std::unordered_map<std::string, std::vector<double>> &projectionInputs,

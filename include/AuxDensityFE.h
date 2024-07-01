@@ -38,8 +38,8 @@ namespace dftfe
 
     /**
      * @brief Projects the quadrature density to aux basis (L2 projection).
-     * This is actually a copy call all the quadrature points must
-     * to be passed to this function in one go
+     * This is actually a copy call. All the local partition quadrature points
+     * must to be passed to this function in one go
      *
      * @param projectionInputs is a map from string to inputs needed
      *                          for projection.

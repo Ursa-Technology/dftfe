@@ -630,16 +630,28 @@ namespace dftfe
 
         prm.declare_entry(
           "EXCHANGE CORRELATION TYPE",
-          "1",
-          dealii::Patterns::Integer(1, 8),
-          R"([Standard] Parameter specifying the type of exchange-correlation to be used: 1(LDA: Perdew Zunger Ceperley Alder correlation with Slater Exchange[PRB. 23, 5048 (1981)]), 2(LDA: Perdew-Wang 92 functional with Slater Exchange [PRB. 45, 13244 (1992)]), 3(LDA: Vosko, Wilk \& Nusair with Slater Exchange[Can. J. Phys. 58, 1200 (1980)]), 4(GGA: Perdew-Burke-Ernzerhof functional [PRL. 77, 3865 (1996)], 5(RPBE: B. Hammer, L. B. Hansen, and J. K. Nørskov, Phys. Rev. B 59, 7413 (1999)), 6(ML-XC NNLDA: LDA-PW + NN), 7(ML-XC NNGGA: GGA-PBE + NN). Caution: options 6-7 are experimental and only accessible to the DFT-FE developers currently.)");
+          "GGA-PBE",
+          dealii::Patterns::Selection(
+            "LDA-PZ|LDA-PW|LDA-VWN|GGA-PBE|GGA-RPBE|MLXC-NNLDA|MLXC-NNGGA|MLXC-NNLLMGGA"),
+          R"([Standard] Parameter specifying the type of exchange-correlation to be used: LDA-PZ (Perdew Zunger Ceperley Alder correlation with Slater Exchange[PRB. 23, 5048 (1981)]), LDA-PW (Perdew-Wang 92 functional with Slater Exchange [PRB. 45, 13244 (1992)]), LDA-VWN (Vosko, Wilk \& Nusair with Slater Exchange[Can. J. Phys. 58, 1200 (1980)]), GGA-PBE (Perdew-Burke-Ernzerhof functional [PRL. 77, 3865 (1996)]), GGA-RPBE (RPBE: B. Hammer, L. B. Hansen, and J. K. Nørskov, Phys. Rev. B 59, 7413 (1999)), MLXC-NNLDA (LDA-PW + NN-LDA), MLXC-NNGGA (GGA-PBE + NN-GGA), MLXC-NNLLMGGA (GGA-PBE + NN Laplacian level MGGA). Caution: MLXC options are experimental.)");
 
         prm.declare_entry(
           "MODEL XC INPUT FILE",
           "",
           dealii::Patterns::Anything(),
-          "[Developer] File that contains both the pytorch ML-XC NN model (.ptc file) and the tolerances. This is an experimental feature to test out any new XC functional developed using machine learning.");
+          "[Developer] File that contains both the pytorch MLXC NN model (.ptc file) and the tolerances. This is an experimental feature to test out any new XC functional developed using machine learning.");
 
+        prm.declare_entry(
+          "AUX BASIS TYPE",
+          "FE",
+          dealii::Patterns::Selection("FE|SLATER|PW"),
+          "[Developer] Auxiliary basis for projecting the Kohn-Sham density or density matrix for XC evaluation. FE is the default option.");
+
+        prm.declare_entry(
+          "AUX BASIS DATA",
+          "",
+          dealii::Patterns::Anything(),
+          "[Developer] File that contains additional information for the Auxiliary basis selected in AUX BASIS TYPE.");
 
         prm.declare_entry(
           "NET CHARGE",
@@ -1163,9 +1175,11 @@ namespace dftfe
     finiteElementPolynomialOrderElectrostatics = 1;
     n_refinement_steps                         = 1;
     numberEigenValues                          = 1;
-    xc_id                                      = 1;
+    XCType                                     = "GGA-PBE";
     spinPolarized                              = 0;
     modelXCInputFile                           = "";
+    auxBasisTypeXC                             = "";
+    auxBasisDataXC                             = "";
     nkx                                        = 1;
     nky                                        = 1;
     nkz                                        = 1;
@@ -1556,9 +1570,11 @@ namespace dftfe
       isPseudopotential     = prm.get_bool("PSEUDOPOTENTIAL CALCULATION");
       pseudoTestsFlag       = prm.get_bool("PSEUDO TESTS FLAG");
       pseudoPotentialFile   = prm.get("PSEUDOPOTENTIAL FILE NAMES LIST");
-      xc_id                 = prm.get_integer("EXCHANGE CORRELATION TYPE");
+      XCType                = prm.get("EXCHANGE CORRELATION TYPE");
       spinPolarized         = prm.get_integer("SPIN POLARIZATION");
       modelXCInputFile      = prm.get("MODEL XC INPUT FILE");
+      auxBasisTypeXC        = prm.get("AUX BASIS TYPE");
+      auxBasisDataXC        = prm.get("AUX BASIS DATA");
       start_magnetization   = prm.get_double("START MAGNETIZATION");
       pspCutoffImageCharges = prm.get_double("PSP CUTOFF IMAGE CHARGES");
       netCharge             = prm.get_double("NET CHARGE");

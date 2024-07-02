@@ -19,78 +19,67 @@
 #ifndef DFTFE_EXCDENSITYBASECLASS_H
 #define DFTFE_EXCDENSITYBASECLASS_H
 
-//#include <headers.h>
-#include <xc.h>
 #include <vector>
 #include <fstream>
 #include <iostream>
 #include <map>
-//#include <linearAlgebraOperations.h>
+#include "AuxDensityMatrix.h"
 
 namespace dftfe
 {
   enum class densityFamilyType
   {
     LDA,
-    GGA
-  };
-  // enum class for identifying the relevant objects for exc manager class
-  enum class rhoDataAttributes
-  {
-    values,
-    sigmaGradValue
+    GGA,
+    LLMGGA,
   };
 
-  enum class VeffOutputDataAttributes
+  enum class xcOutputDataAttributes
   {
-    derEnergyWithDensity,
-    derEnergyWithSigmaGradDensity
+    e, // energy density per unit volume
+    vSpinUp,
+    vSpinDown,
+    pdeDensitySpinUp,
+    pdeDensitySpinDown,
+    pdeSigma,
+    pdeLaplacianSpinUp,
+    pdeLaplacianSpinDown
   };
-
-  enum class fxcOutputDataAttributes
-  {
-    der2EnergyWithDensity,
-    der2EnergyWithDensitySigma,
-    der2EnergyWithSigma
-  };
-
 
   class excDensityBaseClass
   {
   public:
-    excDensityBaseClass(bool isSpinPolarized);
-
-    virtual void
-    computeDensityBasedEnergyDensity(
-      unsigned int                                                    sizeInput,
-      const std::map<rhoDataAttributes, const std::vector<double> *> &rhoData,
-      std::vector<double> &outputExchangeEnergyDensity,
-      std::vector<double> &outputCorrEnergyDensity) const = 0;
-
-    virtual void
-    computeDensityBasedVxc(
-      unsigned int                                                    sizeInput,
-      const std::map<rhoDataAttributes, const std::vector<double> *> &rhoData,
-      std::map<VeffOutputDataAttributes, std::vector<double> *>
-        &outputDerExchangeEnergy,
-      std::map<VeffOutputDataAttributes, std::vector<double> *>
-        &outputDerCorrEnergy) const = 0;
-
-    virtual void
-    computeDensityBasedFxc(
-      unsigned int                                                    sizeInput,
-      const std::map<rhoDataAttributes, const std::vector<double> *> &rhoData,
-      std::map<fxcOutputDataAttributes, std::vector<double> *>
-        &outputDer2ExchangeEnergy,
-      std::map<fxcOutputDataAttributes, std::vector<double> *>
-        &outputDer2CorrEnergy) const = 0;
-
+    excDensityBaseClass(const densityFamilyType familyType,
+                        const std::vector<DensityDescriptorDataAttributes>
+                          &densityDescriptorAttributesList);
     densityFamilyType
     getDensityBasedFamilyType() const;
 
+    const std::vector<DensityDescriptorDataAttributes> &
+    getDensityDescriptorAttributesList() const;
+
+    /**
+     * x and c denotes exchange and correlation respectively
+     */
+    virtual void
+    computeExcVxcFxc(
+      AuxDensityMatrix &         auxDensityMatrix,
+      const std::vector<double> &quadPoints,
+      const std::vector<double> &quadWeights,
+      std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
+      std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
+      const = 0;
+
   protected:
-    densityFamilyType d_familyType;
-    bool              d_isSpinPolarized;
+    virtual void
+    checkInputOutputDataAttributesConsistency(
+      const std::vector<xcOutputDataAttributes> &outputDataAttributes)
+      const = 0;
+
+
+    const densityFamilyType d_familyType;
+    const std::vector<DensityDescriptorDataAttributes>
+      d_densityDescriptorAttributesList;
   };
 
 } // namespace dftfe

@@ -41,6 +41,7 @@
 #include <QuadDataCompositeWrite.h>
 #include <MPIWriteOnFile.h>
 #include "unitTests.h"
+#include <computeAuxProjectedDensityMatrixFromPSI.h>
 
 #include <algorithm>
 #include <cmath>
@@ -2796,14 +2797,28 @@ namespace dftfe
                       d_numEigenValues :
                       d_numEigenValuesRR)));
 
+            updateAuxDensityXCMatrix(d_densityInQuadValues,
+                                     d_gradDensityInQuadValues,
+                                     d_rhoCore,
+                                     d_gradRhoCore,
+                                     d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                                     d_eigenVectorsFlattenedDevice,
+#endif
+                                     eigenValues,
+                                     fermiEnergy,
+                                     fermiEnergyUp,
+                                     fermiEnergyDown,
+                                     d_auxDensityMatrixXCInPtr);
+
             for (unsigned int s = 0; s < 2; ++s)
               {
                 computing_timer.enter_subsection("VEff Computation");
-                kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
-                                                     d_gradDensityInQuadValues,
+
+
+
+                kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixXCInPtr,
                                                      d_phiInQuadValues,
-                                                     d_rhoCore,
-                                                     d_gradRhoCore,
                                                      s);
                 computing_timer.leave_subsection("VEff Computation");
 
@@ -2949,12 +2964,7 @@ namespace dftfe
                             computing_timer.enter_subsection(
                               "VEff Computation");
                             kohnShamDFTEigenOperator.computeVEff(
-                              d_densityInQuadValues,
-                              d_gradDensityInQuadValues,
-                              d_phiInQuadValues,
-                              d_rhoCore,
-                              d_gradRhoCore,
-                              s);
+                              d_auxDensityMatrixXCInPtr, d_phiInQuadValues, s);
                             computing_timer.leave_subsection(
                               "VEff Computation");
                           }
@@ -3080,12 +3090,23 @@ namespace dftfe
                   d_numEigenValues :
                   d_numEigenValuesRR);
 
+            updateAuxDensityXCMatrix(d_densityInQuadValues,
+                                     d_gradDensityInQuadValues,
+                                     d_rhoCore,
+                                     d_gradRhoCore,
+                                     d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                                     d_eigenVectorsFlattenedDevice,
+#endif
+                                     eigenValues,
+                                     fermiEnergy,
+                                     fermiEnergyUp,
+                                     fermiEnergyDown,
+                                     d_auxDensityMatrixXCInPtr);
+
             computing_timer.enter_subsection("VEff Computation");
-            kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
-                                                 d_gradDensityInQuadValues,
-                                                 d_phiInQuadValues,
-                                                 d_rhoCore,
-                                                 d_gradRhoCore);
+            kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixXCInPtr,
+                                                 d_phiInQuadValues);
             computing_timer.leave_subsection("VEff Computation");
 
 
@@ -3454,6 +3475,20 @@ namespace dftfe
               d_phiOutQuadValues,
               dummy);
             computing_timer.leave_subsection("phiTot solve");
+
+            updateAuxDensityXCMatrix(d_densityOutQuadValues,
+                                     d_gradDensityOutQuadValues,
+                                     d_rhoCore,
+                                     d_gradRhoCore,
+                                     d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                                     d_eigenVectorsFlattenedDevice,
+#endif
+                                     eigenValues,
+                                     fermiEnergy,
+                                     fermiEnergyUp,
+                                     fermiEnergyDown,
+                                     d_auxDensityMatrixXCOutPtr);
           }
         if (d_dftParamsPtr->useEnergyResidualTolerance)
           {
@@ -3474,8 +3509,8 @@ namespace dftfe
               d_densityOutQuadValues,
               d_gradDensityInQuadValues,
               d_gradDensityOutQuadValues,
-              d_rhoCore,
-              d_gradRhoCore,
+              d_auxDensityMatrixXCInPtr,
+              d_auxDensityMatrixXCOutPtr,
               d_bQuadValuesAllAtoms,
               d_bCellNonTrivialAtomIds,
               d_localVselfs,
@@ -3513,11 +3548,10 @@ namespace dftfe
               d_phiTotRhoOut,
               d_densityInQuadValues,
               d_densityOutQuadValues,
-              d_gradDensityInQuadValues,
               d_gradDensityOutQuadValues,
               d_densityTotalOutValuesLpspQuad,
-              d_rhoCore,
-              d_gradRhoCore,
+              d_auxDensityMatrixXCInPtr,
+              d_auxDensityMatrixXCOutPtr,
               d_bQuadValuesAllAtoms,
               d_bCellNonTrivialAtomIds,
               d_localVselfs,
@@ -3602,6 +3636,20 @@ namespace dftfe
               }
           }
       }
+
+    updateAuxDensityXCMatrix(d_densityOutQuadValues,
+                             d_gradDensityOutQuadValues,
+                             d_rhoCore,
+                             d_gradRhoCore,
+                             d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                             d_eigenVectorsFlattenedDevice,
+#endif
+                             eigenValues,
+                             fermiEnergy,
+                             fermiEnergyUp,
+                             fermiEnergyDown,
+                             d_auxDensityMatrixXCOutPtr);
 
     const unsigned int numberBandGroups =
       dealii::Utilities::MPI::n_mpi_processes(interBandGroupComm);
@@ -3771,11 +3819,10 @@ namespace dftfe
       d_phiTotRhoOut,
       d_densityInQuadValues,
       d_densityOutQuadValues,
-      d_gradDensityInQuadValues,
       d_gradDensityOutQuadValues,
       d_densityTotalOutValuesLpspQuad,
-      d_rhoCore,
-      d_gradRhoCore,
+      d_auxDensityMatrixXCInPtr,
+      d_auxDensityMatrixXCOutPtr,
       d_bQuadValuesAllAtoms,
       d_bCellNonTrivialAtomIds,
       d_localVselfs,
@@ -5342,6 +5389,266 @@ dftClass<FEOrder, FEOrderElectro, memorySpace>::getNearestAtomDistance() const
 	return d_nearestAtomDistances;
 }
 
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  void
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::updateAuxDensityXCMatrix(
+    const std::vector<
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+      &densityQuadValues,
+    const std::vector<
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+      &                                                  gradDensityQuadValues,
+    const std::map<dealii::CellId, std::vector<double>> &rhoCore,
+    const std::map<dealii::CellId, std::vector<double>> &gradRhoCore,
+    const dftfe::utils::MemoryStorage<dataTypes::number,
+                                      dftfe::utils::MemorySpace::HOST>
+      &eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+    const dftfe::utils::MemoryStorage<dataTypes::number,
+                                      dftfe::utils::MemorySpace::DEVICE>
+      &eigenVectorsFlattenedDevice,
+#endif
+    const std::vector<std::vector<double>> &eigenValues_,
+    const double                            fermiEnergy_,
+    const double                            fermiEnergyUp_,
+    const double                            fermiEnergyDown_,
+    std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixXCPtr)
+  {
+    const bool isGGA =
+      d_excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA;
+    d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureId);
+    const unsigned int totalLocallyOwnedCells =
+      d_basisOperationsPtrHost->nCells();
+    const unsigned int nQuadsPerCell =
+      d_basisOperationsPtrHost->nQuadsPerCell();
+    const unsigned int spinPolarizedFactor = 1 + d_dftParamsPtr->spinPolarized;
+
+    if (d_dftParamsPtr->auxBasisTypeXC == "FE")
+      {
+        std::unordered_map<std::string, std::vector<double>>
+                             densityProjectionInputs;
+        std::vector<double> &densityValsForXC =
+          densityProjectionInputs["densityFunc"];
+        densityValsForXC.resize(2 * totalLocallyOwnedCells * nQuadsPerCell, 0);
+
+        if (spinPolarizedFactor == 1)
+          {
+            for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells;
+                 ++iCell)
+              {
+                const double *cellRhoValues =
+                  densityQuadValues[0].data() + iCell * nQuadsPerCell;
+
+                for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                  densityValsForXC[iCell * nQuadsPerCell + iQuad] =
+                    cellRhoValues[iQuad] / 2.0;
+
+                for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                  densityValsForXC[totalLocallyOwnedCells * nQuadsPerCell +
+                                   iCell * nQuadsPerCell + iQuad] =
+                    cellRhoValues[iQuad] / 2.0;
+              }
+          }
+        else if (spinPolarizedFactor == 2)
+          {
+            for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells;
+                 ++iCell)
+              {
+                const double *cellRhoValues =
+                  densityQuadValues[0].data() + iCell * nQuadsPerCell;
+                const double *cellMagValues =
+                  densityQuadValues[1].data() + iCell * nQuadsPerCell;
+
+                for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                  densityValsForXC[iCell * nQuadsPerCell + iQuad] =
+                    cellRhoValues[iQuad] / 2.0 + cellMagValues[iQuad] / 2.0;
+
+                for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                  densityValsForXC[totalLocallyOwnedCells * nQuadsPerCell +
+                                   iCell * nQuadsPerCell + iQuad] =
+                    cellRhoValues[iQuad] / 2.0 - cellMagValues[iQuad] / 2.0;
+              }
+          }
+
+
+
+        if (d_dftParamsPtr->nonLinearCoreCorrection)
+          {
+            for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells;
+                 ++iCell)
+              {
+                const std::vector<double> &tempRhoCore =
+                  rhoCore.find(d_basisOperationsPtrHost->cellID(iCell))->second;
+
+                for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                  densityValsForXC[iCell * nQuadsPerCell + iQuad] +=
+                    tempRhoCore[iQuad] / 2.0;
+
+                for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                  densityValsForXC[totalLocallyOwnedCells * nQuadsPerCell +
+                                   iCell * nQuadsPerCell + iQuad] +=
+                    tempRhoCore[iQuad] / 2.0;
+              }
+          }
+        if (isGGA)
+          {
+            std::vector<double> &gradDensityValsForXC =
+              densityProjectionInputs["gradDensityFunc"];
+
+            gradDensityValsForXC.resize(2 * totalLocallyOwnedCells *
+                                          nQuadsPerCell * 3,
+                                        0);
+
+
+            if (spinPolarizedFactor == 1)
+              {
+                for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells;
+                     ++iCell)
+                  {
+                    const double *cellGradRhoValues =
+                      gradDensityQuadValues[0].data() +
+                      iCell * nQuadsPerCell * 3;
+
+                    for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                      for (unsigned int idim = 0; idim < 3; ++idim)
+                        gradDensityValsForXC[iCell * nQuadsPerCell * 3 +
+                                             iQuad * 3 + idim] =
+                          cellGradRhoValues[3 * iQuad + idim] / 2.0;
+
+                    for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                      for (unsigned int idim = 0; idim < 3; ++idim)
+                        gradDensityValsForXC[totalLocallyOwnedCells *
+                                               nQuadsPerCell * 3 +
+                                             iCell * nQuadsPerCell * 3 +
+                                             iQuad * 3 + idim] =
+                          cellGradRhoValues[3 * iQuad + idim] / 2.0;
+                  }
+              }
+            else if (spinPolarizedFactor == 2)
+              {
+                for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells;
+                     ++iCell)
+                  {
+                    const double *cellGradRhoValues =
+                      gradDensityQuadValues[0].data() +
+                      iCell * nQuadsPerCell * 3;
+                    const double *cellGradMagValues =
+                      gradDensityQuadValues[1].data() +
+                      iCell * nQuadsPerCell * 3;
+
+
+                    for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                      for (unsigned int idim = 0; idim < 3; ++idim)
+                        gradDensityValsForXC[iCell * nQuadsPerCell * 3 +
+                                             iQuad * 3 + idim] =
+                          cellGradRhoValues[3 * iQuad + idim] / 2.0 +
+                          cellGradMagValues[3 * iQuad + idim] / 2.0;
+
+                    for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                      for (unsigned int idim = 0; idim < 3; ++idim)
+                        gradDensityValsForXC[totalLocallyOwnedCells *
+                                               nQuadsPerCell * 3 +
+                                             iCell * nQuadsPerCell * 3 +
+                                             iQuad * 3 + idim] =
+                          cellGradRhoValues[3 * iQuad + idim] / 2.0 -
+                          cellGradMagValues[3 * iQuad + idim] / 2.0;
+                  }
+              }
+
+
+            if (d_dftParamsPtr->nonLinearCoreCorrection)
+              {
+                for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells;
+                     ++iCell)
+                  {
+                    const std::vector<double> &tempGradRhoCore =
+                      gradRhoCore.find(d_basisOperationsPtrHost->cellID(iCell))
+                        ->second;
+
+                    for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                      for (unsigned int idim = 0; idim < 3; ++idim)
+                        gradDensityValsForXC[iCell * nQuadsPerCell * 3 +
+                                             iQuad * 3 + idim] +=
+                          tempGradRhoCore[3 * iQuad + idim] / 2.0;
+
+                    for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                      for (unsigned int idim = 0; idim < 3; ++idim)
+                        gradDensityValsForXC[totalLocallyOwnedCells *
+                                               nQuadsPerCell * 3 +
+                                             iCell * nQuadsPerCell * 3 +
+                                             iQuad * 3 + idim] +=
+                          tempGradRhoCore[3 * iQuad + idim] / 2.0;
+                  }
+              }
+          }
+
+        auto quadPoints = d_basisOperationsPtrHost->quadPoints();
+
+        auto                 quadWeights = d_basisOperationsPtrHost->JxW();
+        std::vector<double> &quadPointsStdVec =
+          densityProjectionInputs["quadpts"];
+        quadPointsStdVec.resize(quadPoints.size());
+        std::vector<double> &quadWeightsStdVec =
+          densityProjectionInputs["quadWt"];
+        quadWeightsStdVec.resize(quadWeights.size());
+        for (unsigned int iQuad = 0; iQuad < quadWeightsStdVec.size(); ++iQuad)
+          {
+            for (unsigned int idim = 0; idim < 3; ++idim)
+              quadPointsStdVec[3 * iQuad + idim] = quadPoints[3 * iQuad + idim];
+            quadWeightsStdVec[iQuad] = std::real(quadWeights[iQuad]);
+          }
+
+
+        auxDensityMatrixXCPtr->projectDensityStart(densityProjectionInputs);
+
+        auxDensityMatrixXCPtr->projectDensityEnd(mpi_communicator);
+      }
+    else if (d_dftParamsPtr->auxBasisTypeXC == "SlaterAE")
+      {
+#ifndef USE_COMPLEX
+#  ifdef DFTFE_WITH_DEVICE
+        if (d_dftParamsPtr->useDevice)
+          computeAuxProjectedDensityMatrixFromPSI(eigenVectorsFlattenedDevice,
+                                                  d_numEigenValues,
+                                                  eigenValues_,
+                                                  fermiEnergy_,
+                                                  fermiEnergyUp_,
+                                                  fermiEnergyDown_,
+                                                  d_basisOperationsPtrDevice,
+                                                  d_BLASWrapperPtr,
+                                                  d_densityDofHandlerIndex,
+                                                  d_gllQuadratureId,
+                                                  d_kPointWeights,
+                                                  *auxDensityMatrixXCPtr,
+                                                  d_mpiCommParent,
+                                                  mpi_communicator,
+                                                  interpoolcomm,
+                                                  interBandGroupComm,
+                                                  *d_dftParamsPtr);
+#  endif
+        if (!d_dftParamsPtr->useDevice)
+          computeAuxProjectedDensityMatrixFromPSI(eigenVectorsFlattenedHost,
+                                                  d_numEigenValues,
+                                                  eigenValues_,
+                                                  fermiEnergy_,
+                                                  fermiEnergyUp_,
+                                                  fermiEnergyDown_,
+                                                  d_basisOperationsPtrHost,
+                                                  d_BLASWrapperPtrHost,
+                                                  d_densityDofHandlerIndex,
+                                                  d_gllQuadratureId,
+                                                  d_kPointWeights,
+                                                  *auxDensityMatrixXCPtr,
+                                                  d_mpiCommParent,
+                                                  mpi_communicator,
+                                                  interpoolcomm,
+                                                  interBandGroupComm,
+                                                  *d_dftParamsPtr);
+#endif
+      }
+  }
 
 #include "dft.inst.cc"
 } // namespace dftfe

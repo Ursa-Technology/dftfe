@@ -21,6 +21,7 @@
 #include <excWavefunctionNoneClass.h>
 #include <excDensityGGAClass.h>
 #include <excDensityLDAClass.h>
+#include <excDensityLLMGGAClass.h>
 
 namespace dftfe
 {
@@ -67,13 +68,9 @@ namespace dftfe
 
 
   void
-  excManager::init(unsigned int xc_id,
-                   bool         isSpinPolarized,
-                   unsigned int exxFactor,
-                   bool         scaleExchange,
-                   unsigned int scaleExchangeFactor,
-                   bool         computeCorrelation,
-                   std::string  modelXCInputFile)
+  excManager::init(std::string XCType,
+                   bool        isSpinPolarized,
+                   std::string modelXCInputFile)
   {
     clear();
 
@@ -82,149 +79,96 @@ namespace dftfe
 
 
     int exceptParamX = -1, exceptParamC = -1;
-    int isSpinPolarizedXC;
-    if (isSpinPolarized)
+
+
+    if (XCType == "LDA-PZ")
       {
-        isSpinPolarizedXC = XC_POLARIZED;
+        exceptParamX = xc_func_init(d_funcXPtr, XC_LDA_X, XC_POLARIZED);
+        exceptParamC = xc_func_init(d_funcCPtr, XC_LDA_C_PZ, XC_POLARIZED);
+        d_excDensityObjPtr = new excDensityLDAClass(d_funcXPtr, d_funcCPtr);
+
+        d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+      }
+    else if (XCType == "LDA-PW")
+      {
+        exceptParamX = xc_func_init(d_funcXPtr, XC_LDA_X, XC_POLARIZED);
+        exceptParamC = xc_func_init(d_funcCPtr, XC_LDA_C_PW, XC_POLARIZED);
+        d_excDensityObjPtr = new excDensityLDAClass(d_funcXPtr, d_funcCPtr);
+
+
+        d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+      }
+    else if (XCType == "LDA-VWN")
+      {
+        exceptParamX = xc_func_init(d_funcXPtr, XC_LDA_X, XC_POLARIZED);
+        exceptParamC = xc_func_init(d_funcCPtr, XC_LDA_C_VWN, XC_POLARIZED);
+        d_excDensityObjPtr = new excDensityLDAClass(d_funcXPtr, d_funcCPtr);
+
+        d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+      }
+    else if (XCType == "GGA-PBE")
+      {
+        exceptParamX = xc_func_init(d_funcXPtr, XC_GGA_X_PBE, XC_POLARIZED);
+        exceptParamC = xc_func_init(d_funcCPtr, XC_GGA_C_PBE, XC_POLARIZED);
+        d_excDensityObjPtr = new excDensityGGAClass(d_funcXPtr, d_funcCPtr);
+
+        d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+      }
+    else if (XCType == "GGA-RPBE")
+      {
+        exceptParamX = xc_func_init(d_funcXPtr, XC_GGA_X_RPBE, XC_POLARIZED);
+        exceptParamC = xc_func_init(d_funcCPtr, XC_GGA_C_PBE, XC_POLARIZED);
+        d_excDensityObjPtr = new excDensityGGAClass(d_funcXPtr, d_funcCPtr);
+
+        d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+      }
+    else if (XCType == "GGA-LBxPBEc")
+      {
+	      exceptParamX = xc_func_init(d_funcXPtr,XC_GGA_X_LB,XC_POLARIZED);
+	      exceptParamC = xc_func_init(d_funcCPtr,XC_GGA_C_PBE,XC_POLARIZED);
+
+	      d_excDensityObjPtr = new excDensityGGAClass(d_funcXPtr,d_funcCPtr);
+
+	      d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+      }	      
+    else if (XCType == "MLXC-NNLDA")
+      {
+        exceptParamX = xc_func_init(d_funcXPtr, XC_LDA_X, XC_POLARIZED);
+        exceptParamC = xc_func_init(d_funcCPtr, XC_LDA_C_PW, XC_POLARIZED);
+        d_excDensityObjPtr =
+          new excDensityLDAClass(d_funcXPtr, d_funcCPtr, modelXCInputFile);
+
+        d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+      }
+    else if (XCType == "MLXC-NNGGA")
+      {
+        exceptParamX = xc_func_init(d_funcXPtr, XC_GGA_X_PBE, XC_POLARIZED);
+        exceptParamC = xc_func_init(d_funcCPtr, XC_GGA_C_PBE, XC_POLARIZED);
+        d_excDensityObjPtr =
+          new excDensityGGAClass(d_funcXPtr, d_funcCPtr, modelXCInputFile);
+
+        d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+      }
+    else if (XCType == "MLXC-NNLLMGGA")
+      {
+        exceptParamX = xc_func_init(d_funcXPtr, XC_GGA_X_PBE, XC_POLARIZED);
+        exceptParamC = xc_func_init(d_funcCPtr, XC_GGA_C_PBE, XC_POLARIZED);
+        d_excDensityObjPtr =
+          new excDensityLLMGGAClass(d_funcXPtr, d_funcCPtr, modelXCInputFile);
+
+        d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
       }
     else
       {
-        isSpinPolarizedXC = XC_UNPOLARIZED;
-      }
-
-
-    switch (xc_id)
-      {
-        case 1:
-          exceptParamX = xc_func_init(d_funcXPtr, XC_LDA_X, isSpinPolarizedXC);
-          exceptParamC =
-            xc_func_init(d_funcCPtr, XC_LDA_C_PZ, isSpinPolarizedXC);
-          d_excDensityObjPtr = new excDensityLDAClass(d_funcXPtr,
-                                                      d_funcCPtr,
-                                                      isSpinPolarized,
-                                                      scaleExchange,
-                                                      computeCorrelation,
-                                                      scaleExchangeFactor);
-
-          d_excWavefunctionObjPtr =
-            new excWavefunctionNoneClass(isSpinPolarized);
-          break;
-        case 2:
-          exceptParamX = xc_func_init(d_funcXPtr, XC_LDA_X, isSpinPolarizedXC);
-          exceptParamC =
-            xc_func_init(d_funcCPtr, XC_LDA_C_PW, isSpinPolarizedXC);
-          d_excDensityObjPtr = new excDensityLDAClass(d_funcXPtr,
-                                                      d_funcCPtr,
-                                                      isSpinPolarized,
-                                                      scaleExchange,
-                                                      computeCorrelation,
-                                                      scaleExchangeFactor);
-
-          d_excWavefunctionObjPtr =
-            new excWavefunctionNoneClass(isSpinPolarized);
-          break;
-        case 3:
-          exceptParamX = xc_func_init(d_funcXPtr, XC_LDA_X, isSpinPolarizedXC);
-          exceptParamC =
-            xc_func_init(d_funcCPtr, XC_LDA_C_VWN, isSpinPolarizedXC);
-          d_excDensityObjPtr = new excDensityLDAClass(d_funcXPtr,
-                                                      d_funcCPtr,
-                                                      isSpinPolarized,
-                                                      scaleExchange,
-                                                      computeCorrelation,
-                                                      scaleExchangeFactor);
-          d_excWavefunctionObjPtr =
-            new excWavefunctionNoneClass(isSpinPolarized);
-          break;
-        case 4:
-          exceptParamX =
-            xc_func_init(d_funcXPtr, XC_GGA_X_PBE, isSpinPolarizedXC);
-          exceptParamC =
-            xc_func_init(d_funcCPtr, XC_GGA_C_PBE, isSpinPolarizedXC);
-          d_excDensityObjPtr = new excDensityGGAClass(d_funcXPtr,
-                                                      d_funcCPtr,
-                                                      isSpinPolarized,
-                                                      scaleExchange,
-                                                      computeCorrelation,
-                                                      scaleExchangeFactor);
-
-          d_excWavefunctionObjPtr =
-            new excWavefunctionNoneClass(isSpinPolarized);
-          break;
-        case 5:
-          exceptParamX =
-            xc_func_init(d_funcXPtr, XC_GGA_X_RPBE, isSpinPolarizedXC);
-          exceptParamC =
-            xc_func_init(d_funcCPtr, XC_GGA_C_PBE, isSpinPolarizedXC);
-          d_excDensityObjPtr = new excDensityGGAClass(d_funcXPtr,
-                                                      d_funcCPtr,
-                                                      isSpinPolarized,
-                                                      scaleExchange,
-                                                      computeCorrelation,
-                                                      scaleExchangeFactor);
-
-          d_excWavefunctionObjPtr =
-            new excWavefunctionNoneClass(isSpinPolarized);
-          break;
-        case 6:
-          exceptParamX = xc_func_init(d_funcXPtr, XC_LDA_X, isSpinPolarizedXC);
-          exceptParamC =
-            xc_func_init(d_funcCPtr, XC_LDA_C_PW, isSpinPolarizedXC);
-          d_excDensityObjPtr = new excDensityLDAClass(d_funcXPtr,
-                                                      d_funcCPtr,
-                                                      isSpinPolarized,
-                                                      modelXCInputFile,
-                                                      scaleExchange,
-                                                      computeCorrelation,
-                                                      scaleExchangeFactor);
-
-          d_excWavefunctionObjPtr =
-            new excWavefunctionNoneClass(isSpinPolarized);
-          break;
-        case 7:
-          exceptParamX =
-            xc_func_init(d_funcXPtr, XC_GGA_X_PBE, isSpinPolarizedXC);
-          exceptParamC =
-            xc_func_init(d_funcCPtr, XC_GGA_C_PBE, isSpinPolarizedXC);
-          d_excDensityObjPtr = new excDensityGGAClass(d_funcXPtr,
-                                                      d_funcCPtr,
-                                                      isSpinPolarized,
-                                                      modelXCInputFile,
-                                                      scaleExchange,
-                                                      computeCorrelation,
-                                                      scaleExchangeFactor);
-
-          d_excWavefunctionObjPtr =
-            new excWavefunctionNoneClass(isSpinPolarized);
-          break;
-
-	  case 8:
-          exceptParamX =
-            xc_func_init(d_funcXPtr, XC_GGA_X_LB, isSpinPolarizedXC);
-          exceptParamC =
-            xc_func_init(d_funcCPtr, XC_GGA_C_PBE, isSpinPolarizedXC);
-
-	  d_excDensityObjPtr = new excDensityGGAClass(d_funcXPtr,
-                                                      d_funcCPtr,
-                                                      isSpinPolarized,
-                                                      scaleExchange,
-                                                      computeCorrelation,
-                                                      scaleExchangeFactor);
-          d_excWavefunctionObjPtr =
-            new excWavefunctionNoneClass(isSpinPolarized);
-          break;
-        default:
-          std::cout << "Error in xc code \n";
-          break;
-
-          if (exceptParamX != 0 || exceptParamC != 0)
-            {
-              std::cout << "-------------------------------------" << std::endl;
-              std::cout << "Exchange or Correlation Functional not found"
-                        << std::endl;
-              std::cout << "-------------------------------------" << std::endl;
-              exit(-1);
-            }
+        std::cout << "Error in xc code \n";
+        if (exceptParamX != 0 || exceptParamC != 0)
+          {
+            std::cout << "-------------------------------------" << std::endl;
+            std::cout << "Exchange or Correlation Functional not found"
+                      << std::endl;
+            std::cout << "-------------------------------------" << std::endl;
+            exit(-1);
+          }
       }
   }
 

@@ -29,6 +29,8 @@
 #include <dft.h>
 #include <dftUtils.h>
 #include <vectorUtilities.h>
+#include <AuxDensityFE.h>
+#include <AuxDensityMatrixSlater.h>
 
 namespace dftfe
 {
@@ -306,13 +308,47 @@ namespace dftfe
       dftUtils::printCurrentMemoryUsage(mpi_communicator, "Force initUnmoved");
 
 
-    d_excManagerPtr->init(d_dftParamsPtr->xc_id,
-                          (d_dftParamsPtr->spinPolarized == 1) ? true : false,
-                          0.0,   // exx factor
-                          false, // scale exchange
-                          1.0,   // scale exchange factor
-                          true,  // computeCorrelation
+    d_excManagerPtr->init(d_dftParamsPtr->XCType,
+                          true,
                           d_dftParamsPtr->modelXCInputFile);
+
+    if (d_dftParamsPtr->auxBasisTypeXC == "FE")
+      {
+        d_auxDensityMatrixXCInPtr  = std::make_shared<AuxDensityFE>();
+        d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityFE>();
+      }
+    else if (d_dftParamsPtr->auxBasisTypeXC == "SlaterAE")
+      {
+#ifdef DFTFE_WITH_TORCH
+        d_auxDensityMatrixXCInPtr = std::make_shared<AuxDensityMatrixSlater>();
+        // FIXME: extract atomCoords from "atomLocations" (this is a datamember
+        // of dftClass) of type std::vector<std::vector<double>> atomLocations
+        // with each row representing an atom and each column has the following
+        // data: atomic number, valence number,
+        // and x,y,z cartesian coordiantes with respect to origin at domain
+        // center
+        /*
+        d_auxDensityMatrixXCInPtr->reinitAuxDensityMatrix(
+          const std::vector<std::pair<std::string, std::vector<double>>>
+            &atomCoords,
+          d_dftParamsPtr->auxBasisTypeXC,
+          2,
+          5);
+        */
+
+        d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityMatrixSlater>();
+        // FIXME: with same comments as above
+        /*
+        d_auxDensityMatrixXCOutPtr->reinitAuxDensityMatrix(
+          const std::vector<std::pair<std::string, std::vector<double>>>
+            &atomCoords,
+          d_dftParamsPtr->auxBasisTypeXC,
+          2,
+          5);
+        */
+#endif
+      }
+
 
     computing_timer.leave_subsection("unmoved setup");
   }

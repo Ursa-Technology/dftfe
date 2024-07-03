@@ -432,6 +432,13 @@ namespace dftfe
             const unsigned int *lda,
             int *               info);
     void
+    dpotri_(const char *        uplo,
+            const unsigned int *n,
+            double *            A,
+            const unsigned int *lda,
+            int *               info);
+
+    void
     zpotrf_(const char *          uplo,
             const unsigned int *  n,
             std::complex<double> *a,

@@ -51,6 +51,7 @@ SET(TARGET_SRC
   ./src/dft/vselfBinsManager.cc
   ./src/dft/energyCalculator.cc
   ./src/dft/densityCalculator.cc
+  ./src/dft/computeAuxProjectedDensityMatrixFromPSI.cc
   ./src/dft/densityFirstOrderResponseCalculator.cc
   ./src/dft/applyMultipoleDirichletBC.cc
         ./src/dft/setUnitTests.cpp
@@ -58,10 +59,17 @@ SET(TARGET_SRC
   ./src/excManager/excDensityLDAClass.cpp
   ./src/excManager/excWavefunctionBaseClass.cpp
   ./src/excManager/excDensityGGAClass.cpp
+  ./src/excManager/excDensityLLMGGAClass.cpp
   ./src/excManager/excManager.cpp
   ./src/excManager/excWavefunctionNoneClass.cpp
+  ./src/excManager/AuxDensityFE.cpp
+  ./src/excManager/AuxDensityMatrixSlater.cpp
   ./src/excManager/NNGGA.cc
   ./src/excManager/NNLDA.cc
+  ./src/excManager/NNLLMGGA.cpp
+  ./src/excManager/SlaterBasisData.cpp
+  ./src/excManager/SlaterBasisSet.cpp
+  ./src/excManager/SphericalHarmonicFunc.cpp
   ./src/poisson/poissonSolverProblem.cc
         ./src/poisson/MultiVectorPoissonLinearSolverProblem.cpp
   ./src/helmholtz/kerkerSolverProblem.cc
@@ -115,6 +123,7 @@ SET(TARGET_SRC
   ./utils/MPIWriteOnFile.cpp
   ./utils/QuadDataCompositeWrite.cpp
   ./utils/PeriodicTable.cc
+  ./utils/FiniteDifference.cc
   ./src/dft/dftd.cc
   ./src/mdi/MDIEngine.cpp
   ./src/mdi/libraryMDI.cpp

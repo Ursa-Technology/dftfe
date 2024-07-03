@@ -246,17 +246,36 @@ namespace dftfe
               gradvSpin0Values[i] - gradvSpin1Values[i];
           }
       }
+    else
+      {
+        rhoPrimeValues[1].clear();
+        rhoPrimeValues[1].resize(rhoPrimeValues[0].size(), 0);
+        gradRhoPrimeValues[1].clear();
+        gradRhoPrimeValues[1].resize(gradRhoPrimeValues[0].size(), 0);
+      }
 
     for (unsigned int s = 0; s < (1 + d_dftParamsPtr->spinPolarized); ++s)
       {
         computing_timer.enter_subsection("VEffPrime Computation");
-        kohnShamDFTEigenOperator.computeVEffPrime(d_densityInQuadValues,
+
+        updateAuxDensityXCMatrix(d_densityInQuadValues,
+                                 d_gradDensityInQuadValues,
+                                 d_rhoCore,
+                                 d_gradRhoCore,
+                                 d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                                 d_eigenVectorsFlattenedDevice,
+#endif
+                                 eigenValues,
+                                 fermiEnergy,
+                                 fermiEnergyUp,
+                                 fermiEnergyDown,
+                                 d_auxDensityMatrixXCInPtr);
+
+        kohnShamDFTEigenOperator.computeVEffPrime(d_auxDensityMatrixXCInPtr,
                                                   rhoPrimeValues,
-                                                  d_gradDensityInQuadValues,
                                                   gradRhoPrimeValues,
                                                   electrostaticPotPrimeValues,
-                                                  d_rhoCore,
-                                                  d_gradRhoCore,
                                                   s);
         computing_timer.leave_subsection("VEffPrime Computation");
 

@@ -17,62 +17,44 @@
 #ifndef DFTFE_EXCDENSITYGGACLASS_H
 #define DFTFE_EXCDENSITYGGACLASS_H
 
-//#include <NNGGA.h>
+#include <xc.h>
 #include <excDensityBaseClass.h>
-
 namespace dftfe
 {
   class NNGGA;
   class excDensityGGAClass : public excDensityBaseClass
   {
   public:
-    excDensityGGAClass(xc_func_type *funcXPtr,
-                       xc_func_type *funcCPtr,
-                       bool          isSpinPolarized,
-                       bool          scaleExchange,
-                       bool          computeCorrelation,
-                       double        scaleExchangeFactor);
+    excDensityGGAClass(xc_func_type *funcXPtr, xc_func_type *funcCPtr);
+
 
     excDensityGGAClass(xc_func_type *funcXPtr,
                        xc_func_type *funcCPtr,
-                       bool          isSpinPolarized,
-                       std::string   modelXCInputFile,
-                       bool          scaleExchange,
-                       bool          computeCorrelation,
-                       double        scaleExchangeFactor);
+                       std::string   modelXCInputFile);
+
 
     ~excDensityGGAClass();
 
     void
-    computeDensityBasedEnergyDensity(
-      unsigned int                                                    sizeInput,
-      const std::map<rhoDataAttributes, const std::vector<double> *> &rhoData,
-      std::vector<double> &outputExchangeEnergyDensity,
-      std::vector<double> &outputCorrEnergyDensity) const override;
+    computeExcVxcFxc(
+      AuxDensityMatrix &         auxDensityMatrix,
+      const std::vector<double> &quadPoints,
+      const std::vector<double> &quadWeights,
+      std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
+      std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
+      const override;
 
     void
-    computeDensityBasedVxc(
-      unsigned int                                                    sizeInput,
-      const std::map<rhoDataAttributes, const std::vector<double> *> &rhoData,
-      std::map<VeffOutputDataAttributes, std::vector<double> *>
-        &outputDerExchangeEnergy,
-      std::map<VeffOutputDataAttributes, std::vector<double> *>
-        &outputDerCorrEnergy) const override;
-
-    void
-    computeDensityBasedFxc(
-      unsigned int                                                    sizeInput,
-      const std::map<rhoDataAttributes, const std::vector<double> *> &rhoData,
-      std::map<fxcOutputDataAttributes, std::vector<double> *>
-        &outputDer2ExchangeEnergy,
-      std::map<fxcOutputDataAttributes, std::vector<double> *>
-        &outputDer2CorrEnergy) const override;
-
+    checkInputOutputDataAttributesConsistency(
+      const std::vector<xcOutputDataAttributes> &outputDataAttributes)
+      const override;
 
   private:
-    NNGGA *       d_NNGGAPtr;
-    xc_func_type *d_funcXPtr;
-    xc_func_type *d_funcCPtr;
+    NNGGA *             d_NNGGAPtr;
+    xc_func_type *      d_funcXPtr;
+    xc_func_type *      d_funcCPtr;
+    std::vector<double> d_spacingFDStencil;
+    unsigned int        d_vxcDivergenceTermFDStencilSize;
   };
 } // namespace dftfe
 #endif // DFTFE_EXCDENSITYGGACLASS_H

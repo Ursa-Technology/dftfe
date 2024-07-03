@@ -370,15 +370,30 @@ namespace dftfe
             std::vector<std::vector<double>>(
               d_kPointWeights.size(), std::vector<double>(d_numEigenValues)));
 
+        updateAuxDensityXCMatrix(d_densityInQuadValues,
+                                 d_gradDensityInQuadValues,
+                                 d_rhoCore,
+                                 d_gradRhoCore,
+                                 d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                                 d_eigenVectorsFlattenedDevice,
+#endif
+                                 eigenValues,
+                                 fermiEnergy,
+                                 fermiEnergyUp,
+                                 fermiEnergyDown,
+                                 d_auxDensityMatrixXCInPtr);
+
+
         for (unsigned int s = 0; s < 2; ++s)
           {
             computing_timer.enter_subsection("VEff Computation");
-            kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
-                                                 d_gradDensityInQuadValues,
+
+
+            kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixXCInPtr,
                                                  d_phiInQuadValues,
-                                                 d_rhoCore,
-                                                 d_gradRhoCore,
                                                  s);
+
             computing_timer.leave_subsection("VEff Computation");
 
 
@@ -518,12 +533,8 @@ namespace dftfe
                   {
                     computing_timer.enter_subsection("VEff Computation");
                     kohnShamDFTEigenOperator.computeVEff(
-                      d_densityInQuadValues,
-                      d_gradDensityInQuadValues,
-                      d_phiInQuadValues,
-                      d_rhoCore,
-                      d_gradRhoCore,
-                      s);
+                      d_auxDensityMatrixXCInPtr, d_phiInQuadValues, s);
+
                     computing_timer.leave_subsection("VEff Computation");
                   }
                 for (unsigned int kPoint = 0; kPoint < d_kPointWeights.size();
@@ -649,13 +660,23 @@ namespace dftfe
         for (unsigned int kPoint = 0; kPoint < d_kPointWeights.size(); ++kPoint)
           residualNormWaveFunctionsAllkPoints[kPoint].resize(d_numEigenValues);
 
+        updateAuxDensityXCMatrix(d_densityInQuadValues,
+                                 d_gradDensityInQuadValues,
+                                 d_rhoCore,
+                                 d_gradRhoCore,
+                                 d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                                 d_eigenVectorsFlattenedDevice,
+#endif
+                                 eigenValues,
+                                 fermiEnergy,
+                                 fermiEnergyUp,
+                                 fermiEnergyDown,
+                                 d_auxDensityMatrixXCInPtr);
 
         computing_timer.enter_subsection("VEff Computation");
-        kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
-                                             d_gradDensityInQuadValues,
-                                             d_phiInQuadValues,
-                                             d_rhoCore,
-                                             d_gradRhoCore);
+        kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixXCInPtr,
+                                             d_phiInQuadValues);
         computing_timer.leave_subsection("VEff Computation");
 
         for (unsigned int kPoint = 0; kPoint < d_kPointWeights.size(); ++kPoint)
@@ -867,6 +888,20 @@ namespace dftfe
 
     computing_timer.leave_subsection("compute rho");
 
+    updateAuxDensityXCMatrix(d_densityOutQuadValues,
+                             d_gradDensityOutQuadValues,
+                             d_rhoCore,
+                             d_gradRhoCore,
+                             d_eigenVectorsFlattenedHost,
+#ifdef DFTFE_WITH_DEVICE
+                             d_eigenVectorsFlattenedDevice,
+#endif
+                             eigenValues,
+                             fermiEnergy,
+                             fermiEnergyUp,
+                             fermiEnergyDown,
+                             d_auxDensityMatrixXCOutPtr);
+
     //
     // compute integral rhoOut
     //
@@ -1022,11 +1057,10 @@ namespace dftfe
       d_phiTotRhoOut,
       d_densityInQuadValues,
       d_densityOutQuadValues,
-      d_gradDensityInQuadValues,
       d_gradDensityOutQuadValues,
       d_densityTotalOutValuesLpspQuad,
-      d_rhoCore,
-      d_gradRhoCore,
+      d_auxDensityMatrixXCInPtr,
+      d_auxDensityMatrixXCOutPtr,
       d_bQuadValuesAllAtoms,
       d_bCellNonTrivialAtomIds,
       d_localVselfs,

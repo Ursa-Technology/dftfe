@@ -14,15 +14,18 @@
 //
 // ---------------------------------------------------------------------
 //
-// @author Vishal Subramanian
 //
 
 #include <excDensityBaseClass.h>
 
 namespace dftfe
 {
-  excDensityBaseClass::excDensityBaseClass(bool isSpinPolarized)
-    : d_isSpinPolarized(isSpinPolarized)
+  excDensityBaseClass::excDensityBaseClass(
+    const densityFamilyType familyType,
+    const std::vector<DensityDescriptorDataAttributes>
+      &densityDescriptorAttributesList)
+    : d_densityDescriptorAttributesList(densityDescriptorAttributesList)
+    , d_familyType(familyType)
   {}
 
 
@@ -32,4 +35,9 @@ namespace dftfe
     return d_familyType;
   }
 
+  const std::vector<DensityDescriptorDataAttributes> &
+  excDensityBaseClass::getDensityDescriptorAttributesList() const
+  {
+    return d_densityDescriptorAttributesList;
+  }
 } // namespace dftfe

@@ -250,7 +250,6 @@ main(int argc, char *argv[])
     }
   else
     {
-      std::cout<<" running a GS\n";
       dftfe::dftfeWrapper dftfeWrapped(parameter_file,
                                        MPI_COMM_WORLD,
                                        true,

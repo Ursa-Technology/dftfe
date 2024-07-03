@@ -44,10 +44,10 @@ namespace dftfe
                                                                   const ValueType *      Y,
                                                                   ValueType * output) const
     {
-      hadamardProduct(m,
-                      X,
-                      Y,
-                      output);
+      for( unsigned int i = 0; i < m; i++)
+        {
+          output[i] = X[i]*Y[i];
+        }
     }
 
 
@@ -276,7 +276,7 @@ namespace dftfe
                                                                   std::complex<float> * output) const;
 
     // hadamard product
-    template void BLASWrapper<dftfe::utils::MemorySpace::HOST>::hadamardProduct(const unsigned int m,
+    template void BLASWrapper<dftfe::utils::MemorySpace::HOST>::hadamardProductWithConj(const unsigned int m,
                                                                   const double *      X,
                                                                   const double *      Y,
                                                                   double * output) const;

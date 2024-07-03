@@ -832,6 +832,55 @@ namespace dftfe
 
     }
 
+    __global__ void
+    hadamardProductWithConjKernel(
+      const dftfe::size_type                   vecSize,
+      const float *                           xVec,
+      const float *                           yVec,
+      float *                                 outputVec)
+    {
+      for (int i = blockIdx.x * blockDim.x + threadIdx.x;
+           i < vecSize;
+           i += blockDim.x * gridDim.x)
+        {
+          outputVec[i] = yVec[i] * xVec[i];
+        }
+
+    }
+
+    __global__ void
+    hadamardProductWithConjKernel(
+      const dftfe::size_type                   vecSize,
+      const double *                           xVec,
+      const double *                           yVec,
+      double *                                 outputVec)
+    {
+      for (int i = blockIdx.x * blockDim.x + threadIdx.x;
+           i < vecSize;
+           i += blockDim.x * gridDim.x)
+        {
+          outputVec[i] = yVec[i] * xVec[i];
+        }
+
+    }
+
+    __global__ void
+    hadamardProductWithConjKernel(
+      const dftfe::size_type                   vecSize,
+      const dftfe::utils::deviceDoubleComplex *                           xVec,
+      const dftfe::utils::deviceDoubleComplex *                           yVec,
+      dftfe::utils::deviceDoubleComplex *                                 outputVec)
+    {
+      for (int i = blockIdx.x * blockDim.x + threadIdx.x;
+           i < vecSize;
+           i += blockDim.x * gridDim.x)
+        {
+          outputVec[i].x = yVec[i].x * xVec[i].x + yVec[i].y * xVec[i].y;
+          outputVec[i].y = yVec[i].y * xVec[i].x - yVec[i].x * xVec[i].y;
+        }
+
+    }
+
     template <typename ValueType0,
               typename ValueType1,
               typename ValueType2,

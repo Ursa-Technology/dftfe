@@ -32,6 +32,14 @@ namespace dftfe
 {
   namespace utils
   {
+    /**
+   * @brief This class provides the specialisation for Finite element cell.
+     * This class provides the function defintions for shape function calculation at
+     * an arbitrary point inside the cell, checks if a point lies within a
+     * cell by computing its parametric points
+   *
+   * @author Vishal Subramanian, Bikash Kanungo
+     */
     template <size_type dim>
     class FECell : public Cell<dim>
     {

@@ -485,6 +485,8 @@ namespace dftfe
 
       std::vector<size_type> numLocalPointsInCell(numCells,0);
 
+      // Create the bounding box for each process
+      // and share it across to all the processors
       // TODO what to do when there are no cells
       std::vector<double> procLowerLeft(dim,0.0);
       std::vector<double> procUpperRight(dim,0.0);
@@ -513,6 +515,7 @@ namespace dftfe
       std::vector<bool> pointsFoundLocally(numPoints,false);
       std::vector<std::vector<size_type>> cellLocalFoundIds;
       std::vector<std::vector<double>> cellLocalFoundRealCoords;
+      // pointsToCell finds the points from the target pts that lie inside each cell
       pointsToCell<dim,M>(srcCells,
                            targetPts,
                            cellLocalFoundIds,
@@ -528,17 +531,6 @@ namespace dftfe
           appendToVec(mapCellLocalToProcLocal[iCell],
                       cellLocalFoundIds[iCell]);
 
-          //                // This does not work because
-          //                // the data types are different
-          //
-          //                appendToVec(mapCellLocalToGlobal[iCell],
-          //                        cellLocalFoundIds[iCell]);
-          //
-          //                // offset each entry of mapCellLocalToGlobal by locallyOwnedStart
-          //                std::for_each(mapCellLocalToGlobal[iCell].begin(),
-          //                        mapCellLocalToGlobal[iCell].end(),
-          //                        [](global_size_type & x) { x += locallyOwnedStart;});
-
           // initialSize should be zero
           size_type initialSize = mapCellLocalToGlobal[iCell].size();
           size_type finalSize = initialSize + cellLocalFoundIds[iCell].size();
@@ -549,12 +541,10 @@ namespace dftfe
               numLocallyFoundPoints++;
             }
 
-
           appendToVec(mapCellsToRealCoordinates[iCell],
                       cellLocalFoundRealCoords[iCell]);
         }
 
-      //            std::cout<<" In rank = "<<d_thisRank<<" num points foudn locally  = "<<numLocallyFoundPoints<<"\n";
       MPI_Barrier(d_mpiComm);
       double endLocalComp = MPI_Wtime();
       // get the points that are not found locally
@@ -569,19 +559,13 @@ namespace dftfe
             }
         }
 
-      //            std::cout<<" my rank = "<<d_thisRank<<" local start = "<<locallyOwnedStart<<" local end = "<<locallyOwnedEnd<<"\n";
-      //            std::vector<size_type> nonLocalIdsDummy = nonLocalPointLocalIds;
-      //            std::sort(nonLocalIdsDummy.begin(),nonLocalIdsDummy.end());
-      //            if(nonLocalPointLocalIds.size() > 0 )
-      //            {
-      //                std::cout<<"my rank = "<<d_thisRank<<" Num non local points = "<<nonLocalPointLocalIds.size()<< " start = "<< nonLocalIdsDummy[0]<<" end = "<< nonLocalIdsDummy[nonLocalIdsDummy.size()-1]<<"\n";
-      //
-      //            }
-
       std::vector<size_type> sendToProcIds(0);
       std::vector<std::vector<global_size_type>> sendToPointsGlobalIds;
       std::vector<std::vector<double>> sendToPointsCoords;
 
+      // This function takes the points not found locally and find all the
+      // bounding boxes inside which any of the non-local points lie.
+      // This tells the to which processors the points have to be sent
       getTargetPointsToSend<dim,M>(srcCells,
                                     nonLocalPointLocalIds,
                                     nonLocalPointCoordinates,
@@ -596,30 +580,8 @@ namespace dftfe
       std::vector<global_size_type> receivedPointsGlobalIds;
       std::vector<std::vector<double>> receivedPointsCoords;
 
-
-      //            for(size_type iProcIndex = 0 ; iProcIndex < sendToProcIds.size(); iProcIndex++)
-      //            {
-      //                size_type iProcId = sendToProcIds[iProcIndex];
-      //                std::cout<<"my rank "<<d_thisRank<<" send to proc = "<< iProcId<<" Send to proc size = "<<sendToPointsCoords[iProcIndex].size()<<"\n";
-      //                if(sendToPointsGlobalIds[iProcIndex].size() != sendToPointsCoords[iProcIndex].size()/3)
-      //                {
-      //                    std::cout<<" my rank = "<<d_thisRank<<" send to proc = "<< iProcId<<" error in size of the list sent \n";
-      //                }
-      //
-      //                std::vector<global_size_type> sendToProcIdsDummy = sendToPointsGlobalIds[iProcIndex];
-      //
-      //                std::sort(sendToProcIdsDummy.begin(),sendToProcIdsDummy.end());
-      //
-      //                if(sendToProcIdsDummy.size() >  0 )
-      //                {
-      //                    std::cout<<"My rank = "<<d_thisRank<<" send non local range start = "<<sendToProcIdsDummy[0] << " local range end = "<<sendToProcIdsDummy[sendToProcIdsDummy.size()-1]<<"\n";
-      //                }
-      //
-      //                const bool hasDuplicatesSend = std::adjacent_find(sendToProcIdsDummy.begin(), sendToProcIdsDummy.end()) != sendToProcIdsDummy.end();
-      //
-      //                std::cout<<"My rank = "<<d_thisRank<<" send to proc = "<< iProcId<<" send has duplicates = "<<hasDuplicatesSend<<"\n";
-      //            }
-
+      // Receive points from other points that lie inside the bounding box
+      // of this processor
       receivePoints<dim>(sendToProcIds,
                          sendToPointsGlobalIds,
                          sendToPointsCoords,
@@ -638,6 +600,9 @@ namespace dftfe
       std::vector<std::vector<size_type>> cellReceivedPointsFoundIds;
       std::vector<std::vector<double>> cellReceivedPointsFoundRealCoords;
       std::vector<bool> receivedPointsFound(numTotalPointsReceived, false);
+
+      // Search through the points received from other processors to find which of them lie within
+      // the cells of this processor
       pointsToCell<dim,M>(srcCells,
                            receivedPointsCoords,
                            cellReceivedPointsFoundIds,
@@ -649,8 +614,6 @@ namespace dftfe
       std::cout<<std::flush;
       MPI_Barrier(d_mpiComm);
       double endNonLocalComp = MPI_Wtime();
-
-      //            ghostIdCoords.resize(0,std::vector<double>(dim,0.0));
 
       ghostGlobalIds.resize(0);
       std::set<global_size_type> ghostGlobalIdsSet;
@@ -665,22 +628,17 @@ namespace dftfe
               const global_size_type globalId = receivedPointsGlobalIds[pointIndex];
               mapCellLocalToGlobal[iCell][mapCellLocalToGlobalCurrIndex + i] = globalId;
 
-              //                    if (ghostGlobalIdsSet.find(globalId) != ghostGlobalIdsSet.end())
-              //                    {
-              //                        std::cout<<" Error ghost detected multiple times \n";
-              //                    }
               ghostGlobalIdsSet.insert(globalId);
-              //                    ghostGlobalIds.insert(globalId);
 
             }
 
+          // append the list of points to each cell
           appendToVec(mapCellsToRealCoordinates[iCell],
                       cellReceivedPointsFoundRealCoords[iCell]);
         }
 
       MPI_Barrier(d_mpiComm);
       double endNonLocalVecComp = MPI_Wtime();
-      //            std::cout<<"Non local points found = "<<ghostGlobalIdsSet.size()<<"\n";
 
       OptimizedIndexSet<global_size_type> ghostGlobalIdsOptIndexSet(ghostGlobalIdsSet);
 
@@ -695,7 +653,6 @@ namespace dftfe
               size_type pos = -1;
               bool found = true;
               ghostGlobalIdsOptIndexSet.getPosition(globalId, pos, found);
-              //throwException(found, errMsgInFindingPoint);
               mapCellLocalToProcLocal[iCell].push_back(numPoints+pos);
             }
         }
@@ -709,10 +666,6 @@ namespace dftfe
 
           ghostIndex++;
         }
-
-
-      // check of the ghostGlobal Ids is same as the received global ids. Is should match.
-
       std::cout<<std::flush;
       MPI_Barrier(d_mpiComm);
 

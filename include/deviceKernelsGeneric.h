@@ -184,6 +184,11 @@ namespace dftfe
            const ValueType        beta,
            const dftfe::size_type size);
 
+
+      // This kernel interpolates the nodal data to quad data
+      // The function takes the cell level nodal data
+      // and interpolates it to the quad data in each cell
+      // by multiplying with the shape function
             template <typename ValueType1, typename ValueType2>
       void
       interpolateNodalDataToQuadDevice(

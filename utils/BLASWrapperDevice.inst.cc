@@ -471,3 +471,107 @@ BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::copyRealArrsToComplexArr(
       const float *       Y,
       float * output) const;
 
+
+    // stridedBlockScaleColumnWise
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleColumnWise(
+      const dftfe::size_type         contiguousBlockSize,
+      const dftfe::size_type         numContiguousBlocks,
+      const double *            beta,
+      double *       x);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleColumnWise(
+      const dftfe::size_type         contiguousBlockSize,
+      const dftfe::size_type         numContiguousBlocks,
+      const float *            beta,
+      float *       x);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleColumnWise(
+      const dftfe::size_type         contiguousBlockSize,
+      const dftfe::size_type         numContiguousBlocks,
+      const std::complex<float> *            beta,
+      std::complex<float> *       x);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleColumnWise(
+      const dftfe::size_type         contiguousBlockSize,
+      const dftfe::size_type         numContiguousBlocks,
+      const std::complex<double> *            beta,
+      std::complex<double> *       x);
+
+    // for stridedBlockScaleAndAddColumnWise
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const double *          x,
+      const double *         beta,
+      double *               y);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const float *          x,
+      const float *          beta,
+      float *                y);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type      contiguousBlockSize,
+      const dftfe::size_type      numContiguousBlocks,
+      const std::complex<double> *x,
+      const std::complex<double> *beta,
+      std::complex<double> *      y);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddColumnWise(
+      const dftfe::size_type     contiguousBlockSize,
+      const dftfe::size_type     numContiguousBlocks,
+      const std::complex<float> *x,
+      const std::complex<float> *beta,
+      std::complex<float> *      y);
+
+    // for stridedBlockScaleAndAddTwoVecColumnWise
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const double *          x,
+      const double *         alpha,
+      const double *         y,
+      const double *         beta,
+      double *               z);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const float *          x,
+      const float *          alpha,
+      const float *          y,
+      const float *          beta,
+      float *                z);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type      contiguousBlockSize,
+      const dftfe::size_type      numContiguousBlocks,
+      const std::complex<double> *x,
+      const std::complex<double> *alpha,
+      const std::complex<double> *      y,
+      const std::complex<double> *      beta,
+      std::complex<double> *      z);
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleAndAddTwoVecColumnWise(
+      const dftfe::size_type     contiguousBlockSize,
+      const dftfe::size_type     numContiguousBlocks,
+      const std::complex<float> *x,
+      const std::complex<float> *alpha,
+      const std::complex<float> *      y,
+      const std::complex<float> *      beta,
+      std::complex<float> *      z);
+

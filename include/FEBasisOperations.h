@@ -254,6 +254,10 @@ namespace dftfe
       computeInverseSqrtMassVector(const bool basisType = true,
                                    const bool ceoffType = false);
 
+      /**
+       * @brief Computes the stiffness matrix
+       * \grad Ni . \grad Ni.
+       */
       void
       computeStiffnessVector(const bool basisType = true,
                                         const bool ceoffType = false);

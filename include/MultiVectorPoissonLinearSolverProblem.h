@@ -25,6 +25,9 @@
 namespace dftfe
 {
 
+  /*
+   * @brief Extension of the poissonSolverProblem to multi Vector
+   */
   template <dftfe::utils::MemorySpace memorySpace>
   class MultiVectorPoissonLinearSolverProblem : public MultiVectorLinearSolverProblem<memorySpace>
   {
@@ -37,6 +40,10 @@ namespace dftfe
     // Destructor
     ~MultiVectorPoissonLinearSolverProblem();
 
+    /*
+     * @brief reinit function to set up the internal variables
+     * this function calls the computeDiagonal() and preComputeShapeFunction()
+     */
     void  reinit(
       std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
         BLASWrapperPtr,
@@ -102,6 +109,10 @@ namespace dftfe
                                                                     memorySpace> &src,
                             const double omega) const override ;
 
+    /**
+     * @brief function to set data for Rhs Vec.
+     *  @param[in] inputQuadData the value of the right hand side at the quad points
+     */
     void
       setDataForRhsVec(dftfe::utils::MemoryStorage<double, memorySpace>& inputQuadData);
 

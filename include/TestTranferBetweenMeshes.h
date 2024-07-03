@@ -29,6 +29,22 @@
 
 namespace dftfe
 {
+  /**
+   * @brief Unit test that tests the transfer between meshes
+   * @param mpi_comm_parent
+   * @param mpi_comm_domain
+   * @param interpoolcomm
+   * @param interbandgroup_comm
+   * @param FEOrder
+   * @param dftParams
+   * @param atomLocations
+   * @param imageAtomLocations
+   * @param imageIds
+   * @param nearestAtomDistances
+   * @param domainBoundingVectors
+   * @param generateSerialTria
+   * @param generateElectrostaticsTria
+   */
   void
   testTransferFromDftToVxcMesh(
     const MPI_Comm &                        mpi_comm_parent,

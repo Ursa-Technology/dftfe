@@ -32,7 +32,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  InterpolateFromCellToLocalPoints<memorySpace>::getRealCoordinatesOfLocalPoints(unsigned int numPoints,
+  InterpolateFromCellToLocalPoints<memorySpace>::setRealCoordinatesOfLocalPoints(unsigned int numPoints,
                                                                     std::vector<double> coordinates)
   {
     d_numPoints = numPoints;

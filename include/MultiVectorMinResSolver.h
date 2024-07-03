@@ -15,11 +15,14 @@
 
 #include "MultiVectorLinearSolverProblem.h"
 #include "headers.h"
-#include "MultiVectorSolverClass.h"
 #include "BLASWrapper.h"
 namespace dftfe
 {
-  class MultiVectorMinResSolver //: public MultiVectorSolverClass
+  /*
+   * @brief The class provides the MinRES algorithm to solve Ax = b
+   * where A is positive semi-definite matrix
+   */
+  class MultiVectorMinResSolver
   {
   public :
 

@@ -24,7 +24,6 @@
 #include <TypeConfig.h>
 #include <DeviceTypeConfig.h>
 #include <cmath>
-#include "BLASWrapper.h"
 
 namespace dftfe
 {
@@ -45,6 +44,14 @@ namespace dftfe
                       const ValueType *      X,
                       const ValueType *      Y,
                       ValueType * output) const ;
+
+      template <typename ValueType>
+      void
+      hadamardProductWithConj(const unsigned int m,
+                      const ValueType *      X,
+                      const ValueType *      Y,
+                      ValueType * output) const ;
+
       // Real-Single Precision GEMM
       void
       xgemm(const char         transA,
@@ -168,6 +175,14 @@ namespace dftfe
             const ValueType2       alpha,
             const dftfe::size_type n) const;
 
+// Brief
+//      for ( i = 0  i < numContiguousBlocks; i ++)
+//        {
+//          for( j = 0 ; j < contiguousBlockSize; j++)
+//            {
+//              output[j] += input1[i*contiguousBlockSize+j] * input2[i*contiguousBlockSize+j];
+//            }
+//        }
       template <typename ValueType>
       void
       addVecOverContinuousIndex(const dftfe::size_type numContiguousBlocks,
@@ -675,6 +690,12 @@ namespace dftfe
                       const ValueType *      Y,
                       ValueType * output) const ;
 
+      template <typename ValueType>
+      void
+      hadamardProductWithConj(const unsigned int m,
+                              const ValueType *      X,
+                              const ValueType *      Y,
+                              ValueType * output) const ;
 
       // Real-Single Precision GEMM
       void

@@ -23,6 +23,9 @@
 
 namespace dftfe
 {
+  /*
+   * @brief This class provides an interface for the MultivectorSolverClass
+   */
   template <dftfe::utils::MemorySpace memorySpace>
   class MultiVectorLinearSolverProblem
   {

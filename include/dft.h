@@ -397,7 +397,9 @@ namespace dftfe
     const std::vector<std::vector<double>> &
     getAtomLocationsCart() const;
 
-
+    /**
+     * @brief Gets the nearest atom distance for each atom
+     */
     const std::vector<double> & 
 	    getNearestAtomDistance() const;
 
@@ -483,22 +485,34 @@ namespace dftfe
       getEigenValues() const;
 
     /**
-     * @brief Get reference to the fermi enrgy
+     * @brief Get the value of fermi energy
      */
-    double getFermiEnergy();
+    double getFermiEnergy() const ;
 
-    double getNumElectrons();
+    /**
+     * @brief Get the number of electrons
+     */
+    double getNumElectrons() const ;
 
     elpaScalaManager *
     getElpaScalaManager() const;
 #ifdef DFTFE_WITH_DEVICE
 
+    /**
+     * @brief Get the Ptr to Chebyshev solver in device
+     */
      chebyshevOrthogonalizedSubspaceIterationSolverDevice *
       getSubspaceIterationSolverDevice() ;
 #endif
+     /**
+     * @brief Get the Ptr to Chebyshev solver in host
+      */
     chebyshevOrthogonalizedSubspaceIterationSolver *
     getSubspaceIterationSolverHost();
 
+    /**
+     * @brief Function that computes the Eigen space for the Kohn Sham operator.
+     */
     void
     kohnShamEigenSpaceCompute(
       const unsigned int s,
@@ -515,6 +529,9 @@ namespace dftfe
 
 
 #ifdef DFTFE_WITH_DEVICE
+    /**
+     * @brief Function that computes the Eigen space for the Kohn Sham operator in device.
+     */
     void
     kohnShamEigenSpaceCompute(
       const unsigned int s,
@@ -540,13 +557,20 @@ namespace dftfe
       const std::vector<std::vector<double>> &eigenValuesInput,
       const double                            numElectronsInput);
 
+    /**
+     *@brief get the Ptr to the operator class ( Kohn Sham Operator)
+     */
     KohnShamHamiltonianOperator<memorySpace> * getOperatorClass();
 
+    /**
+     *@brief get the index of the DoF Handler corresponding to
+     *
+     */
     unsigned int getDensityDofHandlerIndex();
 
     unsigned int getDensityQuadratureId();
 
-    std::vector<double> &getKPointWeights();
+    const std::vector<double> &getKPointWeights() const;
 
     unsigned int getNumEigenValues() const;
 
@@ -658,13 +682,6 @@ namespace dftfe
 
    const dealii::AffineConstraints<double> *
     getConstraintsVectorElectro();
-
-//    void
-//    solvePhiTotalAllElectronNonPeriodic(
-//      distributedCPUVec<double> &                          x,
-//      const dftfe::utils::MemoryStorage<double,dftfe::utils::MemorySpace::HOST> &rhoValues,
-//      const MPI_Comm &                                     mpiComm_parent,
-//      const MPI_Comm &                                     mpiComm_domain) const;
 
     const MPI_Comm &
     getMPIDomain() const override;

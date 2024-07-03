@@ -38,7 +38,7 @@ namespace dftfe
     InterpolateFromCellToLocalPoints(const std::shared_ptr<const dftfe::utils::FECell<3>> &srcCell,
                                      unsigned int numNodes);
 
-    void getRealCoordinatesOfLocalPoints(unsigned int numPoints,
+    void setRealCoordinatesOfLocalPoints(unsigned int numPoints,
                                     std::vector<double> coordinates);
 
     void interpolate(

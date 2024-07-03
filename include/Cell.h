@@ -34,6 +34,12 @@ namespace dftfe
 {
   namespace utils
   {
+    /**
+   * @brief This class provides the interface that will be required while interpolating a nodal
+     * data to arbitrary set of points.
+   *
+   * @author Vishal Subramanian, Bikash Kanungo
+     */
     template <size_type dim>
     class Cell
     {

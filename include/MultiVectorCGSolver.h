@@ -15,12 +15,15 @@
 
 #include "MultiVectorLinearSolverProblem.h"
 #include "headers.h"
-#include "MultiVectorSolverClass.h"
 #include "BLASWrapper.h"
 
 namespace dftfe
 {
-  class MultiVectorCGSolver //: public MultiVectorSolverClass
+  /*
+   * @brief MultiVector CG solver. This class is an extension of dealiiLinearSolver
+   * but extended to multi vector.
+   */
+  class MultiVectorCGSolver
   {
   public :
 

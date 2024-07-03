@@ -20,7 +20,6 @@
 
 
 #include "InterpolateCellWiseDataToPoints.h"
-//#include "TransferBetweenMeshesBase.h"
 #include "headers.h"
 #include "linearAlgebraOperationsInternal.h"
 #include "linearAlgebraOperations.h"
@@ -29,8 +28,13 @@
 
 namespace dftfe
 {
+  /**
+   * @brief This class provides the interface for the transfer between the meshes
+   *
+   * @tparam memorySpace
+   */
   template <dftfe::utils::MemorySpace memorySpace>
-  class TransferDataBetweenMeshesIncompatiblePartitioning // : public TransferDataBetweenMeshesBase<memorySpace>
+  class TransferDataBetweenMeshesIncompatiblePartitioning
   {
   public:
     TransferDataBetweenMeshesIncompatiblePartitioning(const dealii::MatrixFree<3, double> &matrixFreeMesh1,

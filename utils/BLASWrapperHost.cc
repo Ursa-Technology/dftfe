@@ -37,6 +37,46 @@ namespace dftfe
         }
     }
 
+    template <typename ValueType>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::HOST>::hadamardProductWithConj(const unsigned int m,
+                                                                  const ValueType *      X,
+                                                                  const ValueType *      Y,
+                                                                  ValueType * output) const
+    {
+      hadamardProduct(m,
+                      X,
+                      Y,
+                      output);
+    }
+
+
+    template <>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::HOST>::hadamardProductWithConj(const unsigned int m,
+                                                                          const std::complex<double> *      X,
+                                                                          const std::complex<double> *      Y,
+                                                                          std::complex<double> * output) const
+    {
+
+      for( unsigned int i = 0; i < m; i++)
+        {
+          output[i] = std::conj(X[i])*Y[i];
+        }
+    }
+
+    template <>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::HOST>::hadamardProductWithConj(const unsigned int m,
+                                                                          const std::complex<float> *      X,
+                                                                          const std::complex<float> *      Y,
+                                                                          std::complex<float> * output) const
+    {
+      for( unsigned int i = 0; i < m; i++)
+        {
+          output[i] = std::conj(X[i])*Y[i];
+        }
+    }
 
     void
     BLASWrapper<dftfe::utils::MemorySpace::HOST>::xgemm(
@@ -225,6 +265,36 @@ namespace dftfe
                                   const float *      Y,
                                   float * output) const;
 
+    template void BLASWrapper<dftfe::utils::MemorySpace::HOST>::hadamardProduct(const unsigned int m,
+                                                                  const std::complex<double> *      X,
+                                                                  const std::complex<double> *      Y,
+                                                                  std::complex<double> * output) const;
+
+    template void BLASWrapper<dftfe::utils::MemorySpace::HOST>::hadamardProduct(const unsigned int m,
+                                                                  const std::complex<float> *      X,
+                                                                  const std::complex<float> *      Y,
+                                                                  std::complex<float> * output) const;
+
+    // hadamard product
+    template void BLASWrapper<dftfe::utils::MemorySpace::HOST>::hadamardProduct(const unsigned int m,
+                                                                  const double *      X,
+                                                                  const double *      Y,
+                                                                  double * output) const;
+
+    template void BLASWrapper<dftfe::utils::MemorySpace::HOST>::hadamardProductWithConj( const unsigned int m,
+                                                                  const float *      X,
+                                                                  const float *      Y,
+                                                                  float * output) const;
+
+    template void BLASWrapper<dftfe::utils::MemorySpace::HOST>::hadamardProductWithConj(const unsigned int m,
+                                                                  const std::complex<double> *      X,
+                                                                  const std::complex<double> *      Y,
+                                                                  std::complex<double> * output) const;
+
+    template void BLASWrapper<dftfe::utils::MemorySpace::HOST>::hadamardProductWithConj(const unsigned int m,
+                                                                  const std::complex<float> *      X,
+                                                                  const std::complex<float> *      Y,
+                                                                  std::complex<float> * output) const;
 
 
     void

@@ -83,8 +83,6 @@ namespace dftfe
                                                      std::vector<double>(3,0.0));
 
 
-
-    //      std::cout<<" totla cell = "<<totallyOwnedCellsMesh1<<" quad size = "<<quadPointsMesh2.size()<<"\n";
     typename dealii::DoFHandler<3>::active_cell_iterator
       cellMesh1 = dofHandlerMesh1->begin_active(),
       endcMesh1 = dofHandlerMesh1->end();
@@ -129,7 +127,6 @@ namespace dftfe
     numberDofsPerCell2.resize(totallyOwnedCellsMesh2);
 
     std::vector<std::shared_ptr<const dftfe::utils::Cell<3>>> srcCellsMesh2(0);
-    //    std::cout<<" numcell = "<<iElemIndex<<" totla cell = "<<totallyOwnedCellsMesh1<<" quad size = "<<quadPointsMesh1.size()<<"\n";
     typename dealii::DoFHandler<3>::active_cell_iterator
       cellMesh2 = dofHandlerMesh2->begin_active(),
       endcMesh2 = dofHandlerMesh2->end();
@@ -281,7 +278,6 @@ namespace dftfe
 
 
   template class TransferDataBetweenMeshesIncompatiblePartitioning<dftfe::utils::MemorySpace::HOST>;
-
 #ifdef DFTFE_WITH_DEVICE
   template class TransferDataBetweenMeshesIncompatiblePartitioning<dftfe::utils::MemorySpace::DEVICE>;
 #endif 

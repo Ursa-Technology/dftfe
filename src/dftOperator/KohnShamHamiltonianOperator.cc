@@ -418,7 +418,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  KohnShamHamiltonianOperator<memorySpace>::computeVEff(
+  KohnShamHamiltonianOperator<memorySpace>::setVEff(
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       &vKS_quadValues,

@@ -92,6 +92,10 @@ namespace dftfe
         accumulateAddLocallyOwnedEnd(
           MemoryStorage<ValueType, memorySpace> &dataArray);
 
+        /*
+         * @Brief This function copies the value from the ghost nodes
+         * to its corresponding local node
+         */
         void
         accumulateInsertLocallyOwned(
           MemoryStorage<ValueType, memorySpace> &dataArray,

@@ -192,8 +192,8 @@ SET(TARGET_SRC
         ./src/TransferBetweenMeshes/InterpolateCellWiseDataToPoints.cpp
 	./utils/NodalData.cpp
 	./utils/CompositeData.cpp
-        ./src/unitTests/testMultiVectorCGForPoisson.cpp
-        ./src/unitTests/testDataTransfer.cpp
+        ./utils/unitTests/testMultiVectorCGForPoisson.cpp
+        ./utils/unitTests/testDataTransfer.cpp
   ./src/pseudo/oncv/oncvClass.cc)
 
 IF ("${GPU_LANG}" STREQUAL "cuda")

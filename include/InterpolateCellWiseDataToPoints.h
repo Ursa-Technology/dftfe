@@ -198,7 +198,7 @@ namespace dftfe
       d_tempOutputMemSpace;
 
     std::vector<std::shared_ptr<InterpolateFromCellToLocalPoints<memorySpace>>>
-      d_interpolateLocalObj;
+                 d_interpolateLocalObj;
     unsigned int d_verbosity;
   }; // end of class InterpolateCellWiseDataToPoints
 } // end of namespace dftfe

@@ -55,8 +55,9 @@ namespace functionalTest
       multiPoissonSolver(mpi_comm_parent, mpi_comm_domain);
 
     dealii::ConditionalOStream pcout(std::cout,
-            (dealii::Utilities::MPI::this_mpi_process(mpi_comm_parent) == 0));
-    unsigned int blockSizeInput = 5;
+                                     (dealii::Utilities::MPI::this_mpi_process(
+                                        mpi_comm_parent) == 0));
+    unsigned int               blockSizeInput = 5;
     pcout << " setting block Size to " << blockSizeInput << "\n";
 
     dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
@@ -177,7 +178,7 @@ namespace functionalTest
     for (unsigned int k = 0; k < blockSizeInput; k++)
       {
         expectedOutput = 0;
-	double multFac = k + 1;
+        double multFac = k + 1;
         BLASWrapperPtr->axpby(numQuadsPerCell * totalLocallyOwnedCells,
                               multFac,
                               inputVec.begin(),
@@ -205,7 +206,7 @@ namespace functionalTest
           false, // reuseSmearedChargeRhs
           true); // reinitializeFastConstraints
 
-        dealiiCGSolver.solve(phiTotalSolverProblem, 1e-10, 10000, verbosity );
+        dealiiCGSolver.solve(phiTotalSolverProblem, 1e-10, 10000, verbosity);
 
         dealii::types::global_dof_index indexVec;
         for (unsigned int i = 0; i < expectedOutput.local_size(); i++)
@@ -279,15 +280,14 @@ namespace functionalTest
 
     multiVectorOutputNorm = std::sqrt(multiVectorOutputNorm);
     if (multiVectorOutputNorm > 1e-9)
-    {
-	    pcout <<" Error in TestMultiVectorPoissonSolver = "<<multiVectorOutputNorm<<"\n";
-    }
+      {
+        pcout << " Error in TestMultiVectorPoissonSolver = "
+              << multiVectorOutputNorm << "\n";
+      }
     else
-    {
-	    pcout <<" TestMultiVectorPoissonSolver successful \n";
-
-    }
-
+      {
+        pcout << " TestMultiVectorPoissonSolver successful \n";
+      }
   }
 
 } // end of namespace functionalTest

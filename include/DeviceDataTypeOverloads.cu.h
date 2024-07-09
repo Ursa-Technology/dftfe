@@ -717,16 +717,16 @@ namespace dftfe
       return make_cuFloatComplex(a.real(), a.imag());
     }
 
-    inline bool 
-    makeDataTypeDeviceCompatible( bool a)
+    inline bool
+    makeDataTypeDeviceCompatible(bool a)
     {
-	    return a;
+      return a;
     }
 
     inline bool *
-    makeDataTypeDeviceCompatible( bool *a)
+    makeDataTypeDeviceCompatible(bool *a)
     {
-            return a;
+      return a;
     }
 
   } // namespace utils

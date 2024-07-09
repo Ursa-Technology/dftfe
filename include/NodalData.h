@@ -33,4 +33,3 @@ namespace dftfe
   } // namespace dftUtils
 } // namespace dftfe
 #endif // DFTFE_NODALDATA_H
-

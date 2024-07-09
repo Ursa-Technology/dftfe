@@ -36,24 +36,20 @@ namespace dftfe
      * @param rhs vector for the right hand side values
      */
 
-    virtual dftfe::linearAlgebra::MultiVector<double ,
-                                              memorySpace> &
+    virtual dftfe::linearAlgebra::MultiVector<double, memorySpace> &
     computeRhs(
-               dftfe::linearAlgebra::MultiVector<double ,
-                                                 memorySpace> &       NDBCVec,
-               dftfe::linearAlgebra::MultiVector<double ,
-                                                 memorySpace> &       outputVec,
-               unsigned int                      blockSizeInput) = 0;
+      dftfe::linearAlgebra::MultiVector<double, memorySpace> &NDBCVec,
+      dftfe::linearAlgebra::MultiVector<double, memorySpace> &outputVec,
+      unsigned int blockSizeInput) = 0;
 
     /**
      * @brief Compute A matrix multipled by x.
      *
      */
-    virtual void vmult(dftfe::linearAlgebra::MultiVector<double ,
-                                             memorySpace> &Ax,
-           dftfe::linearAlgebra::MultiVector<double ,
-                                             memorySpace> &x,
-          unsigned int               blockSize) = 0;
+    virtual void
+    vmult(dftfe::linearAlgebra::MultiVector<double, memorySpace> &Ax,
+          dftfe::linearAlgebra::MultiVector<double, memorySpace> &x,
+          unsigned int blockSize) = 0;
 
     /**
      * @brief Apply the constraints to the solution vector.
@@ -67,24 +63,20 @@ namespace dftfe
      *
      */
     virtual void
-    precondition_Jacobi(dftfe::linearAlgebra::MultiVector<double ,
-                                                          memorySpace> &      dst,
-                        const dftfe::linearAlgebra::MultiVector<double ,
-                                                                memorySpace> &src,
-                        const double                     omega) const = 0;
+    precondition_Jacobi(
+      dftfe::linearAlgebra::MultiVector<double, memorySpace> &      dst,
+      const dftfe::linearAlgebra::MultiVector<double, memorySpace> &src,
+      const double omega) const = 0;
 
     /**
      * @brief Apply square-root of the Jacobi preconditioner function.
      *
      */
     virtual void
-    precondition_JacobiSqrt(dftfe::linearAlgebra::MultiVector<double ,
-                                                               memorySpace> &      dst,
-                            const dftfe::linearAlgebra::MultiVector<double ,
-                                                                    memorySpace> &src,
-                            const double omega) const = 0 ;
-
-
+    precondition_JacobiSqrt(
+      dftfe::linearAlgebra::MultiVector<double, memorySpace> &      dst,
+      const dftfe::linearAlgebra::MultiVector<double, memorySpace> &src,
+      const double omega) const = 0;
   };
 
 } // end of namespace dftfe

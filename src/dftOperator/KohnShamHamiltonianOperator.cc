@@ -421,10 +421,9 @@ namespace dftfe
   KohnShamHamiltonianOperator<memorySpace>::setVEff(
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-      &vKS_quadValues,
-    const unsigned int                                   spinIndex)
+      &                vKS_quadValues,
+    const unsigned int spinIndex)
   {
-
     const unsigned int spinPolarizedFactor = 1 + d_dftParamsPtr->spinPolarized;
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
     const unsigned int totalLocallyOwnedCells =
@@ -453,8 +452,9 @@ namespace dftfe
         for (unsigned int qPoint = 0; qPoint < numberQuadraturePoints; ++qPoint)
           {
             // TODO extend to spin polarised case
-            d_VeffJxWHost[qPoint + iCell*numberQuadraturePoints] =
-              vKS_quadValues[0][qPoint + iCell*numberQuadraturePoints] * cellJxWPtr[qPoint];
+            d_VeffJxWHost[qPoint + iCell * numberQuadraturePoints] =
+              vKS_quadValues[0][qPoint + iCell * numberQuadraturePoints] *
+              cellJxWPtr[qPoint];
           }
       }
 
@@ -510,7 +510,7 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   KohnShamHamiltonianOperator<memorySpace>::setVEffExternalPotCorrToZero()
-    {
+  {
     d_basisOperationsPtrHost->reinit(0, 0, d_lpspQuadratureID, false);
     const unsigned int nCells = d_basisOperationsPtrHost->nCells();
     const int nQuadsPerCell   = d_basisOperationsPtrHost->nQuadsPerCell();

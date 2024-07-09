@@ -125,7 +125,7 @@ namespace dftfe
         }
     }
 
-       template <typename ValueType1, typename ValueType2>
+    template <typename ValueType1, typename ValueType2>
     __global__ void
     stridedCopyToBlockTransposeDeviceKernel(
       const dftfe::size_type         contiguousBlockSize,
@@ -146,10 +146,12 @@ namespace dftfe
           dftfe::size_type blockIndex = index / contiguousBlockSize;
           dftfe::size_type intraBlockIndex =
             index - blockIndex * contiguousBlockSize;
-	  dftfe::size_type numCells = blockIndex/transposeBlockSize;
-	  dftfe::size_type shapeFuncIndex =  blockIndex - numCells*transposeBlockSize;
+          dftfe::size_type numCells = blockIndex / transposeBlockSize;
+          dftfe::size_type shapeFuncIndex =
+            blockIndex - numCells * transposeBlockSize;
           dftfe::utils::copyValue(
-            copyToVec + numCells*transposeBlockSize*contiguousBlockSize + intraBlockIndex*transposeBlockSize+ shapeFuncIndex,
+            copyToVec + numCells * transposeBlockSize * contiguousBlockSize +
+              intraBlockIndex * transposeBlockSize + shapeFuncIndex,
             copyFromVec[copyFromVecStartingContiguousBlockIds[blockIndex] +
                         intraBlockIndex]);
         }
@@ -418,7 +420,7 @@ namespace dftfe
         }
     }
 
-        template <typename ValueType1, typename ValueType2>
+    template <typename ValueType1, typename ValueType2>
     __global__ void
     interpolateNodalDataToQuadDeviceKernel(
       const dftfe::size_type numDofsPerElem,
@@ -433,37 +435,33 @@ namespace dftfe
     {
       const dftfe::size_type globalThreadId =
         blockIdx.x * blockDim.x + threadIdx.x;
-      const dftfe::size_type numberEntries =
-        numQuadPoints * numVecs;
+      const dftfe::size_type numberEntries = numQuadPoints * numVecs;
 
       for (dftfe::size_type index = globalThreadId; index < numberEntries;
            index += blockDim.x * gridDim.x)
         {
           dftfe::size_type pointIndex = index / numVecs;
           dftfe::size_type iCellIndex = mapPointToCellIndex[pointIndex];
-          dftfe::size_type iShapeFuncIndex = mapPointToShapeFuncIndex[pointIndex];
+          dftfe::size_type iShapeFuncIndex =
+            mapPointToShapeFuncIndex[pointIndex];
           dftfe::size_type iProcLocalIndex = mapPointToProcLocal[pointIndex];
 
-          dftfe::size_type iVec = index - pointIndex*numVecs;
+          dftfe::size_type iVec = index - pointIndex * numVecs;
 
-	  
 
-          for (dftfe::size_type iParentNode = 0;
-               iParentNode < numDofsPerElem;
+
+          for (dftfe::size_type iParentNode = 0; iParentNode < numDofsPerElem;
                iParentNode++)
             {
-
               dftfe::utils::copyValue(
-                quadValues + iProcLocalIndex*numVecs + iVec,
+                quadValues + iProcLocalIndex * numVecs + iVec,
                 dftfe::utils::add(
-                  quadValues[iProcLocalIndex*numVecs + iVec],
+                  quadValues[iProcLocalIndex * numVecs + iVec],
                   dftfe::utils::mult(
                     parentShapeFunc[iShapeFuncIndex + iParentNode],
-                    parentNodalValues[iCellIndex*numVecs*numDofsPerElem
-                                      + iParentNode  +
-                                       iVec* numDofsPerElem])));
+                    parentNodalValues[iCellIndex * numVecs * numDofsPerElem +
+                                      iParentNode + iVec * numDofsPerElem])));
             }
-	    
         }
     }
 
@@ -628,20 +626,20 @@ namespace dftfe
       stridedCopyToBlockTranspose(
         const dftfe::size_type         contiguousBlockSize,
         const dftfe::size_type         transposeBlockSize,
-	const dftfe::size_type         numContiguousBlocks,
+        const dftfe::size_type         numContiguousBlocks,
         const ValueType1 *             copyFromVec,
         ValueType2 *                   copyToVecBlock,
-        const dftfe::global_size_type *copyFromVecStartingContiguousBlockIds)	            
+        const dftfe::global_size_type *copyFromVecStartingContiguousBlockIds)
       {
 #ifdef DFTFE_WITH_DEVICE_LANG_CUDA
-        stridedCopyToBlockTransposeDeviceKernel<<<(contiguousBlockSize *
-                                          numContiguousBlocks) /
-                                             dftfe::utils::DEVICE_BLOCK_SIZE +
-                                           1,
-                                         dftfe::utils::DEVICE_BLOCK_SIZE>>>(
+        stridedCopyToBlockTransposeDeviceKernel<<<
+          (contiguousBlockSize * numContiguousBlocks) /
+              dftfe::utils::DEVICE_BLOCK_SIZE +
+            1,
+          dftfe::utils::DEVICE_BLOCK_SIZE>>>(
           contiguousBlockSize,
-         transposeBlockSize,
-	  numContiguousBlocks,
+          transposeBlockSize,
+          numContiguousBlocks,
           dftfe::utils::makeDataTypeDeviceCompatible(copyFromVec),
           dftfe::utils::makeDataTypeDeviceCompatible(copyToVecBlock),
           copyFromVecStartingContiguousBlockIds);
@@ -655,7 +653,7 @@ namespace dftfe
           0,
           0,
           contiguousBlockSize,
-	  transposeBlockSize,
+          transposeBlockSize,
           numContiguousBlocks,
           dftfe::utils::makeDataTypeDeviceCompatible(copyFromVec),
           dftfe::utils::makeDataTypeDeviceCompatible(copyToVecBlock),
@@ -1056,7 +1054,7 @@ namespace dftfe
       }
 
 
-            template <typename ValueType1, typename ValueType2>
+      template <typename ValueType1, typename ValueType2>
       void
       interpolateNodalDataToQuadDevice(
         const dftfe::size_type numDofsPerElem,
@@ -1071,17 +1069,13 @@ namespace dftfe
       {
 #ifdef DFTFE_WITH_DEVICE_LANG_CUDA
         interpolateNodalDataToQuadDeviceKernel<<<
-          (numQuadPoints * numVecs) /
-              dftfe::utils::DEVICE_BLOCK_SIZE +
-            1,
+          (numQuadPoints * numVecs) / dftfe::utils::DEVICE_BLOCK_SIZE + 1,
           dftfe::utils::DEVICE_BLOCK_SIZE>>>(
           numDofsPerElem,
           numQuadPoints,
           numVecs,
-          dftfe::utils::makeDataTypeDeviceCompatible(
-            parentShapeFunc),
-          dftfe::utils::makeDataTypeDeviceCompatible(
-            mapPointToCellIndex),
+          dftfe::utils::makeDataTypeDeviceCompatible(parentShapeFunc),
+          dftfe::utils::makeDataTypeDeviceCompatible(mapPointToCellIndex),
           dftfe::utils::makeDataTypeDeviceCompatible(mapPointToProcLocal),
           dftfe::utils::makeDataTypeDeviceCompatible(mapPointToShapeFuncIndex),
           dftfe::utils::makeDataTypeDeviceCompatible(parentNodalValues),
@@ -1089,19 +1083,15 @@ namespace dftfe
 #elif DFTFE_WITH_DEVICE_LANG_HIP
         hipLaunchKernelGGL(
           interpolateNodalDataToQuadDeviceKernel,
-          (numQuadPoints * numVecs) /
-              dftfe::utils::DEVICE_BLOCK_SIZE +
-            1,
+          (numQuadPoints * numVecs) / dftfe::utils::DEVICE_BLOCK_SIZE + 1,
           dftfe::utils::DEVICE_BLOCK_SIZE,
           0,
           0,
           numDofsPerElem,
           numQuadPoints,
           numVecs,
-          dftfe::utils::makeDataTypeDeviceCompatible(
-            parentShapeFunc),
-          dftfe::utils::makeDataTypeDeviceCompatible(
-            mapPointToCellIndex),
+          dftfe::utils::makeDataTypeDeviceCompatible(parentShapeFunc),
+          dftfe::utils::makeDataTypeDeviceCompatible(mapPointToCellIndex),
           dftfe::utils::makeDataTypeDeviceCompatible(mapPointToProcLocal),
           dftfe::utils::makeDataTypeDeviceCompatible(mapPointToShapeFuncIndex),
           dftfe::utils::makeDataTypeDeviceCompatible(parentNodalValues),
@@ -1110,18 +1100,17 @@ namespace dftfe
       }
 
 
-	          template void
-        interpolateNodalDataToQuadDevice(
-          const dftfe::size_type numDofsPerElem,
-          const dftfe::size_type numQuadPoints,
-          const dftfe::size_type numVecs,
-          const double *     parentShapeFunc,
-          const size_type *     mapPointToCellIndex,
-          const size_type *     mapPointToProcLocal,
-          const size_type *     mapPointToShapeFuncIndex,
-          const double *     parentNodalValues,
-        double *           quadValues
-          );
+      template void
+      interpolateNodalDataToQuadDevice(
+        const dftfe::size_type numDofsPerElem,
+        const dftfe::size_type numQuadPoints,
+        const dftfe::size_type numVecs,
+        const double *         parentShapeFunc,
+        const size_type *      mapPointToCellIndex,
+        const size_type *      mapPointToProcLocal,
+        const size_type *      mapPointToShapeFuncIndex,
+        const double *         parentNodalValues,
+        double *               quadValues);
 
 
       template void
@@ -1439,12 +1428,12 @@ namespace dftfe
         const dftfe::global_size_type *copyFromVecStartingContiguousBlockIds);
 
       template void
-	      stridedCopyToBlockTranspose
-	      (const dftfe::size_type         contiguousBlockSize,
+      stridedCopyToBlockTranspose(
+        const dftfe::size_type         contiguousBlockSize,
         const dftfe::size_type         transposeBlockSize,
         const dftfe::size_type         numContiguousBlocks,
-        const double *             copyFromVec,
-        double *                   copyToVecBlock,
+        const double *                 copyFromVec,
+        double *                       copyToVecBlock,
         const dftfe::global_size_type *copyFromVecStartingContiguousBlockIds);
 
       // strided copy to block constant stride

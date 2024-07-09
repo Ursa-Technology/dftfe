@@ -247,12 +247,14 @@ namespace dftfe
 
             dftfe::utils::copyValue(
               &dataArray[ownedLocalIndicesForTargetProcs[blockId] * blockSize +
-                         intraBlockId].x,
+                         intraBlockId]
+                 .x,
               dftfe::utils::realPartDevice(recvBuffer[i]));
 
             dftfe::utils::copyValue(
               &dataArray[ownedLocalIndicesForTargetProcs[blockId] * blockSize +
-                         intraBlockId].y,
+                         intraBlockId]
+                 .y,
               dftfe::utils::imagPartDevice(recvBuffer[i]));
           }
       }
@@ -275,12 +277,14 @@ namespace dftfe
 
             dftfe::utils::copyValue(
               &dataArray[ownedLocalIndicesForTargetProcs[blockId] * blockSize +
-                         intraBlockId].x,
+                         intraBlockId]
+                 .x,
               dftfe::utils::realPartDevice(recvBuffer[i]));
 
             dftfe::utils::copyValue(
               &dataArray[ownedLocalIndicesForTargetProcs[blockId] * blockSize +
-                         intraBlockId].y,
+                         intraBlockId]
+                 .y,
               dftfe::utils::imagPartDevice(recvBuffer[i]));
           }
       }
@@ -307,12 +311,14 @@ namespace dftfe
 
             dftfe::utils::copyValue(
               &dataArray[ownedLocalIndicesForTargetProcs[blockId] * blockSize +
-                         intraBlockId].x,
+                         intraBlockId]
+                 .x,
               recvValReal);
 
             dftfe::utils::copyValue(
               &dataArray[ownedLocalIndicesForTargetProcs[blockId] * blockSize +
-                         intraBlockId].y,
+                         intraBlockId]
+                 .y,
               recvValImag);
           }
       }
@@ -418,7 +424,7 @@ namespace dftfe
         const MemoryStorage<ValueTypeComm, utils::MemorySpace::DEVICE>
           &recvBuffer,
         const utils::MemoryStorage<size_type, utils::MemorySpace::DEVICE>
-                                                                    &             ownedLocalIndicesForTargetProcs,
+          &             ownedLocalIndicesForTargetProcs,
         const size_type blockSize,
         const size_type locallyOwnedSize,
         const size_type ghostSize,
@@ -632,7 +638,7 @@ namespace dftfe
       accumInsertLocallyOwnedContrRecvBufferFromTargetProcs(
         const MemoryStorage<double, utils::MemorySpace::DEVICE> &recvBuffer,
         const utils::MemoryStorage<size_type, utils::MemorySpace::DEVICE>
-                                                                 &             ownedLocalIndicesForTargetProcs,
+          &             ownedLocalIndicesForTargetProcs,
         const size_type blockSize,
         const size_type locallyOwnedSize,
         const size_type ghostSize,
@@ -644,7 +650,7 @@ namespace dftfe
       accumInsertLocallyOwnedContrRecvBufferFromTargetProcs(
         const MemoryStorage<float, utils::MemorySpace::DEVICE> &recvBuffer,
         const utils::MemoryStorage<size_type, utils::MemorySpace::DEVICE>
-                                                                 &             ownedLocalIndicesForTargetProcs,
+          &             ownedLocalIndicesForTargetProcs,
         const size_type blockSize,
         const size_type locallyOwnedSize,
         const size_type ghostSize,
@@ -656,7 +662,7 @@ namespace dftfe
       accumInsertLocallyOwnedContrRecvBufferFromTargetProcs(
         const MemoryStorage<float, utils::MemorySpace::DEVICE> &recvBuffer,
         const utils::MemoryStorage<size_type, utils::MemorySpace::DEVICE>
-                                                                &             ownedLocalIndicesForTargetProcs,
+          &             ownedLocalIndicesForTargetProcs,
         const size_type blockSize,
         const size_type locallyOwnedSize,
         const size_type ghostSize,
@@ -670,12 +676,12 @@ namespace dftfe
         const MemoryStorage<std::complex<double>, utils::MemorySpace::DEVICE>
           &recvBuffer,
         const utils::MemoryStorage<size_type, utils::MemorySpace::DEVICE>
-                       &             ownedLocalIndicesForTargetProcs,
+          &             ownedLocalIndicesForTargetProcs,
         const size_type blockSize,
         const size_type locallyOwnedSize,
         const size_type ghostSize,
         MemoryStorage<std::complex<double>, dftfe::utils::MemorySpace::DEVICE>
-                                    &                          dataArray,
+          &                          dataArray,
         dftfe::utils::deviceStream_t deviceCommStream);
 
     template void
@@ -685,12 +691,12 @@ namespace dftfe
         const MemoryStorage<std::complex<float>, utils::MemorySpace::DEVICE>
           &recvBuffer,
         const utils::MemoryStorage<size_type, utils::MemorySpace::DEVICE>
-                       &             ownedLocalIndicesForTargetProcs,
+          &             ownedLocalIndicesForTargetProcs,
         const size_type blockSize,
         const size_type locallyOwnedSize,
         const size_type ghostSize,
         MemoryStorage<std::complex<double>, dftfe::utils::MemorySpace::DEVICE>
-                                    &                          dataArray,
+          &                          dataArray,
         dftfe::utils::deviceStream_t deviceCommStream);
 
     template void
@@ -699,12 +705,12 @@ namespace dftfe
         const MemoryStorage<std::complex<float>, utils::MemorySpace::DEVICE>
           &recvBuffer,
         const utils::MemoryStorage<size_type, utils::MemorySpace::DEVICE>
-                       &             ownedLocalIndicesForTargetProcs,
+          &             ownedLocalIndicesForTargetProcs,
         const size_type blockSize,
         const size_type locallyOwnedSize,
         const size_type ghostSize,
         MemoryStorage<std::complex<float>, dftfe::utils::MemorySpace::DEVICE>
-                                    &                          dataArray,
+          &                          dataArray,
         dftfe::utils::deviceStream_t deviceCommStream);
 
     template void

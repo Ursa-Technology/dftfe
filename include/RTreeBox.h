@@ -36,38 +36,38 @@ namespace dftfe
 {
   namespace utils
   {
-
     namespace
     {
-      namespace BA = boost::adaptors;
-      namespace BG = boost::geometry;
-      namespace BGI = boost::geometry::index;
+      namespace BA   = boost::adaptors;
+      namespace BG   = boost::geometry;
+      namespace BGI  = boost::geometry::index;
       namespace BGIA = boost::geometry::index::adaptors;
-    }
-      /** @brief A class template to perform RTreeBox based searching on
-       * overlap of boxes
-       *
-       * @tparam dim Dimension of the box
-       * @param M maximum allowable nodes in a branch of RTreeBox (i.e., maximum number of child nodes a parent node can have)
+    } // namespace
+    /** @brief A class template to perform RTreeBox based searching on
+     * overlap of boxes
+     *
+     * @tparam dim Dimension of the box
+     * @param M maximum allowable nodes in a branch of RTreeBox (i.e., maximum number of child nodes a parent node can have)
      */
     template <size_type dim, size_type M>
     class RTreeBox
     {
     public:
-      using BPoint = BG::model::point<double, dim, BG::cs::cartesian>;
-      using BBox = BG::model::box<BPoint>;
-      using BBoxI = std::pair<BBox, size_type>;
+      using BPoint     = BG::model::point<double, dim, BG::cs::cartesian>;
+      using BBox       = BG::model::box<BPoint>;
+      using BBoxI      = std::pair<BBox, size_type>;
       using BRTreeBoxI = BGI::rtree<BBoxI, BGI::quadratic<M>>;
 
       /**
-             * @brief Constructor
-             *
-             *
+       * @brief Constructor
+       *
+       *
        */
       RTreeBox(std::vector<std::shared_ptr<const Cell<dim>>> sourceCells);
 
       std::vector<std::vector<size_type>>
-      getOverlappingCellIds(std::vector<std::shared_ptr<const Cell<dim>>> queryCells);
+      getOverlappingCellIds(
+        std::vector<std::shared_ptr<const Cell<dim>>> queryCells);
 
     private:
       //
@@ -76,7 +76,7 @@ namespace dftfe
       BRTreeBoxI d_rtree;
 
     }; // end of class RTreeBox
-  }// end of namespace utils
-}// end of namespace dftfe
+  }    // end of namespace utils
+} // end of namespace dftfe
 #include <../utils/RTreeBox.t.cc>
 #endif // dftfeRTreeBox_h

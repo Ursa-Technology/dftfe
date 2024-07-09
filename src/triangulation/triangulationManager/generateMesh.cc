@@ -928,8 +928,8 @@ namespace dftfe
     dealii::parallel::distributed::Triangulation<3> &serialTriangulation,
     std::vector<std::vector<bool>> &parallelTriaCurrentRefinement,
     std::vector<std::vector<bool>> &serialTriaCurrentRefinement,
-    const bool                                       generateSerialTria,
-    const bool enableManualRepartitioning )
+    const bool                      generateSerialTria,
+    const bool                      enableManualRepartitioning)
   {
     generateCoarseMesh(parallelTriangulation);
     if (generateSerialTria)
@@ -985,8 +985,7 @@ namespace dftfe
 
                 if (generateSerialTria)
                   {
-                    serialTriaCurrentRefinement.push_back(
-                      std::vector<bool>());
+                    serialTriaCurrentRefinement.push_back(std::vector<bool>());
 
                     // First refine serial mesh
                     refineSerialMesh(cellIdToCellRefineFlagMapLocal,

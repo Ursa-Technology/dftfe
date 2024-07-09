@@ -37,40 +37,38 @@ namespace dftfe
 {
   namespace utils
   {
-
     namespace
     {
-      namespace BA = boost::adaptors;
-      namespace BG = boost::geometry;
-      namespace BGI = boost::geometry::index;
+      namespace BA   = boost::adaptors;
+      namespace BG   = boost::geometry;
+      namespace BGI  = boost::geometry::index;
       namespace BGIA = boost::geometry::index::adaptors;
-    }
+    } // namespace
 
-      /** @brief A class template to perform RTreePoint based searching on
-       * overlap of boxes
-       *
-       * @tparam dim Dimension of the box
-       * @param M maximum allowable nodes in a branch of RTreePoint (i.e., maximum number of child nodes a parent node can have)
+    /** @brief A class template to perform RTreePoint based searching on
+     * overlap of boxes
+     *
+     * @tparam dim Dimension of the box
+     * @param M maximum allowable nodes in a branch of RTreePoint (i.e., maximum number of child nodes a parent node can have)
      */
     template <size_type dim, size_type M>
     class RTreePoint
     {
     public:
-
-      using BPoint = BG::model::point<double, dim, BG::cs::cartesian>;
-      using BBox = BG::model::box<BPoint>;
-      using BPointI = std::pair<BPoint, size_type>;
+      using BPoint       = BG::model::point<double, dim, BG::cs::cartesian>;
+      using BBox         = BG::model::box<BPoint>;
+      using BPointI      = std::pair<BPoint, size_type>;
       using BRTreePointI = BGI::rtree<BPointI, BGI::quadratic<M>>;
       /**
-             * @brief Constructor
-             *
-             *
+       * @brief Constructor
+       *
+       *
        */
-      RTreePoint(const std::vector<std::vector<double>> & srcPts);
+      RTreePoint(const std::vector<std::vector<double>> &srcPts);
 
       std::vector<size_type>
-      getPointIdsInsideBox(const std::vector<double> & lowerLeft,
-                           const std::vector<double> & upperRight);
+      getPointIdsInsideBox(const std::vector<double> &lowerLeft,
+                           const std::vector<double> &upperRight);
 
     private:
       //
@@ -79,7 +77,7 @@ namespace dftfe
       std::shared_ptr<BRTreePointI> d_rtreePtr;
 
     }; // end of class RTreePoint
-  }// end of namespace utils
-}// end of namespace dftfe
+  }    // end of namespace utils
+} // end of namespace dftfe
 #include <../utils/RTreePoint.t.cc>
 #endif // dftfeRTreePoint_h

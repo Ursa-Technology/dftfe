@@ -50,9 +50,9 @@ namespace dftfe
         dftfe::linearAlgebra::MultiVector<ValueTypeBasisCoeff, memorySpace>
           &nodalData,
         dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
-          & mapQuadIdToProcId) const
+          &mapQuadIdToProcId) const
     {
-      for ( unsigned int iCell = 0 ; iCell < d_nCells; iCell += d_cellsBlockSize)
+      for (unsigned int iCell = 0; iCell < d_nCells; iCell += d_cellsBlockSize)
         {
           unsigned int maxCellId = std::min(iCell + d_cellsBlockSize, d_nCells);
           std::pair<unsigned int, unsigned int> cellRange =
@@ -274,9 +274,9 @@ namespace dftfe
         const ValueTypeBasisCoeff *quadratureValues,
         const ValueTypeBasisCoeff *quadratureGradients,
         dftfe::linearAlgebra::MultiVector<ValueTypeBasisCoeff, memorySpace>
-          &                                         nodalData,
+          &nodalData,
         dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
-                                                    & mapQuadIdToProcId,
+          &                                         mapQuadIdToProcId,
         const std::pair<unsigned int, unsigned int> cellRange) const
     {
       const ValueTypeBasisCoeff scalarCoeffAlpha = ValueTypeBasisCoeff(1.0),
@@ -285,54 +285,77 @@ namespace dftfe
         {
           auto shapePtr = d_shapeFunctionData.find(d_quadratureID)->second;
 
-          std::cout<<"size of shape func = "<<shapePtr.size()<<"\n";
+          std::cout << "size of shape func = " << shapePtr.size() << "\n";
 
           auto jxwHost = d_JxWData.find(d_quadratureID)->second;
-          std::cout<<" nVec = "<<d_nVectors<<" quads per cell = "<< d_nQuadsPerCell[d_quadratureIndex]<<
-            " jxw size = "<<jxwHost.size()<<" tempCellValuesBlockCoeff size = "<<tempCellValuesBlockCoeff.size();
-          std::cout<<" mapQuadIdToProcId size = "<<mapQuadIdToProcId.size()<<"\n";
+          std::cout << " nVec = " << d_nVectors << " quads per cell = "
+                    << d_nQuadsPerCell[d_quadratureIndex]
+                    << " jxw size = " << jxwHost.size()
+                    << " tempCellValuesBlockCoeff size = "
+                    << tempCellValuesBlockCoeff.size();
+          std::cout << " mapQuadIdToProcId size = " << mapQuadIdToProcId.size()
+                    << "\n";
 
-//          for ( unsigned int iQuad = 0; iQuad < d_nQuadsPerCell[d_quadratureIndex]*(cellRange.second - cellRange.first); iQuad++)
-//            {
-//              for (unsigned int iBlock = 0; iBlock< d_nVectors;iBlock++)
-//              {
-//                tempCellValuesBlock.data()[iQuad*d_nVectors+ iBlock] =
-//                  (*(quadratureValues + cellRange.first*d_nQuadsPerCell[d_quadratureIndex]*d_nVectors + iQuad*d_nVectors+ iBlock))*
-//                  (*(d_JxWData.find(d_quadratureID)->second.data() + cellRange.first*d_nQuadsPerCell[d_quadratureIndex] + iQuad));
-//              }
-//            }
+          //          for ( unsigned int iQuad = 0; iQuad <
+          //          d_nQuadsPerCell[d_quadratureIndex]*(cellRange.second -
+          //          cellRange.first); iQuad++)
+          //            {
+          //              for (unsigned int iBlock = 0; iBlock<
+          //              d_nVectors;iBlock++)
+          //              {
+          //                tempCellValuesBlock.data()[iQuad*d_nVectors+ iBlock]
+          //                =
+          //                  (*(quadratureValues +
+          //                  cellRange.first*d_nQuadsPerCell[d_quadratureIndex]*d_nVectors
+          //                  + iQuad*d_nVectors+ iBlock))*
+          //                  (*(d_JxWData.find(d_quadratureID)->second.data() +
+          //                  cellRange.first*d_nQuadsPerCell[d_quadratureIndex]
+          //                  + iQuad));
+          //              }
+          //            }
 
           d_BLASWrapperPtr->stridedBlockScaleCopy(
             d_nVectors,
-            d_nQuadsPerCell[d_quadratureIndex]*(cellRange.second - cellRange.first),
+            d_nQuadsPerCell[d_quadratureIndex] *
+              (cellRange.second - cellRange.first),
             1.0,
-            this->JxWBasisData().data() + cellRange.first*d_nQuadsPerCell[d_quadratureIndex],
+            this->JxWBasisData().data() +
+              cellRange.first * d_nQuadsPerCell[d_quadratureIndex],
             quadratureValues,
             tempCellValuesBlockCoeff.data(),
-            mapQuadIdToProcId.data() + cellRange.first*d_nQuadsPerCell[d_quadratureIndex]);
+            mapQuadIdToProcId.data() +
+              cellRange.first * d_nQuadsPerCell[d_quadratureIndex]);
 
-//          for( unsigned int iCell = cellRange.first ;iCell < cellRange.second; iCell++)
-//            {
-//              unsigned int cellId = iCell - cellRange.first;
-//
-//              for ( unsigned int iBlock =  0 ; iBlock < d_nVectors;  iBlock++)
-//                {
-//                  for ( unsigned int iNode = 0 ; iNode < d_nDofsPerCell; iNode++ )
-//                    {
-//                      for ( unsigned int jQuad = 0 ; jQuad < d_nQuadsPerCell[d_quadratureIndex]; jQuad++)
-//                        {
-//                          tempCellNodalData.data()[cellId*d_nDofsPerCell*d_nVectors + iNode*d_nVectors + iBlock] +=
-//                            1.0*(*(tempCellValuesBlock.data() + cellId*d_nQuadsPerCell[d_quadratureIndex]*d_nVectors + jQuad*d_nVectors + iBlock))*
-//                            d_shapeFunctionData.find(d_quadratureID)->second.data()[iNode +jQuad*d_nDofsPerCell];
-//                        }
-//                    }
-//                }
-//
-//            }
+          //          for( unsigned int iCell = cellRange.first ;iCell <
+          //          cellRange.second; iCell++)
+          //            {
+          //              unsigned int cellId = iCell - cellRange.first;
+          //
+          //              for ( unsigned int iBlock =  0 ; iBlock < d_nVectors;
+          //              iBlock++)
+          //                {
+          //                  for ( unsigned int iNode = 0 ; iNode <
+          //                  d_nDofsPerCell; iNode++ )
+          //                    {
+          //                      for ( unsigned int jQuad = 0 ; jQuad <
+          //                      d_nQuadsPerCell[d_quadratureIndex]; jQuad++)
+          //                        {
+          //                          tempCellNodalData.data()[cellId*d_nDofsPerCell*d_nVectors
+          //                          + iNode*d_nVectors + iBlock] +=
+          //                            1.0*(*(tempCellValuesBlock.data() +
+          //                            cellId*d_nQuadsPerCell[d_quadratureIndex]*d_nVectors
+          //                            + jQuad*d_nVectors + iBlock))*
+          //                            d_shapeFunctionData.find(d_quadratureID)->second.data()[iNode
+          //                            +jQuad*d_nDofsPerCell];
+          //                        }
+          //                    }
+          //                }
+          //
+          //            }
 
 
 
-            d_BLASWrapperPtr->xgemmStridedBatched(
+          d_BLASWrapperPtr->xgemmStridedBatched(
             'N',
             'T',
             d_nVectors,
@@ -353,7 +376,8 @@ namespace dftfe
         }
       if (quadratureGradients != NULL)
         {
-          std::cout<<" integrate with shape function is not tested with gradients \n";
+          std::cout
+            << " integrate with shape function is not tested with gradients \n";
           if (areAllCellsCartesian)
             {
               tempQuadratureGradientsData.template copyFrom<memorySpace>(
@@ -509,11 +533,11 @@ namespace dftfe
     template class FEBasisOperations<double,
                                      double,
                                      dftfe::utils::MemorySpace::DEVICE>;
-#if defined(USE_COMPLEX)
+#  if defined(USE_COMPLEX)
     template class FEBasisOperations<std::complex<double>,
                                      double,
                                      dftfe::utils::MemorySpace::DEVICE>;
-#endif
+#  endif
 #endif
 
   } // namespace basis

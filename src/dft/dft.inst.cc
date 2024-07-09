@@ -111,4 +111,3 @@ template class dftClass<8, 15, dftfe::utils::MemorySpace::DEVICE>;
 template class dftClass<8, 16, dftfe::utils::MemorySpace::DEVICE>;
 #  endif
 #endif
-

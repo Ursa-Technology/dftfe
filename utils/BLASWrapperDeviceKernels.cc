@@ -332,14 +332,16 @@ namespace dftfe
         }
     }
 
-    // x[iblock*blocksize+intrablockindex]= beta[intrablockindex]*x[iblock*blocksize+intrablockindex]
-    // strided block wise
+    // x[iblock*blocksize+intrablockindex]=
+    // beta[intrablockindex]*x[iblock*blocksize+intrablockindex] strided block
+    // wise
     template <typename ValueType>
     __global__ void
-    stridedBlockScaleColumnWiseKernel(const dftfe::size_type contiguousBlockSize,
-                                            const dftfe::size_type numContiguousBlocks,
-                                            const ValueType *      beta,
-                                            ValueType *       x)
+    stridedBlockScaleColumnWiseKernel(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const ValueType *      beta,
+      ValueType *            x)
     {
       const dftfe::size_type globalThreadId =
         blockIdx.x * blockDim.x + threadIdx.x;
@@ -350,24 +352,26 @@ namespace dftfe
            index += blockDim.x * gridDim.x)
         {
           dftfe::size_type blockIndex = index / contiguousBlockSize;
-          dftfe::size_type intrablockindex = index - blockIndex*contiguousBlockSize;
-          dftfe::utils::copyValue(
-            x + index,
-            dftfe::utils::mult(beta[intrablockindex], x[index])
-          );
+          dftfe::size_type intrablockindex =
+            index - blockIndex * contiguousBlockSize;
+          dftfe::utils::copyValue(x + index,
+                                  dftfe::utils::mult(beta[intrablockindex],
+                                                     x[index]));
         }
     }
 
-    // y[iblock*blocksize+intrablockindex]= y[iblock*blocksize+intrablockindex] +
+    // y[iblock*blocksize+intrablockindex]= y[iblock*blocksize+intrablockindex]
+    // +
     //                                      beta[intrablockindex]*x[iblock*blocksize+intrablockindex]
     // strided block wise
     template <typename ValueType>
     __global__ void
-    stridedBlockScaleAndAddColumnWiseKernel(const dftfe::size_type contiguousBlockSize,
-                                  const dftfe::size_type numContiguousBlocks,
-                                const ValueType *            x,
-                                const ValueType *       beta,
-                                ValueType *            y)
+    stridedBlockScaleAndAddColumnWiseKernel(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const ValueType *      x,
+      const ValueType *      beta,
+      ValueType *            y)
     {
       const dftfe::size_type globalThreadId =
         blockIdx.x * blockDim.x + threadIdx.x;
@@ -378,26 +382,29 @@ namespace dftfe
            index += blockDim.x * gridDim.x)
         {
           dftfe::size_type blockIndex = index / contiguousBlockSize;
-          dftfe::size_type intrablockindex = index - blockIndex*contiguousBlockSize;
+          dftfe::size_type intrablockindex =
+            index - blockIndex * contiguousBlockSize;
           dftfe::utils::copyValue(
             y + index,
-            dftfe::utils::add( y[index] ,dftfe::utils::mult(beta[intrablockindex], x[index]))
-            );
+            dftfe::utils::add(
+              y[index], dftfe::utils::mult(beta[intrablockindex], x[index])));
         }
     }
 
-    // z[iblock*blocksize+intrablockindex]= alpha[intrablockindex]*x[iblock*blocksize+intrablockindex] +
+    // z[iblock*blocksize+intrablockindex]=
+    // alpha[intrablockindex]*x[iblock*blocksize+intrablockindex] +
     //                                      beta[intrablockindex]*y[iblock*blocksize+intrablockindex]
     // strided block wise
     template <typename ValueType>
     __global__ void
-    stridedBlockScaleAndAddTwoVecColumnWiseKernel(const dftfe::size_type contiguousBlockSize,
-                                            const dftfe::size_type numContiguousBlocks,
-                                            const ValueType *            x,
-                                            const ValueType *       alpha,
-                                            const ValueType *            y,
-                                            const ValueType *            beta,
-                                            ValueType *            z)
+    stridedBlockScaleAndAddTwoVecColumnWiseKernel(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const ValueType *      x,
+      const ValueType *      alpha,
+      const ValueType *      y,
+      const ValueType *      beta,
+      ValueType *            z)
     {
       const dftfe::size_type globalThreadId =
         blockIdx.x * blockDim.x + threadIdx.x;
@@ -408,12 +415,13 @@ namespace dftfe
            index += blockDim.x * gridDim.x)
         {
           dftfe::size_type blockIndex = index / contiguousBlockSize;
-          dftfe::size_type intrablockindex = index - blockIndex*contiguousBlockSize;
+          dftfe::size_type intrablockindex =
+            index - blockIndex * contiguousBlockSize;
           dftfe::utils::copyValue(
             z + index,
-            dftfe::utils::add(dftfe::utils::mult(alpha[intrablockindex], x[index]),
-                              dftfe::utils::mult(beta[intrablockindex], y[index]))
-          );
+            dftfe::utils::add(
+              dftfe::utils::mult(alpha[intrablockindex], x[index]),
+              dftfe::utils::mult(beta[intrablockindex], y[index])));
         }
     }
 
@@ -783,102 +791,84 @@ namespace dftfe
         }
     }
 
-        __global__ void
-    hadamardProductKernel(
-      const dftfe::size_type                   vecSize,
-      const float *                           xVec,
-      const float *                           yVec,
-      float *                                 outputVec)
+    __global__ void
+    hadamardProductKernel(const dftfe::size_type vecSize,
+                          const float *          xVec,
+                          const float *          yVec,
+                          float *                outputVec)
     {
-      for (int i = blockIdx.x * blockDim.x + threadIdx.x;
-           i < vecSize;
+      for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < vecSize;
            i += blockDim.x * gridDim.x)
         {
           outputVec[i] = yVec[i] * xVec[i];
         }
-
     }
 
     __global__ void
-    hadamardProductKernel(
-      const dftfe::size_type                   vecSize,
-      const double *                           xVec,
-      const double *                           yVec,
-      double *                                 outputVec)
+    hadamardProductKernel(const dftfe::size_type vecSize,
+                          const double *         xVec,
+                          const double *         yVec,
+                          double *               outputVec)
     {
-      for (int i = blockIdx.x * blockDim.x + threadIdx.x;
-           i < vecSize;
+      for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < vecSize;
            i += blockDim.x * gridDim.x)
         {
           outputVec[i] = yVec[i] * xVec[i];
         }
-
     }
 
     __global__ void
-    hadamardProductKernel(
-      const dftfe::size_type                   vecSize,
-      const dftfe::utils::deviceDoubleComplex *                           xVec,
-      const dftfe::utils::deviceDoubleComplex *                           yVec,
-      dftfe::utils::deviceDoubleComplex *                                 outputVec)
+    hadamardProductKernel(const dftfe::size_type                   vecSize,
+                          const dftfe::utils::deviceDoubleComplex *xVec,
+                          const dftfe::utils::deviceDoubleComplex *yVec,
+                          dftfe::utils::deviceDoubleComplex *      outputVec)
     {
-      for (int i = blockIdx.x * blockDim.x + threadIdx.x;
-           i < vecSize;
+      for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < vecSize;
            i += blockDim.x * gridDim.x)
         {
           outputVec[i].x = yVec[i].x * xVec[i].x - yVec[i].y * xVec[i].y;
-	  outputVec[i].y = yVec[i].x * xVec[i].y + yVec[i].y * xVec[i].x;
+          outputVec[i].y = yVec[i].x * xVec[i].y + yVec[i].y * xVec[i].x;
         }
-
     }
 
     __global__ void
-    hadamardProductWithConjKernel(
-      const dftfe::size_type                   vecSize,
-      const float *                           xVec,
-      const float *                           yVec,
-      float *                                 outputVec)
+    hadamardProductWithConjKernel(const dftfe::size_type vecSize,
+                                  const float *          xVec,
+                                  const float *          yVec,
+                                  float *                outputVec)
     {
-      for (int i = blockIdx.x * blockDim.x + threadIdx.x;
-           i < vecSize;
+      for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < vecSize;
            i += blockDim.x * gridDim.x)
         {
           outputVec[i] = yVec[i] * xVec[i];
         }
-
     }
 
     __global__ void
-    hadamardProductWithConjKernel(
-      const dftfe::size_type                   vecSize,
-      const double *                           xVec,
-      const double *                           yVec,
-      double *                                 outputVec)
+    hadamardProductWithConjKernel(const dftfe::size_type vecSize,
+                                  const double *         xVec,
+                                  const double *         yVec,
+                                  double *               outputVec)
     {
-      for (int i = blockIdx.x * blockDim.x + threadIdx.x;
-           i < vecSize;
+      for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < vecSize;
            i += blockDim.x * gridDim.x)
         {
           outputVec[i] = yVec[i] * xVec[i];
         }
-
     }
 
     __global__ void
-    hadamardProductWithConjKernel(
-      const dftfe::size_type                   vecSize,
-      const dftfe::utils::deviceDoubleComplex *                           xVec,
-      const dftfe::utils::deviceDoubleComplex *                           yVec,
-      dftfe::utils::deviceDoubleComplex *                                 outputVec)
+    hadamardProductWithConjKernel(const dftfe::size_type vecSize,
+                                  const dftfe::utils::deviceDoubleComplex *xVec,
+                                  const dftfe::utils::deviceDoubleComplex *yVec,
+                                  dftfe::utils::deviceDoubleComplex *outputVec)
     {
-      for (int i = blockIdx.x * blockDim.x + threadIdx.x;
-           i < vecSize;
+      for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < vecSize;
            i += blockDim.x * gridDim.x)
         {
           outputVec[i].x = yVec[i].x * xVec[i].x + yVec[i].y * xVec[i].y;
           outputVec[i].y = yVec[i].y * xVec[i].x - yVec[i].x * xVec[i].y;
         }
-
     }
 
     template <typename ValueType0,

@@ -79,7 +79,7 @@ namespace dftfe
     const bool                              generateElectrostaticsTria);
 
 #endif
-}
+} // namespace dftfe
 
 
 #endif // DFTFE_TESTTRANFERBETWEENMESHES_H

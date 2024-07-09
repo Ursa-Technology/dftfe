@@ -24,9 +24,10 @@
 
 namespace dftfe
 {
-  template<dftfe::utils::MemorySpace memorySpace>
-  MultiVectorPoissonLinearSolverProblem<memorySpace>::MultiVectorPoissonLinearSolverProblem( const MPI_Comm &mpi_comm_parent,
-                                                                                            const MPI_Comm &mpi_comm_domain)
+  template <dftfe::utils::MemorySpace memorySpace>
+  MultiVectorPoissonLinearSolverProblem<memorySpace>::
+    MultiVectorPoissonLinearSolverProblem(const MPI_Comm &mpi_comm_parent,
+                                          const MPI_Comm &mpi_comm_domain)
     : mpi_communicator(mpi_comm_domain)
     , d_mpi_parent(mpi_comm_parent)
     , n_mpi_processes(dealii::Utilities::MPI::n_mpi_processes(mpi_comm_domain))
@@ -37,8 +38,8 @@ namespace dftfe
   {
     d_isComputeDiagonalA               = true;
     d_constraintMatrixPtr              = NULL;
-    d_blockedXPtr              = NULL;
-    d_blockedNDBCPtr               = NULL;
+    d_blockedXPtr                      = NULL;
+    d_blockedNDBCPtr                   = NULL;
     d_matrixFreeQuadratureComponentRhs = -1;
     d_matrixFreeVectorComponent        = -1;
     d_blockSize                        = 0;
@@ -47,11 +48,10 @@ namespace dftfe
     d_isMeanValueConstraintComputed = false;
   }
 
-  template<dftfe::utils::MemorySpace memorySpace>
-  MultiVectorPoissonLinearSolverProblem<memorySpace>::~MultiVectorPoissonLinearSolverProblem()
-  {
-
-  }
+  template <dftfe::utils::MemorySpace memorySpace>
+  MultiVectorPoissonLinearSolverProblem<
+    memorySpace>::~MultiVectorPoissonLinearSolverProblem()
+  {}
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
@@ -59,64 +59,63 @@ namespace dftfe
   {
     d_isComputeDiagonalA               = true;
     d_constraintMatrixPtr              = NULL;
-    d_blockedXPtr              = NULL;
-    d_blockedNDBCPtr               = NULL;
+    d_blockedXPtr                      = NULL;
+    d_blockedNDBCPtr                   = NULL;
     d_matrixFreeQuadratureComponentRhs = -1;
     d_matrixFreeVectorComponent        = -1;
     d_blockSize                        = 0;
     d_diagonalA.resize(0);
     d_diagonalSqrtA.resize(0);
     d_isMeanValueConstraintComputed = false;
-    d_cellBlockSize = 100;
+    d_cellBlockSize                 = 100;
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
   MultiVectorPoissonLinearSolverProblem<memorySpace>::reinit(
-  std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
-    BLASWrapperPtr,
+    std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
+      BLASWrapperPtr,
     std::shared_ptr<
       dftfe::basis::FEBasisOperations<double, double, memorySpace>>
-      basisOperationsPtr,
+                                             basisOperationsPtr,
     const dealii::AffineConstraints<double> &constraintMatrix,
     const unsigned int                       matrixFreeVectorComponent,
-    const unsigned int matrixFreeQuadratureComponentRhs,
-    const unsigned int matrixFreeQuadratureComponentAX,
-    bool isComputeMeanValueConstraint)
+    const unsigned int                       matrixFreeQuadratureComponentRhs,
+    const unsigned int                       matrixFreeQuadratureComponentAX,
+    bool                                     isComputeMeanValueConstraint)
   {
     int this_process;
     MPI_Comm_rank(mpi_communicator, &this_process);
     MPI_Barrier(mpi_communicator);
     double time = MPI_Wtime();
 
-    d_BLASWrapperPtr = BLASWrapperPtr;
+    d_BLASWrapperPtr            = BLASWrapperPtr;
     d_basisOperationsPtr        = basisOperationsPtr;
     d_matrixFreeDataPtr         = &(basisOperationsPtr->matrixFreeData());
     d_constraintMatrixPtr       = &constraintMatrix;
     d_matrixFreeVectorComponent = matrixFreeVectorComponent;
-    d_matrixFreeQuadratureComponentRhs =
-      matrixFreeQuadratureComponentRhs;
-    d_matrixFreeQuadratureComponentAX =
-      matrixFreeQuadratureComponentAX;
+    d_matrixFreeQuadratureComponentRhs = matrixFreeQuadratureComponentRhs;
+    d_matrixFreeQuadratureComponentAX  = matrixFreeQuadratureComponentAX;
 
 
-    d_locallyOwnedSize = d_basisOperationsPtr->nOwnedDofs();
+    d_locallyOwnedSize     = d_basisOperationsPtr->nOwnedDofs();
     d_numberDofsPerElement = d_basisOperationsPtr->nDofsPerCell();
-    d_numCells       = d_basisOperationsPtr->nCells();
-    d_nQuadsPerCell = d_basisOperationsPtr->nQuadsPerCell();
+    d_numCells             = d_basisOperationsPtr->nCells();
+    d_nQuadsPerCell        = d_basisOperationsPtr->nQuadsPerCell();
 
-    d_cellBlockSize = std::min(d_cellBlockSize,d_numCells);
+    d_cellBlockSize = std::min(d_cellBlockSize, d_numCells);
 
-     d_basisOperationsPtr->reinit(1,
+    d_basisOperationsPtr->reinit(1,
                                  d_cellBlockSize,
                                  d_matrixFreeQuadratureComponentRhs,
-                                 false, // TODO should this be set to true
+                                 false,  // TODO should this be set to true
                                  false); // TODO should this be set to true
     d_dofHandler =
       &d_matrixFreeDataPtr->get_dof_handler(d_matrixFreeVectorComponent);
 
-    pcout<<" local size = "<<d_locallyOwnedSize<< " dof elum  = "<<d_numberDofsPerElement<<
-      " numCells = "<<d_numCells<<"\n";
+    pcout << " local size = " << d_locallyOwnedSize
+          << " dof elum  = " << d_numberDofsPerElement
+          << " numCells = " << d_numCells << "\n";
 
     if (isComputeMeanValueConstraint)
       {
@@ -125,52 +124,53 @@ namespace dftfe
       }
 
 
-    d_basisOperationsPtr->computeStiffnessVector(true,true);
+    d_basisOperationsPtr->computeStiffnessVector(true, true);
 
     preComputeShapeFunction();
     computeDiagonalA();
     d_isComputeDiagonalA = true;
 
 
-    d_basisOperationsPtr->computeCellStiffnessMatrix(matrixFreeQuadratureComponentAX,
-                                                     d_numCells,
-                                                     true,
-                                                     false); // TODO setting the coeff to false
+    d_basisOperationsPtr->computeCellStiffnessMatrix(
+      matrixFreeQuadratureComponentAX,
+      d_numCells,
+      true,
+      false); // TODO setting the coeff to false
     d_cellStiffnessMatrixPtr =
-    &(d_basisOperationsPtr->cellStiffnessMatrixBasisData());
+      &(d_basisOperationsPtr->cellStiffnessMatrixBasisData());
 
 
-    pcout<<" size of basis vec stiffness vec = "<<d_cellStiffnessMatrixPtr->size()<<"\n";
-    pcout<<" size of stiffness vec = "<<d_cellShapeFunctionGradientIntegral.size()<<"\n";
+    pcout << " size of basis vec stiffness vec = "
+          << d_cellStiffnessMatrixPtr->size() << "\n";
+    pcout << " size of stiffness vec = "
+          << d_cellShapeFunctionGradientIntegral.size() << "\n";
 
     double l2NormStiff = 0.0;
-    for ( unsigned int iNode = 0; iNode < d_numCells*d_numberDofsPerElement*d_numberDofsPerElement; iNode++)
+    for (unsigned int iNode = 0;
+         iNode < d_numCells * d_numberDofsPerElement * d_numberDofsPerElement;
+         iNode++)
       {
-        double diff = d_cellShapeFunctionGradientIntegral[iNode] - d_cellStiffnessMatrixPtr->data()[iNode];
-        l2NormStiff += diff*diff;
+        double diff = d_cellShapeFunctionGradientIntegral[iNode] -
+                      d_cellStiffnessMatrixPtr->data()[iNode];
+        l2NormStiff += diff * diff;
       }
 
-    MPI_Allreduce(MPI_IN_PLACE,
-                  &l2NormStiff,
-                  1,
-                  MPI_DOUBLE,
-                  MPI_SUM,
-                  mpi_communicator);
+    MPI_Allreduce(
+      MPI_IN_PLACE, &l2NormStiff, 1, MPI_DOUBLE, MPI_SUM, mpi_communicator);
 
-    pcout<<" error in stiff = "<<l2NormStiff<<"\n";
+    pcout << " error in stiff = " << l2NormStiff << "\n";
 
-    d_constraintsInfo.initialize(
-      d_matrixFreeDataPtr->get_vector_partitioner(
-        matrixFreeVectorComponent),
-      constraintMatrix);
+    d_constraintsInfo.initialize(d_matrixFreeDataPtr->get_vector_partitioner(
+                                   matrixFreeVectorComponent),
+                                 constraintMatrix);
 
-    d_inc              = 1;
+    d_inc                 = 1;
     d_negScalarCoeffAlpha = -1.0 / (4.0 * M_PI);
-    d_scalarCoeffAlpha = 1.0 / (4.0 * M_PI);
-    d_beta             = 0.0;
-    d_alpha            = 1.0;
-    d_transA           = 'N';
-    d_transB           = 'N';
+    d_scalarCoeffAlpha    = 1.0 / (4.0 * M_PI);
+    d_beta                = 0.0;
+    d_alpha               = 1.0;
+    d_transA              = 'N';
+    d_transB              = 'N';
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -189,7 +189,8 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  MultiVectorPoissonLinearSolverProblem<memorySpace>::computeMeanValueConstraint()
+  MultiVectorPoissonLinearSolverProblem<
+    memorySpace>::computeMeanValueConstraint()
   {
     AssertThrow(false, dftUtils::ExcNotImplementedYet());
   }
@@ -199,14 +200,15 @@ namespace dftfe
   MultiVectorPoissonLinearSolverProblem<memorySpace>::computeDiagonalA()
   {
     d_diagonalA = d_basisOperationsPtr->inverseStiffnessVectorBasisData();
-    d_diagonalSqrtA = d_basisOperationsPtr->inverseSqrtStiffnessVectorBasisData();
+    d_diagonalSqrtA =
+      d_basisOperationsPtr->inverseSqrtStiffnessVectorBasisData();
 
     d_blockSize = 1;
 
-    dftfe::poissonSolverProblem<2,2> phiTotalSolverProblem(mpi_communicator);
+    dftfe::poissonSolverProblem<2, 2> phiTotalSolverProblem(mpi_communicator);
 
 
-    dftfe::distributedCPUVec<double>      expectedOutput;
+    dftfe::distributedCPUVec<double> expectedOutput;
 
     dftfe::vectorTools::createDealiiVector<double>(
       d_matrixFreeDataPtr->get_vector_partitioner(d_matrixFreeVectorComponent),
@@ -216,26 +218,25 @@ namespace dftfe
     std::map<dealii::types::global_dof_index, double> atoms;
     std::map<dealii::CellId, std::vector<double>>     smearedChargeValues;
 
-    phiTotalSolverProblem.reinit(
-      d_basisOperationsPtr,
-      expectedOutput,
-      *d_constraintMatrixPtr,
-      d_matrixFreeVectorComponent,
-      d_matrixFreeQuadratureComponentRhs,
-      d_matrixFreeQuadratureComponentAX,
-      atoms,
-      smearedChargeValues,
-      d_matrixFreeQuadratureComponentAX,
-      *d_rhsQuadDataPtr,
-      true,  // isComputeDiagonalA
-      false, // isComputeMeanValueConstraint
-      false, // smearedNuclearCharges
-      true,  // isRhoValues
-      false, // isGradSmearedChargeRhs
-      0,     // smearedChargeGradientComponentId
-      false, // storeSmearedChargeRhs
-      false, // reuseSmearedChargeRhs
-      true); // reinitializeFastConstraints
+    phiTotalSolverProblem.reinit(d_basisOperationsPtr,
+                                 expectedOutput,
+                                 *d_constraintMatrixPtr,
+                                 d_matrixFreeVectorComponent,
+                                 d_matrixFreeQuadratureComponentRhs,
+                                 d_matrixFreeQuadratureComponentAX,
+                                 atoms,
+                                 smearedChargeValues,
+                                 d_matrixFreeQuadratureComponentAX,
+                                 *d_rhsQuadDataPtr,
+                                 true,  // isComputeDiagonalA
+                                 false, // isComputeMeanValueConstraint
+                                 false, // smearedNuclearCharges
+                                 true,  // isRhoValues
+                                 false, // isGradSmearedChargeRhs
+                                 0,     // smearedChargeGradientComponentId
+                                 false, // storeSmearedChargeRhs
+                                 false, // reuseSmearedChargeRhs
+                                 true); // reinitializeFastConstraints
 
 
     distributedCPUVec<double> rhsTempVec, outputVec;
@@ -253,45 +254,44 @@ namespace dftfe
     rhsTempVec = 1.0;
 
     outputVec = 0.0;
-    phiTotalSolverProblem.precondition_Jacobi(
-      outputVec,
-      rhsTempVec,
-      0.3);
+    phiTotalSolverProblem.precondition_Jacobi(outputVec, rhsTempVec, 0.3);
 
-    double l2NormDiag = 0.0 ;
-    double l2NormSqrtDiag = 0.0 ;
+    double l2NormDiag     = 0.0;
+    double l2NormSqrtDiag = 0.0;
 
     double scalarVal = std::sqrt(4.0 * M_PI);
-    for (unsigned int iNode = 0 ; iNode < d_diagonalA.size() ; iNode++)
+    for (unsigned int iNode = 0; iNode < d_diagonalA.size(); iNode++)
       {
-        double diff = ((4.0 * M_PI)*d_diagonalA.data()[iNode]) - outputVec.local_element(iNode);
-        l2NormDiag += diff*diff;
+        double diff = ((4.0 * M_PI) * d_diagonalA.data()[iNode]) -
+                      outputVec.local_element(iNode);
+        l2NormDiag += diff * diff;
 
-        double diff1 = (scalarVal*d_diagonalSqrtA.data()[iNode]) - std::sqrt(std::abs(outputVec.local_element(iNode)));
-        l2NormSqrtDiag += diff1*diff1;
+        double diff1 = (scalarVal * d_diagonalSqrtA.data()[iNode]) -
+                       std::sqrt(std::abs(outputVec.local_element(iNode)));
+        l2NormSqrtDiag += diff1 * diff1;
       }
 
-    std::cout<<" Error in diag = "<<l2NormDiag<<"\n";
-    std::cout<<" Error in sqrt diag = "<<l2NormSqrtDiag<<"\n";
+    std::cout << " Error in diag = " << l2NormDiag << "\n";
+    std::cout << " Error in sqrt diag = " << l2NormSqrtDiag << "\n";
 
 
-    std::cout<<" length of diagonal a = "<<d_diagonalA.size()<<"\n";
-    std::cout<<" length of sqrt diagonal a = "<<d_diagonalSqrtA.size()<<"\n";
+    std::cout << " length of diagonal a = " << d_diagonalA.size() << "\n";
+    std::cout << " length of sqrt diagonal a = " << d_diagonalSqrtA.size()
+              << "\n";
     std::string errMsg = "Error in size of diagonal matrix.";
-//    dftfe::utils::throwException(d_diagonalA.size() == d_locallyOwnedSize, errMsg);
-//    dftfe::utils::throwException(d_diagonalSqrtA.size() == d_locallyOwnedSize, errMsg);
+    //    dftfe::utils::throwException(d_diagonalA.size() == d_locallyOwnedSize,
+    //    errMsg); dftfe::utils::throwException(d_diagonalSqrtA.size() ==
+    //    d_locallyOwnedSize, errMsg);
 
     d_blockSize = 0;
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  MultiVectorPoissonLinearSolverProblem<memorySpace>::vmult
-    (dftfe::linearAlgebra::MultiVector<double ,
-                                          memorySpace> &Ax,
-        dftfe::linearAlgebra::MultiVector<double ,
-                                          memorySpace> &x,
-        unsigned int               blockSize)
+  MultiVectorPoissonLinearSolverProblem<memorySpace>::vmult(
+    dftfe::linearAlgebra::MultiVector<double, memorySpace> &Ax,
+    dftfe::linearAlgebra::MultiVector<double, memorySpace> &x,
+    unsigned int                                            blockSize)
   {
     Ax.setValue(0.0);
     d_AxCellLLevelNodalData.setValue(0.0);
@@ -301,13 +301,13 @@ namespace dftfe
     d_basisOperationsPtr->reinit(d_blockSize,
                                  d_cellBlockSize,
                                  d_matrixFreeQuadratureComponentRhs,
-                                 false, // TODO should this be set to true
+                                 false,  // TODO should this be set to true
                                  false); // TODO should this be set to true
-					 //
+    //
     d_basisOperationsPtr->extractToCellNodalData(x,
                                                  d_xCellLLevelNodalData.data());
 
-    for(size_type iCell = 0; iCell < d_numCells ; iCell += d_cellBlockSize)
+    for (size_type iCell = 0; iCell < d_numCells; iCell += d_cellBlockSize)
       {
         std::pair<unsigned int, unsigned int> cellRange(
           iCell, std::min(iCell + d_cellBlockSize, d_numCells));
@@ -335,54 +335,50 @@ namespace dftfe
       }
 
     d_basisOperationsPtr->accumulateFromCellNodalData(
-      d_AxCellLLevelNodalData.data(),
-      Ax);
+      d_AxCellLLevelNodalData.data(), Ax);
     d_constraintsInfo.distribute_slave_to_master(Ax);
     Ax.accumulateAddLocallyOwned();
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  MultiVectorPoissonLinearSolverProblem<memorySpace>::precondition_JacobiSqrt(dftfe::linearAlgebra::MultiVector<double ,
-                                                                                                                 memorySpace> &      dst,
-                                                                              const dftfe::linearAlgebra::MultiVector<double ,
-                                                                                                                      memorySpace> &src,
-                                                                              const double omega) const
+  MultiVectorPoissonLinearSolverProblem<memorySpace>::precondition_JacobiSqrt(
+    dftfe::linearAlgebra::MultiVector<double, memorySpace> &      dst,
+    const dftfe::linearAlgebra::MultiVector<double, memorySpace> &src,
+    const double                                                  omega) const
   {
     double scaleValue = (4.0 * M_PI);
-    scaleValue = std::sqrt(scaleValue);
-    d_BLASWrapperPtr->stridedBlockScaleCopy(
-      d_blockSize,
-      d_locallyOwnedSize,
-      scaleValue,
-      d_diagonalSqrtA.data(),
-      src.data(),
-      dst.data(),
-      d_mapNodeIdToProcId.data());
+    scaleValue        = std::sqrt(scaleValue);
+    d_BLASWrapperPtr->stridedBlockScaleCopy(d_blockSize,
+                                            d_locallyOwnedSize,
+                                            scaleValue,
+                                            d_diagonalSqrtA.data(),
+                                            src.data(),
+                                            dst.data(),
+                                            d_mapNodeIdToProcId.data());
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  MultiVectorPoissonLinearSolverProblem<memorySpace>::precondition_Jacobi(dftfe::linearAlgebra::MultiVector<double ,
-                                                                                                                 memorySpace> &      dst,
-                                                                              const dftfe::linearAlgebra::MultiVector<double ,
-                                                                                                                      memorySpace> &src,
-                                                                              const double omega) const
+  MultiVectorPoissonLinearSolverProblem<memorySpace>::precondition_Jacobi(
+    dftfe::linearAlgebra::MultiVector<double, memorySpace> &      dst,
+    const dftfe::linearAlgebra::MultiVector<double, memorySpace> &src,
+    const double                                                  omega) const
   {
     double scaleValue = (4.0 * M_PI);
-    d_BLASWrapperPtr->stridedBlockScaleCopy(
-      d_blockSize,
-      d_locallyOwnedSize,
-      scaleValue,
-      d_diagonalA.data(),
-      src.data(),
-      dst.data(),
-      d_mapNodeIdToProcId.data());
+    d_BLASWrapperPtr->stridedBlockScaleCopy(d_blockSize,
+                                            d_locallyOwnedSize,
+                                            scaleValue,
+                                            d_diagonalA.data(),
+                                            src.data(),
+                                            dst.data(),
+                                            d_mapNodeIdToProcId.data());
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  MultiVectorPoissonLinearSolverProblem<memorySpace>::setDataForRhsVec(dftfe::utils::MemoryStorage<double, memorySpace>& inputQuadData)
+  MultiVectorPoissonLinearSolverProblem<memorySpace>::setDataForRhsVec(
+    dftfe::utils::MemoryStorage<double, memorySpace> &inputQuadData)
   {
     d_rhsQuadDataPtr = &inputQuadData;
   }
@@ -422,8 +418,10 @@ namespace dftfe
     //
     // resize data members
     //
-    d_cellShapeFunctionGradientIntegral.resize(
-      totalLocallyOwnedCells*numberDofsPerElement * numberDofsPerElement, 0.0);
+    d_cellShapeFunctionGradientIntegral.resize(totalLocallyOwnedCells *
+                                                 numberDofsPerElement *
+                                                 numberDofsPerElement,
+                                               0.0);
     d_cellShapeFunctionJxW.resize(totalLocallyOwnedCells *
                                   numberQuadraturePointsRhs);
     d_shapeFunctionValue.resize(numberDofsPerElement * numberDofsPerElement);
@@ -478,7 +476,8 @@ namespace dftfe
                       fe_valuesAX.JxW(q_point);
 
                   d_cellShapeFunctionGradientIntegral
-                    [iElem*numberDofsPerElement*numberDofsPerElement + numberDofsPerElement * iNode + jNode] =
+                    [iElem * numberDofsPerElement * numberDofsPerElement +
+                     numberDofsPerElement * iNode + jNode] =
                       shapeFunctionGradientValue;
                 } // j node
 
@@ -497,8 +496,8 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  MultiVectorPoissonLinearSolverProblem<memorySpace>::tempRhsVecCalc(dftfe::linearAlgebra::MultiVector<double ,
-                                                   memorySpace> &      rhs)
+  MultiVectorPoissonLinearSolverProblem<memorySpace>::tempRhsVecCalc(
+    dftfe::linearAlgebra::MultiVector<double, memorySpace> &rhs)
   {
     //
     // get FE data
@@ -538,42 +537,55 @@ namespace dftfe
     d_basisOperationsPtr->reinit(d_blockSize,
                                  d_cellBlockSize,
                                  d_matrixFreeQuadratureComponentRhs,
-                                 false, // TODO should this be set to true
+                                 false,  // TODO should this be set to true
                                  false); // TODO should this be set to true
                                          //
 
     double l2ErrorIndex = 0.0;
-    for( unsigned int i = 0 ; i < flattenedArrayCellLocalProcIndexIdMap.size(); i++)
+    for (unsigned int i = 0; i < flattenedArrayCellLocalProcIndexIdMap.size();
+         i++)
       {
-        double diff = (flattenedArrayCellLocalProcIndexIdMap.data()[i] - d_basisOperationsPtr->d_flattenedCellDofIndexToProcessDofIndexMap.data()[i]);
-          l2ErrorIndex+= diff*diff;
+        double diff =
+          (flattenedArrayCellLocalProcIndexIdMap.data()[i] -
+           d_basisOperationsPtr->d_flattenedCellDofIndexToProcessDofIndexMap
+             .data()[i]);
+        l2ErrorIndex += diff * diff;
       }
 
-    std::cout<<"Error in nodal maps = "<<l2ErrorIndex<<"\n";
+    std::cout << "Error in nodal maps = " << l2ErrorIndex << "\n";
 
     // Calculating the rhs from the quad points
     // multiVectorInput is stored on the quad points
     unsigned int iElem = 0;
     typename dealii::DoFHandler<3>::active_cell_iterator
-      cell             = d_dofHandler->begin_active(),
-      endc             = d_dofHandler->end();
+      cell = d_dofHandler->begin_active(),
+      endc = d_dofHandler->end();
 
     // rhs += \int N_i cellLevelQuad
     for (; cell != endc; ++cell)
       if (cell->is_locally_owned())
         {
-          std::fill(cellLevelRhsInput.begin(),cellLevelRhsInput.end(),0.0);
+          std::fill(cellLevelRhsInput.begin(), cellLevelRhsInput.end(), 0.0);
 
-          for ( unsigned int iBlock =  0 ; iBlock < d_blockSize;  iBlock++)
+          for (unsigned int iBlock = 0; iBlock < d_blockSize; iBlock++)
             {
-              for ( unsigned int iNode = 0 ; iNode < numberDofsPerElement; iNode++ )
+              for (unsigned int iNode = 0; iNode < numberDofsPerElement;
+                   iNode++)
                 {
-                  for ( unsigned int jQuad = 0 ; jQuad < numberQuadraturePointsRhs; jQuad++)
+                  for (unsigned int jQuad = 0;
+                       jQuad < numberQuadraturePointsRhs;
+                       jQuad++)
                     {
-                      cellLevelRhsInput[iNode*d_blockSize + iBlock] +=
-                        alpha*(*(d_rhsQuadDataPtr->data() + iElem*numberQuadraturePointsRhs*d_blockSize + jQuad*d_blockSize + iBlock))*
-                        d_shapeFunctionValue[iNode*numberQuadraturePointsRhs +jQuad ]*
-                        d_cellShapeFunctionJxW[iElem * numberQuadraturePointsRhs + jQuad];
+                      cellLevelRhsInput[iNode * d_blockSize + iBlock] +=
+                        alpha *
+                        (*(d_rhsQuadDataPtr->data() +
+                           iElem * numberQuadraturePointsRhs * d_blockSize +
+                           jQuad * d_blockSize + iBlock)) *
+                        d_shapeFunctionValue[iNode * numberQuadraturePointsRhs +
+                                             jQuad] *
+                        d_cellShapeFunctionJxW[iElem *
+                                                 numberQuadraturePointsRhs +
+                                               jQuad];
                     }
                 }
             }
@@ -583,10 +595,13 @@ namespace dftfe
           for (unsigned int iNode = 0; iNode < numberDofsPerElement; ++iNode)
             {
               dealii::types::global_dof_index localNodeId =
-                flattenedArrayCellLocalProcIndexIdMap[iElem*numberDofsPerElement + iNode];
-              for ( unsigned int iBlock =  0 ; iBlock < d_blockSize;  iBlock++)
+                flattenedArrayCellLocalProcIndexIdMap[iElem *
+                                                        numberDofsPerElement +
+                                                      iNode];
+              for (unsigned int iBlock = 0; iBlock < d_blockSize; iBlock++)
                 {
-                  *(rhs.data() + localNodeId + iBlock) += cellLevelRhsInput[d_blockSize * iNode + iBlock];
+                  *(rhs.data() + localNodeId + iBlock) +=
+                    cellLevelRhsInput[d_blockSize * iNode + iBlock];
                 }
             }
           iElem++;
@@ -599,167 +614,170 @@ namespace dftfe
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
-  dftfe::linearAlgebra::MultiVector<double ,
-                                    memorySpace> &
+  dftfe::linearAlgebra::MultiVector<double, memorySpace> &
   MultiVectorPoissonLinearSolverProblem<memorySpace>::computeRhs(
-             dftfe::linearAlgebra::MultiVector<double ,
-                                               memorySpace> &       NDBCVec,
-             dftfe::linearAlgebra::MultiVector<double ,
-                                               memorySpace> &       outputVec,
-             unsigned int                      blockSizeInput)
+    dftfe::linearAlgebra::MultiVector<double, memorySpace> &NDBCVec,
+    dftfe::linearAlgebra::MultiVector<double, memorySpace> &outputVec,
+    unsigned int                                            blockSizeInput)
   {
-   
-	 d_basisOperationsPtr->reinit(blockSizeInput,
+    d_basisOperationsPtr->reinit(blockSizeInput,
                                  d_cellBlockSize,
                                  d_matrixFreeQuadratureComponentRhs,
-                                 true, // TODO should this be set to true
+                                 true,  // TODO should this be set to true
                                  true); // TODO should this be set to true
-                                         //
+                                        //
 
 
 
     d_basisOperationsPtr->initializeShapeFunctionAndJacobianBasisData();
     d_basisOperationsPtr->initializeFlattenedIndexMaps();
-    pcout<<" after reinit \n";
-    if(d_blockSize != blockSizeInput)
+    pcout << " after reinit \n";
+    if (d_blockSize != blockSizeInput)
       {
         d_blockSize = blockSizeInput;
-        dftfe::utils::MemoryStorage<dftfe::global_size_type, dftfe::utils::MemorySpace::HOST>
+        dftfe::utils::MemoryStorage<dftfe::global_size_type,
+                                    dftfe::utils::MemorySpace::HOST>
           nodeIds, quadIds;
         nodeIds.resize(d_locallyOwnedSize);
-        quadIds.resize(d_numCells*d_nQuadsPerCell);
-        for(size_type i = 0 ; i < d_locallyOwnedSize;i++)
+        quadIds.resize(d_numCells * d_nQuadsPerCell);
+        for (size_type i = 0; i < d_locallyOwnedSize; i++)
           {
-            nodeIds.data()[i] = i*d_blockSize;
+            nodeIds.data()[i] = i * d_blockSize;
           }
         d_mapNodeIdToProcId.resize(d_locallyOwnedSize);
         d_mapNodeIdToProcId.copyFrom(nodeIds);
 
-        for(size_type i = 0 ; i < d_numCells*d_nQuadsPerCell;i++)
+        for (size_type i = 0; i < d_numCells * d_nQuadsPerCell; i++)
           {
-            quadIds.data()[i] = i*d_blockSize;
+            quadIds.data()[i] = i * d_blockSize;
           }
 
-        d_mapQuadIdToProcId.resize(d_numCells*d_nQuadsPerCell);
+        d_mapQuadIdToProcId.resize(d_numCells * d_nQuadsPerCell);
         d_mapQuadIdToProcId.copyFrom(quadIds);
 
 
-        d_xCellLLevelNodalData.resize(d_numCells*d_numberDofsPerElement*d_blockSize);
-        d_AxCellLLevelNodalData.resize(d_numCells*d_numberDofsPerElement*d_blockSize);
+        d_xCellLLevelNodalData.resize(d_numCells * d_numberDofsPerElement *
+                                      d_blockSize);
+        d_AxCellLLevelNodalData.resize(d_numCells * d_numberDofsPerElement *
+                                       d_blockSize);
 
 
-        d_basisOperationsPtr->createMultiVector(d_blockSize,d_rhsVec);
-
+        d_basisOperationsPtr->createMultiVector(d_blockSize, d_rhsVec);
       }
 
-    d_blockedXPtr = &outputVec;
+    d_blockedXPtr    = &outputVec;
     d_blockedNDBCPtr = &NDBCVec;
 
 
-    pcout<<" starting rhs \n";
-    dftfe::utils::MemoryStorage<double, memorySpace>
-      xCellLLevelNodalData, rhsCellLLevelNodalData;
+    pcout << " starting rhs \n";
+    dftfe::utils::MemoryStorage<double, memorySpace> xCellLLevelNodalData,
+      rhsCellLLevelNodalData;
 
-    xCellLLevelNodalData.resize(d_numCells*d_numberDofsPerElement*d_blockSize);
-    rhsCellLLevelNodalData.resize(d_numCells*d_numberDofsPerElement*d_blockSize);
+    xCellLLevelNodalData.resize(d_numCells * d_numberDofsPerElement *
+                                d_blockSize);
+    rhsCellLLevelNodalData.resize(d_numCells * d_numberDofsPerElement *
+                                  d_blockSize);
     //     Adding the Non homogeneous Dirichlet boundary conditions
     d_rhsVec.setValue(0.0);
 
     // Calculating the rhs from the quad points
     // multiVectorInput is stored on the quad points
 
-    //Assumes that NDBC is constraints distribute is called
+    // Assumes that NDBC is constraints distribute is called
     // rhs  = - ( 1.0 / 4 \pi ) \int \nabla N_j \nabla N_i  d_NDBC
 
-//    d_basisOperationsPtr->extractToCellNodalData(*d_blockedNDBCPtr,
-//                                                 xCellLLevelNodalData.data());
-//
-//    pcout<<" before gemm \n";
-//    for(size_type iCell = 0; iCell < d_numCells ; iCell += d_numCells)
-//      {
-//
-//
-//        std::pair<unsigned int, unsigned int> cellRange(
-//          iCell, std::min(iCell + d_numCells, d_numCells));
-//
-//        d_BLASWrapperPtr->xgemmStridedBatched(
-//          'N',
-//          'N',
-//          d_blockSize,
-//          d_numberDofsPerElement,
-//          d_numberDofsPerElement,
-//          &d_negScalarCoeffAlpha,
-//          xCellLLevelNodalData.data() +
-//            cellRange.first * d_numberDofsPerElement * d_blockSize,
-//          d_blockSize,
-//          d_numberDofsPerElement * d_blockSize,
-//          d_cellStiffnessMatrixPtr->data() +
-//            cellRange.first * d_numberDofsPerElement * d_numberDofsPerElement,
-//          d_numberDofsPerElement,
-//          d_numberDofsPerElement * d_numberDofsPerElement,
-//          &d_beta,
-//          rhsCellLLevelNodalData.data(),
-//          d_blockSize,
-//          d_numberDofsPerElement * d_blockSize,
-//          cellRange.second - cellRange.first);
-//      }
-//
-//    pcout<<" after gemm \n";
-//    d_basisOperationsPtr->accumulateFromCellNodalData(
-//      rhsCellLLevelNodalData.data(),
-//      d_rhsVec);
+    //    d_basisOperationsPtr->extractToCellNodalData(*d_blockedNDBCPtr,
+    //                                                 xCellLLevelNodalData.data());
+    //
+    //    pcout<<" before gemm \n";
+    //    for(size_type iCell = 0; iCell < d_numCells ; iCell += d_numCells)
+    //      {
+    //
+    //
+    //        std::pair<unsigned int, unsigned int> cellRange(
+    //          iCell, std::min(iCell + d_numCells, d_numCells));
+    //
+    //        d_BLASWrapperPtr->xgemmStridedBatched(
+    //          'N',
+    //          'N',
+    //          d_blockSize,
+    //          d_numberDofsPerElement,
+    //          d_numberDofsPerElement,
+    //          &d_negScalarCoeffAlpha,
+    //          xCellLLevelNodalData.data() +
+    //            cellRange.first * d_numberDofsPerElement * d_blockSize,
+    //          d_blockSize,
+    //          d_numberDofsPerElement * d_blockSize,
+    //          d_cellStiffnessMatrixPtr->data() +
+    //            cellRange.first * d_numberDofsPerElement *
+    //            d_numberDofsPerElement,
+    //          d_numberDofsPerElement,
+    //          d_numberDofsPerElement * d_numberDofsPerElement,
+    //          &d_beta,
+    //          rhsCellLLevelNodalData.data(),
+    //          d_blockSize,
+    //          d_numberDofsPerElement * d_blockSize,
+    //          cellRange.second - cellRange.first);
+    //      }
+    //
+    //    pcout<<" after gemm \n";
+    //    d_basisOperationsPtr->accumulateFromCellNodalData(
+    //      rhsCellLLevelNodalData.data(),
+    //      d_rhsVec);
 
-    pcout<<" after acumm add \n";
+    pcout << " after acumm add \n";
 
-     d_basisOperationsPtr->reinit(d_blockSize,
+    d_basisOperationsPtr->reinit(d_blockSize,
                                  d_cellBlockSize,
                                  d_matrixFreeQuadratureComponentRhs,
-                                 true, // TODO should this be set to true
+                                 true,   // TODO should this be set to true
                                  false); // TODO should this be set to true
                                          //
 
 
-    std::pair<unsigned int, unsigned int> cellRange = std::make_pair(0,d_numCells);
-    d_basisOperationsPtr->integrateWithBasis(d_rhsQuadDataPtr->data(),NULL,d_rhsVec,d_mapQuadIdToProcId);
-   d_constraintsInfo.distribute_slave_to_master(d_rhsVec);
+    std::pair<unsigned int, unsigned int> cellRange =
+      std::make_pair(0, d_numCells);
+    d_basisOperationsPtr->integrateWithBasis(d_rhsQuadDataPtr->data(),
+                                             NULL,
+                                             d_rhsVec,
+                                             d_mapQuadIdToProcId);
+    d_constraintsInfo.distribute_slave_to_master(d_rhsVec);
     d_rhsVec.accumulateAddLocallyOwned();
 
 
-    auto jxwVec = d_basisOperationsPtr->JxW();
+    auto jxwVec       = d_basisOperationsPtr->JxW();
     auto shapeFuncVal = d_basisOperationsPtr->shapeFunctionData(true);
 
-    if ( d_cellShapeFunctionJxW.size() !=  jxwVec.size())
+    if (d_cellShapeFunctionJxW.size() != jxwVec.size())
       {
-        std::cout<<" Error in size of jxw \n";
+        std::cout << " Error in size of jxw \n";
       }
     double l2ErrorJxW = 0.0;
-    for( unsigned int iQuad = 0; iQuad < d_cellShapeFunctionJxW.size(); iQuad++)
+    for (unsigned int iQuad = 0; iQuad < d_cellShapeFunctionJxW.size(); iQuad++)
       {
-        l2ErrorJxW += (jxwVec.data()[iQuad] - d_cellShapeFunctionJxW[iQuad])*
+        l2ErrorJxW += (jxwVec.data()[iQuad] - d_cellShapeFunctionJxW[iQuad]) *
                       (jxwVec.data()[iQuad] - d_cellShapeFunctionJxW[iQuad]);
       }
 
-    MPI_Allreduce(MPI_IN_PLACE,
-                  &l2ErrorJxW,
-                  1,
-                  MPI_DOUBLE,
-                  MPI_SUM,
-                  mpi_communicator);
+    MPI_Allreduce(
+      MPI_IN_PLACE, &l2ErrorJxW, 1, MPI_DOUBLE, MPI_SUM, mpi_communicator);
 
-    pcout<<" Error in l2 error jxw = "<<l2ErrorJxW<<"\n";
+    pcout << " Error in l2 error jxw = " << l2ErrorJxW << "\n";
 
-    if(d_shapeFunctionValue.size() != shapeFuncVal.size())
+    if (d_shapeFunctionValue.size() != shapeFuncVal.size())
       {
-        std::cout<<" d_shapeFunctionValue.size() = "<<d_shapeFunctionValue.size()<<"\n";
-        std::cout<<" shapeFuncVal.size() = "<<shapeFuncVal.size()<<"\n";
-        std::cout<<" Error in size of shape func \n";
+        std::cout << " d_shapeFunctionValue.size() = "
+                  << d_shapeFunctionValue.size() << "\n";
+        std::cout << " shapeFuncVal.size() = " << shapeFuncVal.size() << "\n";
+        std::cout << " Error in size of shape func \n";
       }
 
     double l2ErrorShapeFunc = 0.0;
-    for( unsigned int iQuad = 0; iQuad < d_shapeFunctionValue.size(); iQuad++)
+    for (unsigned int iQuad = 0; iQuad < d_shapeFunctionValue.size(); iQuad++)
       {
-        l2ErrorShapeFunc += (shapeFuncVal.data()[iQuad] - d_shapeFunctionValue[iQuad])*
-                      (shapeFuncVal.data()[iQuad] - d_shapeFunctionValue[iQuad]);
+        l2ErrorShapeFunc +=
+          (shapeFuncVal.data()[iQuad] - d_shapeFunctionValue[iQuad]) *
+          (shapeFuncVal.data()[iQuad] - d_shapeFunctionValue[iQuad]);
       }
 
     MPI_Allreduce(MPI_IN_PLACE,
@@ -769,12 +787,12 @@ namespace dftfe
                   MPI_SUM,
                   mpi_communicator);
 
-    pcout<<" Error in l2 error shape func = "<<l2ErrorShapeFunc<<"\n";
+    pcout << " Error in l2 error shape func = " << l2ErrorShapeFunc << "\n";
 
-    dftfe::poissonSolverProblem<2,2> phiTotalSolverProblem(mpi_communicator);
+    dftfe::poissonSolverProblem<2, 2> phiTotalSolverProblem(mpi_communicator);
 
 
-    dftfe::distributedCPUVec<double>      expectedOutput;
+    dftfe::distributedCPUVec<double> expectedOutput;
 
     dftfe::vectorTools::createDealiiVector<double>(
       d_matrixFreeDataPtr->get_vector_partitioner(d_matrixFreeVectorComponent),
@@ -784,67 +802,69 @@ namespace dftfe
     std::map<dealii::types::global_dof_index, double> atoms;
     std::map<dealii::CellId, std::vector<double>>     smearedChargeValues;
 
-    phiTotalSolverProblem.reinit(
-      d_basisOperationsPtr,
-      expectedOutput,
-      *d_constraintMatrixPtr,
-      d_matrixFreeVectorComponent,
-      d_matrixFreeQuadratureComponentRhs,
-      d_matrixFreeQuadratureComponentAX,
-      atoms,
-      smearedChargeValues,
-      d_matrixFreeQuadratureComponentAX,
-      *d_rhsQuadDataPtr,
-      true,  // isComputeDiagonalA
-      false, // isComputeMeanValueConstraint
-      false, // smearedNuclearCharges
-      true,  // isRhoValues
-      false, // isGradSmearedChargeRhs
-      0,     // smearedChargeGradientComponentId
-      false, // storeSmearedChargeRhs
-      false, // reuseSmearedChargeRhs
-      true); // reinitializeFastConstraints
+    phiTotalSolverProblem.reinit(d_basisOperationsPtr,
+                                 expectedOutput,
+                                 *d_constraintMatrixPtr,
+                                 d_matrixFreeVectorComponent,
+                                 d_matrixFreeQuadratureComponentRhs,
+                                 d_matrixFreeQuadratureComponentAX,
+                                 atoms,
+                                 smearedChargeValues,
+                                 d_matrixFreeQuadratureComponentAX,
+                                 *d_rhsQuadDataPtr,
+                                 true,  // isComputeDiagonalA
+                                 false, // isComputeMeanValueConstraint
+                                 false, // smearedNuclearCharges
+                                 true,  // isRhoValues
+                                 false, // isGradSmearedChargeRhs
+                                 0,     // smearedChargeGradientComponentId
+                                 false, // storeSmearedChargeRhs
+                                 false, // reuseSmearedChargeRhs
+                                 true); // reinitializeFastConstraints
 
 
     distributedCPUVec<double> rhs;
     phiTotalSolverProblem.computeRhs(rhs);
 
-    dftfe::linearAlgebra::MultiVector<double ,
-                                      memorySpace> rhsTempVec;
-   d_basisOperationsPtr->createMultiVector(d_blockSize,rhsTempVec);
-//    dftfe::linearAlgebra::createMultiVectorFromDealiiPartitioner(
-//      d_matrixFreeDataPtr->get_vector_partitioner(d_matrixFreeVectorComponent),
-//      d_blockSize,
-//      rhsTempVec);
+    dftfe::linearAlgebra::MultiVector<double, memorySpace> rhsTempVec;
+    d_basisOperationsPtr->createMultiVector(d_blockSize, rhsTempVec);
+    //    dftfe::linearAlgebra::createMultiVectorFromDealiiPartitioner(
+    //      d_matrixFreeDataPtr->get_vector_partitioner(d_matrixFreeVectorComponent),
+    //      d_blockSize,
+    //      rhsTempVec);
     rhsTempVec.setValue(0.0);
     tempRhsVecCalc(rhsTempVec);
 
-    double l2ErrorRhsTempVecWithRhsVec = 0.0;
+    double l2ErrorRhsTempVecWithRhsVec    = 0.0;
     double l2ErrorRhsTempVecWithRhsSingle = 0.0;
-    double l2NormError = 0.0 ;
-    double l2NormRho = 0.0;
+    double l2NormError                    = 0.0;
+    double l2NormRho                      = 0.0;
 
-        std::cout<<" error in local size of rhs vec\n";
-        std::cout<<" size of d_rhsVec = "<<d_rhsVec.localSize()<<" size of rhs single = "<<rhs.local_size()<<"\n";
+    std::cout << " error in local size of rhs vec\n";
+    std::cout << " size of d_rhsVec = " << d_rhsVec.localSize()
+              << " size of rhs single = " << rhs.local_size() << "\n";
 
 
-        std::cout<<" error in local size of rhs temp vec\n";
-        std::cout<<" size of d_rhsVec = "<<d_rhsVec.localSize()<<" size of rhs single = "<<rhsTempVec.localSize()<<"\n";
+    std::cout << " error in local size of rhs temp vec\n";
+    std::cout << " size of d_rhsVec = " << d_rhsVec.localSize()
+              << " size of rhs single = " << rhsTempVec.localSize() << "\n";
 
 
     for (unsigned int i = 0; i < rhs.local_size(); i++)
       {
-        double diff = d_rhsVec.data()[i]  - rhs.local_element(i);
-        diff = diff*diff;
+        double diff = d_rhsVec.data()[i] - rhs.local_element(i);
+        diff        = diff * diff;
         l2NormError += diff;
 
-        l2NormRho += rhs.local_element(i)*rhs.local_element(i);
+        l2NormRho += rhs.local_element(i) * rhs.local_element(i);
 
-        l2ErrorRhsTempVecWithRhsSingle += (rhs.local_element(i) - rhsTempVec.data()[i])*
-                                          (rhs.local_element(i) - rhsTempVec.data()[i]);
+        l2ErrorRhsTempVecWithRhsSingle +=
+          (rhs.local_element(i) - rhsTempVec.data()[i]) *
+          (rhs.local_element(i) - rhsTempVec.data()[i]);
 
-        l2ErrorRhsTempVecWithRhsVec += (d_rhsVec.data()[i] - rhsTempVec.data()[i])*
-                                       (d_rhsVec.data()[i] - rhsTempVec.data()[i]);
+        l2ErrorRhsTempVecWithRhsVec +=
+          (d_rhsVec.data()[i] - rhsTempVec.data()[i]) *
+          (d_rhsVec.data()[i] - rhsTempVec.data()[i]);
       }
 
     MPI_Allreduce(MPI_IN_PLACE,
@@ -861,28 +881,23 @@ namespace dftfe
                   MPI_SUM,
                   mpi_communicator);
 
-    MPI_Allreduce(MPI_IN_PLACE,
-                  &l2NormError,
-                  1,
-                  MPI_DOUBLE,
-                  MPI_SUM,
-                  mpi_communicator);
+    MPI_Allreduce(
+      MPI_IN_PLACE, &l2NormError, 1, MPI_DOUBLE, MPI_SUM, mpi_communicator);
 
-    MPI_Allreduce(MPI_IN_PLACE,
-                  &l2NormRho,
-                  1,
-                  MPI_DOUBLE,
-                  MPI_SUM,
-                  mpi_communicator);
+    MPI_Allreduce(
+      MPI_IN_PLACE, &l2NormRho, 1, MPI_DOUBLE, MPI_SUM, mpi_communicator);
 
-    pcout<<" Error in rhs is = "<<l2NormError<<"\n";
-    pcout<<" norm of rhs is = "<<l2NormRho<<"\n";
-    pcout<<" Error in rhs tempVec with single  = "<<l2ErrorRhsTempVecWithRhsSingle<<"\n";
-    pcout<<" Error in rhs temp vec wth rhs  = "<<l2ErrorRhsTempVecWithRhsVec<<"\n";
-    pcout<<" ending rhs \n";
+    pcout << " Error in rhs is = " << l2NormError << "\n";
+    pcout << " norm of rhs is = " << l2NormRho << "\n";
+    pcout << " Error in rhs tempVec with single  = "
+          << l2ErrorRhsTempVecWithRhsSingle << "\n";
+    pcout << " Error in rhs temp vec wth rhs  = " << l2ErrorRhsTempVecWithRhsVec
+          << "\n";
+    pcout << " ending rhs \n";
     return d_rhsVec;
   }
 
-  template class MultiVectorPoissonLinearSolverProblem<dftfe::utils::MemorySpace::HOST>;
+  template class MultiVectorPoissonLinearSolverProblem<
+    dftfe::utils::MemorySpace::HOST>;
 
-}
+} // namespace dftfe

@@ -934,7 +934,7 @@ namespace dftfe
       AssertThrow(false, dftUtils::ExcNotImplementedYet());
     }
 
-        template void
+    template void
     constraintMatrixInfo<dftfe::utils::MemorySpace::DEVICE>::distribute(
       distributedCPUVec<dataTypes::number> &fieldVector,
       const unsigned int                    blockSize) const;
@@ -948,9 +948,8 @@ namespace dftfe
 #if defined(USE_COMPLEX)
     template void
     constraintMatrixInfo<dftfe::utils::MemorySpace::DEVICE>::
-      distribute_slave_to_master(
-        distributedCPUVec<double> &fieldVector,
-        const unsigned int                    blockSize) const;
+      distribute_slave_to_master(distributedCPUVec<double> &fieldVector,
+                                 const unsigned int         blockSize) const;
 #endif
 
     template void

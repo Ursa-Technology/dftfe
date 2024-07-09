@@ -25,26 +25,23 @@ namespace dftfe
    */
   class MultiVectorCGSolver
   {
-  public :
-
-    MultiVectorCGSolver( const MPI_Comm &mpi_comm_parent,
+  public:
+    MultiVectorCGSolver(const MPI_Comm &mpi_comm_parent,
                         const MPI_Comm &mpi_comm_domain);
 
     template <dftfe::utils::MemorySpace memorySpace>
     void
-    solve(MultiVectorLinearSolverProblem<memorySpace> &  problem,
+    solve(MultiVectorLinearSolverProblem<memorySpace> &problem,
           std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
-                                                          BLASWrapperPtr,
-          dftfe::linearAlgebra::MultiVector<double ,
-                                            memorySpace> &  x,
-          dftfe::linearAlgebra::MultiVector<double ,
-                                            memorySpace> &  NDBCVec,
-          unsigned int                      locallyOwned,
-          unsigned int                      blockSize,
-          const double                      absTolerance,
-          const unsigned int                maxNumberIterations,
-          const unsigned int                debugLevel     = 0,
-          bool                              distributeFlag = true) ;//override;
+                                                                  BLASWrapperPtr,
+          dftfe::linearAlgebra::MultiVector<double, memorySpace> &x,
+          dftfe::linearAlgebra::MultiVector<double, memorySpace> &NDBCVec,
+          unsigned int                                            locallyOwned,
+          unsigned int                                            blockSize,
+          const double                                            absTolerance,
+          const unsigned int maxNumberIterations,
+          const unsigned int debugLevel     = 0,
+          bool               distributeFlag = true); // override;
 
   private:
     const MPI_Comm             mpi_communicator;
@@ -52,6 +49,6 @@ namespace dftfe
     const unsigned int         this_mpi_process;
     dealii::ConditionalOStream pcout;
   };
-}
+} // namespace dftfe
 
 #endif // DFTFE_MULTIVECTORCGSOLVER_H

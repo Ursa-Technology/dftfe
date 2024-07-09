@@ -47,9 +47,10 @@ namespace dftfe
     MemoryStorage<ValueType, memorySpace>::resize(const std::size_t size,
                                                   const ValueType   initVal)
     {
-      if( d_size > 0 )
+      if (d_size > 0)
         {
-          dftfe::utils::MemoryManager<ValueType, memorySpace>::deallocate(d_data);
+          dftfe::utils::MemoryManager<ValueType, memorySpace>::deallocate(
+            d_data);
         }
       d_size = size;
       if (size > 0)
@@ -78,9 +79,10 @@ namespace dftfe
     void
     MemoryStorage<ValueType, memorySpace>::clear()
     {
-      if ( d_size > 0)
+      if (d_size > 0)
         {
-          dftfe::utils::MemoryManager<ValueType, memorySpace>::deallocate(d_data);
+          dftfe::utils::MemoryManager<ValueType, memorySpace>::deallocate(
+            d_data);
         }
       d_size = 0;
       d_data = nullptr;

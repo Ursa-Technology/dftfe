@@ -213,7 +213,7 @@ namespace dftfe
 
 
     virtual const MPI_Comm &
-    getMPIDomain() const = 0 ;
+    getMPIDomain() const = 0;
 
     virtual const MPI_Comm &
     getMPIParent() const = 0;

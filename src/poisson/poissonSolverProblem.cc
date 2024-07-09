@@ -419,7 +419,6 @@ namespace dftfe
 
     // FIXME: check if this is really required
     d_constraintMatrixPtr->set_zero(rhs);
-
   }
 
   // Matrix-Free Jacobi preconditioner application

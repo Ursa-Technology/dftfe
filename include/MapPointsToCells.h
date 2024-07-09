@@ -36,55 +36,58 @@ namespace dftfe
   namespace utils
   {
     /**
-   * @brief This class takes in a bunch of points and finds the cell (provided as input)
-     * it lies in. In case the points dont lie in any of the cells, it sends the points
-     * to other processors.
-     * Similarly it receives points from other processors and then checks if any of them lies
-     * within its cell.
-     * It provides the real coordinates of points in each cell
-   *
-   * @author Vishal Subramanian, Bikash Kanungo
+     * @brief This class takes in a bunch of points and finds the cell (provided as input)
+     * it lies in. In case the points dont lie in any of the cells, it sends the
+     * points to other processors. Similarly it receives points from other
+     * processors and then checks if any of them lies within its cell. It
+     * provides the real coordinates of points in each cell
+     *
+     * @author Vishal Subramanian, Bikash Kanungo
      */
     template <size_type dim, size_type M>
     class MapPointsToCells
     {
     public:
-
-      MapPointsToCells(const MPI_Comm & mpiComm);
+      MapPointsToCells(const MPI_Comm &mpiComm);
 
       /**
-   * @brief The init().
+       * @brief The init().
        * @param[in] srcCells The cells assigned to this processor
        * @param[in] targetPts The points assigned to this processor
-       * @param[out] mapCellsToRealCoordinates The Real coordinates of the points found in
-       * each cell.
-       * @param[in] locallyOwnedRange The locally owned range for the target points
-       * @param[out] ghostGlobalIds The global Ids of the points assigned to other processors
-       * but found within the cells assigned to this processor.
-       * @param[in] paramCoordsTol Tol used to determine if the point is inside a cell
-   *
-   * @author Vishal Subramanian, Bikash Kanungo
+       * @param[out] mapCellsToRealCoordinates The Real coordinates of the
+       * points found in each cell.
+       * @param[in] locallyOwnedRange The locally owned range for the target
+       * points
+       * @param[out] ghostGlobalIds The global Ids of the points assigned to
+       * other processors but found within the cells assigned to this processor.
+       * @param[in] paramCoordsTol Tol used to determine if the point is inside
+       * a cell
+       *
+       * @author Vishal Subramanian, Bikash Kanungo
        */
-      void init(std::vector<std::shared_ptr<const Cell<dim>>> srcCells,
-           const std::vector<std::vector<double>> & targetPts,
-           std::vector<std::vector<double>> &mapCellsToRealCoordinates,
+      void
+      init(std::vector<std::shared_ptr<const Cell<dim>>> srcCells,
+           const std::vector<std::vector<double>> &      targetPts,
+           std::vector<std::vector<double>> &   mapCellsToRealCoordinates,
            std::vector<std::vector<size_type>> &mapCellLocalToProcLocal,
-           std::pair<global_size_type,global_size_type> &locallyOwnedRange,
-           std::vector<global_size_type> & ghostGlobalIds,
-           const double paramCoordsTol);
+           std::pair<global_size_type, global_size_type> &locallyOwnedRange,
+           std::vector<global_size_type> &                ghostGlobalIds,
+           const double                                   paramCoordsTol);
 
 
-    private :
+    private:
       const MPI_Comm d_mpiComm;
-      int d_numMPIRank;
-      int d_thisRank;
+      int            d_numMPIRank;
+      int            d_thisRank;
 
-      //          std::map<size_type, std::vector<size_type>> d_mapCellsToLocalPoints;
-      //          std::map<size_type, std::vector<std::pair<size_type,size_type>>> d_mapCellsToNonLocalPoints;
+      //          std::map<size_type, std::vector<size_type>>
+      //          d_mapCellsToLocalPoints; std::map<size_type,
+      //          std::vector<std::pair<size_type,size_type>>>
+      //          d_mapCellsToNonLocalPoints;
 
     }; // end of class MapPointsToCells
-  }// end of namespace utils
-}// end of namespace dftfe
+  }    // end of namespace utils
+} // end of namespace dftfe
 
 #include "../src/TransferBetweenMeshes/MapPointsToCells.t.cc"
 #endif // dftfeMapPointsToCells_h

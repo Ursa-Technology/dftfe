@@ -30,9 +30,9 @@
 #include "constants.h"
 #include "elpaScalaManager.h"
 #include "pseudoGS.cc"
-#  ifdef USE_PETSC
-#    include <deal.II/lac/slepc_solver.h>
-#  endif
+#ifdef USE_PETSC
+#  include <deal.II/lac/slepc_solver.h>
+#endif
 
 namespace dftfe
 {

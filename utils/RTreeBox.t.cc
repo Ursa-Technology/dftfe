@@ -25,68 +25,74 @@ namespace dftfe
   {
     namespace RTreeBoxInternal
     {
-      template<size_type dim>
+      template <size_type dim>
       BG::model::box<BG::model::point<double, dim, BG::cs::cartesian>>
-      convertToBBox(const std::pair<std::vector<double>, std::vector<double>> & boundingBox)
+      convertToBBox(
+        const std::pair<std::vector<double>, std::vector<double>> &boundingBox)
       {
         using BPoint = BG::model::point<double, dim, BG::cs::cartesian>;
-        using BBox = BG::model::box<BPoint>;
-        using BBoxI = std::pair<BBox, size_type>;
+        using BBox   = BG::model::box<BPoint>;
+        using BBoxI  = std::pair<BBox, size_type>;
 
         BPoint pointLowerLeft;
         BPoint pointUpperRight;
-        for(size_type k = 0; k < dim; ++k)
+        for (size_type k = 0; k < dim; ++k)
           {
             pointLowerLeft.set<k>(boundingBox.first[k]);
             pointUpperRight.set<k>(boundingBox.second[k]);
           }
         return BBox(pointLowerLeft, pointUpperRight);
       }
-    }
+    } // namespace RTreeBoxInternal
 
-        template <size_type dim, size_type M>
-    RTreeBox<dim,M>::RTreeBox(std::vector<std::shared_ptr<const Cell<dim>>> sourceCells)
+    template <size_type dim, size_type M>
+    RTreeBox<dim, M>::RTreeBox(
+      std::vector<std::shared_ptr<const Cell<dim>>> sourceCells)
     {
-
-      using BPoint = BG::model::point<double, dim, BG::cs::cartesian>;
-      using BBox = BG::model::box<BPoint>;
-      using BBoxI = std::pair<BBox, size_type>;
+      using BPoint     = BG::model::point<double, dim, BG::cs::cartesian>;
+      using BBox       = BG::model::box<BPoint>;
+      using BBoxI      = std::pair<BBox, size_type>;
       using BRTreeBoxI = BGI::rtree<BBoxI, BGI::quadratic<M>>;
 
 
-      const size_type nCells = sourceCells.size();
+      const size_type    nCells = sourceCells.size();
       std::vector<BBoxI> sourceCellsBoundingBoxes(nCells);
-      for(size_type i =0; i < nCells; ++i)
+      for (size_type i = 0; i < nCells; ++i)
         {
-          std::pair<std::vector<double>, std::vector<double>> boundingBox = sourceCells[i]->getBoundingBox();
+          std::pair<std::vector<double>, std::vector<double>> boundingBox =
+            sourceCells[i]->getBoundingBox();
           BBox bbox = RTreeBoxInternal::convertToBBox<dim>(boundingBox);
           sourceCellsBoundingBoxes[i] = std::make_pair(bbox, i);
         }
 
-      d_rtree = BRTreeBoxI(sourceCellsBoundingBoxes.begin(), sourceCellsBoundingBoxes.end());
+      d_rtree = BRTreeBoxI(sourceCellsBoundingBoxes.begin(),
+                           sourceCellsBoundingBoxes.end());
     }
 
     template <size_type dim, size_type M>
     std::vector<std::vector<size_type>>
-    RTreeBox<dim,M>::getOverlappingCellIds(std::vector<std::shared_ptr<const Cell<dim>>> queryCells)
+    RTreeBox<dim, M>::getOverlappingCellIds(
+      std::vector<std::shared_ptr<const Cell<dim>>> queryCells)
     {
-
-      using BPoint = BG::model::point<double, dim, BG::cs::cartesian>;
-      using BBox = BG::model::box<BPoint>;
-      using BBoxI = std::pair<BBox, size_type>;
+      using BPoint     = BG::model::point<double, dim, BG::cs::cartesian>;
+      using BBox       = BG::model::box<BPoint>;
+      using BBoxI      = std::pair<BBox, size_type>;
       using BRTreeBoxI = BGI::rtree<BBoxI, BGI::quadratic<M>>;
 
 
-      const size_type nQCells = queryCells.size();
-      std::vector<std::vector<size_type>> cellIds(nQCells, std::vector<size_type>(0));
-      for(size_type i = 0; i < nQCells; ++i)
+      const size_type                     nQCells = queryCells.size();
+      std::vector<std::vector<size_type>> cellIds(nQCells,
+                                                  std::vector<size_type>(0));
+      for (size_type i = 0; i < nQCells; ++i)
         {
           std::vector<BBoxI> overlappingBBoxI(0);
-          std::pair<std::vector<double>, std::vector<double>> boundingBox = queryCells[i]->getBoundingBox();
+          std::pair<std::vector<double>, std::vector<double>> boundingBox =
+            queryCells[i]->getBoundingBox();
           BBox bbox = RTreeBoxInternal::convertToBBox<dim>(boundingBox);
-          d_rtree.query(BGI::intersects(bbox), std::back_inserter(overlappingBBoxI));
+          d_rtree.query(BGI::intersects(bbox),
+                        std::back_inserter(overlappingBBoxI));
           const size_type nOverlappingBBox = overlappingBBoxI.size();
-          for(size_type j = 0; j < nOverlappingBBox; ++j)
+          for (size_type j = 0; j < nOverlappingBBox; ++j)
             cellIds[i].push_back(overlappingBBoxI[j].second);
         }
 
@@ -94,4 +100,3 @@ namespace dftfe
     }
   } // end of namespace utils
 } // end of namespace dftfe
-

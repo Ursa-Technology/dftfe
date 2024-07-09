@@ -153,10 +153,10 @@ namespace dftfe
         const MemoryStorage<ValueTypeComm, dftfe::utils::MemorySpace::DEVICE>
           &recvBuffer,
         const MemoryStorage<size_type, dftfe::utils::MemorySpace::DEVICE>
-                                              &             ownedLocalIndicesForTargetProcs,
-        const size_type                        blockSize,
-        const size_type                        locallyOwnedSize,
-        const size_type                        ghostSize,
+          &             ownedLocalIndicesForTargetProcs,
+        const size_type blockSize,
+        const size_type locallyOwnedSize,
+        const size_type ghostSize,
         MemoryStorage<ValueType, dftfe::utils::MemorySpace::DEVICE> &dataArray,
         dftfe::utils::deviceStream_t deviceCommStream);
 

@@ -1123,7 +1123,6 @@ namespace dftfe
           MemoryStorage<ValueType, memorySpace> &dataArray,
           const size_type                        communicationChannel)
       {
-
         if (d_commPrecision == communicationPrecision::full)
           {
             // initiate non-blocking receives from target processors
@@ -1145,16 +1144,19 @@ namespace dftfe
                      i < (d_mpiPatternP2P->getTargetProcIds()).size();
                      ++i)
                   {
-                    const int err = MPI_Irecv(
-                      recvArrayStartPtr,
-                      d_mpiPatternP2P->getNumOwnedIndicesForTargetProcs().data()[i] *
-                        d_blockSize * sizeof(ValueType),
-                      MPI_BYTE,
-                      d_mpiPatternP2P->getTargetProcIds().data()[i],
-                      static_cast<size_type>(MPITags::MPI_P2P_COMMUNICATOR_GATHER_TAG) +
-                        communicationChannel,
-                      d_mpiCommunicator,
-                      &d_requestsAccumulateInsertLocallyOwned[i]);
+                    const int err =
+                      MPI_Irecv(recvArrayStartPtr,
+                                d_mpiPatternP2P
+                                    ->getNumOwnedIndicesForTargetProcs()
+                                    .data()[i] *
+                                  d_blockSize * sizeof(ValueType),
+                                MPI_BYTE,
+                                d_mpiPatternP2P->getTargetProcIds().data()[i],
+                                static_cast<size_type>(
+                                  MPITags::MPI_P2P_COMMUNICATOR_GATHER_TAG) +
+                                  communicationChannel,
+                                d_mpiCommunicator,
+                                &d_requestsAccumulateInsertLocallyOwned[i]);
 
                     std::string errMsg = "Error occured while using MPI_Irecv. "
                                          "Error code: " +
@@ -1163,14 +1165,16 @@ namespace dftfe
 
 
                     recvArrayStartPtr +=
-                      d_mpiPatternP2P->getNumOwnedIndicesForTargetProcs().data()[i] *
+                      d_mpiPatternP2P->getNumOwnedIndicesForTargetProcs()
+                        .data()[i] *
                       d_blockSize;
                   }
               }
 
             // initiate non-blocking sends to ghost processors
             ValueType *sendArrayStartPtr =
-              dataArray.data() + d_mpiPatternP2P->localOwnedSize() * d_blockSize;
+              dataArray.data() +
+              d_mpiPatternP2P->localOwnedSize() * d_blockSize;
 
 #ifdef DFTFE_WITH_DEVICE
             if constexpr (memorySpace == MemorySpace::DEVICE)
@@ -1283,8 +1287,7 @@ namespace dftfe
           {
             // initiate non-blocking receives from target processors
             typename dftfe::dataTypes::singlePrecType<ValueType>::type
-              *recvArrayStartPtr =
-              d_sendRecvBufferSinglePrec.data();
+              *recvArrayStartPtr = d_sendRecvBufferSinglePrec.data();
 
 #ifdef DFTFE_WITH_DEVICE
             if constexpr (memorySpace == MemorySpace::DEVICE)
@@ -1306,7 +1309,8 @@ namespace dftfe
                     d_mpiPatternP2P->getNumOwnedIndicesForTargetProcs()
                         .data()[i] *
                       d_blockSize *
-                      sizeof(typename dftfe::dataTypes::singlePrecType<ValueType>::type),
+                      sizeof(typename dftfe::dataTypes::singlePrecType<
+                             ValueType>::type),
                     MPI_BYTE,
                     d_mpiPatternP2P->getTargetProcIds().data()[i],
                     static_cast<size_type>(
@@ -1346,8 +1350,8 @@ namespace dftfe
                   d_ghostDataCopySinglePrec.data());
 
             // initiate non-blocking sends to ghost processors
-            typename dftfe::dataTypes::singlePrecType<ValueType>::type *sendArrayStartPtr =
-              d_ghostDataCopySinglePrec.data();
+            typename dftfe::dataTypes::singlePrecType<ValueType>::type
+              *sendArrayStartPtr = d_ghostDataCopySinglePrec.data();
 
 #ifdef DFTFE_WITH_DEVICE
             if constexpr (memorySpace == MemorySpace::DEVICE)
@@ -1389,7 +1393,8 @@ namespace dftfe
                            d_mpiPatternP2P->getGhostLocalIndicesRanges()
                              .data()[2 * i]) *
                             d_blockSize *
-                            (sizeof(typename dftfe::dataTypes::singlePrecType<ValueType>::type) /
+                            (sizeof(typename dftfe::dataTypes::singlePrecType<
+                                    ValueType>::type) /
                              4),
                           ncclFloat,
                           d_mpiPatternP2P->getGhostProcIds().data()[i],
@@ -1414,7 +1419,8 @@ namespace dftfe
                           d_mpiPatternP2P->getNumOwnedIndicesForTargetProcs()
                               .data()[i] *
                             d_blockSize *
-                            (sizeof(typename dftfe::dataTypes::singlePrecType<ValueType>::type) /
+                            (sizeof(typename dftfe::dataTypes::singlePrecType<
+                                    ValueType>::type) /
                              4),
                           ncclFloat,
                           d_mpiPatternP2P->getTargetProcIds().data()[i],
@@ -1442,7 +1448,8 @@ namespace dftfe
                      d_mpiPatternP2P->getGhostLocalIndicesRanges()
                        .data()[2 * i]) *
                       d_blockSize *
-                      sizeof(typename dftfe::dataTypes::singlePrecType<ValueType>::type),
+                      sizeof(typename dftfe::dataTypes::singlePrecType<
+                             ValueType>::type),
                     MPI_BYTE,
                     d_mpiPatternP2P->getGhostProcIds().data()[i],
                     static_cast<size_type>(
@@ -1465,22 +1472,22 @@ namespace dftfe
                        .data()[2 * i]) *
                     d_blockSize;
                 }
-
           }
       }
 
 
       template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
       void
-      MPICommunicatorP2P<ValueType, memorySpace>::accumulateInsertLocallyOwnedEnd(
-        MemoryStorage<ValueType, memorySpace> &dataArray)
+      MPICommunicatorP2P<ValueType, memorySpace>::
+        accumulateInsertLocallyOwnedEnd(
+          MemoryStorage<ValueType, memorySpace> &dataArray)
       {
         // wait for all send and recv requests to be completed
 #if defined(DFTFE_WITH_CUDA_NCCL) || defined(DFTFE_WITH_HIP_RCCL)
-if constexpr (memorySpace == MemorySpace::DEVICE)
-  if (d_commProtocol == communicationProtocol::nccl)
-    dftfe::utils::deviceStreamSynchronize(
-      dftfe::utils::DeviceCCLWrapper::d_deviceCommStream);
+        if constexpr (memorySpace == MemorySpace::DEVICE)
+          if (d_commProtocol == communicationProtocol::nccl)
+            dftfe::utils::deviceStreamSynchronize(
+              dftfe::utils::DeviceCCLWrapper::d_deviceCommStream);
 #endif
 
         // wait for all send and recv requests to be completed
@@ -1538,51 +1545,51 @@ if constexpr (memorySpace == MemorySpace::DEVICE)
                     d_ghostSize,
                     dataArray);
           }
-          else
-            {
+        else
+          {
+#ifdef DFTFE_WITH_DEVICE
+            if constexpr (memorySpace == MemorySpace::DEVICE)
+              if (d_commProtocol == communicationProtocol::mpiHost)
+                {
+                  MemoryTransfer<memorySpace, MemorySpace::HOST_PINNED>
+                    memoryTransfer;
+                  if (d_sendRecvBufferSinglePrecHostPinnedPtr->size() > 0)
+                    memoryTransfer.copy(
+                      d_sendRecvBufferSinglePrecHostPinnedPtr->size(),
+                      d_sendRecvBufferSinglePrec.data(),
+                      d_sendRecvBufferSinglePrecHostPinnedPtr->data());
+                }
+#endif
+            // accumulate insert into locally owned entries from recv buffer
+            if ((d_mpiPatternP2P->getOwnedLocalIndicesForTargetProcs().size()) >
+                0)
 #ifdef DFTFE_WITH_DEVICE
               if constexpr (memorySpace == MemorySpace::DEVICE)
-                if (d_commProtocol == communicationProtocol::mpiHost)
-                  {
-                    MemoryTransfer<memorySpace, MemorySpace::HOST_PINNED>
-                      memoryTransfer;
-                    if (d_sendRecvBufferSinglePrecHostPinnedPtr->size() > 0)
-                      memoryTransfer.copy(
-                        d_sendRecvBufferSinglePrecHostPinnedPtr->size(),
-                        d_sendRecvBufferSinglePrec.data(),
-                        d_sendRecvBufferSinglePrecHostPinnedPtr->data());
-                  }
+                MPICommunicatorP2PKernels<ValueType, memorySpace>::
+                  accumInsertLocallyOwnedContrRecvBufferFromTargetProcs(
+                    d_sendRecvBufferSinglePrec,
+                    d_mpiPatternP2P->getOwnedLocalIndicesForTargetProcs(),
+                    d_blockSize,
+                    d_locallyOwnedSize,
+                    d_ghostSize,
+                    dataArray,
+                    dftfe::utils::DeviceCCLWrapper::d_deviceCommStream);
+              else
 #endif
-              // accumulate insert into locally owned entries from recv buffer
-              if ((d_mpiPatternP2P->getOwnedLocalIndicesForTargetProcs().size()) >
-                  0)
-#ifdef DFTFE_WITH_DEVICE
-                if constexpr (memorySpace == MemorySpace::DEVICE)
-                  MPICommunicatorP2PKernels<ValueType, memorySpace>::
-                    accumInsertLocallyOwnedContrRecvBufferFromTargetProcs(
-                      d_sendRecvBufferSinglePrec,
-                      d_mpiPatternP2P->getOwnedLocalIndicesForTargetProcs(),
-                      d_blockSize,
-                      d_locallyOwnedSize,
-                      d_ghostSize,
-                      dataArray,
-                      dftfe::utils::DeviceCCLWrapper::d_deviceCommStream);
-                else
-#endif
-                  MPICommunicatorP2PKernels<ValueType, memorySpace>::
-                    accumInsertLocallyOwnedContrRecvBufferFromTargetProcs(
-                      d_sendRecvBufferSinglePrec,
-                      d_mpiPatternP2P->getOwnedLocalIndicesForTargetProcs(),
-                      d_blockSize,
-                      d_locallyOwnedSize,
-                      d_ghostSize,
-                      dataArray);
-            }
+                MPICommunicatorP2PKernels<ValueType, memorySpace>::
+                  accumInsertLocallyOwnedContrRecvBufferFromTargetProcs(
+                    d_sendRecvBufferSinglePrec,
+                    d_mpiPatternP2P->getOwnedLocalIndicesForTargetProcs(),
+                    d_blockSize,
+                    d_locallyOwnedSize,
+                    d_ghostSize,
+                    dataArray);
+          }
 
 #ifdef DFTFE_WITH_DEVICE
-          if constexpr (memorySpace == MemorySpace::DEVICE)
-            dftfe::utils::deviceStreamSynchronize(
-              dftfe::utils::DeviceCCLWrapper::d_deviceCommStream);
+        if constexpr (memorySpace == MemorySpace::DEVICE)
+          dftfe::utils::deviceStreamSynchronize(
+            dftfe::utils::DeviceCCLWrapper::d_deviceCommStream);
 #endif
       }
 

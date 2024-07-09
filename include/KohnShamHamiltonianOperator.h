@@ -102,10 +102,11 @@ namespace dftfe
      * @param spinIndex spin index
      */
     void
-    setVEff( const std::vector<
-                  dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-                                  &vKS_quadValues,
-                const unsigned int                                   spinIndex);
+    setVEff(
+      const std::vector<
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+        &                vKS_quadValues,
+      const unsigned int spinIndex);
 
     void
     computeVEffExternalPotCorr(
@@ -191,7 +192,6 @@ namespace dftfe
       const bool onlyHPrimePartForFirstOrderDensityMatResponse = false);
 
   private:
-
     void
     setVEffExternalPotCorrToZero();
 

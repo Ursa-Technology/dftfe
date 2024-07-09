@@ -206,12 +206,10 @@ namespace dftfe
       dealii::parallel::distributed::Triangulation<3> &serialTriangulation,
       std::vector<std::vector<bool>> &parallelTriaCurrentRefinement,
       std::vector<std::vector<bool>> &serialTriaCurrentRefinement,
-      const bool                                       generateSerialTria = false,
-      const bool enableManualRepartitioning = false);
+      const bool                      generateSerialTria         = false,
+      const bool                      enableManualRepartitioning = false);
 
   private:
-
-
     /**
      * @brief internal function which generates a coarse mesh which is required for the load function call in
      * restarts.

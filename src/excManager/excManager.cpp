@@ -124,13 +124,13 @@ namespace dftfe
       }
     else if (XCType == "GGA-LBxPBEc")
       {
-	      exceptParamX = xc_func_init(d_funcXPtr,XC_GGA_X_LB,XC_POLARIZED);
-	      exceptParamC = xc_func_init(d_funcCPtr,XC_GGA_C_PBE,XC_POLARIZED);
+        exceptParamX = xc_func_init(d_funcXPtr, XC_GGA_X_LB, XC_POLARIZED);
+        exceptParamC = xc_func_init(d_funcCPtr, XC_GGA_C_PBE, XC_POLARIZED);
 
-	      d_excDensityObjPtr = new excDensityGGAClass(d_funcXPtr,d_funcCPtr);
+        d_excDensityObjPtr = new excDensityGGAClass(d_funcXPtr, d_funcCPtr);
 
-	      d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
-      }	      
+        d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+      }
     else if (XCType == "MLXC-NNLDA")
       {
         exceptParamX = xc_func_init(d_funcXPtr, XC_LDA_X, XC_POLARIZED);

@@ -46,4 +46,3 @@ namespace dftfe
 } // end of namespace dftfe
 
 #endif // DFTFE_NONLINEARSOLVERFUNCTION_H
-

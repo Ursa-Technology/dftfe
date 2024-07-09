@@ -189,7 +189,7 @@ namespace dftfe
       // The function takes the cell level nodal data
       // and interpolates it to the quad data in each cell
       // by multiplying with the shape function
-            template <typename ValueType1, typename ValueType2>
+      template <typename ValueType1, typename ValueType2>
       void
       interpolateNodalDataToQuadDevice(
         const dftfe::size_type numDofsPerElem,

@@ -258,7 +258,7 @@ namespace dftfe
     MPICommunicatorP2PKernels<double, dftfe::utils::MemorySpace::HOST>::
       accumInsertLocallyOwnedContrRecvBufferFromTargetProcs(
         const MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-                                                               &                   recvBuffer,
+          &                   recvBuffer,
         const SizeTypeVector &ownedLocalIndicesForTargetProcs,
         const size_type       blockSize,
         const size_type       locallyOwnedSize,
@@ -502,7 +502,7 @@ namespace dftfe
     MPICommunicatorP2PKernels<double, dftfe::utils::MemorySpace::HOST_PINNED>::
       accumInsertLocallyOwnedContrRecvBufferFromTargetProcs(
         const MemoryStorage<double, dftfe::utils::MemorySpace::HOST_PINNED>
-                             &                   recvBuffer,
+          &                   recvBuffer,
         const SizeTypeVector &ownedLocalIndicesForTargetProcs,
         const size_type       blockSize,
         const size_type       locallyOwnedSize,
@@ -513,7 +513,7 @@ namespace dftfe
     MPICommunicatorP2PKernels<double, dftfe::utils::MemorySpace::HOST_PINNED>::
       accumInsertLocallyOwnedContrRecvBufferFromTargetProcs(
         const MemoryStorage<float, dftfe::utils::MemorySpace::HOST_PINNED>
-                             &                   recvBuffer,
+          &                   recvBuffer,
         const SizeTypeVector &ownedLocalIndicesForTargetProcs,
         const size_type       blockSize,
         const size_type       locallyOwnedSize,
@@ -524,7 +524,7 @@ namespace dftfe
     MPICommunicatorP2PKernels<float, dftfe::utils::MemorySpace::HOST_PINNED>::
       accumInsertLocallyOwnedContrRecvBufferFromTargetProcs(
         const MemoryStorage<float, dftfe::utils::MemorySpace::HOST_PINNED>
-                             &                   recvBuffer,
+          &                   recvBuffer,
         const SizeTypeVector &ownedLocalIndicesForTargetProcs,
         const size_type       blockSize,
         const size_type       locallyOwnedSize,

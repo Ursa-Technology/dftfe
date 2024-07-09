@@ -146,8 +146,7 @@ namespace dftfe
 
                 if (res < absTolerance)
                   conv = true;
-
-	      }
+              }
             if (!conv)
               {
                 AssertThrow(false,
@@ -191,6 +190,5 @@ namespace dftfe
     if (debugLevel >= 4)
       pcout << "Time for Poisson/Helmholtz problem CG iterations: " << time
             << std::endl;
-
   }
 } // namespace dftfe

@@ -35,39 +35,39 @@ namespace dftfe
   class InterpolateFromCellToLocalPoints
   {
   public:
-    InterpolateFromCellToLocalPoints(const std::shared_ptr<const dftfe::utils::FECell<3>> &srcCell,
-                                     unsigned int numNodes);
+    InterpolateFromCellToLocalPoints(
+      const std::shared_ptr<const dftfe::utils::FECell<3>> &srcCell,
+      unsigned int                                          numNodes);
 
-    void setRealCoordinatesOfLocalPoints(unsigned int numPoints,
+    void
+    setRealCoordinatesOfLocalPoints(unsigned int        numPoints,
                                     std::vector<double> coordinates);
 
-    void interpolate(
-      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>> &
-        BLASWrapperPtr,
-      unsigned int numberOfVectors,
-      const dataTypes::number * parentNodalMemSpacePtr,
-      dataTypes::number * outputMemSpacePtr);
+    void
+    interpolate(
+      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
+        &                      BLASWrapperPtr,
+      unsigned int             numberOfVectors,
+      const dataTypes::number *parentNodalMemSpacePtr,
+      dataTypes::number *      outputMemSpacePtr);
 
-    void interpolate(
-      const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
-        BLASWrapperPtr,
-      unsigned int numberOfVectors,
-      const std::vector<dataTypes::number> &parentNodalHost,
-      std::vector<dataTypes::number> &outputHost);
+    void
+    interpolate(const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<
+                  dftfe::utils::MemorySpace::HOST>> & BLASWrapperPtr,
+                unsigned int                          numberOfVectors,
+                const std::vector<dataTypes::number> &parentNodalHost,
+                std::vector<dataTypes::number> &      outputHost);
 
-  private :
-
+  private:
     std::shared_ptr<const dftfe::utils::FECell<3>> d_srcCell;
-    unsigned int d_numNodes,d_numPoints;
-    dftfe::utils::MemoryStorage<dataTypes::number,
-                                memorySpace>
-      d_shapeValuesMemSpace;
-    std::vector<dataTypes::number>
-      d_shapeValuesHost;
+    unsigned int                                   d_numNodes, d_numPoints;
+    dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+                                   d_shapeValuesMemSpace;
+    std::vector<dataTypes::number> d_shapeValuesHost;
 
     const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
       d_BLASWrapperPtr;
   };
 
-}
+} // namespace dftfe
 #endif // DFTFE_EXE_INTERPOLATEFROMCELLTOLOCALPOINTS_H

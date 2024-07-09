@@ -24,17 +24,16 @@
 #include "FEBasisOperations.h"
 namespace dftfe
 {
-
   /*
    * @brief Extension of the poissonSolverProblem to multi Vector
    */
   template <dftfe::utils::MemorySpace memorySpace>
-  class MultiVectorPoissonLinearSolverProblem : public MultiVectorLinearSolverProblem<memorySpace>
+  class MultiVectorPoissonLinearSolverProblem
+    : public MultiVectorLinearSolverProblem<memorySpace>
   {
   public:
-
     // Constructor
-    MultiVectorPoissonLinearSolverProblem( const MPI_Comm &mpi_comm_parent,
+    MultiVectorPoissonLinearSolverProblem(const MPI_Comm &mpi_comm_parent,
                                           const MPI_Comm &mpi_comm_domain);
 
     // Destructor
@@ -44,40 +43,36 @@ namespace dftfe
      * @brief reinit function to set up the internal variables
      * this function calls the computeDiagonal() and preComputeShapeFunction()
      */
-    void  reinit(
-      std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
-        BLASWrapperPtr,
-        std::shared_ptr<
-          dftfe::basis::FEBasisOperations<double, double, memorySpace>>
-          basisOperationsPtr,
-        const dealii::AffineConstraints<double> &constraintMatrix,
-        const unsigned int                       matrixFreeVectorComponent,
-        const unsigned int matrixFreeQuadratureComponentRhs,
-        const unsigned int matrixFreeQuadratureComponentAX,
-        bool isComputeMeanValueConstraint);
+    void
+    reinit(std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
+             BLASWrapperPtr,
+           std::shared_ptr<
+             dftfe::basis::FEBasisOperations<double, double, memorySpace>>
+                                                    basisOperationsPtr,
+           const dealii::AffineConstraints<double> &constraintMatrix,
+           const unsigned int                       matrixFreeVectorComponent,
+           const unsigned int matrixFreeQuadratureComponentRhs,
+           const unsigned int matrixFreeQuadratureComponentAX,
+           bool               isComputeMeanValueConstraint);
     /**
      * @brief Compute right hand side vector for the problem Ax = rhs.
      *
      * @param rhs vector for the right hand side values
      */
-    dftfe::linearAlgebra::MultiVector<double ,
-                                      memorySpace> &
+    dftfe::linearAlgebra::MultiVector<double, memorySpace> &
     computeRhs(
-               dftfe::linearAlgebra::MultiVector<double ,
-                                                 memorySpace> &       NDBCVec,
-               dftfe::linearAlgebra::MultiVector<double ,
-                                                 memorySpace> &       outputVec,
-               unsigned int                      blockSizeInput) override;
+      dftfe::linearAlgebra::MultiVector<double, memorySpace> &NDBCVec,
+      dftfe::linearAlgebra::MultiVector<double, memorySpace> &outputVec,
+      unsigned int blockSizeInput) override;
 
     /**
      * @brief Compute A matrix multipled by x.
      *
      */
-    void vmult(dftfe::linearAlgebra::MultiVector<double ,
-                                            memorySpace> &Ax,
-          dftfe::linearAlgebra::MultiVector<double ,
-                                            memorySpace> &x,
-          unsigned int               blockSize) override;
+    void
+    vmult(dftfe::linearAlgebra::MultiVector<double, memorySpace> &Ax,
+          dftfe::linearAlgebra::MultiVector<double, memorySpace> &x,
+          unsigned int blockSize) override;
 
     /**
      * @brief Apply the constraints to the solution vector.
@@ -91,11 +86,10 @@ namespace dftfe
      *
      */
     void
-    precondition_Jacobi(dftfe::linearAlgebra::MultiVector<double ,
-                                                          memorySpace> &      dst,
-                        const dftfe::linearAlgebra::MultiVector<double ,
-                                                                memorySpace> &src,
-                        const double                     omega) const  override;
+    precondition_Jacobi(
+      dftfe::linearAlgebra::MultiVector<double, memorySpace> &      dst,
+      const dftfe::linearAlgebra::MultiVector<double, memorySpace> &src,
+      const double omega) const override;
 
 
     /**
@@ -103,32 +97,36 @@ namespace dftfe
      *
      */
     void
-    precondition_JacobiSqrt(dftfe::linearAlgebra::MultiVector<double ,
-                                                               memorySpace> &      dst,
-                            const dftfe::linearAlgebra::MultiVector<double ,
-                                                                    memorySpace> &src,
-                            const double omega) const override ;
+    precondition_JacobiSqrt(
+      dftfe::linearAlgebra::MultiVector<double, memorySpace> &      dst,
+      const dftfe::linearAlgebra::MultiVector<double, memorySpace> &src,
+      const double omega) const override;
 
     /**
      * @brief function to set data for Rhs Vec.
-     *  @param[in] inputQuadData the value of the right hand side at the quad points
+     *  @param[in] inputQuadData the value of the right hand side at the quad
+     * points
      */
     void
-      setDataForRhsVec(dftfe::utils::MemoryStorage<double, memorySpace>& inputQuadData);
+    setDataForRhsVec(
+      dftfe::utils::MemoryStorage<double, memorySpace> &inputQuadData);
 
-
-    void clear();
-
-  private:
 
     void
-    tempRhsVecCalc(dftfe::linearAlgebra::MultiVector<double ,memorySpace> &      rhs);
+    clear();
 
-    void preComputeShapeFunction();
+  private:
+    void
+    tempRhsVecCalc(dftfe::linearAlgebra::MultiVector<double, memorySpace> &rhs);
 
-    void computeDiagonalA();
+    void
+    preComputeShapeFunction();
 
-    void computeMeanValueConstraint();
+    void
+    computeDiagonalA();
+
+    void
+    computeMeanValueConstraint();
 
     bool d_isComputeDiagonalA;
 
@@ -139,15 +137,15 @@ namespace dftfe
 
     /// the vector that stores the output obtained by solving the poisson
     /// problem
-    dftfe::linearAlgebra::MultiVector<double ,
-                                      memorySpace> *d_blockedXPtr, *d_blockedNDBCPtr, d_rhsVec;
+    dftfe::linearAlgebra::MultiVector<double, memorySpace> *d_blockedXPtr,
+      *d_blockedNDBCPtr, d_rhsVec;
 
     unsigned int d_matrixFreeQuadratureComponentRhs;
     unsigned int d_matrixFreeVectorComponent;
     unsigned int d_blockSize;
 
-    dftfe::utils::MemoryStorage<double,
-                                      memorySpace> d_diagonalA, d_diagonalSqrtA;
+    dftfe::utils::MemoryStorage<double, memorySpace> d_diagonalA,
+      d_diagonalSqrtA;
 
     std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
       d_BLASWrapperPtr;
@@ -159,35 +157,35 @@ namespace dftfe
     /// pointer to dealii MatrixFree object
     const dealii::MatrixFree<3, double> *d_matrixFreeDataPtr;
 
-    const dftfe::utils::MemoryStorage<double, memorySpace> * d_cellStiffnessMatrixPtr;
+    const dftfe::utils::MemoryStorage<double, memorySpace>
+      *d_cellStiffnessMatrixPtr;
 
-    dftUtils::constraintMatrixInfo<memorySpace>
-      d_constraintsInfo;
+    dftUtils::constraintMatrixInfo<memorySpace> d_constraintsInfo;
 
     /// data members for the mpi implementation
-    const MPI_Comm             mpi_communicator,d_mpi_parent;
+    const MPI_Comm             mpi_communicator, d_mpi_parent;
     const unsigned int         n_mpi_processes;
     const unsigned int         this_mpi_process;
     dealii::ConditionalOStream pcout;
-    size_type d_locallyOwnedSize;
+    size_type                  d_locallyOwnedSize;
 
     size_type d_numberDofsPerElement;
     size_type d_numCells;
 
     size_type d_inc;
-    double d_negScalarCoeffAlpha;
-    double d_scalarCoeffAlpha;
-    double d_beta;
-    double d_alpha;
-    char d_transA;
-    char d_transB;
+    double    d_negScalarCoeffAlpha;
+    double    d_scalarCoeffAlpha;
+    double    d_beta;
+    double    d_alpha;
+    char      d_transA;
+    char      d_transB;
 
 
     dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
       d_mapNodeIdToProcId, d_mapQuadIdToProcId;
 
-    dftfe::utils::MemoryStorage<double, memorySpace>
-      d_xCellLLevelNodalData, d_AxCellLLevelNodalData;
+    dftfe::utils::MemoryStorage<double, memorySpace> d_xCellLLevelNodalData,
+      d_AxCellLLevelNodalData;
 
 
     dftfe::utils::MemoryStorage<double, memorySpace> *d_rhsQuadDataPtr;
@@ -220,7 +218,7 @@ namespace dftfe
     unsigned int d_cellBlockSize;
   };
 
-}
+} // namespace dftfe
 
 
 #endif // DFTFE_MULTIVECTORPOISSONLINEARSOLVERPROBLEM_H

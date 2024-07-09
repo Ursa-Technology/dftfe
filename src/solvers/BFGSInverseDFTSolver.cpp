@@ -56,14 +56,17 @@ namespace dftfe
 
   } // namespace
 
-  template <unsigned int FEOrder, unsigned int FEOrderElectro, dftfe::utils::MemorySpace memorySpace>
-  BFGSInverseDFTSolver<FEOrder,FEOrderElectro,memorySpace>::BFGSInverseDFTSolver(int             numComponents,
-                                             double          tol,
-                                             double          lineSearchTol,
-                                             unsigned int    maxNumIter,
-                                             int             historySize,
-                                             int             numLineSearch,
-                                             const MPI_Comm &mpi_comm_parent)
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  BFGSInverseDFTSolver<FEOrder, FEOrderElectro, memorySpace>::
+    BFGSInverseDFTSolver(int             numComponents,
+                         double          tol,
+                         double          lineSearchTol,
+                         unsigned int    maxNumIter,
+                         int             historySize,
+                         int             numLineSearch,
+                         const MPI_Comm &mpi_comm_parent)
     : d_numComponents(numComponents)
     , d_tol(tol)
     , d_lineSearchTol(lineSearchTol)
@@ -78,12 +81,17 @@ namespace dftfe
             (dealii::Utilities::MPI::this_mpi_process(mpi_comm_parent) == 0))
   {}
 
-  template <unsigned int FEOrder, unsigned int FEOrderElectro, dftfe::utils::MemorySpace memorySpace>
-  void BFGSInverseDFTSolver<FEOrder,FEOrderElectro,memorySpace>::inverseJacobianTimesVec(
-    const distributedCPUVec<double> &g,
-    distributedCPUVec<double> &      z,
-    const unsigned int               component,
-    InverseDFTSolverFunction<FEOrder,FEOrderElectro,memorySpace> &    iDFTSolverFunction)
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  void
+  BFGSInverseDFTSolver<FEOrder, FEOrderElectro, memorySpace>::
+    inverseJacobianTimesVec(
+      const distributedCPUVec<double> &g,
+      distributedCPUVec<double> &      z,
+      const unsigned int               component,
+      InverseDFTSolverFunction<FEOrder, FEOrderElectro, memorySpace>
+        &iDFTSolverFunction)
   {
     int                       N            = d_k[component];
     distributedCPUVec<double> q            = g;
@@ -134,12 +142,17 @@ namespace dftfe
       }
   }
 
-  template <unsigned int FEOrder, unsigned int FEOrderElectro, dftfe::utils::MemorySpace memorySpace>
-  void BFGSInverseDFTSolver<FEOrder,FEOrderElectro,memorySpace>::fnormCP(const std::vector<distributedCPUVec<double>> &x,
-                                const std::vector<distributedCPUVec<double>> &p,
-                                const std::vector<double> &  alpha,
-                                std::vector<double> &        fnorms,
-               InverseDFTSolverFunction<FEOrder,FEOrderElectro,memorySpace> &iDFTSolverFunction)
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  void
+  BFGSInverseDFTSolver<FEOrder, FEOrderElectro, memorySpace>::fnormCP(
+    const std::vector<distributedCPUVec<double>> &x,
+    const std::vector<distributedCPUVec<double>> &p,
+    const std::vector<double> &                   alpha,
+    std::vector<double> &                         fnorms,
+    InverseDFTSolverFunction<FEOrder, FEOrderElectro, memorySpace>
+      &iDFTSolverFunction)
   {
     std::vector<distributedCPUVec<double>> xnew(d_numComponents);
     for (unsigned int iComp = 0; iComp < d_numComponents; ++iComp)
@@ -168,17 +181,23 @@ namespace dftfe
       }
   }
 
-  template <unsigned int FEOrder, unsigned int FEOrderElectro, dftfe::utils::MemorySpace memorySpace>
-  void BFGSInverseDFTSolver<FEOrder,FEOrderElectro,memorySpace>::solveLineSearchCP(
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  void
+  BFGSInverseDFTSolver<FEOrder, FEOrderElectro, memorySpace>::solveLineSearchCP(
     std::vector<std::vector<double>> &lambda,
     std::vector<std::vector<double>> &f,
     const int                         maxIter,
     const double                      tolerance,
-         InverseDFTSolverFunction<FEOrder,FEOrderElectro,memorySpace> &     iDFTSolverFunction)
+    InverseDFTSolverFunction<FEOrder, FEOrderElectro, memorySpace>
+      &iDFTSolverFunction)
   {
     for (unsigned int iComp = 0; iComp < d_numComponents; ++iComp)
       {
-        dftfe::utils::throwException(lambda[iComp].size() >= 2, "At least two initial values are need for a secant method.");
+        dftfe::utils::throwException(
+          lambda[iComp].size() >= 2,
+          "At least two initial values are need for a secant method.");
       }
 
     std::vector<double> lambda0(d_numComponents);
@@ -266,32 +285,50 @@ namespace dftfe
       }
   }
 
-  template <unsigned int FEOrder, unsigned int FEOrderElectro, dftfe::utils::MemorySpace memorySpace>
-  void BFGSInverseDFTSolver<FEOrder,FEOrderElectro,memorySpace>::solveLineSearchSecantLoss(
-    std::vector<std::vector<double>> &lambda,
-    std::vector<std::vector<double>> &f,
-    const int                         maxIter,
-    const double                      tolerance,
-         InverseDFTSolverFunction<FEOrder,FEOrderElectro,memorySpace> &     iDFTSolverFunction)
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  void
+  BFGSInverseDFTSolver<FEOrder, FEOrderElectro, memorySpace>::
+    solveLineSearchSecantLoss(
+      std::vector<std::vector<double>> &lambda,
+      std::vector<std::vector<double>> &f,
+      const int                         maxIter,
+      const double                      tolerance,
+      InverseDFTSolverFunction<FEOrder, FEOrderElectro, memorySpace>
+        &iDFTSolverFunction)
   {
-    dftfe::utils::throwException(false, "BFGSInverseDFTSolver::solveLineSearchSecantLoss() not implemented yet.");
-
+    dftfe::utils::throwException(
+      false,
+      "BFGSInverseDFTSolver::solveLineSearchSecantLoss() not implemented yet.");
   }
 
-  template <unsigned int FEOrder, unsigned int FEOrderElectro, dftfe::utils::MemorySpace memorySpace>
-  void BFGSInverseDFTSolver<FEOrder,FEOrderElectro,memorySpace>::solveLineSearchSecantForceNorm(
-    std::vector<std::vector<double>> &lambda,
-    std::vector<std::vector<double>> &f,
-    const int                         maxIter,
-    const double                      tolerance,
-         InverseDFTSolverFunction<FEOrder,FEOrderElectro,memorySpace> &    iDFTSolverFunction)
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  void
+  BFGSInverseDFTSolver<FEOrder, FEOrderElectro, memorySpace>::
+    solveLineSearchSecantForceNorm(
+      std::vector<std::vector<double>> &lambda,
+      std::vector<std::vector<double>> &f,
+      const int                         maxIter,
+      const double                      tolerance,
+      InverseDFTSolverFunction<FEOrder, FEOrderElectro, memorySpace>
+        &iDFTSolverFunction)
   {
-    dftfe::utils::throwException(false, "BFGSInverseDFTSolver::solveLineSearchSecantForceNorm() not implemented yet.");
+    dftfe::utils::throwException(
+      false,
+      "BFGSInverseDFTSolver::solveLineSearchSecantForceNorm() not implemented yet.");
   }
 
-  template <unsigned int FEOrder, unsigned int FEOrderElectro, dftfe::utils::MemorySpace memorySpace>
-  void BFGSInverseDFTSolver<FEOrder,FEOrderElectro,memorySpace>::solve(InverseDFTSolverFunction<FEOrder,FEOrderElectro,memorySpace> &iDFTSolverFunction,
-                              const BFGSInverseDFTSolver::LSType lsType)
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  void
+  BFGSInverseDFTSolver<FEOrder, FEOrderElectro, memorySpace>::solve(
+    InverseDFTSolverFunction<FEOrder, FEOrderElectro, memorySpace>
+      &                                iDFTSolverFunction,
+    const BFGSInverseDFTSolver::LSType lsType)
   {
     std::vector<distributedCPUVec<double>> y(d_numComponents);
     std::vector<distributedCPUVec<double>> s(d_numComponents);
@@ -363,7 +400,9 @@ namespace dftfe
               }
             else
               {
-                dftfe::utils::throwException(false, "Invalid line search type passed to BFGSInverseDFTSolver.solve()");
+                dftfe::utils::throwException(
+                  false,
+                  "Invalid line search type passed to BFGSInverseDFTSolver.solve()");
               }
 
             lambdas[iComp].push_back(0.0);
@@ -488,16 +527,20 @@ namespace dftfe
       }
   }
 
-    template <unsigned int FEOrder, unsigned int FEOrderElectro, dftfe::utils::MemorySpace memorySpace>
-    std::vector<distributedCPUVec<double>> BFGSInverseDFTSolver<FEOrder,FEOrderElectro,memorySpace>::getSolution() const
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  std::vector<distributedCPUVec<double>>
+  BFGSInverseDFTSolver<FEOrder, FEOrderElectro, memorySpace>::getSolution()
+    const
   {
     return d_x;
   }
 
- template class BFGSInverseDFTSolver<2,2,dftfe::utils::MemorySpace::HOST>;
- template class BFGSInverseDFTSolver<4,4,dftfe::utils::MemorySpace::HOST>;
+  template class BFGSInverseDFTSolver<2, 2, dftfe::utils::MemorySpace::HOST>;
+  template class BFGSInverseDFTSolver<4, 4, dftfe::utils::MemorySpace::HOST>;
 #ifdef DFTFE_WITH_DEVICE
- template class BFGSInverseDFTSolver<2,2,dftfe::utils::MemorySpace::DEVICE>;
- template class BFGSInverseDFTSolver<4,4,dftfe::utils::MemorySpace::DEVICE>;
+  template class BFGSInverseDFTSolver<2, 2, dftfe::utils::MemorySpace::DEVICE>;
+  template class BFGSInverseDFTSolver<4, 4, dftfe::utils::MemorySpace::DEVICE>;
 #endif
 } // namespace dftfe

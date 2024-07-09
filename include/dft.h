@@ -400,8 +400,8 @@ namespace dftfe
     /**
      * @brief Gets the nearest atom distance for each atom
      */
-    const std::vector<double> & 
-	    getNearestAtomDistance() const;
+    const std::vector<double> &
+    getNearestAtomDistance() const;
 
     /**
      * @brief Gets the current image atom Locations in cartesian form
@@ -469,30 +469,33 @@ namespace dftfe
     /**
      * @brief Get reference the memorySpace templated eigen vectors
      */
-    const dftfe::utils::MemoryStorage<dataTypes::number,memorySpace> &
+    const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace> &
     getEigenVectors() const;
 
     /**
      * @brief Get reference the host eigen vectors
      */
-    const dftfe::utils::MemoryStorage<dataTypes::number, dftfe::utils::MemorySpace::HOST> &
+    const dftfe::utils::MemoryStorage<dataTypes::number,
+                                      dftfe::utils::MemorySpace::HOST> &
     getEigenVectorsHost() const;
 
     /**
      * @brief Get reference to the eigen values
      */
     const std::vector<std::vector<double>> &
-      getEigenValues() const;
+    getEigenValues() const;
 
     /**
      * @brief Get the value of fermi energy
      */
-    double getFermiEnergy() const ;
+    double
+    getFermiEnergy() const;
 
     /**
      * @brief Get the number of electrons
      */
-    double getNumElectrons() const ;
+    double
+    getNumElectrons() const;
 
     elpaScalaManager *
     getElpaScalaManager() const;
@@ -501,12 +504,12 @@ namespace dftfe
     /**
      * @brief Get the Ptr to Chebyshev solver in device
      */
-     chebyshevOrthogonalizedSubspaceIterationSolverDevice *
-      getSubspaceIterationSolverDevice() ;
+    chebyshevOrthogonalizedSubspaceIterationSolverDevice *
+    getSubspaceIterationSolverDevice();
 #endif
-     /**
+    /**
      * @brief Get the Ptr to Chebyshev solver in host
-      */
+     */
     chebyshevOrthogonalizedSubspaceIterationSolver *
     getSubspaceIterationSolverHost();
 
@@ -518,7 +521,7 @@ namespace dftfe
       const unsigned int s,
       const unsigned int kPointIndex,
       KohnShamHamiltonianOperator<dftfe::utils::MemorySpace::HOST>
-                                                     &                                             kohnShamDFTEigenOperator,
+        &                                             kohnShamDFTEigenOperator,
       elpaScalaManager &                              elpaScala,
       chebyshevOrthogonalizedSubspaceIterationSolver &subspaceIterationSolver,
       std::vector<double> &                           residualNormWaveFunctions,
@@ -537,10 +540,10 @@ namespace dftfe
       const unsigned int s,
       const unsigned int kPointIndex,
       KohnShamHamiltonianOperator<dftfe::utils::MemorySpace::DEVICE>
-                       &               kohnShamDFTEigenOperator,
+        &               kohnShamDFTEigenOperator,
       elpaScalaManager &elpaScala,
       chebyshevOrthogonalizedSubspaceIterationSolverDevice
-                          &                  subspaceIterationSolverDevice,
+        &                  subspaceIterationSolverDevice,
       std::vector<double> &residualNormWaveFunctions,
       const bool           computeResidual,
       const unsigned int   numberRayleighRitzAvoidancePasses = 0,
@@ -560,21 +563,27 @@ namespace dftfe
     /**
      *@brief get the Ptr to the operator class ( Kohn Sham Operator)
      */
-    KohnShamHamiltonianOperator<memorySpace> * getOperatorClass();
+    KohnShamHamiltonianOperator<memorySpace> *
+    getOperatorClass();
 
     /**
      *@brief get the index of the DoF Handler corresponding to
      *
      */
-    unsigned int getDensityDofHandlerIndex();
+    unsigned int
+    getDensityDofHandlerIndex();
 
-    unsigned int getDensityQuadratureId();
+    unsigned int
+    getDensityQuadratureId();
 
-    const std::vector<double> &getKPointWeights() const;
+    const std::vector<double> &
+    getKPointWeights() const;
 
-    unsigned int getNumEigenValues() const;
+    unsigned int
+    getNumEigenValues() const;
 
-    triangulationManager * getTriangulationManager();
+    triangulationManager *
+    getTriangulationManager();
 
     const dealii::MatrixFree<3, double> &
     getMatrixFreeDataElectro() const;
@@ -599,24 +608,19 @@ namespace dftfe
     getBasisOperationsHost();
 
     std::shared_ptr<
-      dftfe::basis::FEBasisOperations<dataTypes::number,
-                                      double,
-                                      memorySpace>>
+      dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
     getBasisOperationsMemSpace();
 
     std::shared_ptr<
-      dftfe::basis::FEBasisOperations<double,
-                                      double,
-                                      dftfe::utils::MemorySpace::HOST>> getBasisOperationsElectroHost();
+      dftfe::basis::
+        FEBasisOperations<double, double, dftfe::utils::MemorySpace::HOST>>
+    getBasisOperationsElectroHost();
 
     std::shared_ptr<
-      dftfe::basis::FEBasisOperations<double,
-                                      double,
-                                      memorySpace>>
+      dftfe::basis::FEBasisOperations<double, double, memorySpace>>
     getBasisOperationsElectroMemSpace();
 
-    std::shared_ptr<
-      dftfe::linearAlgebra::BLASWrapper<memorySpace>>
+    std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
     getBLASWrapperMemSpace();
 
 
@@ -640,12 +644,12 @@ namespace dftfe
       const std::shared_ptr<
         dftfe::basis::
           FEBasisOperations<double, double, dftfe::utils::MemorySpace::HOST>>
-                                              &                                      basisOperationsPtr,
+        &                                      basisOperationsPtr,
       const dealii::AffineConstraints<double> &constraintMatrix,
       const unsigned int                       dofHandlerId,
       const unsigned int                       quadratureId,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-                                &                        quadratureValueData,
+        &                        quadratureValueData,
       distributedCPUVec<double> &nodalField);
 
     /**
@@ -662,25 +666,28 @@ namespace dftfe
       const std::shared_ptr<
         dftfe::basis::
           FEBasisOperations<double, double, dftfe::utils::MemorySpace::HOST>>
-                                      &                              basisOperationsPtr,
+        &                              basisOperationsPtr,
       const unsigned int               dofHandlerId,
       const unsigned int               quadratureId,
       const distributedCPUVec<double> &nodalField,
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
         &quadratureValueData,
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-                &        quadratureGradValueData,
+        &        quadratureGradValueData,
       const bool isEvaluateGradData = false);
 
     /// map of atom node number and atomic weight
-    std::map<dealii::types::global_dof_index, double> & getAtomNodeToChargeMap();
+    std::map<dealii::types::global_dof_index, double> &
+    getAtomNodeToChargeMap();
 
     /// non-intersecting smeared charges of all atoms at quad points
-    std::map<dealii::CellId, std::vector<double>> & getBQuadValuesAllAtoms();
+    std::map<dealii::CellId, std::vector<double>> &
+    getBQuadValuesAllAtoms();
 
-    unsigned int     getSmearedChargeQuadratureIdElectro();
+    unsigned int
+    getSmearedChargeQuadratureIdElectro();
 
-   const dealii::AffineConstraints<double> *
+    const dealii::AffineConstraints<double> *
     getConstraintsVectorElectro();
 
     const MPI_Comm &
@@ -868,7 +875,6 @@ namespace dftfe
         &        quadratureHessianValueData,
       const bool isEvaluateGradData    = false,
       const bool isEvaluateHessianData = false);
-
 
 
 
@@ -1856,7 +1862,6 @@ namespace dftfe
         &residualNormWaveFunctionsAllkPoints,
       const std::vector<std::vector<double>> &eigenValuesAllkPoints,
       const unsigned int                      highestState);
-
 
 
 

@@ -23,93 +23,96 @@
 namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
-  InterpolateFromCellToLocalPoints<memorySpace>::InterpolateFromCellToLocalPoints(const std::shared_ptr<const dftfe::utils::FECell<3>> &srcCell,
-                                   unsigned int numNodes)
+  InterpolateFromCellToLocalPoints<memorySpace>::
+    InterpolateFromCellToLocalPoints(
+      const std::shared_ptr<const dftfe::utils::FECell<3>> &srcCell,
+      unsigned int                                          numNodes)
   {
-      d_srcCell = srcCell;
-      d_numNodes = numNodes;
+    d_srcCell  = srcCell;
+    d_numNodes = numNodes;
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  InterpolateFromCellToLocalPoints<memorySpace>::setRealCoordinatesOfLocalPoints(unsigned int numPoints,
-                                                                    std::vector<double> coordinates)
+  InterpolateFromCellToLocalPoints<memorySpace>::
+    setRealCoordinatesOfLocalPoints(unsigned int        numPoints,
+                                    std::vector<double> coordinates)
   {
     d_numPoints = numPoints;
-    d_shapeValuesHost.resize(numPoints*d_numNodes);
-    d_srcCell->getShapeFuncValues(numPoints,
-                                  coordinates,
-                                  d_shapeValuesHost,
-                                  0,
-                                  d_numNodes);
-    d_shapeValuesMemSpace.resize(numPoints*d_numNodes);
+    d_shapeValuesHost.resize(numPoints * d_numNodes);
+    d_srcCell->getShapeFuncValues(
+      numPoints, coordinates, d_shapeValuesHost, 0, d_numNodes);
+    d_shapeValuesMemSpace.resize(numPoints * d_numNodes);
     d_shapeValuesMemSpace.copyFrom(d_shapeValuesHost);
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
-  void InterpolateFromCellToLocalPoints<memorySpace>::interpolate(
-    const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>> &
-      BLASWrapperPtr,
-    unsigned int numberOfVectors,
-    const dataTypes::number * parentNodalMemSpacePtr,
-    dataTypes::number * outputMemSpacePtr)
+  void
+  InterpolateFromCellToLocalPoints<memorySpace>::interpolate(
+    const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
+      &                      BLASWrapperPtr,
+    unsigned int             numberOfVectors,
+    const dataTypes::number *parentNodalMemSpacePtr,
+    dataTypes::number *      outputMemSpacePtr)
   {
-    const dataTypes::number       scalarCoeffAlpha = 1.0;
-    const dataTypes::number       scalarCoeffBeta  = 0.0;
-    const char         transA = 'N', transB = 'N';
-    const unsigned int inc = 1;
+    const dataTypes::number scalarCoeffAlpha = 1.0;
+    const dataTypes::number scalarCoeffBeta  = 0.0;
+    const char              transA = 'N', transB = 'N';
+    const unsigned int      inc = 1;
 
-    BLASWrapperPtr->
-      xgemm(transA,
-            transB,
-            numberOfVectors,
-            d_numPoints,
-            d_numNodes,
-            &scalarCoeffAlpha,
-            parentNodalMemSpacePtr,
-            numberOfVectors,
-            d_shapeValuesMemSpace.data(),
-            d_numNodes,
-            &scalarCoeffBeta,
-            outputMemSpacePtr,
-            numberOfVectors);
+    BLASWrapperPtr->xgemm(transA,
+                          transB,
+                          numberOfVectors,
+                          d_numPoints,
+                          d_numNodes,
+                          &scalarCoeffAlpha,
+                          parentNodalMemSpacePtr,
+                          numberOfVectors,
+                          d_shapeValuesMemSpace.data(),
+                          d_numNodes,
+                          &scalarCoeffBeta,
+                          outputMemSpacePtr,
+                          numberOfVectors);
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
-  void InterpolateFromCellToLocalPoints<memorySpace>::interpolate(
-    const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>> &
-      BLASWrapperPtr,
-    unsigned int numberOfVectors,
+  void
+  InterpolateFromCellToLocalPoints<memorySpace>::interpolate(
+    const std::shared_ptr<
+      dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
+      &                                   BLASWrapperPtr,
+    unsigned int                          numberOfVectors,
     const std::vector<dataTypes::number> &parentNodalHost,
-    std::vector<dataTypes::number> &outputHost)
+    std::vector<dataTypes::number> &      outputHost)
   {
-    const dataTypes::number      scalarCoeffAlpha = 1.0;
-    const dataTypes::number      scalarCoeffBeta  = 0.0;
-    const char         transA = 'N', transB = 'N';
-    const unsigned int inc = 1;
+    const dataTypes::number scalarCoeffAlpha = 1.0;
+    const dataTypes::number scalarCoeffBeta  = 0.0;
+    const char              transA = 'N', transB = 'N';
+    const unsigned int      inc = 1;
 
-    BLASWrapperPtr->
-      xgemm(transA,
-            transB,
-            numberOfVectors,
-            d_numPoints,
-            d_numNodes,
-            &scalarCoeffAlpha,
-            &parentNodalHost[0],
-            numberOfVectors,
-            d_shapeValuesHost.data(),
-            d_numNodes,
-            &scalarCoeffBeta,
-            &outputHost[0],
-            numberOfVectors);
+    BLASWrapperPtr->xgemm(transA,
+                          transB,
+                          numberOfVectors,
+                          d_numPoints,
+                          d_numNodes,
+                          &scalarCoeffAlpha,
+                          &parentNodalHost[0],
+                          numberOfVectors,
+                          d_shapeValuesHost.data(),
+                          d_numNodes,
+                          &scalarCoeffBeta,
+                          &outputHost[0],
+                          numberOfVectors);
   }
 
-  template class InterpolateFromCellToLocalPoints<dftfe::utils::MemorySpace::HOST>;
+  template class InterpolateFromCellToLocalPoints<
+    dftfe::utils::MemorySpace::HOST>;
 
 
 #ifdef DFTFE_WITH_DEVICE
 
-  template class InterpolateFromCellToLocalPoints<dftfe::utils::MemorySpace::DEVICE>;
+  template class InterpolateFromCellToLocalPoints<
+    dftfe::utils::MemorySpace::DEVICE>;
 #endif
 
-}
+} // namespace dftfe

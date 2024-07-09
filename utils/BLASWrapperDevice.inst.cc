@@ -471,6 +471,27 @@ BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::copyRealArrsToComplexArr(
       const float *       Y,
       float * output) const;
 
+   template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::hadamardProductWithConj(
+      const unsigned int m,
+      const double *           X,
+      const double *       Y,
+      double * output) const;
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::hadamardProductWithConj(
+      const unsigned int m,
+      const float *           X,
+      const float *       Y,
+      float * output) const;
+
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::hadamardProductWithConj(
+      const unsigned int m,
+      const std::complex<double> *           X,
+      const std::complex<double> *       Y,
+      std::complex<double> * output) const;
+
 
     // stridedBlockScaleColumnWise
     template void
@@ -574,4 +595,13 @@ BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::copyRealArrsToComplexArr(
       const std::complex<float> *      y,
       const std::complex<float> *      beta,
       std::complex<float> *      z);
+
+ template
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+      addVecOverContinuousIndex(const dftfe::size_type numContiguousBlocks,
+                                const dftfe::size_type contiguousBlockSize,
+                                const double *      input1,
+                                const double *      input2,
+                                double *            output);
 

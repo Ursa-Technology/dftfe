@@ -1483,15 +1483,6 @@ namespace dftfe
     }
 
 
-    template
-    void
-    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
-      addVecOverContinuousIndex(const dftfe::size_type numContiguousBlocks,
-                                const dftfe::size_type contiguousBlockSize,
-                                const double *      input1,
-                                const double *      input2,
-                                double *            output);
-
     template <typename ValueType1, typename ValueType2>
     void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::xscal(

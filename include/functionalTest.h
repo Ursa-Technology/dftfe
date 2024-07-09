@@ -60,6 +60,7 @@ namespace functionalTest
     const unsigned int matrixFreeVectorComponent,
     const unsigned int matrixFreeQuadratureComponentRhsDensity,
     const unsigned int matrixFreeQuadratureComponentAX,
+    const unsigned int verbosity,
     const MPI_Comm &   mpi_comm_parent,
     const MPI_Comm &   mpi_comm_domain);
 

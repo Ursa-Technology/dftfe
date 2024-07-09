@@ -285,34 +285,9 @@ namespace dftfe
         {
           auto shapePtr = d_shapeFunctionData.find(d_quadratureID)->second;
 
-          std::cout << "size of shape func = " << shapePtr.size() << "\n";
 
           auto jxwHost = d_JxWData.find(d_quadratureID)->second;
-          std::cout << " nVec = " << d_nVectors << " quads per cell = "
-                    << d_nQuadsPerCell[d_quadratureIndex]
-                    << " jxw size = " << jxwHost.size()
-                    << " tempCellValuesBlockCoeff size = "
-                    << tempCellValuesBlockCoeff.size();
-          std::cout << " mapQuadIdToProcId size = " << mapQuadIdToProcId.size()
-                    << "\n";
 
-          //          for ( unsigned int iQuad = 0; iQuad <
-          //          d_nQuadsPerCell[d_quadratureIndex]*(cellRange.second -
-          //          cellRange.first); iQuad++)
-          //            {
-          //              for (unsigned int iBlock = 0; iBlock<
-          //              d_nVectors;iBlock++)
-          //              {
-          //                tempCellValuesBlock.data()[iQuad*d_nVectors+ iBlock]
-          //                =
-          //                  (*(quadratureValues +
-          //                  cellRange.first*d_nQuadsPerCell[d_quadratureIndex]*d_nVectors
-          //                  + iQuad*d_nVectors+ iBlock))*
-          //                  (*(d_JxWData.find(d_quadratureID)->second.data() +
-          //                  cellRange.first*d_nQuadsPerCell[d_quadratureIndex]
-          //                  + iQuad));
-          //              }
-          //            }
 
           d_BLASWrapperPtr->stridedBlockScaleCopy(
             d_nVectors,
@@ -325,34 +300,6 @@ namespace dftfe
             tempCellValuesBlockCoeff.data(),
             mapQuadIdToProcId.data() +
               cellRange.first * d_nQuadsPerCell[d_quadratureIndex]);
-
-          //          for( unsigned int iCell = cellRange.first ;iCell <
-          //          cellRange.second; iCell++)
-          //            {
-          //              unsigned int cellId = iCell - cellRange.first;
-          //
-          //              for ( unsigned int iBlock =  0 ; iBlock < d_nVectors;
-          //              iBlock++)
-          //                {
-          //                  for ( unsigned int iNode = 0 ; iNode <
-          //                  d_nDofsPerCell; iNode++ )
-          //                    {
-          //                      for ( unsigned int jQuad = 0 ; jQuad <
-          //                      d_nQuadsPerCell[d_quadratureIndex]; jQuad++)
-          //                        {
-          //                          tempCellNodalData.data()[cellId*d_nDofsPerCell*d_nVectors
-          //                          + iNode*d_nVectors + iBlock] +=
-          //                            1.0*(*(tempCellValuesBlock.data() +
-          //                            cellId*d_nQuadsPerCell[d_quadratureIndex]*d_nVectors
-          //                            + jQuad*d_nVectors + iBlock))*
-          //                            d_shapeFunctionData.find(d_quadratureID)->second.data()[iNode
-          //                            +jQuad*d_nDofsPerCell];
-          //                        }
-          //                    }
-          //                }
-          //
-          //            }
-
 
 
           d_BLASWrapperPtr->xgemmStridedBatched(

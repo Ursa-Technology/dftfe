@@ -54,7 +54,8 @@ namespace dftfe
 
     dealii::TimerOutput computing_timer(mpi_communicator,
                                         pcout,
-                                        dealii::TimerOutput::summary,
+                                        debugLevel > 2 ? dealii::TimerOutput::summary 
+					: dealii::TimerOutput::never,
                                         dealii::TimerOutput::wall_times);
 
     bool   iterate = true;
@@ -72,8 +73,6 @@ namespace dftfe
     computing_timer.enter_subsection("Compute Rhs MPI");
     dftfe::linearAlgebra::MultiVector<double, memorySpace> &bMemSpace =
       problem.computeRhs(NDBCVec, xMemSpace, blockSize);
-
-    pcout << "Compute rhs ... done \n";
 
     computing_timer.leave_subsection("Compute Rhs MPI");
 

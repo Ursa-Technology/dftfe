@@ -34,6 +34,7 @@ namespace dftfe
       const dealii::MatrixFree<3, double> &matrixFreeMesh2,
       const unsigned int                   matrixFreeMesh2VectorComponent,
       const unsigned int                   matrixFreeMesh2QuadratureComponent,
+      const unsigned int                   verbosity,
       const MPI_Comm &                     mpiComm)
     : d_mpiComm(mpiComm)
   {
@@ -182,6 +183,7 @@ namespace dftfe
       interpolateLocalMesh1,
       quadPointsMesh2,
       numberDofsPerCell1,
+      verbosity,
       d_mpiComm);
 
     std::cout << std::flush;
@@ -194,6 +196,7 @@ namespace dftfe
       interpolateLocalMesh2,
       quadPointsMesh1,
       numberDofsPerCell2,
+      verbosity,
       d_mpiComm);
 
     std::cout << std::flush;
@@ -201,7 +204,7 @@ namespace dftfe
 
     double endMapMesh2To1 = MPI_Wtime();
 
-    if (dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0)
+    if ( (dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0) && (verbosity > 2) )
       {
         std::cout << " Time taken to create the map from 1 to 2 = "
                   << endMapMesh1To2 - startMapMesh1To2 << "\n";

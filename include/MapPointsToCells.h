@@ -48,7 +48,7 @@ namespace dftfe
     class MapPointsToCells
     {
     public:
-      MapPointsToCells(const MPI_Comm &mpiComm);
+      MapPointsToCells( const unsigned int verbosity, const MPI_Comm &mpiComm);
 
       /**
        * @brief The init().
@@ -79,11 +79,7 @@ namespace dftfe
       const MPI_Comm d_mpiComm;
       int            d_numMPIRank;
       int            d_thisRank;
-
-      //          std::map<size_type, std::vector<size_type>>
-      //          d_mapCellsToLocalPoints; std::map<size_type,
-      //          std::vector<std::pair<size_type,size_type>>>
-      //          d_mapCellsToNonLocalPoints;
+      unsigned int   d_verbosity;
 
     }; // end of class MapPointsToCells
   }    // end of namespace utils

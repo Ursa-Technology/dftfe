@@ -55,10 +55,12 @@ namespace dftfe
                                               interpolateLocalObj,
       const std::vector<std::vector<double>> &targetPts,
       const std::vector<unsigned int> &       numDofsPerElem,
+      const unsigned int                      verbosity,
       const MPI_Comm &                        mpiComm)
-    : d_mapPoints(mpiComm)
+    : d_mapPoints(verbosity, mpiComm)
     , d_mpiComm(mpiComm)
   {
+    d_verbosity = verbosity;
     MPI_Barrier(d_mpiComm);
     double startComp                 = MPI_Wtime();
     d_numLocalPtsSze                 = targetPts.size();
@@ -75,9 +77,11 @@ namespace dftfe
     size_type maxNumCells  = srcCells.size();
     size_type maxNumPoints = numInitialTargetPoints;
 
-
-    std::cout << " NumPoints in proc = " << numInitialTargetPoints
+    if ( d_verbosity > 2 )
+    {
+	    std::cout << " NumPoints in proc = " << numInitialTargetPoints
               << " numCells per proc = " << srcCells.size() << "\n";
+    }
     MPI_Allreduce(MPI_IN_PLACE,
                   &maxNumCells,
                   1,
@@ -92,8 +96,11 @@ namespace dftfe
                   MPI_MAX,
                   d_mpiComm);
 
-    std::cout << " maxNumPoints = " << maxNumPoints
+    if (dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0)
+    {
+	    std::cout << " maxNumPoints = " << maxNumPoints
               << " maxNumCells = " << maxNumCells << "\n";
+    }
     // create the RTree and the
     d_mapPoints.init(srcCells,
                      targetPts,
@@ -233,20 +240,21 @@ namespace dftfe
     double nonLocalFrac =
       ((double)((double)(numLocalPlusGhost - numTargetPointsInput)) /
        numTargetPointsInput);
-    if (dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0)
+    if ((dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0))
       {
         std::cout << " Total number of points provided as input = "
                   << numTargetPointsInput << "\n";
         std::cout << " Total number of points found from input = "
                   << numTargetPointsFound << "\n";
         std::cout << " Total number of points in all procs = "
-                  << numLocalPlusGhost
-                  << " fraction of non local pts = " << nonLocalFrac << "\n";
-
+                  << numLocalPlusGhost << "\n";
         dftfe::utils::throwException(
           numTargetPointsFound >= numTargetPointsInput,
           " Number of points found is less than the input points \n");
-
+      }
+    if ((dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0) && (d_verbosity > 2 ))
+    {
+	std::cout << " Fraction of non local pts = " << nonLocalFrac << "\n";
         std::cout << " Time for start Comp = " << startMapPoints - startComp
                   << "\n";
         std::cout << " Time for map Points init = "
@@ -447,7 +455,7 @@ namespace dftfe
 
     int thisRankId;
     MPI_Comm_rank(d_mpiComm, &thisRankId);
-    if (thisRankId == 0)
+    if ((thisRankId == 0) && ( d_verbosity > 2 ))
       {
         std::cout << " resize Time = " << endResizeTime - startTime
                   << " Comp time = " << endCompTime - endResizeTime

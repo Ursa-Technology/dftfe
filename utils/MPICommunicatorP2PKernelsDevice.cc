@@ -228,7 +228,7 @@ namespace dftfe
               recvVal);
           }
       }
-      /*
+  /*    
             template <>
             __global__ void
             accumInsertFromRecvBufferDeviceKernel(
@@ -284,7 +284,7 @@ namespace dftfe
                     dftfe::utils::imagPartDevice(recvBuffer[i]));
                 }
             }
-
+*/
             template <>
             __global__ void
             accumInsertFromRecvBufferDeviceKernel(
@@ -314,7 +314,7 @@ namespace dftfe
          blockSize + intraBlockId] .y, recvValImag);
                 }
             }
-          */
+          
 
     } // namespace
 

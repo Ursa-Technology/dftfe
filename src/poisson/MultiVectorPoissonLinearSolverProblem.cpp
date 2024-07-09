@@ -103,8 +103,8 @@ namespace dftfe
     d_numCells             = d_basisOperationsPtr->nCells();
     d_nQuadsPerCell        = d_basisOperationsPtr->nQuadsPerCell();
 
-    d_cellBlockSize = std::min(d_cellBlockSize, d_numCells);
-
+    // d_cellBlockSize = std::min(d_cellBlockSize, d_numCells);
+    d_cellBlockSize = d_numCells;
     d_basisOperationsPtr->reinit(1,
                                  d_cellBlockSize,
                                  d_matrixFreeQuadratureComponentRhs,
@@ -112,10 +112,6 @@ namespace dftfe
                                  false); // TODO should this be set to true
     d_dofHandler =
       &d_matrixFreeDataPtr->get_dof_handler(d_matrixFreeVectorComponent);
-
-    pcout << " local size = " << d_locallyOwnedSize
-          << " dof elum  = " << d_numberDofsPerElement
-          << " numCells = " << d_numCells << "\n";
 
     if (isComputeMeanValueConstraint)
       {
@@ -140,10 +136,6 @@ namespace dftfe
       &(d_basisOperationsPtr->cellStiffnessMatrixBasisData());
 
 
-    pcout << " size of basis vec stiffness vec = "
-          << d_cellStiffnessMatrixPtr->size() << "\n";
-    pcout << " size of stiffness vec = "
-          << d_cellShapeFunctionGradientIntegral.size() << "\n";
 
     double l2NormStiff = 0.0;
     for (unsigned int iNode = 0;
@@ -158,7 +150,6 @@ namespace dftfe
     MPI_Allreduce(
       MPI_IN_PLACE, &l2NormStiff, 1, MPI_DOUBLE, MPI_SUM, mpi_communicator);
 
-    pcout << " error in stiff = " << l2NormStiff << "\n";
 
     d_constraintsInfo.initialize(d_matrixFreeDataPtr->get_vector_partitioner(
                                    matrixFreeVectorComponent),
@@ -270,18 +261,6 @@ namespace dftfe
                        std::sqrt(std::abs(outputVec.local_element(iNode)));
         l2NormSqrtDiag += diff1 * diff1;
       }
-
-    std::cout << " Error in diag = " << l2NormDiag << "\n";
-    std::cout << " Error in sqrt diag = " << l2NormSqrtDiag << "\n";
-
-
-    std::cout << " length of diagonal a = " << d_diagonalA.size() << "\n";
-    std::cout << " length of sqrt diagonal a = " << d_diagonalSqrtA.size()
-              << "\n";
-    std::string errMsg = "Error in size of diagonal matrix.";
-    //    dftfe::utils::throwException(d_diagonalA.size() == d_locallyOwnedSize,
-    //    errMsg); dftfe::utils::throwException(d_diagonalSqrtA.size() ==
-    //    d_locallyOwnedSize, errMsg);
 
     d_blockSize = 0;
   }
@@ -552,7 +531,6 @@ namespace dftfe
         l2ErrorIndex += diff * diff;
       }
 
-    std::cout << "Error in nodal maps = " << l2ErrorIndex << "\n";
 
     // Calculating the rhs from the quad points
     // multiVectorInput is stored on the quad points
@@ -631,7 +609,6 @@ namespace dftfe
 
     d_basisOperationsPtr->initializeShapeFunctionAndJacobianBasisData();
     d_basisOperationsPtr->initializeFlattenedIndexMaps();
-    pcout << " after reinit \n";
     if (d_blockSize != blockSizeInput)
       {
         d_blockSize = blockSizeInput;
@@ -669,7 +646,6 @@ namespace dftfe
     d_blockedNDBCPtr = &NDBCVec;
 
 
-    pcout << " starting rhs \n";
     dftfe::utils::MemoryStorage<double, memorySpace> xCellLLevelNodalData,
       rhsCellLLevelNodalData;
 
@@ -686,46 +662,43 @@ namespace dftfe
     // Assumes that NDBC is constraints distribute is called
     // rhs  = - ( 1.0 / 4 \pi ) \int \nabla N_j \nabla N_i  d_NDBC
 
-    //    d_basisOperationsPtr->extractToCellNodalData(*d_blockedNDBCPtr,
-    //                                                 xCellLLevelNodalData.data());
-    //
-    //    pcout<<" before gemm \n";
-    //    for(size_type iCell = 0; iCell < d_numCells ; iCell += d_numCells)
-    //      {
-    //
-    //
-    //        std::pair<unsigned int, unsigned int> cellRange(
-    //          iCell, std::min(iCell + d_numCells, d_numCells));
-    //
-    //        d_BLASWrapperPtr->xgemmStridedBatched(
-    //          'N',
-    //          'N',
-    //          d_blockSize,
-    //          d_numberDofsPerElement,
-    //          d_numberDofsPerElement,
-    //          &d_negScalarCoeffAlpha,
-    //          xCellLLevelNodalData.data() +
-    //            cellRange.first * d_numberDofsPerElement * d_blockSize,
-    //          d_blockSize,
-    //          d_numberDofsPerElement * d_blockSize,
-    //          d_cellStiffnessMatrixPtr->data() +
-    //            cellRange.first * d_numberDofsPerElement *
-    //            d_numberDofsPerElement,
-    //          d_numberDofsPerElement,
-    //          d_numberDofsPerElement * d_numberDofsPerElement,
-    //          &d_beta,
-    //          rhsCellLLevelNodalData.data(),
-    //          d_blockSize,
-    //          d_numberDofsPerElement * d_blockSize,
-    //          cellRange.second - cellRange.first);
-    //      }
-    //
-    //    pcout<<" after gemm \n";
-    //    d_basisOperationsPtr->accumulateFromCellNodalData(
-    //      rhsCellLLevelNodalData.data(),
-    //      d_rhsVec);
+        d_basisOperationsPtr->extractToCellNodalData(*d_blockedNDBCPtr,
+                                                     xCellLLevelNodalData.data());
+    
+        for(size_type iCell = 0; iCell < d_numCells ; iCell += d_numCells)
+          {
+    
+    
+            std::pair<unsigned int, unsigned int> cellRange(
+              iCell, std::min(iCell + d_numCells, d_numCells));
+    
+            d_BLASWrapperPtr->xgemmStridedBatched(
+              'N',
+              'N',
+              d_blockSize,
+              d_numberDofsPerElement,
+              d_numberDofsPerElement,
+              &d_negScalarCoeffAlpha,
+              xCellLLevelNodalData.data() +
+                cellRange.first * d_numberDofsPerElement * d_blockSize,
+              d_blockSize,
+              d_numberDofsPerElement * d_blockSize,
+              d_cellStiffnessMatrixPtr->data() +
+                cellRange.first * d_numberDofsPerElement *
+                d_numberDofsPerElement,
+              d_numberDofsPerElement,
+              d_numberDofsPerElement * d_numberDofsPerElement,
+              &d_beta,
+              rhsCellLLevelNodalData.data(),
+              d_blockSize,
+              d_numberDofsPerElement * d_blockSize,
+              cellRange.second - cellRange.first);
+          }
+    
+        d_basisOperationsPtr->accumulateFromCellNodalData(
+          rhsCellLLevelNodalData.data(),
+          d_rhsVec);
 
-    pcout << " after acumm add \n";
 
     d_basisOperationsPtr->reinit(d_blockSize,
                                  d_cellBlockSize,
@@ -744,156 +717,6 @@ namespace dftfe
     d_constraintsInfo.distribute_slave_to_master(d_rhsVec);
     d_rhsVec.accumulateAddLocallyOwned();
 
-
-    auto jxwVec       = d_basisOperationsPtr->JxW();
-    auto shapeFuncVal = d_basisOperationsPtr->shapeFunctionData(true);
-
-    if (d_cellShapeFunctionJxW.size() != jxwVec.size())
-      {
-        std::cout << " Error in size of jxw \n";
-      }
-    double l2ErrorJxW = 0.0;
-    for (unsigned int iQuad = 0; iQuad < d_cellShapeFunctionJxW.size(); iQuad++)
-      {
-        l2ErrorJxW += (jxwVec.data()[iQuad] - d_cellShapeFunctionJxW[iQuad]) *
-                      (jxwVec.data()[iQuad] - d_cellShapeFunctionJxW[iQuad]);
-      }
-
-    MPI_Allreduce(
-      MPI_IN_PLACE, &l2ErrorJxW, 1, MPI_DOUBLE, MPI_SUM, mpi_communicator);
-
-    pcout << " Error in l2 error jxw = " << l2ErrorJxW << "\n";
-
-    if (d_shapeFunctionValue.size() != shapeFuncVal.size())
-      {
-        std::cout << " d_shapeFunctionValue.size() = "
-                  << d_shapeFunctionValue.size() << "\n";
-        std::cout << " shapeFuncVal.size() = " << shapeFuncVal.size() << "\n";
-        std::cout << " Error in size of shape func \n";
-      }
-
-    double l2ErrorShapeFunc = 0.0;
-    for (unsigned int iQuad = 0; iQuad < d_shapeFunctionValue.size(); iQuad++)
-      {
-        l2ErrorShapeFunc +=
-          (shapeFuncVal.data()[iQuad] - d_shapeFunctionValue[iQuad]) *
-          (shapeFuncVal.data()[iQuad] - d_shapeFunctionValue[iQuad]);
-      }
-
-    MPI_Allreduce(MPI_IN_PLACE,
-                  &l2ErrorShapeFunc,
-                  1,
-                  MPI_DOUBLE,
-                  MPI_SUM,
-                  mpi_communicator);
-
-    pcout << " Error in l2 error shape func = " << l2ErrorShapeFunc << "\n";
-
-    dftfe::poissonSolverProblem<2, 2> phiTotalSolverProblem(mpi_communicator);
-
-
-    dftfe::distributedCPUVec<double> expectedOutput;
-
-    dftfe::vectorTools::createDealiiVector<double>(
-      d_matrixFreeDataPtr->get_vector_partitioner(d_matrixFreeVectorComponent),
-      1,
-      expectedOutput);
-
-    std::map<dealii::types::global_dof_index, double> atoms;
-    std::map<dealii::CellId, std::vector<double>>     smearedChargeValues;
-
-    phiTotalSolverProblem.reinit(d_basisOperationsPtr,
-                                 expectedOutput,
-                                 *d_constraintMatrixPtr,
-                                 d_matrixFreeVectorComponent,
-                                 d_matrixFreeQuadratureComponentRhs,
-                                 d_matrixFreeQuadratureComponentAX,
-                                 atoms,
-                                 smearedChargeValues,
-                                 d_matrixFreeQuadratureComponentAX,
-                                 *d_rhsQuadDataPtr,
-                                 true,  // isComputeDiagonalA
-                                 false, // isComputeMeanValueConstraint
-                                 false, // smearedNuclearCharges
-                                 true,  // isRhoValues
-                                 false, // isGradSmearedChargeRhs
-                                 0,     // smearedChargeGradientComponentId
-                                 false, // storeSmearedChargeRhs
-                                 false, // reuseSmearedChargeRhs
-                                 true); // reinitializeFastConstraints
-
-
-    distributedCPUVec<double> rhs;
-    phiTotalSolverProblem.computeRhs(rhs);
-
-    dftfe::linearAlgebra::MultiVector<double, memorySpace> rhsTempVec;
-    d_basisOperationsPtr->createMultiVector(d_blockSize, rhsTempVec);
-    //    dftfe::linearAlgebra::createMultiVectorFromDealiiPartitioner(
-    //      d_matrixFreeDataPtr->get_vector_partitioner(d_matrixFreeVectorComponent),
-    //      d_blockSize,
-    //      rhsTempVec);
-    rhsTempVec.setValue(0.0);
-    tempRhsVecCalc(rhsTempVec);
-
-    double l2ErrorRhsTempVecWithRhsVec    = 0.0;
-    double l2ErrorRhsTempVecWithRhsSingle = 0.0;
-    double l2NormError                    = 0.0;
-    double l2NormRho                      = 0.0;
-
-    std::cout << " error in local size of rhs vec\n";
-    std::cout << " size of d_rhsVec = " << d_rhsVec.localSize()
-              << " size of rhs single = " << rhs.local_size() << "\n";
-
-
-    std::cout << " error in local size of rhs temp vec\n";
-    std::cout << " size of d_rhsVec = " << d_rhsVec.localSize()
-              << " size of rhs single = " << rhsTempVec.localSize() << "\n";
-
-
-    for (unsigned int i = 0; i < rhs.local_size(); i++)
-      {
-        double diff = d_rhsVec.data()[i] - rhs.local_element(i);
-        diff        = diff * diff;
-        l2NormError += diff;
-
-        l2NormRho += rhs.local_element(i) * rhs.local_element(i);
-
-        l2ErrorRhsTempVecWithRhsSingle +=
-          (rhs.local_element(i) - rhsTempVec.data()[i]) *
-          (rhs.local_element(i) - rhsTempVec.data()[i]);
-
-        l2ErrorRhsTempVecWithRhsVec +=
-          (d_rhsVec.data()[i] - rhsTempVec.data()[i]) *
-          (d_rhsVec.data()[i] - rhsTempVec.data()[i]);
-      }
-
-    MPI_Allreduce(MPI_IN_PLACE,
-                  &l2ErrorRhsTempVecWithRhsSingle,
-                  1,
-                  MPI_DOUBLE,
-                  MPI_SUM,
-                  mpi_communicator);
-
-    MPI_Allreduce(MPI_IN_PLACE,
-                  &l2ErrorRhsTempVecWithRhsVec,
-                  1,
-                  MPI_DOUBLE,
-                  MPI_SUM,
-                  mpi_communicator);
-
-    MPI_Allreduce(
-      MPI_IN_PLACE, &l2NormError, 1, MPI_DOUBLE, MPI_SUM, mpi_communicator);
-
-    MPI_Allreduce(
-      MPI_IN_PLACE, &l2NormRho, 1, MPI_DOUBLE, MPI_SUM, mpi_communicator);
-
-    pcout << " Error in rhs is = " << l2NormError << "\n";
-    pcout << " norm of rhs is = " << l2NormRho << "\n";
-    pcout << " Error in rhs tempVec with single  = "
-          << l2ErrorRhsTempVecWithRhsSingle << "\n";
-    pcout << " Error in rhs temp vec wth rhs  = " << l2ErrorRhsTempVecWithRhsVec
-          << "\n";
-    pcout << " ending rhs \n";
     return d_rhsVec;
   }
 

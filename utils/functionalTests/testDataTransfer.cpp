@@ -275,30 +275,6 @@ namespace functionalTest
     MPI_Barrier(mpi_comm_domain);
 
 
-    //      TriangulationManagerVxc VxcMesh(mpi_comm_parent,
-    //                                      mpi_comm_domain,
-    //                                      interpoolcomm,
-    //                                      interbandgroup_comm,
-    //                                      dftParams);
-    //
-    //      VxcMesh.generateParallelUnmovedMeshVxc(
-    //              dftParams.meshSizeOuterBall / 2,
-    //      parallelMeshUnmoved,
-    //      atomLocations, // This is compatible with only non-periodic boundary
-    //                     // conditions as imageAtomLocations is not considered
-    //      dftMesh);
-
-
-    //      VxcMesh.generateParallelMovedMeshVxc(parallelMeshUnmoved,
-    //                                                parallelMeshMoved);
-    //
-    //    const parallel::distributed::Triangulation<3> &parallelMeshMovedVxc =
-    //            VxcMesh.getParallelMovedMeshVxc();
-    //
-    //    const parallel::distributed::Triangulation<3> &parallelMeshUnmovedVxc
-    //    =
-    //            VxcMesh.getParallelUnmovedMeshVxc();
-
 
     // create Vxc mesh
 
@@ -346,12 +322,6 @@ namespace functionalTest
     constraintMatrix.reinit(locallyRelevantDofs);
     dealii::DoFTools::make_hanging_node_constraints(dofHandlerTria,
                                                     constraintMatrix);
-    // uncomment this for homogenous BC
-    // The test function should also be compatoble
-    //    dealii::VectorTools::interpolate_boundary_values(dofHandlerTria,
-    //                                                     0,
-    //                                                     dealii::Functions::ZeroFunction<3>(),
-    //                                                     constraintMatrix);
     constraintMatrix.close();
 
     constraintMatrixVxc.clear();
@@ -359,12 +329,6 @@ namespace functionalTest
     dealii::DoFTools::make_hanging_node_constraints(dofHandlerTriaVxc,
                                                     constraintMatrixVxc);
 
-    // uncomment this for homogenous BC
-    // The test function should also be compatoble
-    //    dealii::VectorTools::interpolate_boundary_values(dofHandlerTriaVxc,
-    //                                                     0,
-    //                                                     dealii::Functions::ZeroFunction<3>(),
-    //                                                     constraintMatrixVxc);
 
     constraintMatrixVxc.close();
 
@@ -453,7 +417,7 @@ namespace functionalTest
     dftfe::TransferDataBetweenMeshesIncompatiblePartitioning<
       dftfe::utils::MemorySpace::HOST>
       inverseDftDoFManagerObj(
-        matrixFreeData, 0, 0, matrixFreeDataVxc, 0, 0, mpi_comm_domain);
+        matrixFreeData, 0, 0, matrixFreeDataVxc, 0, 0, dftParams.verbosity, mpi_comm_domain);
 
     std::cout << std::flush;
     MPI_Barrier(mpi_comm_domain);
@@ -502,7 +466,7 @@ namespace functionalTest
     MPI_Barrier(mpi_comm_domain);
     double endTimeMesh1ToMesh2 = MPI_Wtime();
 
-    if (dealii::Utilities::MPI::this_mpi_process(mpi_comm_domain) == 0)
+    if ((dealii::Utilities::MPI::this_mpi_process(mpi_comm_domain) == 0) && (dftParams.verbosity > 2))
       {
         std::cout << " Num of points  = " << numPointsChild << "\n";
         std::cout << " Time taken to transfer from Mesh 1 to Mesh 2 = "
@@ -555,8 +519,16 @@ namespace functionalTest
     l2Error = std::sqrt(l2Error);
     if (dealii::Utilities::MPI::this_mpi_process(mpi_comm_domain) == 0)
       {
-        std::cout << " Error while interpolating to quad points of child = "
+	      if ( l2Error > 1e-9)
+	      {
+		  std::cout << " Error while interpolating to quad points of child = "
                   << l2Error << "\n";
+	      }
+	      else
+	      {
+		      std::cout<<" Interpolation to quad points of child of successful\n";
+	      } 
+
       }
 
 
@@ -611,15 +583,11 @@ namespace functionalTest
                                                     dof_coord_child[iNode][1],
                                                     dof_coord_child[iNode][2],
                                                     iBlock);
-            //            if ((childVec.in_local_range(indexVec)))
-            //              childVec(indexVec) =
-            //              value(dof_coord_child[iNode][0],dof_coord_child[iNode][1],dof_coord_child[iNode][2],iBlock);
           }
       }
 
     childVec.updateGhostValues();
     multiVectorConstraintsChild.distribute(childVec);
-    //       childVec.updateGhostValues();
 
     dftfe::global_size_type numPointsParent =
       totalLocallyOwnedCellsParent * numQuadPointsHigh * blockSize;
@@ -663,7 +631,7 @@ namespace functionalTest
     MPI_Barrier(mpi_comm_domain);
     double endTimeMesh2ToMesh1 = MPI_Wtime();
 
-    if (dealii::Utilities::MPI::this_mpi_process(mpi_comm_domain) == 0)
+    if ((dealii::Utilities::MPI::this_mpi_process(mpi_comm_domain) == 0) && (dftParams.verbosity > 2))
       {
         std::cout << " Number of points parent = " << numPointsParent << "\n";
         std::cout << " Time taken to transfer from Mesh 2 to Mesh 1 = "
@@ -712,13 +680,6 @@ namespace functionalTest
         dftfe::dataTypes::number errorVal = conj_compl(diff) * diff;
         l2Error += real_part(errorVal);
 
-        //                if ( diff > 1e-5)
-        //                  {
-        //                    std::cout<<"iQuad = " <<iQuad<<" anal ="
-        //                              <<quadValuesParentAnalytical[iQuad]<<"
-        //                              comp = "
-        //                              <<quadValuesParentComputed[iQuad]<<"\n";
-        //                  }
       }
     MPI_Allreduce(
       MPI_IN_PLACE, &l2Error, 1, MPI_DOUBLE, MPI_SUM, mpi_comm_domain);
@@ -726,8 +687,16 @@ namespace functionalTest
 
     if (dealii::Utilities::MPI::this_mpi_process(mpi_comm_domain) == 0)
       {
-        std::cout << " Error while interpolating to quad points of parent = "
+              if ( l2Error > 1e-9)
+              {
+                  std::cout << " Error while interpolating to quad points of parent = "
                   << l2Error << "\n";
+              }
+              else
+              {
+                      std::cout<<" Interpolation to quad points of parent of successful\n";
+              }
+
       }
   }
 } // end of namespace functionalTest

@@ -74,8 +74,8 @@ namespace dftfe
                                               interpolateLocalObj,
       const std::vector<std::vector<double>> &targetPts,
       const std::vector<unsigned int> &       numDofsPerElem,
+      const unsigned int                      verbosity,
       const MPI_Comm &                        mpiComm);
-
     /**
      * @brief This function interpolates from the data to the points passed to the constructor.
      * The function copies the nodal data to cell wise data and then
@@ -199,6 +199,7 @@ namespace dftfe
 
     std::vector<std::shared_ptr<InterpolateFromCellToLocalPoints<memorySpace>>>
       d_interpolateLocalObj;
+    unsigned int d_verbosity;
   }; // end of class InterpolateCellWiseDataToPoints
 } // end of namespace dftfe
 

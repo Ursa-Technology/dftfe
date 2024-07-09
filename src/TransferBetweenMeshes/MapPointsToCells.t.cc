@@ -234,7 +234,8 @@ namespace dftfe
         const std::vector<std::vector<double>> &          sendToPointsCoords,
         std::vector<global_size_type> &   receivedPointsGlobalIds,
         std::vector<std::vector<double>> &receivedPointsCoords,
-        const MPI_Comm &                  mpiComm)
+        unsigned int verbosity,
+	const MPI_Comm &                  mpiComm)
       {
         int thisRankId;
         MPI_Comm_rank(mpiComm, &thisRankId);
@@ -259,7 +260,7 @@ namespace dftfe
                       MPI_MAX,
                       mpiComm);
 
-        if (thisRankId == 0)
+        if ((thisRankId == 0) && (verbosity > 2))
           {
             std::cout << " Max number of procs to send to = "
                       << numMaxProcsSendTo << "\n";
@@ -294,9 +295,6 @@ namespace dftfe
                       mpiComm,
                       &sendRequests[i]);
 
-            //                  std::cout<<"root size id = "<<thisRankId <<"
-            //                  send size to "<<procId<<" id val size =
-            //                  "<<numPointsToSend[i]<<"\n";
           }
 
         for (size_type i = 0; i < receiveFromProcIds.size(); ++i)
@@ -311,9 +309,6 @@ namespace dftfe
                       mpiComm,
                       &recvRequests[i]);
 
-            //                  std::cout<<"root size id = "<<thisRankId <<"
-            //                  receive size from "<<procId<<" id val size =
-            //                  "<<numPointsReceived[i]<<"\n";
           }
 
 
@@ -339,14 +334,6 @@ namespace dftfe
             throwException(err == MPI_SUCCESS, errMsg);
           }
 
-        //              for(size_type i = 0; i < receiveFromProcIds.size(); ++i)
-        //              {
-        //                  size_type procId = receiveFromProcIds[i];
-        //                  std::cout<<"root size id = "<<thisRankId <<" receive
-        //                  size from "<<procId<<" id val size =
-        //                  "<<numPointsReceived[i]<<"\n";
-        //              }
-
         const size_type numTotalPointsReceived =
           std::accumulate(numPointsReceived.begin(),
                           numPointsReceived.end(),
@@ -366,8 +353,6 @@ namespace dftfe
                       mpiComm,
                       &sendRequests[i]);
 
-            //                  std::cout<<"root id = "<<thisRankId <<" send to
-            //                  "<<procId<<" id size = "<<nPointsToSend<<"\n";
           }
 
         size_type offset = 0;
@@ -383,10 +368,6 @@ namespace dftfe
                       mpiComm,
                       &recvRequests[i]);
 
-            //                  std::cout<<"root id = "<<thisRankId <<" receive
-            //                  from "<<procId<<" id size =
-            //                  "<<numPointsReceived[i]<<" offset =
-            //                  "<<offset<<"\n";
             offset += numPointsReceived[i];
           }
 
@@ -413,17 +394,6 @@ namespace dftfe
             throwException(err == MPI_SUCCESS, errMsg);
           }
 
-        //              std::vector<global_size_type>
-        //              receivedPointsGlobalIdsDummy = receivedPointsGlobalIds;
-        //
-        //              std::sort(receivedPointsGlobalIdsDummy.begin(),receivedPointsGlobalIdsDummy.end());
-
-        //              if (receivedPointsGlobalIdsDummy.size()>0)
-        //              {
-        //                  std::cout<<" received from 1  min Ind =
-        //                  "<<receivedPointsGlobalIdsDummy[0]<<" max ind =
-        //                  "<<receivedPointsGlobalIdsDummy[receivedPointsGlobalIdsDummy.size()-1]<<"\n";
-        //              }
         for (size_type i = 0; i < sendToProcIds.size(); ++i)
           {
             size_type procId        = sendToProcIds[i];
@@ -493,9 +463,10 @@ namespace dftfe
     } // namespace
 
     template <size_type dim, size_type M>
-    MapPointsToCells<dim, M>::MapPointsToCells(const MPI_Comm &mpiComm)
+    MapPointsToCells<dim, M>::MapPointsToCells(const unsigned int verbosity, const MPI_Comm &mpiComm)
       : d_mpiComm(mpiComm)
     {
+      d_verbosity = verbosity;
       MPI_Comm_rank(d_mpiComm, &d_thisRank);
       MPI_Comm_size(d_mpiComm, &d_numMPIRank);
     }
@@ -626,6 +597,7 @@ namespace dftfe
                          sendToPointsCoords,
                          receivedPointsGlobalIds,
                          receivedPointsCoords,
+			 d_verbosity,
                          d_mpiComm);
 
       MPI_Barrier(d_mpiComm);
@@ -725,7 +697,7 @@ namespace dftfe
                     MPI_MAX,
                     d_mpiComm);
 
-      if (d_thisRank == 0)
+      if ((d_thisRank == 0) && (d_verbosity > 2))
         {
           std::cout << " Max number of non local pts received = "
                     << numNonLocalPointsReceived << "\n";

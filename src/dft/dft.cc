@@ -2059,6 +2059,7 @@ namespace dftfe
     if (d_kohnShamDFTOperatorsInitialized)
       {
         delete d_kohnShamDFTOperatorPtr;
+        d_kohnShamDFTOperatorsInitialized = false;
       }
   }
 

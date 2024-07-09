@@ -54,7 +54,6 @@ SET(TARGET_SRC
   ./src/dft/computeAuxProjectedDensityMatrixFromPSI.cc
   ./src/dft/densityFirstOrderResponseCalculator.cc
   ./src/dft/applyMultipoleDirichletBC.cc
-        ./src/dft/setUnitTests.cpp
   ./src/excManager/excDensityBaseClass.cpp
   ./src/excManager/excDensityLDAClass.cpp
   ./src/excManager/excWavefunctionBaseClass.cpp
@@ -192,8 +191,8 @@ SET(TARGET_SRC
         ./src/TransferBetweenMeshes/InterpolateCellWiseDataToPoints.cpp
 	./utils/NodalData.cpp
 	./utils/CompositeData.cpp
-        ./utils/unitTests/testMultiVectorCGForPoisson.cpp
-        ./utils/unitTests/testDataTransfer.cpp
+        ./utils/functionalTests/testMultiVectorCGForPoisson.cpp
+        ./utils/functionalTests/testDataTransfer.cpp
   ./src/pseudo/oncv/oncvClass.cc)
 
 IF ("${GPU_LANG}" STREQUAL "cuda")

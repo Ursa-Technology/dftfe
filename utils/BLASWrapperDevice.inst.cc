@@ -605,3 +605,49 @@ BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::copyRealArrsToComplexArr(
                                 const double *      input2,
                                 double *            output);
 
+   //MultiVectorXDot
+    template void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+      MultiVectorXDot(const unsigned int contiguousBlockSize,
+                    const unsigned int numContiguousBlocks,
+                    const double *     X,
+                    const double *     Y,
+                    const double * onesVec,
+                    double * tempVector,
+                    double * tempResults,
+                    double *           result) const;
+
+   template void
+            BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+    MultiVectorXDot(const unsigned int contiguousBlockSize,
+                    const unsigned int numContiguousBlocks,
+                    const double *     X,
+                    const double *     Y,
+                    const double * onesVec,
+                    double * tempVector,
+                    double * tempResults,
+                    const MPI_Comm &   mpi_communicator,
+                    double *           result) const;
+
+ template void
+            BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+    MultiVectorXDot(const unsigned int contiguousBlockSize,
+                    const unsigned int numContiguousBlocks,
+                    const std::complex<double> *X,
+                    const std::complex<double> *Y,
+                    const std::complex<double> * onesVec,
+                    std::complex<double> * tempVector,
+                    std::complex<double> * tempResults,
+                    std::complex<double> *      result) const;
+ template void
+            BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+    MultiVectorXDot(const unsigned int contiguousBlockSize,
+                    const unsigned int numContiguousBlocks,
+                    const std::complex<double> *X,
+                    const std::complex<double> *Y,
+                    const std::complex<double> * onesVec,
+                    std::complex<double> * tempVector,
+                    std::complex<double> * tempResults,
+                    const MPI_Comm &            mpi_communicator,
+                    std::complex<double> *      result) const;
+

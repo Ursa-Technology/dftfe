@@ -236,13 +236,13 @@ main(int argc, char *argv[])
                                        runParams.useDevice);
       dftfeWrapped.run();
     }
-  else if (runParams.solvermode == "UNIT_TEST")
+  else if (runParams.solvermode == "FUNCTIONAL_TEST")
     {
       dftfe::dftfeWrapper dftfeWrapped(parameter_file,
                                        MPI_COMM_WORLD,
                                        true,
                                        true,
-                                       "UNIT_TEST",
+                                       "FUNCTIONAL_TEST",
                                        runParams.restartFilesPath,
                                        runParams.verbosity,
                                        runParams.useDevice);

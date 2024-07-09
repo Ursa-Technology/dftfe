@@ -15,7 +15,7 @@
 // ---------------------------------------------------------------------
 //
 
-#include "unitTests.h"
+#include "functionalTest.h"
 #include "MultiVectorPoissonLinearSolverProblem.h"
 #include "MultiVectorMinResSolver.h"
 #include "MultiVectorCGSolver.h"
@@ -25,7 +25,7 @@
 
 
 
-namespace unitTest
+namespace functionalTest
 {
   //template <dftfe::utils::MemorySpace memorySpace>
   void
@@ -1004,4 +1004,4 @@ namespace unitTest
     //                << multiVectorOutput.l2Norm() << "\n";
   }
 
-} // end of namespace unitTest
+} // end of namespace functionalTest

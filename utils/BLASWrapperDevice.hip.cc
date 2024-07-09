@@ -1747,30 +1747,26 @@ namespace dftfe
         dftfe::utils::makeDataTypeDeviceCompatible(z));
     }
 
-
-         void
+    template <typename ValueType>
+    void
     BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
       MultiVectorXDot(const unsigned int contiguousBlockSize,
                     const unsigned int numContiguousBlocks,
-                    const double *     X,
-                    const double *     Y,
-                    const double * onesVec,
-                    double * tempVector,
-                    double * tempResults,
-                    double *           result) const
+                    const ValueType *     X,
+                    const ValueType *     Y,     
+                    const ValueType * onesVec,      
+                    ValueType * tempVector,       
+                    ValueType * tempResults,    
+                    ValueType *           result) const
     {
-      hadamardProductKernel<<<
-        (contiguousBlockSize * numContiguousBlocks) /
-            dftfe::utils::DEVICE_BLOCK_SIZE +
-          1,
-        dftfe::utils::DEVICE_BLOCK_SIZE>>>(
-        contiguousBlockSize*numContiguousBlocks,
-        dftfe::utils::makeDataTypeDeviceCompatible(X),
-        dftfe::utils::makeDataTypeDeviceCompatible(Y),
-        dftfe::utils::makeDataTypeDeviceCompatible(tempVector));
 
-      double alpha = 1.0;
-      double beta = 0.0;
+            hadamardProductWithConj(contiguousBlockSize*numContiguousBlocks,
+                            X,
+                            Y,
+                            tempVector);
+      
+      ValueType alpha = 1.0;
+      ValueType beta = 0.0;
       unsigned int numVec = 1;
       xgemm(
         'N',
@@ -1786,24 +1782,24 @@ namespace dftfe
         &beta,
         tempResults,
         numVec);
-
-      dftfe::utils::deviceMemcpyD2H(dftfe::utils::makeDataTypeDeviceCompatible(
+     dftfe::utils::deviceMemcpyD2H(dftfe::utils::makeDataTypeDeviceCompatible(
                                       result),
                                     tempResults,
-                                    contiguousBlockSize * sizeof(double));
+                                    contiguousBlockSize * sizeof(ValueType));
     }
 
+    template <typename ValueType>
     void
-	    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+            BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
     MultiVectorXDot(const unsigned int contiguousBlockSize,
                     const unsigned int numContiguousBlocks,
-                    const double *     X,
-                    const double *     Y,
-                    const double * onesVec,
-                    double * tempVector,
-                    double * tempResults,
+                    const ValueType *     X,
+                    const ValueType *     Y,
+                    const ValueType * onesVec,
+                    ValueType * tempVector,
+                    ValueType * tempResults,
                     const MPI_Comm &   mpi_communicator,
-                    double *           result) const
+                    ValueType *           result) const
 
     {
       MultiVectorXDot(contiguousBlockSize,
@@ -1818,85 +1814,9 @@ namespace dftfe
       MPI_Allreduce(MPI_IN_PLACE,
                     &result[0],
                     contiguousBlockSize,
-		    MPI_DOUBLE,
+                    dataTypes::mpi_type_id(&result[0]),
                     MPI_SUM,
                     mpi_communicator);
-    }
-
-    void
-	    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
-    MultiVectorXDot(const unsigned int contiguousBlockSize,
-                    const unsigned int numContiguousBlocks,
-                    const std::complex<double> *X,
-                    const std::complex<double> *Y,
-                    const std::complex<double> * onesVec,
-                    std::complex<double> * tempVector,
-                    std::complex<double> * tempResults,
-                    std::complex<double> *      result) const
-    {
-      hadamardProductWithConjKernel<<<
-        (contiguousBlockSize * numContiguousBlocks) /
-            dftfe::utils::DEVICE_BLOCK_SIZE +
-          1,
-        dftfe::utils::DEVICE_BLOCK_SIZE>>>(
-        contiguousBlockSize*numContiguousBlocks,
-        dftfe::utils::makeDataTypeDeviceCompatible(X),
-        dftfe::utils::makeDataTypeDeviceCompatible(Y),
-        dftfe::utils::makeDataTypeDeviceCompatible(tempVector));
-
-
-      std::complex<double> alpha(1.0,0.0);
-      std::complex<double> beta(0.0,0.0);
-
-      unsigned int numVec = 1;
-      xgemm(
-        'N',
-        'T',
-        numVec,
-        contiguousBlockSize,
-        numContiguousBlocks,
-        &alpha,
-        onesVec,
-        numVec,
-        tempVector,
-        contiguousBlockSize,
-        &beta,
-        tempResults,
-        numVec);
-
-      dftfe::utils::deviceMemcpyD2H(dftfe::utils::makeDataTypeDeviceCompatible(
-                                      result),
-                                    tempResults,
-                                    contiguousBlockSize * sizeof(std::complex<double>));
-    }
-
-    void
-	    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
-    MultiVectorXDot(const unsigned int contiguousBlockSize,
-                    const unsigned int numContiguousBlocks,
-                    const std::complex<double> *X,
-                    const std::complex<double> *Y,
-                    const std::complex<double> * onesVec,
-                    std::complex<double> * tempVector,
-                    std::complex<double> * tempResults,
-                    const MPI_Comm &            mpi_communicator,
-                    std::complex<double> *      result) const
-    {
-        MultiVectorXDot(contiguousBlockSize,
-                        numContiguousBlocks,
-                        X,
-                        Y,
-                        onesVec,
-                        tempVector,
-                        tempResults,
-                        result);
-
-        MPI_Allreduce(MPI_IN_PLACE,
-                      &result[0],
-                      contiguousBlockSize,
-                      MPI_C_DOUBLE_COMPLEX,
-                      MPI_SUM,
-                      mpi_communicator);
     }
 
 #include "./BLASWrapperDevice.inst.cc"

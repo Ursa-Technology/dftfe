@@ -40,7 +40,7 @@
 #include <MemoryTransfer.h>
 #include <QuadDataCompositeWrite.h>
 #include <MPIWriteOnFile.h>
-#include "unitTests.h"
+#include <functionalTest.h>
 #include <computeAuxProjectedDensityMatrixFromPSI.h>
 
 #include <algorithm>
@@ -215,13 +215,13 @@ namespace dftfe
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
   void
-  dftClass<FEOrder, FEOrderElectro, memorySpace>::runUnitTest()
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::runFunctionalTest()
   {
 
 
     std::cout<<" d_phiTotDofHandlerIndexElectro = "<<d_phiTotDofHandlerIndexElectro<<"\n";
     /* function to test the accuracy of the multivector poisson sover */
-//    unitTest::testMultiVectorPoissonSolver(d_basisOperationsPtrElectroHost,
+//    functionalTest::testMultiVectorPoissonSolver(d_basisOperationsPtrElectroHost,
 //                                           d_matrixFreeDataPRefined,
 //                                           d_BLASWrapperPtrHost,
 //                  d_constraintsVectorElectro,
@@ -232,8 +232,8 @@ namespace dftfe
 //                  d_mpiCommParent,
 //                  mpi_communicator);
 
-//    unitTest::testAccumulateInsert(mpi_communicator);
-    unitTest::testTransferFromParentToChildIncompatiblePartitioning(
+//    functionalTest::testAccumulateInsert(mpi_communicator);
+    functionalTest::testTransferFromParentToChildIncompatiblePartitioning(
     d_BLASWrapperPtrHost,
       d_mpiCommParent,
       mpi_communicator,
@@ -1844,9 +1844,9 @@ namespace dftfe
         mkdir(d_dftParamsPtr->restartFolder.c_str(), ACCESSPERMS);
       }
 
-    if (d_dftParamsPtr->solverMode == "UNIT_TEST")
+    if (d_dftParamsPtr->solverMode == "FUNCTIONAL_TEST")
       {
-        runUnitTest();
+        runFunctionalTest();
       }
     else if (d_dftParamsPtr->solverMode == "GS")
       {

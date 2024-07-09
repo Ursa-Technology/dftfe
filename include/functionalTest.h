@@ -15,15 +15,15 @@
 // ---------------------------------------------------------------------
 //
 
-#ifndef DFTFE_UNITTESTS_H
-#define DFTFE_UNITTESTS_H
+#ifndef DFTFE_FUNCTIONALTEST_H
+#define DFTFE_FUNCTIONALTEST_H
 
 #include "headers.h"
 #include "BLASWrapper.h"
 #include "FEBasisOperations.h"
 #include "dftParameters.h"
 
-namespace unitTest
+namespace functionalTest
 {
   void testTransferFromParentToChildIncompatiblePartitioning(
 		 const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
@@ -61,6 +61,6 @@ namespace unitTest
 
   void testAccumulateInsert(const MPI_Comm & mpiComm);
 
-} // end of namespace unitTest
+} // end of namespace functionalTest
 
-#endif // DFTFE_UNITTESTS_H
+#endif // DFTFE_FUNCTIONALTEST_H

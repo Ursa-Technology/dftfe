@@ -457,6 +457,10 @@ namespace dftfe
               vKS_quadValues[0][qPoint + iCell*numberQuadraturePoints] * cellJxWPtr[qPoint];
           }
       }
+
+    resetExtPotHamFlag();
+    setVEffExternalPotCorrToZero();
+    computeCellHamiltonianMatrixExtPotContribution();
 #if defined(DFTFE_WITH_DEVICE)
     d_VeffJxW.resize(d_VeffJxWHost.size());
     d_VeffJxW.copyFrom(d_VeffJxWHost);

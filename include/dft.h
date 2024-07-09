@@ -175,7 +175,7 @@ namespace dftfe
 
 
     void
-    runUnitTest();
+    runFunctionalTest();
 
     /**
      * @brief Writes inital density and mesh to file.

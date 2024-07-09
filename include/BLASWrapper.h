@@ -249,50 +249,29 @@ namespace dftfe
 
 
       // MultiVector Real dot product
+      template <typename ValueType>
       void
       MultiVectorXDot(const unsigned int contiguousBlockSize,
                       const unsigned int numContiguousBlocks,
-           const double *     X,
-           const double *     Y,
-           const double * onesVec,
-           double * tempVector,
-           double * tempResults,
-           double *           result) const;
+           const ValueType *     X,
+           const ValueType *     Y,
+           const ValueType * onesVec,
+           ValueType * tempVector,
+           ValueType * tempResults,
+           ValueType *           result) const;
 
       // MultiVector Real dot product with all Reduce call
+      template <typename ValueType>
       void
       MultiVectorXDot(const unsigned int contiguousBlockSize,
            const unsigned int numContiguousBlocks,
-           const double *     X,
-           const double *     Y,
-           const double * onesVec,
-           double * tempVector,
-           double * tempResults,
+           const ValueType *     X,
+           const ValueType *     Y,
+           const ValueType * onesVec,
+           ValueType * tempVector,
+           ValueType * tempResults,
            const MPI_Comm &   mpi_communicator,
-           double *           result) const;
-
-      // MultiVector Complex dot product
-      void
-      MultiVectorXDot(const unsigned int contiguousBlockSize,
-                      const unsigned int numContiguousBlocks,
-           const std::complex<double> *X,
-           const std::complex<double> *Y,
-           const std::complex<double> * onesVec,
-           std::complex<double> * tempVector,
-           std::complex<double> * tempResults,
-           std::complex<double> *      result) const;
-
-      // MultiVector Complex dot product with all Reduce call
-      void
-      MultiVectorXDot(const unsigned int contiguousBlockSize,
-                      const unsigned int numContiguousBlocks,
-           const std::complex<double> *X,
-           const std::complex<double> *Y,
-           const std::complex<double> * onesVec,
-           std::complex<double> * tempVector,
-           std::complex<double> * tempResults,
-           const MPI_Comm &            mpi_communicator,
-           std::complex<double> *      result) const;
+           ValueType *           result) const;
 
 
       // Real double Ax+y
@@ -889,51 +868,28 @@ namespace dftfe
            std::complex<double> *      result) const;
 
 
-      // MultiVector Real dot product
+      template <typename ValueType>
       void
       MultiVectorXDot(const unsigned int contiguousBlockSize,
                       const unsigned int numContiguousBlocks,
-                      const double *     X,
-                      const double *     Y,
-                      const double * onesVec,
-                      double * tempVector,
-                      double * tempResults,
-                      double *           result) const;
+                      const ValueType *     X,
+                      const ValueType *     Y,
+                      const ValueType * onesVec,
+                      ValueType * tempVector,
+                      ValueType * tempResults,
+                      ValueType *           result) const;
 
-      // MultiVector Real dot product with all Reduce call
+      template <typename ValueType>
       void
       MultiVectorXDot(const unsigned int contiguousBlockSize,
                       const unsigned int numContiguousBlocks,
-                      const double *     X,
-                      const double *     Y,
-                      const double * onesVec,
-                      double * tempVector,
-                      double * tempResults,
+                      const ValueType *     X,
+                      const ValueType *     Y,
+                      const ValueType * onesVec,
+                      ValueType * tempVector,
+                      ValueType * tempResults,
                       const MPI_Comm &   mpi_communicator,
-                      double *           result) const;
-
-      // MultiVector Complex dot product
-      void
-      MultiVectorXDot(const unsigned int contiguousBlockSize,
-                      const unsigned int numContiguousBlocks,
-                      const std::complex<double> *X,
-                      const std::complex<double> *Y,
-                      const std::complex<double> * onesVec,
-                      std::complex<double> * tempVector,
-                      std::complex<double> * tempResults,
-                      std::complex<double> *      result) const;
-
-      // MultiVector Complex dot product with all Reduce call
-      void
-      MultiVectorXDot(const unsigned int contiguousBlockSize,
-                      const unsigned int numContiguousBlocks,
-                      const std::complex<double> *X,
-                      const std::complex<double> *Y,
-                      const std::complex<double> * onesVec,
-                      std::complex<double> * tempVector,
-                      std::complex<double> * tempResults,
-                      const MPI_Comm &            mpi_communicator,
-                      std::complex<double> *      result) const;
+                      ValueType *           result) const;
 
       // Real double Ax+y
       void

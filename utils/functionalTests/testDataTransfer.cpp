@@ -15,14 +15,14 @@
 // @author Vishal Subramanian
 //
 
-#include "unitTests.h"
+#include "functionalTest.h"
 #include "dftParameters.h"
 #include "triangulationManager.h"
 #include "TransferBetweenMeshesIncompatiblePartitioning.h"
 #include "MPIPatternP2P.h"
 #include "vectorUtilities.h"
 
-namespace unitTest
+namespace functionalTest
 {
   namespace {
     double
@@ -700,4 +700,4 @@ namespace unitTest
                   << l2Error << "\n";
       }
   }
-}
+} // end of namespace functionalTest

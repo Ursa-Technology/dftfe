@@ -150,9 +150,6 @@ namespace dftfe
     void
     computeCellHamiltonianMatrixExtPotContribution();
 
-    void 
-    setVEffExternalPotCorrToZero();
-    
     void
     HX(dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &src,
        const double scalarHX,
@@ -194,6 +191,10 @@ namespace dftfe
       const bool onlyHPrimePartForFirstOrderDensityMatResponse = false);
 
   private:
+
+    void
+    setVEffExternalPotCorrToZero();
+
     std::shared_ptr<
       AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
       d_ONCVnonLocalOperator;

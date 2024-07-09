@@ -124,6 +124,9 @@ namespace dftfe
     }
 
     template void
+    deviceSetValue(bool *devPtr, bool value, std::size_t size);
+
+    template void
     deviceSetValue(int *devPtr, int value, std::size_t size);
 
     template void

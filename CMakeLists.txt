@@ -190,7 +190,6 @@ SET(TARGET_SRC
         ./src/TransferBetweenMeshes/TransferBetweenMeshesIncompatiblePartitioning.cpp
         ./src/TransferBetweenMeshes/InterpolateCellWiseDataToPoints.cpp
 	./utils/NodalData.cpp
-	./utils/CompositeData.cpp
         ./utils/functionalTests/testMultiVectorCGForPoisson.cpp
         ./utils/functionalTests/testDataTransfer.cpp
   ./src/pseudo/oncv/oncvClass.cc)
@@ -218,7 +217,6 @@ SET(DEVICE_SRC
   ./src/solvers/linearSolverCGDevice.cc
   ./src/solvers/linearSolverProblemDevice.cc
   ./src/poisson/poissonSolverProblemDevice.cc
-  #./src/poisson/MultiVectorAdjointLinearSolverProblem.cpp
   ./src/helmholtz/kerkerSolverProblemDevice.cc
   ./utils/FEBasisOperationsKernelsInternalDevice.cc
   ./src/atom/AtomicCenteredNonLocalOperatorKernelsDevice.cc

@@ -228,100 +228,93 @@ namespace dftfe
               recvVal);
           }
       }
+      /*
+            template <>
+            __global__ void
+            accumInsertFromRecvBufferDeviceKernel(
+              const size_type                         totalFlattenedSize,
+              const size_type                         blockSize,
+              const dftfe::utils::deviceFloatComplex *recvBuffer,
+              const size_type * ownedLocalIndicesForTargetProcs,
+              dftfe::utils::deviceFloatComplex *      dataArray)
+            {
+              const size_type globalThreadId = blockIdx.x * blockDim.x +
+         threadIdx.x; for (size_type i = globalThreadId; i < totalFlattenedSize;
+                   i += blockDim.x * gridDim.x)
+                {
+                  const size_type blockId      = i / blockSize;
+                  const size_type intraBlockId = i - blockId * blockSize;
 
-      template <>
-      __global__ void
-      accumInsertFromRecvBufferDeviceKernel(
-        const size_type                         totalFlattenedSize,
-        const size_type                         blockSize,
-        const dftfe::utils::deviceFloatComplex *recvBuffer,
-        const size_type *                       ownedLocalIndicesForTargetProcs,
-        dftfe::utils::deviceFloatComplex *      dataArray)
-      {
-        const size_type globalThreadId = blockIdx.x * blockDim.x + threadIdx.x;
-        for (size_type i = globalThreadId; i < totalFlattenedSize;
-             i += blockDim.x * gridDim.x)
-          {
-            const size_type blockId      = i / blockSize;
-            const size_type intraBlockId = i - blockId * blockSize;
+                  dftfe::utils::copyValue(
+                    &dataArray[ownedLocalIndicesForTargetProcs[blockId] *
+         blockSize + intraBlockId] .x,
+                    dftfe::utils::realPartDevice(recvBuffer[i]));
 
-            dftfe::utils::copyValue(
-              &dataArray[ownedLocalIndicesForTargetProcs[blockId] * blockSize +
-                         intraBlockId]
-                 .x,
-              dftfe::utils::realPartDevice(recvBuffer[i]));
+                  dftfe::utils::copyValue(
+                    &dataArray[ownedLocalIndicesForTargetProcs[blockId] *
+         blockSize + intraBlockId] .y,
+                    dftfe::utils::imagPartDevice(recvBuffer[i]));
+                }
+            }
 
-            dftfe::utils::copyValue(
-              &dataArray[ownedLocalIndicesForTargetProcs[blockId] * blockSize +
-                         intraBlockId]
-                 .y,
-              dftfe::utils::imagPartDevice(recvBuffer[i]));
-          }
-      }
+            template <>
+            __global__ void
+            accumInsertFromRecvBufferDeviceKernel(
+              const size_type                          totalFlattenedSize,
+              const size_type                          blockSize,
+              const dftfe::utils::deviceDoubleComplex *recvBuffer,
+              const size_type * ownedLocalIndicesForTargetProcs,
+              dftfe::utils::deviceDoubleComplex *dataArray)
+            {
+              const size_type globalThreadId = blockIdx.x * blockDim.x +
+         threadIdx.x; for (size_type i = globalThreadId; i < totalFlattenedSize;
+                   i += blockDim.x * gridDim.x)
+                {
+                  const size_type blockId      = i / blockSize;
+                  const size_type intraBlockId = i - blockId * blockSize;
 
-      template <>
-      __global__ void
-      accumInsertFromRecvBufferDeviceKernel(
-        const size_type                          totalFlattenedSize,
-        const size_type                          blockSize,
-        const dftfe::utils::deviceDoubleComplex *recvBuffer,
-        const size_type *                  ownedLocalIndicesForTargetProcs,
-        dftfe::utils::deviceDoubleComplex *dataArray)
-      {
-        const size_type globalThreadId = blockIdx.x * blockDim.x + threadIdx.x;
-        for (size_type i = globalThreadId; i < totalFlattenedSize;
-             i += blockDim.x * gridDim.x)
-          {
-            const size_type blockId      = i / blockSize;
-            const size_type intraBlockId = i - blockId * blockSize;
+                  dftfe::utils::copyValue(
+                    &dataArray[ownedLocalIndicesForTargetProcs[blockId] *
+         blockSize + intraBlockId] .x,
+                    dftfe::utils::realPartDevice(recvBuffer[i]));
 
-            dftfe::utils::copyValue(
-              &dataArray[ownedLocalIndicesForTargetProcs[blockId] * blockSize +
-                         intraBlockId]
-                 .x,
-              dftfe::utils::realPartDevice(recvBuffer[i]));
+                  dftfe::utils::copyValue(
+                    &dataArray[ownedLocalIndicesForTargetProcs[blockId] *
+         blockSize + intraBlockId] .y,
+                    dftfe::utils::imagPartDevice(recvBuffer[i]));
+                }
+            }
 
-            dftfe::utils::copyValue(
-              &dataArray[ownedLocalIndicesForTargetProcs[blockId] * blockSize +
-                         intraBlockId]
-                 .y,
-              dftfe::utils::imagPartDevice(recvBuffer[i]));
-          }
-      }
+            template <>
+            __global__ void
+            accumInsertFromRecvBufferDeviceKernel(
+              const size_type                         totalFlattenedSize,
+              const size_type                         blockSize,
+              const dftfe::utils::deviceFloatComplex *recvBuffer,
+              const size_type * ownedLocalIndicesForTargetProcs,
+              dftfe::utils::deviceDoubleComplex *     dataArray)
+            {
+              const size_type globalThreadId = blockIdx.x * blockDim.x +
+         threadIdx.x; for (size_type i = globalThreadId; i < totalFlattenedSize;
+                   i += blockDim.x * gridDim.x)
+                {
+                  const size_type blockId      = i / blockSize;
+                  const size_type intraBlockId = i - blockId * blockSize;
+                  const double    recvValReal =
+                    dftfe::utils::realPartDevice(recvBuffer[i]);
+                  const double recvValImag =
+                    dftfe::utils::imagPartDevice(recvBuffer[i]);
 
-      template <>
-      __global__ void
-      accumInsertFromRecvBufferDeviceKernel(
-        const size_type                         totalFlattenedSize,
-        const size_type                         blockSize,
-        const dftfe::utils::deviceFloatComplex *recvBuffer,
-        const size_type *                       ownedLocalIndicesForTargetProcs,
-        dftfe::utils::deviceDoubleComplex *     dataArray)
-      {
-        const size_type globalThreadId = blockIdx.x * blockDim.x + threadIdx.x;
-        for (size_type i = globalThreadId; i < totalFlattenedSize;
-             i += blockDim.x * gridDim.x)
-          {
-            const size_type blockId      = i / blockSize;
-            const size_type intraBlockId = i - blockId * blockSize;
-            const double    recvValReal =
-              dftfe::utils::realPartDevice(recvBuffer[i]);
-            const double recvValImag =
-              dftfe::utils::imagPartDevice(recvBuffer[i]);
+                  dftfe::utils::copyValue(
+                    &dataArray[ownedLocalIndicesForTargetProcs[blockId] *
+         blockSize + intraBlockId] .x, recvValReal);
 
-            dftfe::utils::copyValue(
-              &dataArray[ownedLocalIndicesForTargetProcs[blockId] * blockSize +
-                         intraBlockId]
-                 .x,
-              recvValReal);
-
-            dftfe::utils::copyValue(
-              &dataArray[ownedLocalIndicesForTargetProcs[blockId] * blockSize +
-                         intraBlockId]
-                 .y,
-              recvValImag);
-          }
-      }
+                  dftfe::utils::copyValue(
+                    &dataArray[ownedLocalIndicesForTargetProcs[blockId] *
+         blockSize + intraBlockId] .y, recvValImag);
+                }
+            }
+          */
 
     } // namespace
 

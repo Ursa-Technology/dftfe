@@ -77,11 +77,11 @@ namespace dftfe
     size_type maxNumCells  = srcCells.size();
     size_type maxNumPoints = numInitialTargetPoints;
 
-    if ( d_verbosity > 2 )
-    {
-	    std::cout << " NumPoints in proc = " << numInitialTargetPoints
-              << " numCells per proc = " << srcCells.size() << "\n";
-    }
+    if (d_verbosity > 2)
+      {
+        std::cout << " NumPoints in proc = " << numInitialTargetPoints
+                  << " numCells per proc = " << srcCells.size() << "\n";
+      }
     MPI_Allreduce(MPI_IN_PLACE,
                   &maxNumCells,
                   1,
@@ -97,10 +97,10 @@ namespace dftfe
                   d_mpiComm);
 
     if (dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0)
-    {
-	    std::cout << " maxNumPoints = " << maxNumPoints
-              << " maxNumCells = " << maxNumCells << "\n";
-    }
+      {
+        std::cout << " maxNumPoints = " << maxNumPoints
+                  << " maxNumCells = " << maxNumCells << "\n";
+      }
     // create the RTree and the
     d_mapPoints.init(srcCells,
                      targetPts,
@@ -252,9 +252,10 @@ namespace dftfe
           numTargetPointsFound >= numTargetPointsInput,
           " Number of points found is less than the input points \n");
       }
-    if ((dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0) && (d_verbosity > 2 ))
-    {
-	std::cout << " Fraction of non local pts = " << nonLocalFrac << "\n";
+    if ((dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0) &&
+        (d_verbosity > 2))
+      {
+        std::cout << " Fraction of non local pts = " << nonLocalFrac << "\n";
         std::cout << " Time for start Comp = " << startMapPoints - startComp
                   << "\n";
         std::cout << " Time for map Points init = "
@@ -455,7 +456,7 @@ namespace dftfe
 
     int thisRankId;
     MPI_Comm_rank(d_mpiComm, &thisRankId);
-    if ((thisRankId == 0) && ( d_verbosity > 2 ))
+    if ((thisRankId == 0) && (d_verbosity > 2))
       {
         std::cout << " resize Time = " << endResizeTime - startTime
                   << " Comp time = " << endCompTime - endResizeTime

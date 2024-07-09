@@ -416,8 +416,14 @@ namespace functionalTest
 
     dftfe::TransferDataBetweenMeshesIncompatiblePartitioning<
       dftfe::utils::MemorySpace::HOST>
-      inverseDftDoFManagerObj(
-        matrixFreeData, 0, 0, matrixFreeDataVxc, 0, 0, dftParams.verbosity, mpi_comm_domain);
+      inverseDftDoFManagerObj(matrixFreeData,
+                              0,
+                              0,
+                              matrixFreeDataVxc,
+                              0,
+                              0,
+                              dftParams.verbosity,
+                              mpi_comm_domain);
 
     std::cout << std::flush;
     MPI_Barrier(mpi_comm_domain);
@@ -466,7 +472,8 @@ namespace functionalTest
     MPI_Barrier(mpi_comm_domain);
     double endTimeMesh1ToMesh2 = MPI_Wtime();
 
-    if ((dealii::Utilities::MPI::this_mpi_process(mpi_comm_domain) == 0) && (dftParams.verbosity > 2))
+    if ((dealii::Utilities::MPI::this_mpi_process(mpi_comm_domain) == 0) &&
+        (dftParams.verbosity > 2))
       {
         std::cout << " Num of points  = " << numPointsChild << "\n";
         std::cout << " Time taken to transfer from Mesh 1 to Mesh 2 = "
@@ -519,16 +526,16 @@ namespace functionalTest
     l2Error = std::sqrt(l2Error);
     if (dealii::Utilities::MPI::this_mpi_process(mpi_comm_domain) == 0)
       {
-	      if ( l2Error > 1e-9)
-	      {
-		  std::cout << " Error while interpolating to quad points of child = "
-                  << l2Error << "\n";
-	      }
-	      else
-	      {
-		      std::cout<<" Interpolation to quad points of child of successful\n";
-	      } 
-
+        if (l2Error > 1e-9)
+          {
+            std::cout << " Error while interpolating to quad points of child = "
+                      << l2Error << "\n";
+          }
+        else
+          {
+            std::cout
+              << " Interpolation to quad points of child of successful\n";
+          }
       }
 
 
@@ -631,7 +638,8 @@ namespace functionalTest
     MPI_Barrier(mpi_comm_domain);
     double endTimeMesh2ToMesh1 = MPI_Wtime();
 
-    if ((dealii::Utilities::MPI::this_mpi_process(mpi_comm_domain) == 0) && (dftParams.verbosity > 2))
+    if ((dealii::Utilities::MPI::this_mpi_process(mpi_comm_domain) == 0) &&
+        (dftParams.verbosity > 2))
       {
         std::cout << " Number of points parent = " << numPointsParent << "\n";
         std::cout << " Time taken to transfer from Mesh 2 to Mesh 1 = "
@@ -679,7 +687,6 @@ namespace functionalTest
 
         dftfe::dataTypes::number errorVal = conj_compl(diff) * diff;
         l2Error += real_part(errorVal);
-
       }
     MPI_Allreduce(
       MPI_IN_PLACE, &l2Error, 1, MPI_DOUBLE, MPI_SUM, mpi_comm_domain);
@@ -687,16 +694,17 @@ namespace functionalTest
 
     if (dealii::Utilities::MPI::this_mpi_process(mpi_comm_domain) == 0)
       {
-              if ( l2Error > 1e-9)
-              {
-                  std::cout << " Error while interpolating to quad points of parent = "
-                  << l2Error << "\n";
-              }
-              else
-              {
-                      std::cout<<" Interpolation to quad points of parent of successful\n";
-              }
-
+        if (l2Error > 1e-9)
+          {
+            std::cout
+              << " Error while interpolating to quad points of parent = "
+              << l2Error << "\n";
+          }
+        else
+          {
+            std::cout
+              << " Interpolation to quad points of parent of successful\n";
+          }
       }
   }
 } // end of namespace functionalTest

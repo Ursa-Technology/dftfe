@@ -159,9 +159,9 @@ namespace dftfe
 
       prm.enter_subsection("FunctionalTest");
       {
-	      prm.declare_entry(
-			      "TEST NAME",
-			      "",
+        prm.declare_entry(
+          "TEST NAME",
+          "",
           dealii::Patterns::Anything(),
           "[Standard] Name of the Functional test that needs to be run.");
       }
@@ -1205,7 +1205,7 @@ namespace dftfe
     npool                                      = 1;
     maxLinearSolverIterationsHelmholtz         = 1;
 
-    functionalTestName = "";
+    functionalTestName                = "";
     radiusAtomBall                    = 0.0;
     mixingParameter                   = 0.5;
     spinMixingEnhancementFactor       = 4.0;
@@ -1434,7 +1434,7 @@ namespace dftfe
 
     prm.enter_subsection("FunctionalTest");
     {
-	    functionalTestName            = prm.get("TEST NAME");
+      functionalTestName = prm.get("TEST NAME");
     }
     prm.leave_subsection();
     prm.enter_subsection("Parallelization");

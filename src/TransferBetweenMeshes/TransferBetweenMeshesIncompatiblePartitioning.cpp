@@ -204,7 +204,8 @@ namespace dftfe
 
     double endMapMesh2To1 = MPI_Wtime();
 
-    if ( (dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0) && (verbosity > 2) )
+    if ((dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0) &&
+        (verbosity > 2))
       {
         std::cout << " Time taken to create the map from 1 to 2 = "
                   << endMapMesh1To2 - startMapMesh1To2 << "\n";

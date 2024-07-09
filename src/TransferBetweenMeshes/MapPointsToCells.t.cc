@@ -234,8 +234,8 @@ namespace dftfe
         const std::vector<std::vector<double>> &          sendToPointsCoords,
         std::vector<global_size_type> &   receivedPointsGlobalIds,
         std::vector<std::vector<double>> &receivedPointsCoords,
-        unsigned int verbosity,
-	const MPI_Comm &                  mpiComm)
+        unsigned int                      verbosity,
+        const MPI_Comm &                  mpiComm)
       {
         int thisRankId;
         MPI_Comm_rank(mpiComm, &thisRankId);
@@ -294,7 +294,6 @@ namespace dftfe
                       procId, // setting the tag to procId
                       mpiComm,
                       &sendRequests[i]);
-
           }
 
         for (size_type i = 0; i < receiveFromProcIds.size(); ++i)
@@ -308,7 +307,6 @@ namespace dftfe
                       thisRankId, // the tag is set to the receiving id
                       mpiComm,
                       &recvRequests[i]);
-
           }
 
 
@@ -352,7 +350,6 @@ namespace dftfe
                       tag,
                       mpiComm,
                       &sendRequests[i]);
-
           }
 
         size_type offset = 0;
@@ -463,7 +460,8 @@ namespace dftfe
     } // namespace
 
     template <size_type dim, size_type M>
-    MapPointsToCells<dim, M>::MapPointsToCells(const unsigned int verbosity, const MPI_Comm &mpiComm)
+    MapPointsToCells<dim, M>::MapPointsToCells(const unsigned int verbosity,
+                                               const MPI_Comm &   mpiComm)
       : d_mpiComm(mpiComm)
     {
       d_verbosity = verbosity;
@@ -597,7 +595,7 @@ namespace dftfe
                          sendToPointsCoords,
                          receivedPointsGlobalIds,
                          receivedPointsCoords,
-			 d_verbosity,
+                         d_verbosity,
                          d_mpiComm);
 
       MPI_Barrier(d_mpiComm);

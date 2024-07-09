@@ -48,7 +48,7 @@ namespace dftfe
     class MapPointsToCells
     {
     public:
-      MapPointsToCells( const unsigned int verbosity, const MPI_Comm &mpiComm);
+      MapPointsToCells(const unsigned int verbosity, const MPI_Comm &mpiComm);
 
       /**
        * @brief The init().

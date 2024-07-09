@@ -217,39 +217,40 @@ namespace dftfe
   void
   dftClass<FEOrder, FEOrderElectro, memorySpace>::runFunctionalTest()
   {
-
-	  if ( d_dftParamsPtr->functionalTestName == "TestDataTransfer")
-	  {
-		functionalTest::testTransferFromParentToChildIncompatiblePartitioning(
-      			d_BLASWrapperPtrHost,
-      			d_mpiCommParent,
-      			mpi_communicator,
-      			interpoolcomm,
-      			interBandGroupComm,
-      			d_dftParamsPtr->finiteElementPolynomialOrder,
-      			*d_dftParamsPtr,
-      			atomLocations,
-      			d_imagePositionsAutoMesh,
-      			d_imageIds,
-      			d_nearestAtomDistances,
-      			d_domainBoundingVectors,
-      			false,  // bool generateSerialTria,
-      			false); // bool generateElectrostaticsTria)
-	  }
-	  else if ( d_dftParamsPtr->functionalTestName == "TestMultiVectorPoissonSolver")
-	  {
-		  functionalTest::testMultiVectorPoissonSolver(d_basisOperationsPtrElectroHost,
-				d_matrixFreeDataPRefined,
-    				d_BLASWrapperPtrHost,
-                      		d_constraintsVectorElectro,
-                      		d_densityInQuadValues[0],
-                      		d_phiTotDofHandlerIndexElectro,
-                      		d_densityQuadratureIdElectro,
-                      		d_phiTotAXQuadratureIdElectro,
-                      		d_dftParamsPtr->verbosity,
-				d_mpiCommParent,
-                      		mpi_communicator);
-	  } 
+    if (d_dftParamsPtr->functionalTestName == "TestDataTransfer")
+      {
+        functionalTest::testTransferFromParentToChildIncompatiblePartitioning(
+          d_BLASWrapperPtrHost,
+          d_mpiCommParent,
+          mpi_communicator,
+          interpoolcomm,
+          interBandGroupComm,
+          d_dftParamsPtr->finiteElementPolynomialOrder,
+          *d_dftParamsPtr,
+          atomLocations,
+          d_imagePositionsAutoMesh,
+          d_imageIds,
+          d_nearestAtomDistances,
+          d_domainBoundingVectors,
+          false,  // bool generateSerialTria,
+          false); // bool generateElectrostaticsTria)
+      }
+    else if (d_dftParamsPtr->functionalTestName ==
+             "TestMultiVectorPoissonSolver")
+      {
+        functionalTest::testMultiVectorPoissonSolver(
+          d_basisOperationsPtrElectroHost,
+          d_matrixFreeDataPRefined,
+          d_BLASWrapperPtrHost,
+          d_constraintsVectorElectro,
+          d_densityInQuadValues[0],
+          d_phiTotDofHandlerIndexElectro,
+          d_densityQuadratureIdElectro,
+          d_phiTotAXQuadratureIdElectro,
+          d_dftParamsPtr->verbosity,
+          d_mpiCommParent,
+          mpi_communicator);
+      }
 
 
     /* function to test the accuracy of the multivector poisson sover */
@@ -263,7 +264,6 @@ namespace dftfe
     //                  d_phiTotAXQuadratureIdElectro,
     //                  d_mpiCommParent,
     //                  mpi_communicator);
-
   }
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,

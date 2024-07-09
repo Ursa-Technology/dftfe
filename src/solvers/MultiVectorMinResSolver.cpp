@@ -54,8 +54,9 @@ namespace dftfe
 
     dealii::TimerOutput computing_timer(mpi_communicator,
                                         pcout,
-                                        debugLevel > 2 ? dealii::TimerOutput::summary 
-					: dealii::TimerOutput::never,
+                                        debugLevel > 2 ?
+                                          dealii::TimerOutput::summary :
+                                          dealii::TimerOutput::never,
                                         dealii::TimerOutput::wall_times);
 
     bool   iterate = true;

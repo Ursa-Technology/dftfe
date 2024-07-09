@@ -662,42 +662,38 @@ namespace dftfe
     // Assumes that NDBC is constraints distribute is called
     // rhs  = - ( 1.0 / 4 \pi ) \int \nabla N_j \nabla N_i  d_NDBC
 
-        d_basisOperationsPtr->extractToCellNodalData(*d_blockedNDBCPtr,
-                                                     xCellLLevelNodalData.data());
-    
-        for(size_type iCell = 0; iCell < d_numCells ; iCell += d_numCells)
-          {
-    
-    
-            std::pair<unsigned int, unsigned int> cellRange(
-              iCell, std::min(iCell + d_numCells, d_numCells));
-    
-            d_BLASWrapperPtr->xgemmStridedBatched(
-              'N',
-              'N',
-              d_blockSize,
-              d_numberDofsPerElement,
-              d_numberDofsPerElement,
-              &d_negScalarCoeffAlpha,
-              xCellLLevelNodalData.data() +
-                cellRange.first * d_numberDofsPerElement * d_blockSize,
-              d_blockSize,
-              d_numberDofsPerElement * d_blockSize,
-              d_cellStiffnessMatrixPtr->data() +
-                cellRange.first * d_numberDofsPerElement *
-                d_numberDofsPerElement,
-              d_numberDofsPerElement,
-              d_numberDofsPerElement * d_numberDofsPerElement,
-              &d_beta,
-              rhsCellLLevelNodalData.data(),
-              d_blockSize,
-              d_numberDofsPerElement * d_blockSize,
-              cellRange.second - cellRange.first);
-          }
-    
-        d_basisOperationsPtr->accumulateFromCellNodalData(
+    d_basisOperationsPtr->extractToCellNodalData(*d_blockedNDBCPtr,
+                                                 xCellLLevelNodalData.data());
+
+    for (size_type iCell = 0; iCell < d_numCells; iCell += d_numCells)
+      {
+        std::pair<unsigned int, unsigned int> cellRange(
+          iCell, std::min(iCell + d_numCells, d_numCells));
+
+        d_BLASWrapperPtr->xgemmStridedBatched(
+          'N',
+          'N',
+          d_blockSize,
+          d_numberDofsPerElement,
+          d_numberDofsPerElement,
+          &d_negScalarCoeffAlpha,
+          xCellLLevelNodalData.data() +
+            cellRange.first * d_numberDofsPerElement * d_blockSize,
+          d_blockSize,
+          d_numberDofsPerElement * d_blockSize,
+          d_cellStiffnessMatrixPtr->data() +
+            cellRange.first * d_numberDofsPerElement * d_numberDofsPerElement,
+          d_numberDofsPerElement,
+          d_numberDofsPerElement * d_numberDofsPerElement,
+          &d_beta,
           rhsCellLLevelNodalData.data(),
-          d_rhsVec);
+          d_blockSize,
+          d_numberDofsPerElement * d_blockSize,
+          cellRange.second - cellRange.first);
+      }
+
+    d_basisOperationsPtr->accumulateFromCellNodalData(
+      rhsCellLLevelNodalData.data(), d_rhsVec);
 
 
     d_basisOperationsPtr->reinit(d_blockSize,

@@ -1884,6 +1884,9 @@ namespace dftfe
     if (d_dftParamsPtr->writeWfcSolutionFields)
       outputWfc();
 
+    if (d_dftParamsPtr->printKE)
+      computeAndPrintKE();
+
     if (d_dftParamsPtr->writeDensitySolutionFields)
       outputDensity();
 

@@ -561,6 +561,12 @@ namespace dftfe
       const double                            numElectronsInput);
 
     /**
+     *@brief Computes the kinetic energy 
+     */
+    double
+    computeAndPrintKE();
+
+    /**
      *@brief get the Ptr to the operator class ( Kohn Sham Operator)
      */
     KohnShamHamiltonianOperator<memorySpace> *

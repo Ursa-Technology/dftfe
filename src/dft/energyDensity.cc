@@ -24,7 +24,6 @@
 #include <dft.h>
 #include <densityCalculator.h>
 #include <kineticEnergyDensityCalculator.h>
-#include <nonlocalPspEnergyDensityWfcContractionsHost.h>
 #include <fileReaders.h>
 #include <dftUtils.h>
 #include <fileReaders.h>
@@ -76,12 +75,14 @@ namespace dftfe
 
    */
 
-  template <unsigned int FEOrder, unsigned int FEOrderElectro>
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
   double
-  dftClass<FEOrder, FEOrderElectro>::computeAndPrintKE()
+  dftClass<FEOrder, FEOrderElectro,memorySpace>::computeAndPrintKE()
   {
-    std::map<dealii::CellId, std::vector<double>> uniformGridQuadPoints;
-    std::map<dealii::CellId, std::vector<double>> uniformGridQuadWeights;
+//    std::map<dealii::CellId, std::vector<double>> uniformGridQuadPoints;
+//    std::map<dealii::CellId, std::vector<double>> uniformGridQuadWeights;
 
     std::map<dealii::CellId, std::vector<double>> kineticEnergyDensityValues;
 
@@ -208,7 +209,7 @@ namespace dftfe
                                   fermiEnergy,
                                   fermiEnergyUp,
                                   fermiEnergyDown,
-                                  basisOperationsPtrHost,
+                                  d_basisOperationsPtrHost,
                                   d_densityQuadratureId,
 				  d_kPointCoordinates,
                                   d_kPointWeights,
@@ -219,7 +220,6 @@ namespace dftfe
                                   *d_dftParamsPtr);
 
     MPI_Barrier(MPI_COMM_WORLD);
-    pcout << "finished ke" << std::endl;
 
 
 
@@ -234,7 +234,9 @@ namespace dftfe
 
 
 
-    cell = dofHandler.begin_active();
+        typename dealii::DoFHandler<3>::active_cell_iterator
+          cell = dofHandler.begin_active(),
+          endc = dofHandler.end();
 
     for (; cell != endc; ++cell)
       if (cell->is_locally_owned())

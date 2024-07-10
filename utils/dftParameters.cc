@@ -106,6 +106,12 @@ namespace dftfe
           dealii::Patterns::Bool(),
           R"([Standard] Writes DFT ground state wavefunction solution fields (FEM mesh nodal values) to wfcOutput.vtu file for visualization purposes. The wavefunction solution fields in wfcOutput.vtu are named wfc\_s\_k\_i in case of spin-polarized calculations and wfc\_k\_i otherwise, where s denotes the spin index (0 or 1), k denotes the k point index starting from 0, and i denotes the Kohn-Sham wavefunction index starting from 0. In the case of geometry optimization, the wavefunctions corresponding to the last ground-state solve are written.  Default: false.)");
 
+          prm.declare_entry(
+            "PRINT KINETIC ENERGY",
+            "false",
+            dealii::Patterns::Bool(),
+            R"([Standard] Prints the Kinetic energy of the electrons.  Default: false.)");
+
         prm.declare_entry(
           "WRITE DENSITY FE MESH",
           "false",
@@ -1274,6 +1280,7 @@ namespace dftfe
     startingWFCType                                = "";
     restrictToOnePass                              = false;
     writeWfcSolutionFields                         = false;
+    printKE                                        = false;
     writeDensitySolutionFields                     = false;
     writeDensityQuadData                           = false;
     wfcBlockSize                                   = 400;
@@ -1420,6 +1427,7 @@ namespace dftfe
     prm.enter_subsection("Post-processing Options");
     {
       writeWfcSolutionFields     = prm.get_bool("WRITE WFC FE MESH");
+      printKE                    = prm.get_bool("PRINT KINETIC ENERGY");
       writeDensitySolutionFields = prm.get_bool("WRITE DENSITY FE MESH");
       writeDensityQuadData       = prm.get_bool("WRITE DENSITY QUAD DATA");
       writeDosFile               = prm.get_bool("WRITE DENSITY OF STATES");

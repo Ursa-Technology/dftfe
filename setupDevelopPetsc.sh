@@ -17,8 +17,8 @@ SRC=`dirname $0` # location of source directory
 # and optimization flag
 
 #Paths for required external libraries
-dealiiPetscRealDir="/home/vikramg/DFT-softwares-gcc/dealii9.5.2/install_real_cpu"
-dealiiPetscComplexDir="/home/vikramg/DFT-softwares-gcc/dealii9.5.2/install_complex_cpu"
+dealiiPetscRealDir="/home/vikramg/DFT-softwares-gcc/dealii9.5.2/install_real_cpu_extboost"
+dealiiPetscComplexDir="/home/vikramg/DFT-softwares-gcc/dealii9.5.2/install_complex_cpu_extboost"
 alglibDir="/home/vikramg/DFT-softwares-gcc/alglib/alglib-cpp/src"
 libxcDir="/home/vikramg/DFT-softwares-gcc/libxc/libxc-5.2.3/install_libxc5.2.3"
 spglibDir="/home/vikramg/DFT-softwares-gcc/spglib/install"

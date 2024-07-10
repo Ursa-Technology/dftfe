@@ -1611,6 +1611,209 @@ namespace dftfe
                          dftfe::utils::makeDataTypeDeviceCompatible(x));
     }
 
+    template <typename ValueType>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::hadamardProduct(
+      const unsigned int m,
+      const ValueType *  X,
+      const ValueType *  Y,
+      ValueType *        output) const
+    {
+      hipLaunchKernelGGL(hadamardProductKernel,
+                         m / dftfe::utils::DEVICE_BLOCK_SIZE + 1,
+                         dftfe::utils::DEVICE_BLOCK_SIZE,
+                         0,
+                         0,
+                         m,
+                         dftfe::utils::makeDataTypeDeviceCompatible(X),
+                         dftfe::utils::makeDataTypeDeviceCompatible(Y),
+                         dftfe::utils::makeDataTypeDeviceCompatible(output));
+    }
+
+    template <typename ValueType>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::hadamardProductWithConj(
+      const unsigned int m,
+      const ValueType *  X,
+      const ValueType *  Y,
+      ValueType *        output) const
+    {
+      hipLaunchKernelGGL(hadamardProductWithConjKernel,
+                         (m) / dftfe::utils::DEVICE_BLOCK_SIZE + 1,
+                         dftfe::utils::DEVICE_BLOCK_SIZE,
+                         0,
+                         0,
+                         m,
+                         dftfe::utils::makeDataTypeDeviceCompatible(X),
+                         dftfe::utils::makeDataTypeDeviceCompatible(Y),
+                         dftfe::utils::makeDataTypeDeviceCompatible(output));
+    }
+
+    template <typename ValueType>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::addVecOverContinuousIndex(
+      const dftfe::size_type numContiguousBlocks,
+      const dftfe::size_type contiguousBlockSize,
+      const ValueType *      input1,
+      const ValueType *      input2,
+      ValueType *            output)
+    {
+      hipLaunchKernelGGL(addVecOverContinuousIndexKernel,
+                         (numContiguousBlocks) /
+                             dftfe::utils::DEVICE_BLOCK_SIZE +
+                           1,
+                         dftfe::utils::DEVICE_BLOCK_SIZE,
+                         0,
+                         0,
+                         numContiguousBlocks,
+                         contiguousBlockSize,
+                         dftfe::utils::makeDataTypeDeviceCompatible(input1),
+                         dftfe::utils::makeDataTypeDeviceCompatible(input2),
+                         dftfe::utils::makeDataTypeDeviceCompatible(output));
+    }
+
+    template <typename ValueType>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedBlockScaleColumnWise(
+      const dftfe::size_type contiguousBlockSize,
+      const dftfe::size_type numContiguousBlocks,
+      const ValueType *      beta,
+      ValueType *            x)
+    {
+      hipLaunchKernelGGL(stridedBlockScaleColumnWiseKernel,
+                         (contiguousBlockSize * numContiguousBlocks) /
+                             dftfe::utils::DEVICE_BLOCK_SIZE +
+                           1,
+                         dftfe::utils::DEVICE_BLOCK_SIZE,
+                         0,
+                         0,
+                         contiguousBlockSize,
+                         numContiguousBlocks,
+                         dftfe::utils::makeDataTypeDeviceCompatible(beta),
+                         dftfe::utils::makeDataTypeDeviceCompatible(x));
+    }
+    template <typename ValueType>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+      stridedBlockScaleAndAddColumnWise(
+        const dftfe::size_type contiguousBlockSize,
+        const dftfe::size_type numContiguousBlocks,
+        const ValueType *      x,
+        const ValueType *      beta,
+        ValueType *            y)
+    {
+      hipLaunchKernelGGL(stridedBlockScaleAndAddColumnWiseKernel,
+                         (contiguousBlockSize * numContiguousBlocks) /
+                             dftfe::utils::DEVICE_BLOCK_SIZE +
+                           1,
+                         dftfe::utils::DEVICE_BLOCK_SIZE,
+                         0,
+                         0,
+                         contiguousBlockSize,
+                         numContiguousBlocks,
+                         dftfe::utils::makeDataTypeDeviceCompatible(x),
+                         dftfe::utils::makeDataTypeDeviceCompatible(beta),
+                         dftfe::utils::makeDataTypeDeviceCompatible(y));
+    }
+
+    template <typename ValueType>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+      stridedBlockScaleAndAddTwoVecColumnWise(
+        const dftfe::size_type contiguousBlockSize,
+        const dftfe::size_type numContiguousBlocks,
+        const ValueType *      x,
+        const ValueType *      alpha,
+        const ValueType *      y,
+        const ValueType *      beta,
+        ValueType *            z)
+    {
+      hipLaunchKernelGGL(stridedBlockScaleAndAddTwoVecColumnWiseKernel,
+                         (contiguousBlockSize * numContiguousBlocks) /
+                             dftfe::utils::DEVICE_BLOCK_SIZE +
+                           1,
+                         dftfe::utils::DEVICE_BLOCK_SIZE,
+                         0,
+                         0,
+                         contiguousBlockSize,
+                         numContiguousBlocks,
+                         dftfe::utils::makeDataTypeDeviceCompatible(x),
+                         dftfe::utils::makeDataTypeDeviceCompatible(alpha),
+                         dftfe::utils::makeDataTypeDeviceCompatible(y),
+                         dftfe::utils::makeDataTypeDeviceCompatible(beta),
+                         dftfe::utils::makeDataTypeDeviceCompatible(z));
+    }
+
+    template <typename ValueType>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::MultiVectorXDot(
+      const unsigned int contiguousBlockSize,
+      const unsigned int numContiguousBlocks,
+      const ValueType *  X,
+      const ValueType *  Y,
+      const ValueType *  onesVec,
+      ValueType *        tempVector,
+      ValueType *        tempResults,
+      ValueType *        result) const
+    {
+      hadamardProductWithConj(contiguousBlockSize * numContiguousBlocks,
+                              X,
+                              Y,
+                              tempVector);
+
+      ValueType    alpha  = 1.0;
+      ValueType    beta   = 0.0;
+      unsigned int numVec = 1;
+      xgemm('N',
+            'T',
+            numVec,
+            contiguousBlockSize,
+            numContiguousBlocks,
+            &alpha,
+            onesVec,
+            numVec,
+            tempVector,
+            contiguousBlockSize,
+            &beta,
+            tempResults,
+            numVec);
+      dftfe::utils::deviceMemcpyD2H(dftfe::utils::makeDataTypeDeviceCompatible(
+                                      result),
+                                    tempResults,
+                                    contiguousBlockSize * sizeof(ValueType));
+    }
+
+    template <typename ValueType>
+    void
+    BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::MultiVectorXDot(
+      const unsigned int contiguousBlockSize,
+      const unsigned int numContiguousBlocks,
+      const ValueType *  X,
+      const ValueType *  Y,
+      const ValueType *  onesVec,
+      ValueType *        tempVector,
+      ValueType *        tempResults,
+      const MPI_Comm &   mpi_communicator,
+      ValueType *        result) const
+
+    {
+      MultiVectorXDot(contiguousBlockSize,
+                      numContiguousBlocks,
+                      X,
+                      Y,
+                      onesVec,
+                      tempVector,
+                      tempResults,
+                      result);
+
+      MPI_Allreduce(MPI_IN_PLACE,
+                    &result[0],
+                    contiguousBlockSize,
+                    dataTypes::mpi_type_id(&result[0]),
+                    MPI_SUM,
+                    mpi_communicator);
+    }
+
 #include "./BLASWrapperDevice.inst.cc"
   } // End of namespace linearAlgebra
 } // End of namespace dftfe

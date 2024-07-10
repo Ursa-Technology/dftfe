@@ -137,6 +137,8 @@ namespace dftfe
     template class MemoryManager<unsigned long int,
                                  dftfe::utils::MemorySpace::DEVICE>;
 
+    template class MemoryManager<bool, dftfe::utils::MemorySpace::DEVICE>;
+
     template class MemoryManager<double, dftfe::utils::MemorySpace::DEVICE>;
     template class MemoryManager<float, dftfe::utils::MemorySpace::DEVICE>;
     template class MemoryManager<std::complex<double>,
@@ -154,6 +156,8 @@ namespace dftfe
 
     template class MemoryManager<unsigned long int,
                                  dftfe::utils::MemorySpace::HOST_PINNED>;
+
+    template class MemoryManager<bool, dftfe::utils::MemorySpace::HOST_PINNED>;
 
 
     template class MemoryManager<double,
@@ -174,6 +178,8 @@ namespace dftfe
 
     template class MemoryManager<unsigned long int,
                                  dftfe::utils::MemorySpace::HOST>;
+
+    template class MemoryManager<bool, dftfe::utils::MemorySpace::HOST>;
 
 
     template class MemoryManager<double, dftfe::utils::MemorySpace::HOST>;

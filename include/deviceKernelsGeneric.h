@@ -66,6 +66,15 @@ namespace dftfe
         const dftfe::global_size_type *copyFromVecStartingContiguousBlockIds);
 
 
+      template <typename ValueType1, typename ValueType2>
+      void
+      stridedCopyToBlockTranspose(
+        const dftfe::size_type         contiguousBlockSize,
+        const dftfe::size_type         transposeBlockSize,
+        const dftfe::size_type         numContiguousBlocks,
+        const ValueType1 *             copyFromVec,
+        ValueType2 *                   copyToVecBlock,
+        const dftfe::global_size_type *copyFromVecStartingContiguousBlockIds);
 
       template <typename ValueType1, typename ValueType2>
       void
@@ -174,6 +183,24 @@ namespace dftfe
            ValueType *            x,
            const ValueType        beta,
            const dftfe::size_type size);
+
+
+      // This kernel interpolates the nodal data to quad data
+      // The function takes the cell level nodal data
+      // and interpolates it to the quad data in each cell
+      // by multiplying with the shape function
+      template <typename ValueType1, typename ValueType2>
+      void
+      interpolateNodalDataToQuadDevice(
+        const dftfe::size_type numDofsPerElem,
+        const dftfe::size_type numQuadPoints,
+        const dftfe::size_type numVecs,
+        const ValueType2 *     parentShapeFunc,
+        const ValueType1 *     mapPointToCellIndex,
+        const ValueType1 *     mapPointToProcLocal,
+        const ValueType1 *     mapPointToShapeFuncIndex,
+        const ValueType2 *     parentNodalValues,
+        ValueType2 *           quadValues);
 
     } // namespace deviceKernelsGeneric
   }   // namespace utils

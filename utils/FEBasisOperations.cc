@@ -79,6 +79,24 @@ namespace dftfe
       tempQuadratureGradientsData.clear();
       tempQuadratureGradientsDataNonAffine.clear();
 
+      d_cellStiffnessVectorBasisType.clear();
+      d_cellInverseStiffnessVectorBasisType.clear();
+      d_cellSqrtStiffnessVectorBasisType.clear();
+      d_cellInverseSqrtStiffnessVectorBasisType.clear();
+      d_inverseSqrtStiffnessVectorBasisType.clear();
+      d_sqrtStiffnessVectorBasisType.clear();
+      d_inverseStiffnessVectorBasisType.clear();
+      d_stiffnessVectorBasisType.clear();
+
+      d_cellInverseStiffnessVectorCoeffType.clear();
+      d_cellInverseSqrtStiffnessVectorCoeffType.clear();
+      d_cellStiffnessVectorCoeffType.clear();
+      d_cellSqrtStiffnessVectorCoeffType.clear();
+      d_inverseSqrtStiffnessVectorCoeffType.clear();
+      d_sqrtStiffnessVectorCoeffType.clear();
+      d_stiffnessVectorCoeffType.clear();
+      d_inverseStiffnessVectorCoeffType.clear();
+
       d_quadratureIDsVector.clear();
       d_nQuadsPerCell.clear();
       d_updateFlags.clear();
@@ -324,7 +342,7 @@ namespace dftfe
       reinit(const unsigned int &vecBlockSize,
              const unsigned int &cellsBlockSize,
              const unsigned int &quadratureID,
-             const bool          isResizeTempStorageForInerpolation,
+             const bool          isResizeTempStorageForInterpolation,
              const bool          isResizeTempStorageForCellMatrices)
     {
       d_quadratureID = quadratureID;
@@ -343,7 +361,7 @@ namespace dftfe
           d_nVectors = vecBlockSize;
           initializeFlattenedIndexMaps();
         }
-      resizeTempStorage(isResizeTempStorageForInerpolation,
+      resizeTempStorage(isResizeTempStorageForInterpolation,
                         isResizeTempStorageForCellMatrices);
     }
 
@@ -465,6 +483,8 @@ namespace dftfe
     FEBasisOperations<ValueTypeBasisCoeff, ValueTypeBasisData, memorySpace>::
       cellStiffnessMatrixBasisData() const
     {
+      //      std::cout<<" size of stiffness vec =
+      //      "<<d_cellStiffnessMatrixBasisType.size()<<"\n";
       return d_cellStiffnessMatrixBasisType;
     }
 
@@ -486,6 +506,46 @@ namespace dftfe
       cellInverseSqrtMassVectorBasisData() const
     {
       return d_cellInverseSqrtMassVectorBasisType;
+    }
+
+    template <typename ValueTypeBasisCoeff,
+              typename ValueTypeBasisData,
+              dftfe::utils::MemorySpace memorySpace>
+    const dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace> &
+    FEBasisOperations<ValueTypeBasisCoeff, ValueTypeBasisData, memorySpace>::
+      stiffnessVectorBasisData() const
+    {
+      return d_stiffnessVectorBasisType;
+    }
+
+    template <typename ValueTypeBasisCoeff,
+              typename ValueTypeBasisData,
+              dftfe::utils::MemorySpace memorySpace>
+    const dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace> &
+    FEBasisOperations<ValueTypeBasisCoeff, ValueTypeBasisData, memorySpace>::
+      inverseStiffnessVectorBasisData() const
+    {
+      return d_inverseStiffnessVectorBasisType;
+    }
+
+    template <typename ValueTypeBasisCoeff,
+              typename ValueTypeBasisData,
+              dftfe::utils::MemorySpace memorySpace>
+    const dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace> &
+    FEBasisOperations<ValueTypeBasisCoeff, ValueTypeBasisData, memorySpace>::
+      inverseSqrtStiffnessVectorBasisData() const
+    {
+      return d_inverseSqrtStiffnessVectorBasisType;
+    }
+
+    template <typename ValueTypeBasisCoeff,
+              typename ValueTypeBasisData,
+              dftfe::utils::MemorySpace memorySpace>
+    const dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace> &
+    FEBasisOperations<ValueTypeBasisCoeff, ValueTypeBasisData, memorySpace>::
+      sqrtStiffnessVectorBasisData() const
+    {
+      return d_sqrtStiffnessVectorBasisType;
     }
 
     template <typename ValueTypeBasisCoeff,
@@ -618,10 +678,10 @@ namespace dftfe
               dftfe::utils::MemorySpace memorySpace>
     void
     FEBasisOperations<ValueTypeBasisCoeff, ValueTypeBasisData, memorySpace>::
-      resizeTempStorage(const bool isResizeTempStorageForInerpolation,
+      resizeTempStorage(const bool isResizeTempStorageForInterpolation,
                         const bool isResizeTempStorageForCellMatrices)
     {
-      if (isResizeTempStorageForInerpolation)
+      if (isResizeTempStorageForInterpolation)
         {
           tempCellNodalData.resize(d_nVectors * d_nDofsPerCell *
                                    d_cellsBlockSize);
@@ -649,6 +709,15 @@ namespace dftfe
                                               d_nDofsPerCell * d_cellsBlockSize)
             tempCellValuesBlock.resize(d_nQuadsPerCell[d_quadratureIndex] *
                                        d_nDofsPerCell * d_cellsBlockSize);
+
+          if (tempCellValuesBlockCoeff.size() !=
+              d_nQuadsPerCell[d_quadratureIndex] * d_nDofsPerCell *
+                d_cellsBlockSize)
+            {
+              tempCellValuesBlockCoeff.resize(
+                d_nQuadsPerCell[d_quadratureIndex] * d_nDofsPerCell *
+                d_cellsBlockSize);
+            }
           if (tempCellGradientsBlock.size() !=
               d_nQuadsPerCell[d_quadratureIndex] * d_nDofsPerCell *
                 d_cellsBlockSize * 3)
@@ -695,6 +764,17 @@ namespace dftfe
       d_flattenedCellDofIndexToProcessDofIndexMap.copyFrom(
         d_flattenedCellDofIndexToProcessDofIndexMapHost);
 #endif
+    }
+
+    template <typename ValueTypeBasisCoeff,
+              typename ValueTypeBasisData,
+              dftfe::utils::MemorySpace memorySpace>
+    dftfe::utils::MemoryStorage<dftfe::global_size_type,
+                                dftfe::utils::MemorySpace::HOST> &
+    FEBasisOperations<ValueTypeBasisCoeff, ValueTypeBasisData, memorySpace>::
+      getFlattenedMapsHost()
+    {
+      return d_cellDofIndexToProcessDofIndexMap;
     }
 
     template <typename ValueTypeBasisCoeff,
@@ -1052,6 +1132,10 @@ namespace dftfe
           d_shapeFunctionGradientDataTranspose[quadID].copyFrom(
             d_shapeFunctionGradientDataTransposeHost);
 #endif
+          // std::cout<<" quad id = "<<quadID<<" size of sha = "<<
+          //  d_shapeFunctionData.find(quadID)->second.size()
+          //  <<" size of tra =
+          //  "<<d_shapeFunctionDataTranspose.find(quadID)->second.size()<<"\n";
         }
     }
 
@@ -1269,7 +1353,7 @@ namespace dftfe
                                  const bool         basisType,
                                  const bool         ceoffType)
     {
-      reinit(0, cellsBlockSize, quadratureID, false, true);
+      reinit(1, cellsBlockSize, quadratureID, false, true);
       if (basisType)
         d_cellStiffnessMatrixBasisType.resize(d_nDofsPerCell * d_nDofsPerCell *
                                               d_nCells);
@@ -2081,6 +2165,332 @@ namespace dftfe
               dftfe::utils::MemorySpace memorySpace>
     void
     FEBasisOperations<ValueTypeBasisCoeff, ValueTypeBasisData, memorySpace>::
+      computeStiffnessVector(const bool basisType, const bool ceoffType)
+    {
+      distributedCPUVec<double> stiffnessVector, sqrtStiffnessVector,
+        invStiffnessVector, invSqrtStiffnessVector;
+      d_matrixFreeDataPtr->initialize_dof_vector(stiffnessVector,
+                                                 d_dofHandlerID);
+      sqrtStiffnessVector.reinit(stiffnessVector);
+      invStiffnessVector.reinit(stiffnessVector);
+      invSqrtStiffnessVector.reinit(stiffnessVector);
+      stiffnessVector        = 0.0;
+      sqrtStiffnessVector    = 0.0;
+      invStiffnessVector     = 0.0;
+      invSqrtStiffnessVector = 0.0;
+
+      //      std::cout<<" size of stiffnessVector vec =
+      //      "<<stiffnessVector.size()<<"\n";
+      dealii::types::global_dof_index sizeVectemp = stiffnessVector.size();
+
+      //      std::cout<<" dof handler id = "<<d_dofHandlerID<<"\n";
+      // FIXME : check for roundoff errors
+      dealii::QGauss<3>   quadrature(std::cbrt(d_nDofsPerCell) + 1);
+      unsigned int        nQuadsPerCell = quadrature.size();
+      dealii::FEValues<3> fe_values(
+        d_matrixFreeDataPtr->get_dof_handler(d_dofHandlerID).get_fe(),
+        quadrature,
+        dealii::update_gradients | dealii::update_JxW_values);
+
+      dealii::Vector<double> stiffnessVectorLocal(d_nDofsPerCell);
+      std::vector<dealii::types::global_dof_index> local_dof_indices(
+        d_nDofsPerCell);
+
+      //      std::cout<<" dofs per cell = "<<d_nDofsPerCell<<"\n";
+
+      //
+      // parallel loop over all elements
+      //
+      typename dealii::DoFHandler<3>::active_cell_iterator
+        cell =
+          d_matrixFreeDataPtr->get_dof_handler(d_dofHandlerID).begin_active(),
+        endc = d_matrixFreeDataPtr->get_dof_handler(d_dofHandlerID).end();
+      for (; cell != endc; ++cell)
+        if (cell->is_locally_owned())
+          {
+            // compute values for the current element
+            fe_values.reinit(cell);
+            stiffnessVectorLocal = 0.0;
+            for (unsigned int iDoF = 0; iDoF < d_nDofsPerCell; ++iDoF)
+              for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+                stiffnessVectorLocal(iDoF) +=
+                  fe_values.shape_grad(iDoF, iQuad) *
+                  fe_values.shape_grad(iDoF, iQuad) * fe_values.JxW(iQuad);
+
+            cell->get_dof_indices(local_dof_indices);
+
+            //            for ( unsigned int iNode = 0 ;iNode < d_nDofsPerCell;
+            //            iNode++)
+            //              {
+            //                if (local_dof_indices[iNode] > sizeVectemp)
+            //                  {
+            //                    std::cout<<" global id greater than max size
+            //                    \n";
+            //                  }
+            //
+            //              }
+            (*d_constraintsVector)[d_dofHandlerID]->distribute_local_to_global(
+              stiffnessVectorLocal, local_dof_indices, stiffnessVector);
+          }
+
+      stiffnessVector.compress(dealii::VectorOperation::add);
+      stiffnessVector.update_ghost_values();
+
+
+      for (dealii::types::global_dof_index i = 0; i < stiffnessVector.size();
+           ++i)
+        if (stiffnessVector.in_local_range(i) &&
+            !((*d_constraintsVector)[d_dofHandlerID]->is_constrained(i)))
+          {
+            sqrtStiffnessVector(i) = std::sqrt(stiffnessVector(i));
+            if (std::abs(stiffnessVector(i)) > 1.0e-15)
+              {
+                invSqrtStiffnessVector(i) = 1.0 / std::sqrt(stiffnessVector(i));
+                invStiffnessVector(i)     = 1.0 / stiffnessVector(i);
+              }
+
+            AssertThrow(
+              !std::isnan(invStiffnessVector(i)),
+              dealii::ExcMessage(
+                "Value of inverse square root of stiffness matrix on the unconstrained node is undefined"));
+          }
+
+      invStiffnessVector.compress(dealii::VectorOperation::insert);
+      invStiffnessVector.update_ghost_values();
+      sqrtStiffnessVector.compress(dealii::VectorOperation::insert);
+      sqrtStiffnessVector.update_ghost_values();
+      invSqrtStiffnessVector.compress(dealii::VectorOperation::insert);
+      invSqrtStiffnessVector.update_ghost_values();
+
+      cell =
+        d_matrixFreeDataPtr->get_dof_handler(d_dofHandlerID).begin_active();
+      std::vector<dealii::types::global_dof_index> cell_dof_indices(
+        d_nDofsPerCell);
+
+      dftfe::utils::MemoryStorage<ValueTypeBasisData,
+                                  dftfe::utils::MemorySpace::HOST>
+        cellStiffnessVectorHost, cellInvStiffnessVectorHost,
+        cellInvSqrtStiffnessVectorHost, cellSqrtStiffnessVectorHost;
+      cellStiffnessVectorHost.resize(d_nCells * d_nDofsPerCell);
+      cellInvStiffnessVectorHost.resize(d_nCells * d_nDofsPerCell);
+      cellSqrtStiffnessVectorHost.resize(d_nCells * d_nDofsPerCell);
+      cellInvSqrtStiffnessVectorHost.resize(d_nCells * d_nDofsPerCell);
+      unsigned int iElemCount = 0;
+      for (; cell != endc; ++cell)
+        {
+          if (cell->is_locally_owned())
+            {
+              cell->get_dof_indices(cell_dof_indices);
+              for (unsigned int iNode = 0; iNode < d_nDofsPerCell; ++iNode)
+                {
+                  dealii::types::global_dof_index globalIndex =
+                    cell_dof_indices[iNode];
+                  if ((*d_constraintsVector)[d_dofHandlerID]->is_constrained(
+                        globalIndex))
+                    {
+                      cellStiffnessVectorHost[iElemCount * d_nDofsPerCell +
+                                              iNode]        = 1.0;
+                      cellInvStiffnessVectorHost[iElemCount * d_nDofsPerCell +
+                                                 iNode]     = 1.0;
+                      cellSqrtStiffnessVectorHost[iElemCount * d_nDofsPerCell +
+                                                  iNode]    = 1.0;
+                      cellInvSqrtStiffnessVectorHost[iElemCount *
+                                                       d_nDofsPerCell +
+                                                     iNode] = 1.0;
+                    }
+                  else
+                    {
+                      ValueTypeBasisData stiffnessVecValue =
+                        stiffnessVector(globalIndex);
+                      cellStiffnessVectorHost[iElemCount * d_nDofsPerCell +
+                                              iNode] = stiffnessVecValue;
+                      cellSqrtStiffnessVectorHost[iElemCount * d_nDofsPerCell +
+                                                  iNode] =
+                        std::sqrt(stiffnessVecValue);
+                      if (std::abs(stiffnessVecValue) > 1.0e-15)
+                        {
+                          cellInvStiffnessVectorHost[iElemCount *
+                                                       d_nDofsPerCell +
+                                                     iNode] =
+                            1.0 / stiffnessVecValue;
+                          cellInvSqrtStiffnessVectorHost[iElemCount *
+                                                           d_nDofsPerCell +
+                                                         iNode] =
+                            1.0 / std::sqrt(stiffnessVecValue);
+                        }
+                    }
+                }
+              ++iElemCount;
+            }
+        }
+      if (basisType)
+        {
+          d_cellStiffnessVectorBasisType.resize(cellStiffnessVectorHost.size());
+          d_cellStiffnessVectorBasisType.copyFrom(cellStiffnessVectorHost);
+          d_cellInverseStiffnessVectorBasisType.resize(
+            cellInvStiffnessVectorHost.size());
+          d_cellInverseStiffnessVectorBasisType.copyFrom(
+            cellInvStiffnessVectorHost);
+          d_cellSqrtStiffnessVectorBasisType.resize(
+            cellSqrtStiffnessVectorHost.size());
+          d_cellSqrtStiffnessVectorBasisType.copyFrom(
+            cellSqrtStiffnessVectorHost);
+          d_cellInverseSqrtStiffnessVectorBasisType.resize(
+            cellInvSqrtStiffnessVectorHost.size());
+          d_cellInverseSqrtStiffnessVectorBasisType.copyFrom(
+            cellInvSqrtStiffnessVectorHost);
+
+          d_inverseSqrtStiffnessVectorBasisType.resize(
+            mpiPatternP2P->localOwnedSize() + mpiPatternP2P->localGhostSize());
+          d_inverseSqrtStiffnessVectorBasisType
+            .template copyFrom<dftfe::utils::MemorySpace::HOST>(
+              invSqrtStiffnessVector.begin(),
+              d_inverseSqrtStiffnessVectorBasisType.size(),
+              0,
+              0);
+          d_sqrtStiffnessVectorBasisType.resize(
+            mpiPatternP2P->localOwnedSize() + mpiPatternP2P->localGhostSize());
+          d_sqrtStiffnessVectorBasisType
+            .template copyFrom<dftfe::utils::MemorySpace::HOST>(
+              sqrtStiffnessVector.begin(),
+              d_sqrtStiffnessVectorBasisType.size(),
+              0,
+              0);
+          d_inverseStiffnessVectorBasisType.resize(
+            mpiPatternP2P->localOwnedSize() + mpiPatternP2P->localGhostSize());
+          d_inverseStiffnessVectorBasisType
+            .template copyFrom<dftfe::utils::MemorySpace::HOST>(
+              invStiffnessVector.begin(),
+              d_inverseStiffnessVectorBasisType.size(),
+              0,
+              0);
+          d_stiffnessVectorBasisType.resize(mpiPatternP2P->localOwnedSize() +
+                                            mpiPatternP2P->localGhostSize());
+          d_stiffnessVectorBasisType
+            .template copyFrom<dftfe::utils::MemorySpace::HOST>(
+              stiffnessVector.begin(), d_stiffnessVectorBasisType.size(), 0, 0);
+        }
+      if (ceoffType)
+        {
+          if (!basisType)
+            {
+              d_cellStiffnessVectorBasisType.resize(
+                cellStiffnessVectorHost.size());
+              d_cellStiffnessVectorBasisType.copyFrom(cellStiffnessVectorHost);
+              d_cellInverseStiffnessVectorBasisType.resize(
+                cellInvStiffnessVectorHost.size());
+              d_cellInverseStiffnessVectorBasisType.copyFrom(
+                cellInvStiffnessVectorHost);
+              d_cellSqrtStiffnessVectorBasisType.resize(
+                cellSqrtStiffnessVectorHost.size());
+              d_cellSqrtStiffnessVectorBasisType.copyFrom(
+                cellSqrtStiffnessVectorHost);
+              d_cellInverseSqrtStiffnessVectorBasisType.resize(
+                cellInvSqrtStiffnessVectorHost.size());
+              d_cellInverseSqrtStiffnessVectorBasisType.copyFrom(
+                cellInvSqrtStiffnessVectorHost);
+
+              d_inverseSqrtStiffnessVectorBasisType.resize(
+                mpiPatternP2P->localOwnedSize() +
+                mpiPatternP2P->localGhostSize());
+              d_inverseSqrtStiffnessVectorBasisType
+                .template copyFrom<dftfe::utils::MemorySpace::HOST>(
+                  invSqrtStiffnessVector.begin(),
+                  d_inverseSqrtStiffnessVectorBasisType.size(),
+                  0,
+                  0);
+              d_sqrtStiffnessVectorBasisType.resize(
+                mpiPatternP2P->localOwnedSize() +
+                mpiPatternP2P->localGhostSize());
+              d_sqrtStiffnessVectorBasisType
+                .template copyFrom<dftfe::utils::MemorySpace::HOST>(
+                  sqrtStiffnessVector.begin(),
+                  d_sqrtStiffnessVectorBasisType.size(),
+                  0,
+                  0);
+              d_inverseStiffnessVectorBasisType.resize(
+                mpiPatternP2P->localOwnedSize() +
+                mpiPatternP2P->localGhostSize());
+              d_inverseStiffnessVectorBasisType
+                .template copyFrom<dftfe::utils::MemorySpace::HOST>(
+                  invStiffnessVector.begin(),
+                  d_inverseStiffnessVectorBasisType.size(),
+                  0,
+                  0);
+              d_stiffnessVectorBasisType.resize(
+                mpiPatternP2P->localOwnedSize() +
+                mpiPatternP2P->localGhostSize());
+              d_stiffnessVectorBasisType
+                .template copyFrom<dftfe::utils::MemorySpace::HOST>(
+                  stiffnessVector.begin(),
+                  d_stiffnessVectorBasisType.size(),
+                  0,
+                  0);
+            }
+          if constexpr (!std::is_same<ValueTypeBasisCoeff,
+                                      ValueTypeBasisData>::value)
+            {
+              d_cellInverseStiffnessVectorCoeffType.resize(
+                cellInvStiffnessVectorHost.size());
+              d_BLASWrapperPtr->copyValueType1ArrToValueType2Arr(
+                d_nDofsPerCell * d_nCells,
+                d_cellInverseStiffnessVectorBasisType.data(),
+                d_cellInverseStiffnessVectorCoeffType.data());
+              d_cellInverseSqrtStiffnessVectorCoeffType.resize(
+                cellInvSqrtStiffnessVectorHost.size());
+              d_BLASWrapperPtr->copyValueType1ArrToValueType2Arr(
+                d_nDofsPerCell * d_nCells,
+                d_cellInverseSqrtStiffnessVectorBasisType.data(),
+                d_cellInverseSqrtStiffnessVectorCoeffType.data());
+              d_cellStiffnessVectorCoeffType.resize(
+                cellStiffnessVectorHost.size());
+              d_BLASWrapperPtr->copyValueType1ArrToValueType2Arr(
+                d_nDofsPerCell * d_nCells,
+                d_cellStiffnessVectorBasisType.data(),
+                d_cellStiffnessVectorCoeffType.data());
+              d_cellSqrtStiffnessVectorCoeffType.resize(
+                cellSqrtStiffnessVectorHost.size());
+              d_BLASWrapperPtr->copyValueType1ArrToValueType2Arr(
+                d_nDofsPerCell * d_nCells,
+                d_cellSqrtStiffnessVectorBasisType.data(),
+                d_cellSqrtStiffnessVectorCoeffType.data());
+              d_inverseSqrtStiffnessVectorCoeffType.resize(
+                mpiPatternP2P->localOwnedSize() +
+                mpiPatternP2P->localOwnedSize());
+              d_BLASWrapperPtr->copyValueType1ArrToValueType2Arr(
+                d_inverseSqrtStiffnessVectorCoeffType.size(),
+                d_inverseSqrtStiffnessVectorBasisType.data(),
+                d_inverseSqrtStiffnessVectorCoeffType.data());
+              d_sqrtStiffnessVectorCoeffType.resize(
+                mpiPatternP2P->localOwnedSize() +
+                mpiPatternP2P->localOwnedSize());
+              d_BLASWrapperPtr->copyValueType1ArrToValueType2Arr(
+                d_sqrtStiffnessVectorCoeffType.size(),
+                d_sqrtStiffnessVectorBasisType.data(),
+                d_sqrtStiffnessVectorCoeffType.data());
+              d_stiffnessVectorCoeffType.resize(
+                mpiPatternP2P->localOwnedSize() +
+                mpiPatternP2P->localOwnedSize());
+              d_BLASWrapperPtr->copyValueType1ArrToValueType2Arr(
+                d_stiffnessVectorCoeffType.size(),
+                d_stiffnessVectorBasisType.data(),
+                d_stiffnessVectorCoeffType.data());
+              d_inverseStiffnessVectorCoeffType.resize(
+                mpiPatternP2P->localOwnedSize() +
+                mpiPatternP2P->localOwnedSize());
+              d_BLASWrapperPtr->copyValueType1ArrToValueType2Arr(
+                d_inverseStiffnessVectorCoeffType.size(),
+                d_inverseStiffnessVectorBasisType.data(),
+                d_inverseStiffnessVectorCoeffType.data());
+            }
+        }
+    }
+
+    template <typename ValueTypeBasisCoeff,
+              typename ValueTypeBasisData,
+              dftfe::utils::MemorySpace memorySpace>
+    void
+    FEBasisOperations<ValueTypeBasisCoeff, ValueTypeBasisData, memorySpace>::
       createMultiVector(
         const unsigned int blocksize,
         dftfe::linearAlgebra::MultiVector<ValueTypeBasisCoeff, memorySpace>
@@ -2215,6 +2625,11 @@ namespace dftfe
     template class FEBasisOperations<double,
                                      double,
                                      dftfe::utils::MemorySpace::HOST>;
+
+    template void
+    FEBasisOperations<double, double, dftfe::utils::MemorySpace::HOST>::init(
+      const FEBasisOperations<double, double, dftfe::utils::MemorySpace::HOST>
+        &basisOperationsSrc);
 #if defined(USE_COMPLEX)
     template class FEBasisOperations<std::complex<double>,
                                      double,

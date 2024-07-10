@@ -70,6 +70,7 @@ SET(TARGET_SRC
   ./src/excManager/SlaterBasisSet.cpp
   ./src/excManager/SphericalHarmonicFunc.cpp
   ./src/poisson/poissonSolverProblem.cc
+        ./src/poisson/MultiVectorPoissonLinearSolverProblem.cpp
   ./src/helmholtz/kerkerSolverProblem.cc
   ./src/dftOperator/KohnShamHamiltonianOperator.cc
   ./src/dftOperator/veffPrimeForLRDM.cc
@@ -100,6 +101,8 @@ SET(TARGET_SRC
   ./src/linAlg/mixingClass.cc
   ./src/solvers/dealiiLinearSolver.cc
   ./src/solvers/dealiiLinearSolverProblem.cc
+        ./src/solvers/MultiVectorCGSolver.cpp
+        ./src/solvers/MultiVectorMinResSolver.cpp
   ./src/md/molecularDynamicsClass.cc
   ./src/neb/nudgedElasticBandClass.cc
   ./src/geoOpt/geometryOptimizationClass.cc
@@ -183,6 +186,12 @@ SET(TARGET_SRC
   ./src/atom/AtomCenteredSphericalFunctionCoreDensitySpline.cc
   ./src/atom/AtomCenteredSphericalFunctionLocalPotentialSpline.cc
   ./src/atom/AtomCenteredSphericalFunctionProjectorSpline.cc
+        ./src/TransferBetweenMeshes/InterpolateFromCellToLocalPoints.cpp
+        ./src/TransferBetweenMeshes/TransferBetweenMeshesIncompatiblePartitioning.cpp
+        ./src/TransferBetweenMeshes/InterpolateCellWiseDataToPoints.cpp
+	./utils/NodalData.cpp
+        ./utils/functionalTests/testMultiVectorCGForPoisson.cpp
+        ./utils/functionalTests/testDataTransfer.cpp
   ./src/pseudo/oncv/oncvClass.cc)
 
 IF ("${GPU_LANG}" STREQUAL "cuda")
@@ -395,7 +404,6 @@ ENDIF()
 
 
 #DEAL_II_INITIALIZE_CACHED_VARIABLES()
-
 
 TARGET_INCLUDE_DIRECTORIES(${TARGETLIB} PUBLIC ${DEAL_II_INCLUDE_RELDIR})
 IF("${CMAKE_BUILD_TYPE}" STREQUAL "Release")

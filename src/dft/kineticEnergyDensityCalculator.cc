@@ -37,7 +37,8 @@ namespace dftfe
   template <typename NumberType, dftfe::utils::MemorySpace memorySpace>
   void
   computeKineticEnergyDensity(
-    const dftfe::utils::MemoryStorage<NumberType, memorySpace> *X,
+    const dftfe::linearAlgebra::BLASWrapper<memorySpace> &BLASWrapperPtr,
+		  const dftfe::utils::MemoryStorage<NumberType, memorySpace> *X,
     const unsigned int                      totalNumWaveFunctions,
     const std::vector<std::vector<double>> &eigenValues,
     const double                            fermiEnergy,
@@ -290,7 +291,8 @@ namespace dftfe
                              spinIndex < numSpinComponents;
                              ++spinIndex)
                           computeKineticEnergyDensityFromInterpolatedValues(
-                            basisOperationsPtr,
+                            BLASWrapperPtr,
+			    basisOperationsPtr,
                             std::pair<unsigned int, unsigned int>(
                               startingCellId,
                               startingCellId + currentCellsBlockSize),
@@ -383,6 +385,7 @@ namespace dftfe
   template <typename NumberType>
   void
   computeKineticEnergyDensityFromInterpolatedValues(
+    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST> &BLASWrapperPtr,
     std::shared_ptr<
       dftfe::basis::
         FEBasisOperations<NumberType, double, dftfe::utils::MemorySpace::HOST>>
@@ -494,6 +497,7 @@ namespace dftfe
 #if defined(DFTFE_WITH_DEVICE)
   template void
   computeKineticEnergyDensity(
+		 const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE> &BLASWrapperPtr,
     const dftfe::utils::MemoryStorage<dataTypes::number,
                                       dftfe::utils::MemorySpace::DEVICE> *X,
     const unsigned int                      totalNumWaveFunctions,
@@ -507,6 +511,7 @@ namespace dftfe
                                       dftfe::utils::MemorySpace::DEVICE>>
       &                                            basisOperationsPtr,
     const unsigned int                             quadratureIndex,
+    const std::vector<double> &                    kPointCoords,
     const std::vector<double> &                    kPointWeights,
     std::map<dealii::CellId, std::vector<double>> &kineticEnergyDensityValues,
     const MPI_Comm &                               mpiCommParent,
@@ -517,7 +522,8 @@ namespace dftfe
 
   template void
   computeKineticEnergyDensity(
-    const dftfe::utils::MemoryStorage<dataTypes::number,
+    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST> &BLASWrapperPtr,
+		  const dftfe::utils::MemoryStorage<dataTypes::number,
                                       dftfe::utils::MemorySpace::HOST> *X,
     const unsigned int                      totalNumWaveFunctions,
     const std::vector<std::vector<double>> &eigenValues,

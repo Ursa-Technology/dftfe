@@ -186,14 +186,15 @@ namespace dftfe
       //
 #ifdef DFTFE_WITH_DEVICE
     if (d_dftParamsPtr->useDevice)
-      computeKineticEnergyDensity(&d_eigenVectorsFlattenedDevice,
+      computeKineticEnergyDensity(*d_BLASWrapperPtr,
+		                  &d_eigenVectorsFlattenedDevice,
                                   d_numEigenValues,
                                   eigenValues,
                                   fermiEnergy,
                                   fermiEnergyUp,
                                   fermiEnergyDown,
-                                  basisOperationsPtrDevice,
-                                  d_densityQuadratureId,
+                                  d_basisOperationsPtrDevice,
+				  d_densityQuadratureId,
 				  d_kPointCoordinates,
                                   d_kPointWeights,
                                   kineticEnergyDensityValues,
@@ -203,7 +204,8 @@ namespace dftfe
                                   *d_dftParamsPtr);
 #endif
     if (!d_dftParamsPtr->useDevice)
-      computeKineticEnergyDensity(&d_eigenVectorsFlattenedHost,
+      computeKineticEnergyDensity(*d_BLASWrapperPtrHost,
+		                  &d_eigenVectorsFlattenedHost,
                                   d_numEigenValues,
                                   eigenValues,
                                   fermiEnergy,

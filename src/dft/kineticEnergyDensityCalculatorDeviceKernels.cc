@@ -116,7 +116,8 @@ namespace dftfe
   template <typename NumberType>
   void
   computeKineticEnergyDensityFromInterpolatedValues(
-    std::shared_ptr<
+    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE> &BLASWrapperPtr,
+		  std::shared_ptr<
       dftfe::basis::FEBasisOperations<NumberType,
                                       double,
                                       dftfe::utils::MemorySpace::DEVICE>>
@@ -124,6 +125,7 @@ namespace dftfe
     const std::pair<unsigned int, unsigned int> cellRange,
     const std::pair<unsigned int, unsigned int> vecRange,
     double *                                    partialOccupVec,
+    double *                                    kcoord,
     NumberType *                                wfcQuadPointData,
     NumberType *                                gradWfcQuadPointData,
     double *kineticEnergyDensityCellsWfcContributions,
@@ -161,8 +163,7 @@ namespace dftfe
       dftfe::utils::makeDataTypeDeviceCompatible(gradWfcQuadPointData),
       dftfe::utils::makeDataTypeDeviceCompatible(kineticEnergyDensityCellsWfcContributions));
 #endif
-    dftfe::utils::deviceBlasWrapper::gemv(
-      basisOperationsPtr->getDeviceBLASHandle(),
+    BLASWrapperPtr.xgemv(
       dftfe::utils::DEVICEBLAS_OP_T,
       vectorsBlockSize,
       cellsBlockSize * nQuadsPerCell,
@@ -177,7 +178,8 @@ namespace dftfe
   }
   template void
   computeKineticEnergyDensityFromInterpolatedValues(
-    std::shared_ptr<
+      const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE> &BLASWrapperPtr,
+      std::shared_ptr<
       dftfe::basis::FEBasisOperations<dataTypes::number,
                                       double,
                                       dftfe::utils::MemorySpace::DEVICE>>
@@ -185,6 +187,7 @@ namespace dftfe
     const std::pair<unsigned int, unsigned int> cellRange,
     const std::pair<unsigned int, unsigned int> vecRange,
     double *                                    partialOccupVec,
+    double *                                    kcoord,
     dataTypes::number *                                wfcQuadPointData,
     dataTypes::number *                                gradWfcQuadPointData,
     double *kineticEnergyCellsWfcContributions,

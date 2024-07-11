@@ -27,6 +27,7 @@ namespace dftfe
   template <typename NumberType, dftfe::utils::MemorySpace memorySpace>
   void
   computeKineticEnergyDensity(
+		  const dftfe::linearAlgebra::BLASWrapper<memorySpace> &BLASWrapperPtr, 
     const dftfe::utils::MemoryStorage<NumberType, memorySpace> *X,
     const unsigned int                      totalNumWaveFunctions,
     const std::vector<std::vector<double>> &eigenValues,
@@ -48,7 +49,8 @@ namespace dftfe
   template <typename NumberType>
   void
   computeKineticEnergyDensityFromInterpolatedValues(
-    std::shared_ptr<
+    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST> &BLASWrapperPtr,
+		  std::shared_ptr<
       dftfe::basis::
         FEBasisOperations<NumberType, double, dftfe::utils::MemorySpace::HOST>>
       &                                         basisOperationsPtr,
@@ -65,6 +67,7 @@ namespace dftfe
   template <typename NumberType>
   void
   computeKineticEnergyDensityFromInterpolatedValues(
+	const	  dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE> &BLASWrapperPtr,
     std::shared_ptr<
       dftfe::basis::FEBasisOperations<NumberType,
                                       double,
@@ -73,6 +76,7 @@ namespace dftfe
     const std::pair<unsigned int, unsigned int> cellRange,
     const std::pair<unsigned int, unsigned int> vecRange,
     double *                                    partialOccupVec,
+    double *                                    kcoord,
     NumberType *                                wfcQuadPointData,
     NumberType *                                gradWfcQuadPointData,
     double *kineticEnergyCellsWfcContributions,

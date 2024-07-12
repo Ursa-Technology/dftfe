@@ -26,6 +26,9 @@ subsection Brillouin zone k point sampling options
   end
 end
 
+subsection Post-processing Options
+  set PRINT KINETIC ENERGY = true
+end
 
 subsection DFT functional parameters
   set EXCHANGE CORRELATION TYPE = LDA-PZ

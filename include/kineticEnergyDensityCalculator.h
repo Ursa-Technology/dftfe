@@ -27,7 +27,7 @@ namespace dftfe
   template <typename NumberType, dftfe::utils::MemorySpace memorySpace>
   void
   computeKineticEnergyDensity(
-		  const dftfe::linearAlgebra::BLASWrapper<memorySpace> &BLASWrapperPtr, 
+    const dftfe::linearAlgebra::BLASWrapper<memorySpace> &      BLASWrapperPtr,
     const dftfe::utils::MemoryStorage<NumberType, memorySpace> *X,
     const unsigned int                      totalNumWaveFunctions,
     const std::vector<std::vector<double>> &eigenValues,
@@ -44,13 +44,15 @@ namespace dftfe
     const MPI_Comm &                               mpiCommParent,
     const MPI_Comm &                               interpoolcomm,
     const MPI_Comm &                               interBandGroupComm,
+    const MPI_Comm &                               mpiCommDomain,
     const dftParameters &                          dftParams);
 
   template <typename NumberType>
   void
   computeKineticEnergyDensityFromInterpolatedValues(
-    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST> &BLASWrapperPtr,
-		  std::shared_ptr<
+    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>
+      &BLASWrapperPtr,
+    std::shared_ptr<
       dftfe::basis::
         FEBasisOperations<NumberType, double, dftfe::utils::MemorySpace::HOST>>
       &                                         basisOperationsPtr,
@@ -61,13 +63,15 @@ namespace dftfe
     NumberType *                                wfcQuadPointData,
     NumberType *                                gradWfcQuadPointData,
     double *                                    kineticCellsWfcContributions,
-    double *                                    kineticEnergyDensity);
+    double *                                    kineticEnergyDensity,
+    const MPI_Comm &                            mpiCommDomain);
 
 #if defined(DFTFE_WITH_DEVICE)
   template <typename NumberType>
   void
   computeKineticEnergyDensityFromInterpolatedValues(
-	const	  dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE> &BLASWrapperPtr,
+    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>
+      &BLASWrapperPtr,
     std::shared_ptr<
       dftfe::basis::FEBasisOperations<NumberType,
                                       double,
@@ -79,8 +83,9 @@ namespace dftfe
     double *                                    kcoord,
     NumberType *                                wfcQuadPointData,
     NumberType *                                gradWfcQuadPointData,
-    double *kineticEnergyCellsWfcContributions,
-    double *kineticEnergyDensity);
+    double *        kineticEnergyCellsWfcContributions,
+    double *        kineticEnergyDensity,
+    const MPI_Comm &mpiCommDomain);
 #endif
 
 } // namespace dftfe

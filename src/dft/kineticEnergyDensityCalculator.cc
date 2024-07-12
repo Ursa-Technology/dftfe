@@ -14,7 +14,7 @@
 //
 // ---------------------------------------------------------------------
 //
-// @author Sambit Das
+// @author Sambit Das, Vishal Subramanian
 //
 
 // source file for electron density related computations
@@ -37,8 +37,8 @@ namespace dftfe
   template <typename NumberType, dftfe::utils::MemorySpace memorySpace>
   void
   computeKineticEnergyDensity(
-    const dftfe::linearAlgebra::BLASWrapper<memorySpace> &BLASWrapperPtr,
-		  const dftfe::utils::MemoryStorage<NumberType, memorySpace> *X,
+    const dftfe::linearAlgebra::BLASWrapper<memorySpace> &      BLASWrapperPtr,
+    const dftfe::utils::MemoryStorage<NumberType, memorySpace> *X,
     const unsigned int                      totalNumWaveFunctions,
     const std::vector<std::vector<double>> &eigenValues,
     const double                            fermiEnergy,
@@ -54,13 +54,14 @@ namespace dftfe
     const MPI_Comm &                               mpiCommParent,
     const MPI_Comm &                               interpoolcomm,
     const MPI_Comm &                               interBandGroupComm,
+    const MPI_Comm &                               mpiCommDomain,
     const dftParameters &                          dftParams)
   {
     int this_process;
     MPI_Comm_rank(mpiCommParent, &this_process);
 #if defined(DFTFE_WITH_DEVICE)
     if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
-       dftfe::utils::deviceSynchronize();
+      dftfe::utils::deviceSynchronize();
 #endif
     MPI_Barrier(mpiCommParent);
     double             computeKed_time = MPI_Wtime();
@@ -153,10 +154,10 @@ namespace dftfe
 
     for (unsigned int kPoint = 0; kPoint < kPointWeights.size(); ++kPoint)
       {
-        std::vector<double> kcoord(3,0);
-        kcoord[0]=kPointCoords[3*kPoint+0];
-        kcoord[1]=kPointCoords[3*kPoint+1];
-        kcoord[2]=kPointCoords[3*kPoint+2];
+        std::vector<double> kcoord(3, 0);
+        kcoord[0] = kPointCoords[3 * kPoint + 0];
+        kcoord[1] = kPointCoords[3 * kPoint + 1];
+        kcoord[2] = kPointCoords[3 * kPoint + 2];
         for (unsigned int spinIndex = 0; spinIndex < numSpinComponents;
              ++spinIndex)
           {
@@ -255,7 +256,7 @@ namespace dftfe
                 basisOperationsPtr->reinit(currentBlockSize,
                                            cellsBlockSize,
                                            quadratureIndex,
-                                           false);
+                                           true);
 
 
                 for (unsigned int spinIndex = 0; spinIndex < numSpinComponents;
@@ -265,7 +266,6 @@ namespace dftfe
                     basisOperationsPtr->distribute(
                       *(flattenedArrayBlock[spinIndex]));
                   }
-
                 for (int iblock = 0; iblock < (numCellBlocks + 1); iblock++)
                   {
                     const unsigned int currentCellsBlockSize =
@@ -292,7 +292,7 @@ namespace dftfe
                              ++spinIndex)
                           computeKineticEnergyDensityFromInterpolatedValues(
                             BLASWrapperPtr,
-			    basisOperationsPtr,
+                            basisOperationsPtr,
                             std::pair<unsigned int, unsigned int>(
                               startingCellId,
                               startingCellId + currentCellsBlockSize),
@@ -304,7 +304,8 @@ namespace dftfe
                             gradWfcQuadPointData[spinIndex].data(),
                             kedWfcContributions[spinIndex].data(),
                             ked.data() + spinIndex * totalLocallyOwnedCells *
-                                           numQuadPoints);
+                                           numQuadPoints,
+                            mpiCommDomain);
                       } // non-trivial cell block check
                   }     // cells block loop
               }
@@ -369,7 +370,7 @@ namespace dftfe
       }
 #if defined(DFTFE_WITH_DEVICE)
     if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
-       dftfe::utils::deviceSynchronize();
+      dftfe::utils::deviceSynchronize();
 #endif
     MPI_Barrier(mpiCommParent);
     computeKed_time = MPI_Wtime() - computeKed_time;
@@ -385,7 +386,8 @@ namespace dftfe
   template <typename NumberType>
   void
   computeKineticEnergyDensityFromInterpolatedValues(
-    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST> &BLASWrapperPtr,
+    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>
+      &BLASWrapperPtr,
     std::shared_ptr<
       dftfe::basis::
         FEBasisOperations<NumberType, double, dftfe::utils::MemorySpace::HOST>>
@@ -397,13 +399,15 @@ namespace dftfe
     NumberType *                                wfcQuadPointData,
     NumberType *                                gradWfcQuadPointData,
     double *                                    kineticCellsWfcContributions,
-    double *                                    kineticEnergyDensity)
+    double *                                    kineticEnergyDensity,
+    const MPI_Comm &                            mpiCommDomain)
   {
     const unsigned int cellsBlockSize   = cellRange.second - cellRange.first;
     const unsigned int vectorsBlockSize = vecRange.second - vecRange.first;
     const unsigned int nQuadsPerCell    = basisOperationsPtr->nQuadsPerCell();
     const unsigned int nCells           = basisOperationsPtr->nCells();
-    const double kcoordSq=kcoord[0]*kcoord[0]+kcoord[1]*kcoord[1]+kcoord[2]*kcoord[2];
+    const double       kcoordSq =
+      kcoord[0] * kcoord[0] + kcoord[1] * kcoord[1] + kcoord[2] * kcoord[2];
     for (unsigned int iCell = cellRange.first; iCell < cellRange.second;
          ++iCell)
       for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
@@ -445,49 +449,50 @@ namespace dftfe
                                      2 * nQuadsPerCell * vectorsBlockSize +
                                      iQuad * vectorsBlockSize + iWave]);
 
-           kineticEnergyDensity[iCell * nQuadsPerCell + iQuad] +=0.5 * partialOccupVec[iWave] *
-             kcoordSq* dftfe::utils::realPart(
+            kineticEnergyDensity[iCell * nQuadsPerCell + iQuad] +=
+              0.5 * partialOccupVec[iWave] * kcoordSq *
+              dftfe::utils::realPart(
                 dftfe::utils::complexConj(
-                  wfcQuadPointData[(iCell - cellRange.first) *
-                                         nQuadsPerCell * vectorsBlockSize +
-                                       iQuad * vectorsBlockSize + iWave]) *
+                  wfcQuadPointData[(iCell - cellRange.first) * nQuadsPerCell *
+                                     vectorsBlockSize +
+                                   iQuad * vectorsBlockSize + iWave]) *
                 wfcQuadPointData[(iCell - cellRange.first) * nQuadsPerCell *
-                                       vectorsBlockSize +
-                                     iQuad * vectorsBlockSize + iWave]);
+                                   vectorsBlockSize +
+                                 iQuad * vectorsBlockSize + iWave]);
 
 
 
             kineticEnergyDensity[iCell * nQuadsPerCell + iQuad] +=
-              kcoord[0]*partialOccupVec[iWave] *
+              kcoord[0] * partialOccupVec[iWave] *
               dftfe::utils::imagPart(
                 dftfe::utils::complexConj(
-                  wfcQuadPointData[(iCell - cellRange.first) *
-                                         nQuadsPerCell * vectorsBlockSize +
-                                       iQuad * vectorsBlockSize + iWave]) *
+                  wfcQuadPointData[(iCell - cellRange.first) * nQuadsPerCell *
+                                     vectorsBlockSize +
+                                   iQuad * vectorsBlockSize + iWave]) *
                 gradWfcQuadPointData[(iCell - cellRange.first) * nQuadsPerCell *
                                        vectorsBlockSize * 3 +
                                      0 * nQuadsPerCell * vectorsBlockSize +
                                      iQuad * vectorsBlockSize + iWave]);
 
             kineticEnergyDensity[iCell * nQuadsPerCell + iQuad] +=
-              kcoord[1]*partialOccupVec[iWave] *
+              kcoord[1] * partialOccupVec[iWave] *
               dftfe::utils::imagPart(
                 dftfe::utils::complexConj(
-                  wfcQuadPointData[(iCell - cellRange.first) *
-                                         nQuadsPerCell * vectorsBlockSize +
-                                       iQuad * vectorsBlockSize + iWave]) *
+                  wfcQuadPointData[(iCell - cellRange.first) * nQuadsPerCell *
+                                     vectorsBlockSize +
+                                   iQuad * vectorsBlockSize + iWave]) *
                 gradWfcQuadPointData[(iCell - cellRange.first) * nQuadsPerCell *
                                        vectorsBlockSize * 3 +
                                      1 * nQuadsPerCell * vectorsBlockSize +
                                      iQuad * vectorsBlockSize + iWave]);
 
             kineticEnergyDensity[iCell * nQuadsPerCell + iQuad] +=
-              kcoord[2]*partialOccupVec[iWave] *
+              kcoord[2] * partialOccupVec[iWave] *
               dftfe::utils::imagPart(
                 dftfe::utils::complexConj(
-                  wfcQuadPointData[(iCell - cellRange.first) *
-                                         nQuadsPerCell * vectorsBlockSize +
-                                       iQuad * vectorsBlockSize + iWave]) *
+                  wfcQuadPointData[(iCell - cellRange.first) * nQuadsPerCell *
+                                     vectorsBlockSize +
+                                   iQuad * vectorsBlockSize + iWave]) *
                 gradWfcQuadPointData[(iCell - cellRange.first) * nQuadsPerCell *
                                        vectorsBlockSize * 3 +
                                      2 * nQuadsPerCell * vectorsBlockSize +
@@ -497,7 +502,8 @@ namespace dftfe
 #if defined(DFTFE_WITH_DEVICE)
   template void
   computeKineticEnergyDensity(
-		 const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE> &BLASWrapperPtr,
+    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>
+      &BLASWrapperPtr,
     const dftfe::utils::MemoryStorage<dataTypes::number,
                                       dftfe::utils::MemorySpace::DEVICE> *X,
     const unsigned int                      totalNumWaveFunctions,
@@ -517,13 +523,15 @@ namespace dftfe
     const MPI_Comm &                               mpiCommParent,
     const MPI_Comm &                               interpoolcomm,
     const MPI_Comm &                               interBandGroupComm,
+    const MPI_Comm &                               mpiCommDomain,
     const dftParameters &                          dftParams);
 #endif
 
   template void
   computeKineticEnergyDensity(
-    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST> &BLASWrapperPtr,
-		  const dftfe::utils::MemoryStorage<dataTypes::number,
+    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>
+      &BLASWrapperPtr,
+    const dftfe::utils::MemoryStorage<dataTypes::number,
                                       dftfe::utils::MemorySpace::HOST> *X,
     const unsigned int                      totalNumWaveFunctions,
     const std::vector<std::vector<double>> &eigenValues,
@@ -542,5 +550,6 @@ namespace dftfe
     const MPI_Comm &                               mpiCommParent,
     const MPI_Comm &                               interpoolcomm,
     const MPI_Comm &                               interBandGroupComm,
+    const MPI_Comm &                               mpiCommDomain,
     const dftParameters &                          dftParams);
 } // namespace dftfe

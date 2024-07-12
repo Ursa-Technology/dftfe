@@ -14,7 +14,7 @@
 //
 // ---------------------------------------------------------------------
 //
-// @author Sambit Das
+// @author Sambit Das, Vishal Subramanian
 //
 
 // source file for electron density related computations
@@ -35,7 +35,7 @@ namespace dftfe
     computeKedGradKedFromInterpolatedValues(const unsigned int numVectors,
                                             const unsigned int numCells,
                                             const unsigned int nQuadsPerCell,
-                                            const double kCoordSq,
+                                            const double       kCoordSq,
                                             double *           kCoord,
                                             double *           wfcContributions,
                                             double *gradwfcContributions,
@@ -77,8 +77,8 @@ namespace dftfe
       const unsigned int                 numVectors,
       const unsigned int                 numCells,
       const unsigned int                 nQuadsPerCell,
-      const double kCoordSq,
-      double *           kCoord,
+      const double                       kCoordSq,
+      double *                           kCoord,
       dftfe::utils::deviceDoubleComplex *wfcContributions,
       dftfe::utils::deviceDoubleComplex *gradwfcContributions,
       double *                           kedCellsWfcContributions)
@@ -91,7 +91,8 @@ namespace dftfe
            index += blockDim.x * gridDim.x)
         {
           const dftfe::utils::deviceDoubleComplex psi = wfcContributions[index];
-          kedCellsWfcContributions[index] = kCoordSq * (psi.x * psi.x + psi.y * psi.y);
+          kedCellsWfcContributions[index] =
+            kCoordSq * (psi.x * psi.x + psi.y * psi.y);
 
           unsigned int iCell          = index / numEntriesPerCell;
           unsigned int intraCellIndex = index - iCell * numEntriesPerCell;
@@ -116,21 +117,22 @@ namespace dftfe
             0.5 * (gradPsiZ.x * gradPsiZ.x + gradPsiZ.y * gradPsiZ.y);
 
           kedCellsWfcContributions[index] +=
-            kCoord[0]*(psi.x*gradPsiX.y - psi.y*gradPsiX.x);
+            kCoord[0] * (psi.x * gradPsiX.y - psi.y * gradPsiX.x);
 
           kedCellsWfcContributions[index] +=
-            kCoord[1]*(psi.x*gradPsiY.y - psi.y*gradPsiY.x);
+            kCoord[1] * (psi.x * gradPsiY.y - psi.y * gradPsiY.x);
 
           kedCellsWfcContributions[index] +=
-            kCoord[2]*(psi.x*gradPsiZ.y - psi.y*gradPsiZ.x);
+            kCoord[2] * (psi.x * gradPsiZ.y - psi.y * gradPsiZ.x);
         }
     }
   } // namespace
   template <typename NumberType>
   void
   computeKineticEnergyDensityFromInterpolatedValues(
-    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE> &BLASWrapperPtr,
-		  std::shared_ptr<
+    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>
+      &BLASWrapperPtr,
+    std::shared_ptr<
       dftfe::basis::FEBasisOperations<NumberType,
                                       double,
                                       dftfe::utils::MemorySpace::DEVICE>>
@@ -141,8 +143,9 @@ namespace dftfe
     double *                                    kcoord,
     NumberType *                                wfcQuadPointData,
     NumberType *                                gradWfcQuadPointData,
-    double *kineticEnergyDensityCellsWfcContributions,
-    double *kineticEnergyDensity)
+    double *        kineticEnergyDensityCellsWfcContributions,
+    double *        kineticEnergyDensity,
+    const MPI_Comm &mpiCommDomain)
   {
     const unsigned int cellsBlockSize   = cellRange.second - cellRange.first;
     const unsigned int vectorsBlockSize = vecRange.second - vecRange.first;
@@ -150,11 +153,16 @@ namespace dftfe
     const unsigned int nCells           = basisOperationsPtr->nCells();
     const double       scalarCoeffAlphaKed = 1.0;
     const double       scalarCoeffBetaKed  = 1.0;
-    const double kcoordSq=kcoord[0]*kcoord[0]+kcoord[1]*kcoord[1]+kcoord[2]*kcoord[2];
+    const double       kcoordSq =
+      kcoord[0] * kcoord[0] + kcoord[1] * kcoord[1] + kcoord[2] * kcoord[2];
 
     dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::DEVICE>
-      kCoordDevice(3);
-    kCoordDevice.copyFrom(kcoord);
+                        kCoordDevice(3);
+    std::vector<double> kCoordStdVec(3);
+    kCoordStdVec[0] = kcoord[0];
+    kCoordStdVec[1] = kcoord[1];
+    kCoordStdVec[2] = kcoord[2];
+    kCoordDevice.copyFrom(kCoordStdVec);
 #ifdef DFTFE_WITH_DEVICE_LANG_CUDA
     computeKedGradKedFromInterpolatedValues<<<
       (vectorsBlockSize + (dftfe::utils::DEVICE_BLOCK_SIZE - 1)) /
@@ -183,25 +191,28 @@ namespace dftfe
       dftfe::utils::makeDataTypeDeviceCompatible(kCoordDevice.data()),
       dftfe::utils::makeDataTypeDeviceCompatible(wfcQuadPointData),
       dftfe::utils::makeDataTypeDeviceCompatible(gradWfcQuadPointData),
-      dftfe::utils::makeDataTypeDeviceCompatible(kineticEnergyDensityCellsWfcContributions));
+      dftfe::utils::makeDataTypeDeviceCompatible(
+        kineticEnergyDensityCellsWfcContributions));
 #endif
-    BLASWrapperPtr.xgemv(
-      dftfe::utils::DEVICEBLAS_OP_T,
-      vectorsBlockSize,
-      cellsBlockSize * nQuadsPerCell,
-      &scalarCoeffAlphaKed,
-      kineticEnergyDensityCellsWfcContributions,
-      vectorsBlockSize,
-      partialOccupVec,
-      1,
-      &scalarCoeffBetaKed,
-      kineticEnergyDensity + cellRange.first * nQuadsPerCell,
-      1);
+    BLASWrapperPtr.xgemm('T',
+                         'N',
+                         cellsBlockSize * nQuadsPerCell,
+                         1,
+                         vectorsBlockSize,
+                         &scalarCoeffAlphaKed,
+                         kineticEnergyDensityCellsWfcContributions,
+                         vectorsBlockSize,
+                         partialOccupVec,
+                         vectorsBlockSize,
+                         &scalarCoeffBetaKed,
+                         kineticEnergyDensity + cellRange.first * nQuadsPerCell,
+                         cellsBlockSize * nQuadsPerCell);
   }
   template void
   computeKineticEnergyDensityFromInterpolatedValues(
-      const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE> &BLASWrapperPtr,
-      std::shared_ptr<
+    const dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>
+      &BLASWrapperPtr,
+    std::shared_ptr<
       dftfe::basis::FEBasisOperations<dataTypes::number,
                                       double,
                                       dftfe::utils::MemorySpace::DEVICE>>
@@ -210,9 +221,10 @@ namespace dftfe
     const std::pair<unsigned int, unsigned int> vecRange,
     double *                                    partialOccupVec,
     double *                                    kcoord,
-    dataTypes::number *                                wfcQuadPointData,
-    dataTypes::number *                                gradWfcQuadPointData,
-    double *kineticEnergyCellsWfcContributions,
-    double *kineticEnergyDensity);
+    dataTypes::number *                         wfcQuadPointData,
+    dataTypes::number *                         gradWfcQuadPointData,
+    double *        kineticEnergyCellsWfcContributions,
+    double *        kineticEnergyDensity,
+    const MPI_Comm &mpiCommDomain);
 
 } // namespace dftfe

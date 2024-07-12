@@ -251,19 +251,6 @@ namespace dftfe
           d_mpiCommParent,
           mpi_communicator);
       }
-
-
-    /* function to test the accuracy of the multivector poisson sover */
-    //    functionalTest::testMultiVectorPoissonSolver(d_basisOperationsPtrElectroHost,
-    //                                           d_matrixFreeDataPRefined,
-    //                                           d_BLASWrapperPtrHost,
-    //                  d_constraintsVectorElectro,
-    //                  d_densityInQuadValues[0],
-    //                  d_phiTotDofHandlerIndexElectro,
-    //                  d_densityQuadratureIdElectro,
-    //                  d_phiTotAXQuadratureIdElectro,
-    //                  d_mpiCommParent,
-    //                  mpi_communicator);
   }
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,

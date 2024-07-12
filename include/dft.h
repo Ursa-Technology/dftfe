@@ -561,7 +561,7 @@ namespace dftfe
       const double                            numElectronsInput);
 
     /**
-     *@brief Computes the kinetic energy 
+     *@brief Computes the kinetic energy
      */
     double
     computeAndPrintKE();

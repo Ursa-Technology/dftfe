@@ -22,8 +22,8 @@
 #  include <DeviceDataTypeOverloads.h>
 #  include <DeviceKernelLauncherConstants.h>
 #  include <Exceptions.h>
-#include <boost/stacktrace.hpp>
-#include <iostream>
+#  include <boost/stacktrace.hpp>
+#  include <iostream>
 namespace dftfe
 {
   namespace utils
@@ -148,7 +148,7 @@ namespace dftfe
     deviceError_t
     deviceFree(void *devPtr)
     {
-	    //std::cout << boost::stacktrace::stacktrace();
+      // std::cout << boost::stacktrace::stacktrace();
       deviceError_t err = cudaFree(devPtr);
       DEVICE_API_CHECK(err);
       return err;

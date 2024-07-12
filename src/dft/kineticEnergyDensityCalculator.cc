@@ -91,8 +91,8 @@ namespace dftfe
     const NumberType scalarCoeffAlphaKed = 1.0;
     const NumberType scalarCoeffBetaKed  = 1.0;
 
-    const unsigned int cellsBlockSize =  totalLocallyOwnedCells;
-      //memorySpace == dftfe::utils::MemorySpace::DEVICE ? 50 : 1;
+    const unsigned int cellsBlockSize =   //totalLocallyOwnedCells;
+      memorySpace == dftfe::utils::MemorySpace::DEVICE ? 50 : 1;
     const unsigned int numCellBlocks = totalLocallyOwnedCells / cellsBlockSize;
     const unsigned int remCellBlockSize =
       totalLocallyOwnedCells - numCellBlocks * cellsBlockSize;
@@ -266,14 +266,6 @@ namespace dftfe
                     basisOperationsPtr->distribute(
                       *(flattenedArrayBlock[spinIndex]));
                   }
-
-		double flatNorm = 0.0; 
-		BLASWrapperPtr.xnrm2(currentBlockSize*numLocalDofs,
-				flattenedArrayBlock[0]->data(),
-				1,
-				mpiCommDomain,
-				&flatNorm);
-		std::cout<<" flatNorm norm = "<<flatNorm*flatNorm<<"\n";
                 for (int iblock = 0; iblock < (numCellBlocks + 1); iblock++)
                   {
                     const unsigned int currentCellsBlockSize =
@@ -294,22 +286,6 @@ namespace dftfe
                             std::pair<unsigned int, unsigned int>(
                               startingCellId,
                               startingCellId + currentCellsBlockSize));
-
-		double wfcNorm = 0.0;
-                BLASWrapperPtr.xnrm2(currentBlockSize*cellsBlockSize * numQuadPoints,
-                                wfcQuadPointData[0].data(),
-                                1,
-                                mpiCommDomain,
-                                &wfcNorm);
-                std::cout<<" wfcNorm norm = "<<wfcNorm*wfcNorm<<"\n";
-
-		double wfcGradNorm = 0.0;
-                BLASWrapperPtr.xnrm2(3*currentBlockSize*cellsBlockSize * numQuadPoints,
-                                gradWfcQuadPointData[0].data(),
-                                1,
-                                mpiCommDomain,
-                                &wfcGradNorm);
-                std::cout<<" wfcGradNorm norm = "<<wfcGradNorm*wfcGradNorm<<"\n";
 
                         for (unsigned int spinIndex = 0;
                              spinIndex < numSpinComponents;
@@ -519,22 +495,6 @@ namespace dftfe
                                      2 * nQuadsPerCell * vectorsBlockSize +
                                      iQuad * vectorsBlockSize + iWave]);
           }
-
-                double partialOccupVecNorm = 0.0;
-                BLASWrapperPtr.xnrm2(vectorsBlockSize,
-                                partialOccupVec,
-                                1,
-                                mpiCommDomain,
-                                &partialOccupVecNorm);
-                std::cout<<" partialOccupVecNorm norm = "<<partialOccupVecNorm*partialOccupVecNorm<<"\n";
-
-                double kedNorm = 0.0;
-                BLASWrapperPtr.xnrm2(cellsBlockSize * nQuadsPerCell,
-                                kineticEnergyDensity + cellRange.first * nQuadsPerCell,
-                                1,
-                                mpiCommDomain,
-                                &kedNorm);
-                std::cout<<" kedNorm norm = "<<kedNorm*kedNorm<<"\n";
   }
 #if defined(DFTFE_WITH_DEVICE)
   template void

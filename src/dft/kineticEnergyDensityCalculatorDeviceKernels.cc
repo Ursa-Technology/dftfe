@@ -232,29 +232,6 @@ namespace dftfe
                           &scalarCoeffBetaKed,
                           kineticEnergyDensity + cellRange.first * nQuadsPerCell,
                           cellsBlockSize * nQuadsPerCell);
-double kedCellNorm = 0.0;
-                BLASWrapperPtr.xnrm2(vectorsBlockSize*cellsBlockSize * nQuadsPerCell,
-                                kineticEnergyDensityCellsWfcContributions,
-                                1,
-                                mpiCommDomain,
-                                &kedCellNorm);
-                //std::cout<<" kedCellNorm norm = "<<kedCellNorm*kedCellNorm<<"\n";
-
-		double partialOccupVecNorm = 0.0;
-                BLASWrapperPtr.xnrm2(vectorsBlockSize,
-                                partialOccupVec,
-                                1,
-                                mpiCommDomain,
-                                &partialOccupVecNorm);
-                //std::cout<<" partialOccupVecNorm norm = "<<partialOccupVecNorm*partialOccupVecNorm<<"\n";
-
-		double kedNorm = 0.0;
-                BLASWrapperPtr.xnrm2(cellsBlockSize * nQuadsPerCell,
-                                kineticEnergyDensity + cellRange.first * nQuadsPerCell,
-                                1,
-                                mpiCommDomain,
-                                &kedNorm);
-                //std::cout<<" kedNorm norm = "<<kedNorm*kedNorm<<"\n";
   }
   template void
   computeKineticEnergyDensityFromInterpolatedValues(

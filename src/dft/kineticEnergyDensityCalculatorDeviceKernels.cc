@@ -14,7 +14,7 @@
 //
 // ---------------------------------------------------------------------
 //
-// @author Sambit Das
+// @author Sambit Das, Vishal Subramanian
 //
 
 // source file for electron density related computations
@@ -164,23 +164,6 @@ namespace dftfe
     kCoordStdVec[2] = kcoord[2];
     kCoordDevice.copyFrom(kCoordStdVec);
 #ifdef DFTFE_WITH_DEVICE_LANG_CUDA
-
-    computeKedGradKedFromInterpolatedValues<<<
-      (cellsBlockSize * vectorsBlockSize * nQuadsPerCell) /
-          dftfe::utils::DEVICE_BLOCK_SIZE +
-        1,
-      dftfe::utils::DEVICE_BLOCK_SIZE>>>(
-      vectorsBlockSize,
-      cellsBlockSize,
-      nQuadsPerCell,
-      kcoordSq,
-      dftfe::utils::makeDataTypeDeviceCompatible(kCoordDevice.data()),
-      dftfe::utils::makeDataTypeDeviceCompatible(wfcQuadPointData),
-      dftfe::utils::makeDataTypeDeviceCompatible(gradWfcQuadPointData),
-      dftfe::utils::makeDataTypeDeviceCompatible(
-        kineticEnergyDensityCellsWfcContributions));
-/*
-
     computeKedGradKedFromInterpolatedValues<<<
       (vectorsBlockSize + (dftfe::utils::DEVICE_BLOCK_SIZE - 1)) /
         dftfe::utils::DEVICE_BLOCK_SIZE * nQuadsPerCell * cellsBlockSize,
@@ -193,7 +176,6 @@ namespace dftfe
       dftfe::utils::makeDataTypeDeviceCompatible(wfcQuadPointData),
       dftfe::utils::makeDataTypeDeviceCompatible(gradWfcQuadPointData),
       dftfe::utils::makeDataTypeDeviceCompatible(kineticEnergyDensityCellsWfcContributions));
-*/
 #elif DFTFE_WITH_DEVICE_LANG_HIP
     hipLaunchKernelGGL(
       computeKedGradKedFromInterpolatedValues,
@@ -212,20 +194,6 @@ namespace dftfe
       dftfe::utils::makeDataTypeDeviceCompatible(
         kineticEnergyDensityCellsWfcContributions));
 #endif
-    /*
-       BLASWrapperPtr.xgemv(
-         dftfe::utils::DEVICEBLAS_OP_T,
-         vectorsBlockSize,
-         cellsBlockSize * nQuadsPerCell,
-         &scalarCoeffAlphaKed,
-         kineticEnergyDensityCellsWfcContributions,
-         vectorsBlockSize,
-         partialOccupVec,
-         1,
-         &scalarCoeffBetaKed,
-         kineticEnergyDensity + cellRange.first * nQuadsPerCell,
-         1);
-    */
     BLASWrapperPtr.xgemm('T',
                          'N',
                          cellsBlockSize * nQuadsPerCell,

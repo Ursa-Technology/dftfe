@@ -14,7 +14,7 @@
 //
 // ---------------------------------------------------------------------
 //
-// @author Sambit Das
+// @author Sambit Das, Vishal Subramanian
 //
 
 // source file for electron density related computations

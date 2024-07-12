@@ -142,7 +142,8 @@ namespace dftfe
     NumberType *                                wfcQuadPointData,
     NumberType *                                gradWfcQuadPointData,
     double *kineticEnergyDensityCellsWfcContributions,
-    double *kineticEnergyDensity)
+    double *kineticEnergyDensity,
+    const MPI_Comm &                               mpiCommDomain)
   {
     const unsigned int cellsBlockSize   = cellRange.second - cellRange.first;
     const unsigned int vectorsBlockSize = vecRange.second - vecRange.first;
@@ -154,8 +155,26 @@ namespace dftfe
 
     dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::DEVICE>
       kCoordDevice(3);
-    kCoordDevice.copyFrom(kcoord);
+    std::vector<double> kCoordStdVec(3);
+    kCoordStdVec[0] = kcoord[0];
+    kCoordStdVec[1] = kcoord[1];
+    kCoordStdVec[2] = kcoord[2];
+    kCoordDevice.copyFrom(kCoordStdVec);
 #ifdef DFTFE_WITH_DEVICE_LANG_CUDA
+
+		  computeKedGradKedFromInterpolatedValues<<<
+          (cellsBlockSize*vectorsBlockSize*nQuadsPerCell) / dftfe::utils::DEVICE_BLOCK_SIZE + 1,
+          dftfe::utils::DEVICE_BLOCK_SIZE>>>
+      (vectorsBlockSize,
+      cellsBlockSize,
+      nQuadsPerCell,
+      kcoordSq,
+      dftfe::utils::makeDataTypeDeviceCompatible(kCoordDevice.data()),
+      dftfe::utils::makeDataTypeDeviceCompatible(wfcQuadPointData),
+      dftfe::utils::makeDataTypeDeviceCompatible(gradWfcQuadPointData),
+      dftfe::utils::makeDataTypeDeviceCompatible(kineticEnergyDensityCellsWfcContributions));
+/*    
+    
     computeKedGradKedFromInterpolatedValues<<<
       (vectorsBlockSize + (dftfe::utils::DEVICE_BLOCK_SIZE - 1)) /
         dftfe::utils::DEVICE_BLOCK_SIZE * nQuadsPerCell * cellsBlockSize,
@@ -168,6 +187,7 @@ namespace dftfe
       dftfe::utils::makeDataTypeDeviceCompatible(wfcQuadPointData),
       dftfe::utils::makeDataTypeDeviceCompatible(gradWfcQuadPointData),
       dftfe::utils::makeDataTypeDeviceCompatible(kineticEnergyDensityCellsWfcContributions));
+*/
 #elif DFTFE_WITH_DEVICE_LANG_HIP
     hipLaunchKernelGGL(
       computeKedGradKedFromInterpolatedValues,
@@ -185,6 +205,7 @@ namespace dftfe
       dftfe::utils::makeDataTypeDeviceCompatible(gradWfcQuadPointData),
       dftfe::utils::makeDataTypeDeviceCompatible(kineticEnergyDensityCellsWfcContributions));
 #endif
+ /* 
     BLASWrapperPtr.xgemv(
       dftfe::utils::DEVICEBLAS_OP_T,
       vectorsBlockSize,
@@ -197,6 +218,43 @@ namespace dftfe
       &scalarCoeffBetaKed,
       kineticEnergyDensity + cellRange.first * nQuadsPerCell,
       1);
+ */
+    BLASWrapperPtr.xgemm('T',
+                          'N',
+                          cellsBlockSize * nQuadsPerCell,
+                          1,
+                          vectorsBlockSize,
+                          &scalarCoeffAlphaKed,
+                          kineticEnergyDensityCellsWfcContributions,
+                          vectorsBlockSize,
+                          partialOccupVec,
+                          vectorsBlockSize,
+                          &scalarCoeffBetaKed,
+                          kineticEnergyDensity + cellRange.first * nQuadsPerCell,
+                          cellsBlockSize * nQuadsPerCell);
+double kedCellNorm = 0.0;
+                BLASWrapperPtr.xnrm2(vectorsBlockSize*cellsBlockSize * nQuadsPerCell,
+                                kineticEnergyDensityCellsWfcContributions,
+                                1,
+                                mpiCommDomain,
+                                &kedCellNorm);
+                //std::cout<<" kedCellNorm norm = "<<kedCellNorm*kedCellNorm<<"\n";
+
+		double partialOccupVecNorm = 0.0;
+                BLASWrapperPtr.xnrm2(vectorsBlockSize,
+                                partialOccupVec,
+                                1,
+                                mpiCommDomain,
+                                &partialOccupVecNorm);
+                //std::cout<<" partialOccupVecNorm norm = "<<partialOccupVecNorm*partialOccupVecNorm<<"\n";
+
+		double kedNorm = 0.0;
+                BLASWrapperPtr.xnrm2(cellsBlockSize * nQuadsPerCell,
+                                kineticEnergyDensity + cellRange.first * nQuadsPerCell,
+                                1,
+                                mpiCommDomain,
+                                &kedNorm);
+                //std::cout<<" kedNorm norm = "<<kedNorm*kedNorm<<"\n";
   }
   template void
   computeKineticEnergyDensityFromInterpolatedValues(
@@ -213,6 +271,7 @@ namespace dftfe
     dataTypes::number *                                wfcQuadPointData,
     dataTypes::number *                                gradWfcQuadPointData,
     double *kineticEnergyCellsWfcContributions,
-    double *kineticEnergyDensity);
+    double *kineticEnergyDensity,
+    const MPI_Comm &                               mpiCommDomain);
 
 } // namespace dftfe

@@ -201,6 +201,7 @@ namespace dftfe
                                   d_mpiCommParent,
                                   interpoolcomm,
                                   interBandGroupComm,
+				  mpi_communicator,
                                   *d_dftParamsPtr);
 #endif
     if (!d_dftParamsPtr->useDevice)
@@ -219,7 +220,8 @@ namespace dftfe
                                   d_mpiCommParent,
                                   interpoolcomm,
                                   interBandGroupComm,
-                                  *d_dftParamsPtr);
+                                  mpi_communicator,
+				  *d_dftParamsPtr);
 
     MPI_Barrier(MPI_COMM_WORLD);
 

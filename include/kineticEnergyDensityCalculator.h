@@ -44,6 +44,7 @@ namespace dftfe
     const MPI_Comm &                               mpiCommParent,
     const MPI_Comm &                               interpoolcomm,
     const MPI_Comm &                               interBandGroupComm,
+    const MPI_Comm &                               mpiCommDomain,
     const dftParameters &                          dftParams);
 
   template <typename NumberType>
@@ -61,7 +62,8 @@ namespace dftfe
     NumberType *                                wfcQuadPointData,
     NumberType *                                gradWfcQuadPointData,
     double *                                    kineticCellsWfcContributions,
-    double *                                    kineticEnergyDensity);
+    double *                                    kineticEnergyDensity,
+    const MPI_Comm &                               mpiCommDomain);
 
 #if defined(DFTFE_WITH_DEVICE)
   template <typename NumberType>
@@ -80,7 +82,8 @@ namespace dftfe
     NumberType *                                wfcQuadPointData,
     NumberType *                                gradWfcQuadPointData,
     double *kineticEnergyCellsWfcContributions,
-    double *kineticEnergyDensity);
+    double *kineticEnergyDensity,
+    const MPI_Comm &                               mpiCommDomain);
 #endif
 
 } // namespace dftfe

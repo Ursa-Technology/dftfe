@@ -375,7 +375,7 @@ namespace dftfe
       const dealii::Quadrature<3> &quadratureSmearedCharge,
       const std::map<dealii::types::global_dof_index, double>
         &        atomElectrostaticNodeIdToChargeMap,
-      const bool smearedNuclearCharges = false)
+      const bool smearedNuclearCharges)
     {
       double phiContribution = 0.0, vSelfContribution = 0.0;
 
@@ -446,7 +446,7 @@ namespace dftfe
       const dealii::Quadrature<3> &quadratureSmearedCharge,
       const std::map<dealii::types::global_dof_index, double>
         &        atomElectrostaticNodeIdToChargeMap,
-      const bool smearedNuclearCharges = false)
+      const bool smearedNuclearCharges)
     {
       double phiContribution = 0.0, vSelfContribution = 0.0;
 
@@ -610,17 +610,17 @@ namespace dftfe
       (dealii::Utilities::MPI::this_mpi_process(mpi_communicator) == 0));
     const double bandEnergy = dealii::Utilities::MPI::sum(
       internalEnergy::localBandEnergy(eigenValues,
-                                kPointWeights,
-                                fermiEnergy,
-                                fermiEnergyUp,
-                                fermiEnergyDown,
-                                d_dftParams.TVal,
-                                d_dftParams.spinPolarized,
-                                scout,
-                                interpoolcomm,
-                                lowerBoundKindex,
-                                (d_dftParams.verbosity + scfConverged),
-                                d_dftParams),
+                                      kPointWeights,
+                                      fermiEnergy,
+                                      fermiEnergyUp,
+                                      fermiEnergyDown,
+                                      d_dftParams.TVal,
+                                      d_dftParams.spinPolarized,
+                                      scout,
+                                      interpoolcomm,
+                                      lowerBoundKindex,
+                                      (d_dftParams.verbosity + scfConverged),
+                                      d_dftParams),
       interpoolcomm);
     double excCorrPotentialTimesRho = 0.0, electrostaticPotentialTimesRho = 0.0,
            exchangeEnergy = 0.0, correlationEnergy = 0.0,
@@ -629,26 +629,26 @@ namespace dftfe
 
     electrostaticPotentialTimesRho =
       internalEnergy::computeFieldTimesDensity(basisOperationsPtr,
-                                         densityQuadratureID,
-                                         phiTotRhoInValues,
-                                         densityOutValues[0]);
+                                               densityQuadratureID,
+                                               phiTotRhoInValues,
+                                               densityOutValues[0]);
     if (d_dftParams.isPseudopotential || smearedNuclearCharges)
       electrostaticPotentialTimesRho +=
-        internal::computeFieldTimesDensity(basisOperationsPtrElectro,
-                                           lpspQuadratureIDElectro,
-                                           pseudoLocValues,
-                                           rhoOutValuesLpsp);
+        internalEnergy::computeFieldTimesDensity(basisOperationsPtrElectro,
+                                                 lpspQuadratureIDElectro,
+                                                 pseudoLocValues,
+                                                 rhoOutValuesLpsp);
     electrostaticEnergyTotPot =
       0.5 * internalEnergy::computeFieldTimesDensity(basisOperationsPtrElectro,
-                                               densityQuadratureIDElectro,
-                                               phiTotRhoOutValues,
-                                               densityOutValues[0]);
+                                                     densityQuadratureIDElectro,
+                                                     phiTotRhoOutValues,
+                                                     densityOutValues[0]);
     if (d_dftParams.isPseudopotential || smearedNuclearCharges)
       electrostaticEnergyTotPot +=
         internalEnergy::computeFieldTimesDensity(basisOperationsPtrElectro,
-                                           lpspQuadratureIDElectro,
-                                           pseudoLocValues,
-                                           rhoOutValuesLpsp);
+                                                 lpspQuadratureIDElectro,
+                                                 pseudoLocValues,
+                                                 rhoOutValuesLpsp);
 
     std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
@@ -742,18 +742,18 @@ namespace dftfe
     if (print)
       {
         internalEnergy::printEnergy(bandEnergy,
-                              totalkineticEnergy,
-                              totalexchangeEnergy,
-                              totalcorrelationEnergy,
-                              allElectronElectrostaticEnergy,
-                              d_energyDispersion,
-                              totalEnergy,
-                              numberGlobalAtoms,
-                              pcout,
-                              d_dftParams.reproducible_output,
-                              d_dftParams.isPseudopotential,
-                              d_dftParams.verbosity,
-                              d_dftParams);
+                                    totalkineticEnergy,
+                                    totalexchangeEnergy,
+                                    totalcorrelationEnergy,
+                                    allElectronElectrostaticEnergy,
+                                    d_energyDispersion,
+                                    totalEnergy,
+                                    numberGlobalAtoms,
+                                    pcout,
+                                    d_dftParams.reproducible_output,
+                                    d_dftParams.isPseudopotential,
+                                    d_dftParams.verbosity,
+                                    d_dftParams);
       }
     return totalEnergy;
   }
@@ -814,16 +814,17 @@ namespace dftfe
 
     electrostaticPotentialTimesRho =
       internalEnergy::computeFieldTimesDensityResidual(basisOperationsPtr,
-                                                 densityQuadratureID,
-                                                 phiTotRhoInValues,
-                                                 densityInValues[0],
-                                                 densityOutValues[0]);
+                                                       densityQuadratureID,
+                                                       phiTotRhoInValues,
+                                                       densityInValues[0],
+                                                       densityOutValues[0]);
     electrostaticEnergyTotPot =
-      0.5 * (internalEnergy::computeFieldTimesDensity(basisOperationsPtrElectro,
+      0.5 *
+      (internalEnergy::computeFieldTimesDensity(basisOperationsPtrElectro,
                                                 densityQuadratureIDElectro,
                                                 phiTotRhoOutValues,
                                                 densityOutValues[0]) -
-             internalEnergy::computeFieldTimesDensity(basisOperationsPtrElectro,
+       internalEnergy::computeFieldTimesDensity(basisOperationsPtrElectro,
                                                 densityQuadratureIDElectro,
                                                 phiTotRhoInValues,
                                                 densityInValues[0]));

@@ -26,7 +26,6 @@
 
 namespace dftfe
 {
-
   namespace internalEnergy
   {
     template <typename T>
@@ -35,7 +34,7 @@ namespace dftfe
       const std::shared_ptr<
         dftfe::basis::
           FEBasisOperations<T, double, dftfe::utils::MemorySpace::HOST>>
-                                                          &                                                  basisOperationsPtr,
+        &                                                  basisOperationsPtr,
       const unsigned int                                   quadratureId,
       const std::map<dealii::CellId, std::vector<double>> &fieldValues,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
@@ -47,7 +46,7 @@ namespace dftfe
       const std::shared_ptr<
         dftfe::basis::
           FEBasisOperations<T, double, dftfe::utils::MemorySpace::HOST>>
-                                                          &                                                  basisOperationsPtr,
+        &                                                  basisOperationsPtr,
       const unsigned int                                   quadratureId,
       const std::map<dealii::CellId, std::vector<double>> &fieldValues,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
@@ -61,7 +60,7 @@ namespace dftfe
       const std::shared_ptr<
         dftfe::basis::
           FEBasisOperations<T, double, dftfe::utils::MemorySpace::HOST>>
-                        &                basisOperationsPtr,
+        &                basisOperationsPtr,
       const unsigned int quadratureId,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
         &fieldValues,
@@ -74,7 +73,7 @@ namespace dftfe
       const std::shared_ptr<
         dftfe::basis::
           FEBasisOperations<T, double, dftfe::utils::MemorySpace::HOST>>
-                        &                basisOperationsPtr,
+        &                basisOperationsPtr,
       const unsigned int quadratureId,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
         &fieldValues,
@@ -118,12 +117,12 @@ namespace dftfe
       const std::vector<std::vector<double>> &             localVselfs,
       const std::map<dealii::CellId, std::vector<double>> &smearedbValues,
       const std::map<dealii::CellId, std::vector<unsigned int>>
-                                  &                          smearedbNonTrivialAtomIds,
+        &                          smearedbNonTrivialAtomIds,
       const dealii::DoFHandler<3> &dofHandlerElectrostatic,
       const dealii::Quadrature<3> &quadratureElectrostatic,
       const dealii::Quadrature<3> &quadratureSmearedCharge,
       const std::map<dealii::types::global_dof_index, double>
-                &        atomElectrostaticNodeIdToChargeMap,
+        &        atomElectrostaticNodeIdToChargeMap,
       const bool smearedNuclearCharges = false);
 
     double
@@ -132,18 +131,18 @@ namespace dftfe
       const distributedCPUVec<double> &                    phiTotRhoOut,
       const std::map<dealii::CellId, std::vector<double>> &smearedbValues,
       const std::map<dealii::CellId, std::vector<unsigned int>>
-                                  &                          smearedbNonTrivialAtomIds,
+        &                          smearedbNonTrivialAtomIds,
       const dealii::DoFHandler<3> &dofHandlerElectrostatic,
       const dealii::Quadrature<3> &quadratureSmearedCharge,
       const std::map<dealii::types::global_dof_index, double>
-                &        atomElectrostaticNodeIdToChargeMap,
+        &        atomElectrostaticNodeIdToChargeMap,
       const bool smearedNuclearCharges = false);
 
     double
     computeRepulsiveEnergy(
       const std::vector<std::vector<double>> &atomLocationsAndCharge,
       const bool                              isPseudopotential);
-  }
+  } // namespace internalEnergy
 
   /**
    * @brief Calculates the ksdft problem total energy and its components

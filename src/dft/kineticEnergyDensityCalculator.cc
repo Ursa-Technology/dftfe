@@ -46,16 +46,17 @@ namespace dftfe
     const double                            fermiEnergyDown,
     std::shared_ptr<
       dftfe::basis::FEBasisOperations<NumberType, double, memorySpace>>
-      &                                            basisOperationsPtr,
-    const unsigned int                             quadratureIndex,
-    const std::vector<double> &                    kPointCoords,
-    const std::vector<double> &                    kPointWeights,
-    dftfe::utils::MemoryStorage<NumberType, dftfe::utils::MemorySpace::HOST> &kineticEnergyDensityValues,
-    const MPI_Comm &                               mpiCommParent,
-    const MPI_Comm &                               interpoolcomm,
-    const MPI_Comm &                               interBandGroupComm,
-    const MPI_Comm &                               mpiCommDomain,
-    const dftParameters &                          dftParams)
+      &                        basisOperationsPtr,
+    const unsigned int         quadratureIndex,
+    const std::vector<double> &kPointCoords,
+    const std::vector<double> &kPointWeights,
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      &                  kineticEnergyDensityValues,
+    const MPI_Comm &     mpiCommParent,
+    const MPI_Comm &     interpoolcomm,
+    const MPI_Comm &     interBandGroupComm,
+    const MPI_Comm &     mpiCommDomain,
+    const dftParameters &dftParams)
   {
     int this_process;
     MPI_Comm_rank(mpiCommParent, &this_process);
@@ -343,8 +344,10 @@ namespace dftfe
                       interBandGroupComm);
       }
 
-    kineticEnergyDensityValues.resize(totalLocallyOwnedCells*numQuadPoints);
-    std::fill(kineticEnergyDensityValues.begin(),kineticEnergyDensityValues.end(), 0.0);
+    kineticEnergyDensityValues.resize(totalLocallyOwnedCells * numQuadPoints);
+    std::fill(kineticEnergyDensityValues.begin(),
+              kineticEnergyDensityValues.end(),
+              0.0);
     for (unsigned int iElem = 0; iElem < totalLocallyOwnedCells; ++iElem)
       {
         if (dftParams.spinPolarized == 1)
@@ -355,11 +358,12 @@ namespace dftfe
                 const double ked1 =
                   kedHost[totalLocallyOwnedCells * numQuadPoints +
                           iElem * numQuadPoints + q];
-                kineticEnergyDensityValues[iElem*numQuadPoints + q] = ked0 + ked1;
+                kineticEnergyDensityValues[iElem * numQuadPoints + q] =
+                  ked0 + ked1;
               }
           }
         else
-          std::memcpy(kineticEnergyDensityValues.data() + iElem*numQuadPoints,
+          std::memcpy(kineticEnergyDensityValues.data() + iElem * numQuadPoints,
                       kedHost.data() + iElem * numQuadPoints,
                       numQuadPoints * sizeof(double));
       }
@@ -510,16 +514,17 @@ namespace dftfe
       dftfe::basis::FEBasisOperations<dataTypes::number,
                                       double,
                                       dftfe::utils::MemorySpace::DEVICE>>
-      &                                            basisOperationsPtr,
-    const unsigned int                             quadratureIndex,
-    const std::vector<double> &                    kPointCoords,
-    const std::vector<double> &                    kPointWeights,
-    dftfe::utils::MemoryStorage<NumberType, dftfe::utils::MemorySpace::HOST> &kineticEnergyDensityValues,
-    const MPI_Comm &                               mpiCommParent,
-    const MPI_Comm &                               interpoolcomm,
-    const MPI_Comm &                               interBandGroupComm,
-    const MPI_Comm &                               mpiCommDomain,
-    const dftParameters &                          dftParams);
+      &                        basisOperationsPtr,
+    const unsigned int         quadratureIndex,
+    const std::vector<double> &kPointCoords,
+    const std::vector<double> &kPointWeights,
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      &                  kineticEnergyDensityValues,
+    const MPI_Comm &     mpiCommParent,
+    const MPI_Comm &     interpoolcomm,
+    const MPI_Comm &     interBandGroupComm,
+    const MPI_Comm &     mpiCommDomain,
+    const dftParameters &dftParams);
 #endif
 
   template void
@@ -537,14 +542,15 @@ namespace dftfe
       dftfe::basis::FEBasisOperations<dataTypes::number,
                                       double,
                                       dftfe::utils::MemorySpace::HOST>>
-      &                                            basisOperationsPtr,
-    const unsigned int                             quadratureIndex,
-    const std::vector<double> &                    kPointCoords,
-    const std::vector<double> &                    kPointWeights,
-    dftfe::utils::MemoryStorage<NumberType, dftfe::utils::MemorySpace::HOST> &kineticEnergyDensityValues,
-    const MPI_Comm &                               mpiCommParent,
-    const MPI_Comm &                               interpoolcomm,
-    const MPI_Comm &                               interBandGroupComm,
-    const MPI_Comm &                               mpiCommDomain,
-    const dftParameters &                          dftParams);
+      &                        basisOperationsPtr,
+    const unsigned int         quadratureIndex,
+    const std::vector<double> &kPointCoords,
+    const std::vector<double> &kPointWeights,
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      &                  kineticEnergyDensityValues,
+    const MPI_Comm &     mpiCommParent,
+    const MPI_Comm &     interpoolcomm,
+    const MPI_Comm &     interBandGroupComm,
+    const MPI_Comm &     mpiCommDomain,
+    const dftParameters &dftParams);
 } // namespace dftfe

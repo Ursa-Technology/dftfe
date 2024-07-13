@@ -175,7 +175,8 @@ namespace dftfe
       dftfe::utils::makeDataTypeDeviceCompatible(kCoordDevice.data()),
       dftfe::utils::makeDataTypeDeviceCompatible(wfcQuadPointData),
       dftfe::utils::makeDataTypeDeviceCompatible(gradWfcQuadPointData),
-      dftfe::utils::makeDataTypeDeviceCompatible(kineticEnergyDensityCellsWfcContributions));
+      dftfe::utils::makeDataTypeDeviceCompatible(
+        kineticEnergyDensityCellsWfcContributions));
 #elif DFTFE_WITH_DEVICE_LANG_HIP
     hipLaunchKernelGGL(
       computeKedGradKedFromInterpolatedValues,

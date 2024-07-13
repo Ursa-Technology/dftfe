@@ -34,16 +34,14 @@
 
 namespace dftfe
 {
-
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
   double
-  dftClass<FEOrder, FEOrderElectro, memorySpace>::computeAndPrintKE(dftfe::utils::MemoryStorage<NumberType, dftfe::utils::MemorySpace::HOST> &kineticEnergyDensityValues)
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::computeAndPrintKE(
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      &kineticEnergyDensityValues)
   {
-
-
-
     const dealii::Quadrature<3> &quadratureFormula =
       matrix_free_data.get_quadrature(d_densityQuadratureId);
     const unsigned int n_q_points = quadratureFormula.size();
@@ -109,13 +107,11 @@ namespace dftfe
       cell = dofHandler.begin_active(),
       endc = dofHandler.end();
 
+    unsigned int iElem = 0;
     for (; cell != endc; ++cell)
       if (cell->is_locally_owned())
         {
           feValues.reinit(cell);
-
-          const std::vector<double> &kineticEnergyDensityValuesCell =
-            kineticEnergyDensityValues.find(cell->id())->second;
 
           for (unsigned int q_point = 0; q_point < n_q_points; ++q_point)
             {
@@ -123,8 +119,11 @@ namespace dftfe
                 feValues.quadrature_point(q_point);
               const double jxw = feValues.JxW(q_point);
 
-              kineticEnergy += kineticEnergyDensityValuesCell[q_point] * jxw;
+              kineticEnergy += kineticEnergyDensityValues
+                                 .data()[iElem * n_q_points + q_point] *
+                               jxw;
             }
+          iElem++;
         }
 
 

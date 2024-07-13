@@ -36,16 +36,17 @@ namespace dftfe
     const double                            fermiEnergyDown,
     std::shared_ptr<
       dftfe::basis::FEBasisOperations<NumberType, double, memorySpace>>
-      &                                            basisOperationsPtr,
-    const unsigned int                             quadratureIndex,
-    const std::vector<double> &                    kPointCoords,
-    const std::vector<double> &                    kPointWeights,
-    dftfe::utils::MemoryStorage<NumberType, dftfe::utils::MemorySpace::HOST> &kineticEnergyDensityValues,
-    const MPI_Comm &                               mpiCommParent,
-    const MPI_Comm &                               interpoolcomm,
-    const MPI_Comm &                               interBandGroupComm,
-    const MPI_Comm &                               mpiCommDomain,
-    const dftParameters &                          dftParams);
+      &                        basisOperationsPtr,
+    const unsigned int         quadratureIndex,
+    const std::vector<double> &kPointCoords,
+    const std::vector<double> &kPointWeights,
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      &                  kineticEnergyDensityValues,
+    const MPI_Comm &     mpiCommParent,
+    const MPI_Comm &     interpoolcomm,
+    const MPI_Comm &     interBandGroupComm,
+    const MPI_Comm &     mpiCommDomain,
+    const dftParameters &dftParams);
 
   template <typename NumberType>
   void

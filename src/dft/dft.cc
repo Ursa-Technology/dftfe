@@ -1873,7 +1873,8 @@ namespace dftfe
 
     if (d_dftParamsPtr->printKE)
       {
-        dftfe::utils::MemoryStorage<NumberType, dftfe::utils::MemorySpace::HOST> kineticEnergyDensityValues;
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+          kineticEnergyDensityValues;
         computeAndPrintKE(kineticEnergyDensityValues);
       }
 
@@ -5347,7 +5348,7 @@ namespace dftfe
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
-  const std::vector<std::vector<double>>&
+  const std::vector<std::vector<double>> &
   dftClass<FEOrder, FEOrderElectro, memorySpace>::getLocalVselfs() const
   {
     return d_localVselfs;
@@ -5357,7 +5358,8 @@ namespace dftfe
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
   const std::map<dealii::CellId, std::vector<unsigned int>> &
-  dftClass<FEOrder, FEOrderElectro, memorySpace>::getbCellNonTrivialAtomIds() const
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getbCellNonTrivialAtomIds()
+    const
   {
     return d_bCellNonTrivialAtomIds;
   }

@@ -564,7 +564,9 @@ namespace dftfe
      *@brief Computes the kinetic energy
      */
     double
-    computeAndPrintKE();
+    computeAndPrintKE(
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+        &kineticEnergyDensityValues);
 
     /**
      *@brief get the Ptr to the operator class ( Kohn Sham Operator)
@@ -696,7 +698,8 @@ namespace dftfe
     const dealii::AffineConstraints<double> *
     getConstraintsVectorElectro();
 
-    const std::vector<std::vector<double>>& getLocalVselfs() const;
+    const std::vector<std::vector<double>> &
+    getLocalVselfs() const;
 
     const MPI_Comm &
     getMPIDomain() const override;
@@ -711,7 +714,7 @@ namespace dftfe
     getMPIInterBand() const override;
 
     const std::map<dealii::CellId, std::vector<unsigned int>> &
-      getbCellNonTrivialAtomIds() const ;
+    getbCellNonTrivialAtomIds() const;
 
   private:
     /**

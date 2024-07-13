@@ -696,6 +696,8 @@ namespace dftfe
     const dealii::AffineConstraints<double> *
     getConstraintsVectorElectro();
 
+    const std::vector<std::vector<double>>& getLocalVselfs() const;
+
     const MPI_Comm &
     getMPIDomain() const override;
 
@@ -707,6 +709,9 @@ namespace dftfe
 
     const MPI_Comm &
     getMPIInterBand() const override;
+
+    const std::map<dealii::CellId, std::vector<unsigned int>> &
+      getbCellNonTrivialAtomIds() const ;
 
   private:
     /**

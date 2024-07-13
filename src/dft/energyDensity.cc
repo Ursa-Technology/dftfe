@@ -34,153 +34,19 @@
 
 namespace dftfe
 {
-  /*
-  namespace internalEnergyDensity
-  {
-    double
-    computeRepulsiveEnergy(
-      const std::vector<std::vector<double>> &atomLocationsAndCharge,
-      const bool                              isPseudopotential)
-    {
-      double energy = 0.0;
-      for (unsigned int n1 = 0; n1 < atomLocationsAndCharge.size(); n1++)
-        {
-          for (unsigned int n2 = n1 + 1; n2 < atomLocationsAndCharge.size();
-               n2++)
-            {
-              double Z1, Z2;
-              if (isPseudopotential)
-                {
-                  Z1 = atomLocationsAndCharge[n1][1];
-                  Z2 = atomLocationsAndCharge[n2][1];
-                }
-              else
-                {
-                  Z1 = atomLocationsAndCharge[n1][0];
-                  Z2 = atomLocationsAndCharge[n2][0];
-                }
-              const dealii::Point<3> atom1(atomLocationsAndCharge[n1][2],
-                                           atomLocationsAndCharge[n1][3],
-                                           atomLocationsAndCharge[n1][4]);
-              const dealii::Point<3> atom2(atomLocationsAndCharge[n2][2],
-                                           atomLocationsAndCharge[n2][3],
-                                           atomLocationsAndCharge[n2][4]);
-              energy += (Z1 * Z2) / atom1.distance(atom2);
-            }
-        }
-      return energy;
-    }
-
-  } // namespace internalEnergyDensity
-
-   */
 
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
   double
-  dftClass<FEOrder, FEOrderElectro, memorySpace>::computeAndPrintKE()
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::computeAndPrintKE(dftfe::utils::MemoryStorage<NumberType, dftfe::utils::MemorySpace::HOST> &kineticEnergyDensityValues)
   {
-    //    std::map<dealii::CellId, std::vector<double>> uniformGridQuadPoints;
-    //    std::map<dealii::CellId, std::vector<double>> uniformGridQuadWeights;
 
-    std::map<dealii::CellId, std::vector<double>> kineticEnergyDensityValues;
 
-    //
-    //
-    //
-    //    std::map<dealii::CellId, std::vector<double>> rhoOutValuesUniformQuad;
-    //    std::map<dealii::CellId, std::vector<double>>
-    //                                                  rhoOutValuesSpinPolarizedUniformQuad;
-    //    std::map<dealii::CellId, std::vector<double>>
-    //    gradRhoOutValuesUniformQuad; std::map<dealii::CellId,
-    //    std::vector<double>>
-    //      gradRhoOutValuesSpinPolarizedUniformQuad;
 
     const dealii::Quadrature<3> &quadratureFormula =
       matrix_free_data.get_quadrature(d_densityQuadratureId);
     const unsigned int n_q_points = quadratureFormula.size();
-
-    //    typename dealii::DoFHandler<3>::active_cell_iterator
-    //      cell = dofHandler.begin_active(),
-    //      endc = dofHandler.end();
-    //    for (; cell != endc; ++cell)
-    //      if (cell->is_locally_owned())
-    //        {
-    //          const dealii::CellId cellId = cell->id();
-    //          (rhoOutValuesUniformQuad)[cellId].resize(
-    //            n_q_points,
-    //            0.0); //      = std::vector<double>(numQuadPoints, 0.0);
-    //          if (d_excManagerPtr->getDensityBasedFamilyType() ==
-    //              densityFamilyType::GGA)
-    //            (gradRhoOutValuesUniformQuad)[cellId].resize(
-    //              3 * n_q_points,
-    //              0.0); // =
-    //                    // std::vector<double>(3 * numQuadPoints, 0.0);
-    //
-    //          if (d_dftParamsPtr->spinPolarized == 1)
-    //            {
-    //              (rhoOutValuesSpinPolarizedUniformQuad)[cellId].resize(
-    //                2 * n_q_points, 0.0);
-    //              if (d_excManagerPtr->getDensityBasedFamilyType() ==
-    //                  densityFamilyType::GGA)
-    //                (gradRhoOutValuesSpinPolarizedUniformQuad)[cellId].resize(
-    //                  6 * n_q_points, 0.0);
-    //            }
-    //        }
-
-    //#ifdef DFTFE_WITH_DEVICE
-    //    if (d_dftParamsPtr->useDevice)
-    //      computeRhoFromPSI(&d_eigenVectorsFlattenedDevice,
-    //                        &d_eigenVectorsRotFracFlattenedDevice,
-    //                        d_numEigenValues,
-    //                        d_numEigenValuesRR,
-    //                        eigenValues,
-    //                        fermiEnergy,
-    //                        fermiEnergyUp,
-    //                        fermiEnergyDown,
-    //                        basisOperationsPtrDevice,
-    //                        d_densityDofHandlerIndex,
-    //                        d_densityQuadratureId,
-    //                        d_kPointWeights,
-    //                        &rhoOutValuesUniformQuad,
-    //                        &gradRhoOutValuesUniformQuad,
-    //                        &rhoOutValuesSpinPolarizedUniformQuad,
-    //                        &gradRhoOutValuesSpinPolarizedUniformQuad,
-    //                        d_excManagerPtr->getDensityBasedFamilyType() ==
-    //                          densityFamilyType::GGA,
-    //                        d_mpiCommParent,
-    //                        interpoolcomm,
-    //                        interBandGroupComm,
-    //                        *d_dftParamsPtr,
-    //                        false);
-    //#endif
-    //    if (!d_dftParamsPtr->useDevice)
-    //      computeRhoFromPSI(&d_eigenVectorsFlattenedHost,
-    //                        &d_eigenVectorsRotFracDensityFlattenedHost,
-    //                        d_numEigenValues,
-    //                        d_numEigenValuesRR,
-    //                        eigenValues,
-    //                        fermiEnergy,
-    //                        fermiEnergyUp,
-    //                        fermiEnergyDown,
-    //                        basisOperationsPtrHost,
-    //                        d_densityDofHandlerIndex,
-    //                        d_densityQuadratureId,
-    //                        d_kPointWeights,
-    //                        &rhoOutValuesUniformQuad,
-    //                        &gradRhoOutValuesUniformQuad,
-    //                        &rhoOutValuesSpinPolarizedUniformQuad,
-    //                        &gradRhoOutValuesSpinPolarizedUniformQuad,
-    //                        d_excManagerPtr->getDensityBasedFamilyType() ==
-    //                          densityFamilyType::GGA,
-    //                        d_mpiCommParent,
-    //                        interpoolcomm,
-    //                        interBandGroupComm,
-    //                        *d_dftParamsPtr,
-    //                        false);
-
-
 
     //
     // compute kinetic energy density values
@@ -250,20 +116,6 @@ namespace dftfe
 
           const std::vector<double> &kineticEnergyDensityValuesCell =
             kineticEnergyDensityValues.find(cell->id())->second;
-
-
-
-          //          std::vector<double> &uniformGridQuadPointsCell =
-          //            uniformGridQuadPoints[cell->id()];
-          //          uniformGridQuadPointsCell.resize(n_q_points * 3);
-          //
-          //          std::vector<double> &uniformGridQuadWeightsCell =
-          //            uniformGridQuadWeights[cell->id()];
-          //          uniformGridQuadWeightsCell.resize(n_q_points);
-          //
-          //
-          //          const std::vector<double> &rhoValuesCell =
-          //            rhoOutValuesUniformQuad.find(cell->id())->second;
 
           for (unsigned int q_point = 0; q_point < n_q_points; ++q_point)
             {

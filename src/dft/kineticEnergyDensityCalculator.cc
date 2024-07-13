@@ -50,7 +50,7 @@ namespace dftfe
     const unsigned int                             quadratureIndex,
     const std::vector<double> &                    kPointCoords,
     const std::vector<double> &                    kPointWeights,
-    std::map<dealii::CellId, std::vector<double>> &kineticEnergyDensityValues,
+    dftfe::utils::MemoryStorage<NumberType, dftfe::utils::MemorySpace::HOST> &kineticEnergyDensityValues,
     const MPI_Comm &                               mpiCommParent,
     const MPI_Comm &                               interpoolcomm,
     const MPI_Comm &                               interBandGroupComm,
@@ -343,15 +343,10 @@ namespace dftfe
                       interBandGroupComm);
       }
 
+    kineticEnergyDensityValues.resize(totalLocallyOwnedCells*numQuadPoints);
+    std::fill(kineticEnergyDensityValues.begin(),kineticEnergyDensityValues.end(), 0.0);
     for (unsigned int iElem = 0; iElem < totalLocallyOwnedCells; ++iElem)
       {
-        const dealii::CellId cellid = basisOperationsPtr->cellID(iElem);
-
-        std::vector<double>  dummy(1);
-        std::vector<double> &tempKedQuads =
-          (kineticEnergyDensityValues)[cellid];
-        tempKedQuads.resize(numQuadPoints, 0);
-
         if (dftParams.spinPolarized == 1)
           {
             for (unsigned int q = 0; q < numQuadPoints; ++q)
@@ -360,11 +355,11 @@ namespace dftfe
                 const double ked1 =
                   kedHost[totalLocallyOwnedCells * numQuadPoints +
                           iElem * numQuadPoints + q];
-                tempKedQuads[q] = ked0 + ked1;
+                kineticEnergyDensityValues[iElem*numQuadPoints + q] = ked0 + ked1;
               }
           }
         else
-          std::memcpy(tempKedQuads.data(),
+          std::memcpy(kineticEnergyDensityValues.data() + iElem*numQuadPoints,
                       kedHost.data() + iElem * numQuadPoints,
                       numQuadPoints * sizeof(double));
       }
@@ -519,7 +514,7 @@ namespace dftfe
     const unsigned int                             quadratureIndex,
     const std::vector<double> &                    kPointCoords,
     const std::vector<double> &                    kPointWeights,
-    std::map<dealii::CellId, std::vector<double>> &kineticEnergyDensityValues,
+    dftfe::utils::MemoryStorage<NumberType, dftfe::utils::MemorySpace::HOST> &kineticEnergyDensityValues,
     const MPI_Comm &                               mpiCommParent,
     const MPI_Comm &                               interpoolcomm,
     const MPI_Comm &                               interBandGroupComm,
@@ -546,7 +541,7 @@ namespace dftfe
     const unsigned int                             quadratureIndex,
     const std::vector<double> &                    kPointCoords,
     const std::vector<double> &                    kPointWeights,
-    std::map<dealii::CellId, std::vector<double>> &kineticEnergyDensityValues,
+    dftfe::utils::MemoryStorage<NumberType, dftfe::utils::MemorySpace::HOST> &kineticEnergyDensityValues,
     const MPI_Comm &                               mpiCommParent,
     const MPI_Comm &                               interpoolcomm,
     const MPI_Comm &                               interBandGroupComm,

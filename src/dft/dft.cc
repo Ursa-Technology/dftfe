@@ -1872,7 +1872,11 @@ namespace dftfe
       outputWfc();
 
     if (d_dftParamsPtr->printKE)
-      computeAndPrintKE();
+      {
+        dftfe::utils::MemoryStorage<NumberType, dftfe::utils::MemorySpace::HOST> kineticEnergyDensityValues;
+        computeAndPrintKE(kineticEnergyDensityValues);
+      }
+
 
     if (d_dftParamsPtr->writeDensitySolutionFields)
       outputDensity();
@@ -5338,6 +5342,24 @@ namespace dftfe
   dftClass<FEOrder, FEOrderElectro, memorySpace>::getNearestAtomDistance() const
   {
     return d_nearestAtomDistances;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const std::vector<std::vector<double>>&
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getLocalVselfs() const
+  {
+    return d_localVselfs;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const std::map<dealii::CellId, std::vector<unsigned int>> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getbCellNonTrivialAtomIds() const
+  {
+    return d_bCellNonTrivialAtomIds;
   }
 
   template <unsigned int              FEOrder,

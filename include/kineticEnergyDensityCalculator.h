@@ -40,7 +40,7 @@ namespace dftfe
     const unsigned int                             quadratureIndex,
     const std::vector<double> &                    kPointCoords,
     const std::vector<double> &                    kPointWeights,
-    std::map<dealii::CellId, std::vector<double>> &kineticEnergyDensityValues,
+    dftfe::utils::MemoryStorage<NumberType, dftfe::utils::MemorySpace::HOST> &kineticEnergyDensityValues,
     const MPI_Comm &                               mpiCommParent,
     const MPI_Comm &                               interpoolcomm,
     const MPI_Comm &                               interBandGroupComm,

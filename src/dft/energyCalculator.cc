@@ -25,7 +25,7 @@
 
 namespace dftfe
 {
-  namespace internal
+  namespace internalEnergy
   {
     template <typename T>
     double
@@ -535,7 +535,7 @@ namespace dftfe
       return energy;
     }
 
-  } // namespace internal
+  } // namespace internalEnergy
 
   energyCalculator::energyCalculator(const MPI_Comm &     mpi_comm_parent,
                                      const MPI_Comm &     mpi_comm_domain,
@@ -609,7 +609,7 @@ namespace dftfe
       std::cout,
       (dealii::Utilities::MPI::this_mpi_process(mpi_communicator) == 0));
     const double bandEnergy = dealii::Utilities::MPI::sum(
-      internal::localBandEnergy(eigenValues,
+      internalEnergy::localBandEnergy(eigenValues,
                                 kPointWeights,
                                 fermiEnergy,
                                 fermiEnergyUp,
@@ -628,7 +628,7 @@ namespace dftfe
 
 
     electrostaticPotentialTimesRho =
-      internal::computeFieldTimesDensity(basisOperationsPtr,
+      internalEnergy::computeFieldTimesDensity(basisOperationsPtr,
                                          densityQuadratureID,
                                          phiTotRhoInValues,
                                          densityOutValues[0]);
@@ -639,13 +639,13 @@ namespace dftfe
                                            pseudoLocValues,
                                            rhoOutValuesLpsp);
     electrostaticEnergyTotPot =
-      0.5 * internal::computeFieldTimesDensity(basisOperationsPtrElectro,
+      0.5 * internalEnergy::computeFieldTimesDensity(basisOperationsPtrElectro,
                                                densityQuadratureIDElectro,
                                                phiTotRhoOutValues,
                                                densityOutValues[0]);
     if (d_dftParams.isPseudopotential || smearedNuclearCharges)
       electrostaticEnergyTotPot +=
-        internal::computeFieldTimesDensity(basisOperationsPtrElectro,
+        internalEnergy::computeFieldTimesDensity(basisOperationsPtrElectro,
                                            lpspQuadratureIDElectro,
                                            pseudoLocValues,
                                            rhoOutValuesLpsp);
@@ -691,7 +691,7 @@ namespace dftfe
                     electrostaticEnergyTotPot;
 
     const double nuclearElectrostaticEnergy =
-      internal::nuclearElectrostaticEnergyLocal(
+      internalEnergy::nuclearElectrostaticEnergyLocal(
         phiTotRhoOut,
         localVselfs,
         smearedbValues,
@@ -741,7 +741,7 @@ namespace dftfe
     // output
     if (print)
       {
-        internal::printEnergy(bandEnergy,
+        internalEnergy::printEnergy(bandEnergy,
                               totalkineticEnergy,
                               totalexchangeEnergy,
                               totalcorrelationEnergy,
@@ -813,17 +813,17 @@ namespace dftfe
 
 
     electrostaticPotentialTimesRho =
-      internal::computeFieldTimesDensityResidual(basisOperationsPtr,
+      internalEnergy::computeFieldTimesDensityResidual(basisOperationsPtr,
                                                  densityQuadratureID,
                                                  phiTotRhoInValues,
                                                  densityInValues[0],
                                                  densityOutValues[0]);
     electrostaticEnergyTotPot =
-      0.5 * (internal::computeFieldTimesDensity(basisOperationsPtrElectro,
+      0.5 * (internalEnergy::computeFieldTimesDensity(basisOperationsPtrElectro,
                                                 densityQuadratureIDElectro,
                                                 phiTotRhoOutValues,
                                                 densityOutValues[0]) -
-             internal::computeFieldTimesDensity(basisOperationsPtrElectro,
+             internalEnergy::computeFieldTimesDensity(basisOperationsPtrElectro,
                                                 densityQuadratureIDElectro,
                                                 phiTotRhoInValues,
                                                 densityInValues[0]));
@@ -898,7 +898,7 @@ namespace dftfe
     const double potentialTimesRho =
       excCorrPotentialTimesRho + electrostaticPotentialTimesRho;
     const double nuclearElectrostaticEnergy =
-      internal::nuclearElectrostaticEnergyResidualLocal(
+      internalEnergy::nuclearElectrostaticEnergyResidualLocal(
         phiTotRhoIn,
         phiTotRhoOut,
         smearedbValues,

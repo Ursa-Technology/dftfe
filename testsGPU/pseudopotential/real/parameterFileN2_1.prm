@@ -45,6 +45,10 @@ subsection Parallelization
   set NPBAND=2
 end
 
+subsection Post-processing Options
+  set PRINT KINETIC ENERGY = true
+end
+
 subsection SCF parameters
   set MIXING HISTORY   = 70
   set MIXING PARAMETER = 0.5

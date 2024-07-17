@@ -24,6 +24,9 @@ subsection DFT functional parameters
   set PSEUDOPOTENTIAL FILE NAMES LIST = pseudoMg.inp
 end
 
+subsection Post-processing Options
+  set PRINT KINETIC ENERGY = true
+end
 
 subsection Finite element mesh parameters
   set POLYNOMIAL ORDER = 3

@@ -251,19 +251,6 @@ namespace dftfe
           d_mpiCommParent,
           mpi_communicator);
       }
-
-
-    /* function to test the accuracy of the multivector poisson sover */
-    //    functionalTest::testMultiVectorPoissonSolver(d_basisOperationsPtrElectroHost,
-    //                                           d_matrixFreeDataPRefined,
-    //                                           d_BLASWrapperPtrHost,
-    //                  d_constraintsVectorElectro,
-    //                  d_densityInQuadValues[0],
-    //                  d_phiTotDofHandlerIndexElectro,
-    //                  d_densityQuadratureIdElectro,
-    //                  d_phiTotAXQuadratureIdElectro,
-    //                  d_mpiCommParent,
-    //                  mpi_communicator);
   }
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
@@ -1883,6 +1870,14 @@ namespace dftfe
 
     if (d_dftParamsPtr->writeWfcSolutionFields)
       outputWfc();
+
+    if (d_dftParamsPtr->printKE)
+      {
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+          kineticEnergyDensityValues;
+        computeAndPrintKE(kineticEnergyDensityValues);
+      }
+
 
     if (d_dftParamsPtr->writeDensitySolutionFields)
       outputDensity();
@@ -5348,6 +5343,25 @@ namespace dftfe
   dftClass<FEOrder, FEOrderElectro, memorySpace>::getNearestAtomDistance() const
   {
     return d_nearestAtomDistances;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const std::vector<std::vector<double>> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getLocalVselfs() const
+  {
+    return d_localVselfs;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const std::map<dealii::CellId, std::vector<unsigned int>> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getbCellNonTrivialAtomIds()
+    const
+  {
+    return d_bCellNonTrivialAtomIds;
   }
 
   template <unsigned int              FEOrder,

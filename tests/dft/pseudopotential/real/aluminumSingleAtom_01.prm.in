@@ -24,6 +24,9 @@ subsection Boundary conditions
   set CONSTRAINTS PARALLEL CHECK=true
 end
 
+subsection Post-processing Options
+  set PRINT KINETIC ENERGY = true
+end
 
 subsection Finite element mesh parameters
   set POLYNOMIAL ORDER = 3

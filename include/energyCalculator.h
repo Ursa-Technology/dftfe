@@ -26,6 +26,124 @@
 
 namespace dftfe
 {
+  namespace internalEnergy
+  {
+    template <typename T>
+    double
+    computeFieldTimesDensity(
+      const std::shared_ptr<
+        dftfe::basis::
+          FEBasisOperations<T, double, dftfe::utils::MemorySpace::HOST>>
+        &                                                  basisOperationsPtr,
+      const unsigned int                                   quadratureId,
+      const std::map<dealii::CellId, std::vector<double>> &fieldValues,
+      const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+        &densityQuadValues);
+
+    template <typename T>
+    double
+    computeFieldTimesDensityResidual(
+      const std::shared_ptr<
+        dftfe::basis::
+          FEBasisOperations<T, double, dftfe::utils::MemorySpace::HOST>>
+        &                                                  basisOperationsPtr,
+      const unsigned int                                   quadratureId,
+      const std::map<dealii::CellId, std::vector<double>> &fieldValues,
+      const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+        &densityQuadValuesIn,
+      const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+        &densityQuadValuesOut);
+
+    template <typename T>
+    double
+    computeFieldTimesDensity(
+      const std::shared_ptr<
+        dftfe::basis::
+          FEBasisOperations<T, double, dftfe::utils::MemorySpace::HOST>>
+        &                basisOperationsPtr,
+      const unsigned int quadratureId,
+      const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+        &fieldValues,
+      const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+        &densityQuadValues);
+
+    template <typename T>
+    double
+    computeFieldTimesDensityResidual(
+      const std::shared_ptr<
+        dftfe::basis::
+          FEBasisOperations<T, double, dftfe::utils::MemorySpace::HOST>>
+        &                basisOperationsPtr,
+      const unsigned int quadratureId,
+      const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+        &fieldValues,
+      const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+        &densityQuadValuesIn,
+      const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+        &densityQuadValuesOut);
+
+    void
+    printEnergy(const double                      bandEnergy,
+                const double                      totalkineticEnergy,
+                const double                      totalexchangeEnergy,
+                const double                      totalcorrelationEnergy,
+                const double                      totalElectrostaticEnergy,
+                const double                      dispersionEnergy,
+                const double                      totalEnergy,
+                const unsigned int                numberAtoms,
+                const dealii::ConditionalOStream &pcout,
+                const bool                        reproducibleOutput,
+                const bool                        isPseudo,
+                const unsigned int                verbosity,
+                const dftParameters &             dftParams);
+
+    double
+    localBandEnergy(const std::vector<std::vector<double>> &eigenValues,
+                    const std::vector<double> &             kPointWeights,
+                    const double                            fermiEnergy,
+                    const double                            fermiEnergyUp,
+                    const double                            fermiEnergyDown,
+                    const double                            TVal,
+                    const unsigned int                      spinPolarized,
+                    const dealii::ConditionalOStream &      scout,
+                    const MPI_Comm &                        interpoolcomm,
+                    const unsigned int                      lowerBoundKindex,
+                    const unsigned int                      verbosity,
+                    const dftParameters &                   dftParams);
+
+    double
+    nuclearElectrostaticEnergyLocal(
+      const distributedCPUVec<double> &                    phiTotRhoOut,
+      const std::vector<std::vector<double>> &             localVselfs,
+      const std::map<dealii::CellId, std::vector<double>> &smearedbValues,
+      const std::map<dealii::CellId, std::vector<unsigned int>>
+        &                          smearedbNonTrivialAtomIds,
+      const dealii::DoFHandler<3> &dofHandlerElectrostatic,
+      const dealii::Quadrature<3> &quadratureElectrostatic,
+      const dealii::Quadrature<3> &quadratureSmearedCharge,
+      const std::map<dealii::types::global_dof_index, double>
+        &        atomElectrostaticNodeIdToChargeMap,
+      const bool smearedNuclearCharges = false);
+
+    double
+    nuclearElectrostaticEnergyResidualLocal(
+      const distributedCPUVec<double> &                    phiTotRhoIn,
+      const distributedCPUVec<double> &                    phiTotRhoOut,
+      const std::map<dealii::CellId, std::vector<double>> &smearedbValues,
+      const std::map<dealii::CellId, std::vector<unsigned int>>
+        &                          smearedbNonTrivialAtomIds,
+      const dealii::DoFHandler<3> &dofHandlerElectrostatic,
+      const dealii::Quadrature<3> &quadratureSmearedCharge,
+      const std::map<dealii::types::global_dof_index, double>
+        &        atomElectrostaticNodeIdToChargeMap,
+      const bool smearedNuclearCharges = false);
+
+    double
+    computeRepulsiveEnergy(
+      const std::vector<std::vector<double>> &atomLocationsAndCharge,
+      const bool                              isPseudopotential);
+  } // namespace internalEnergy
+
   /**
    * @brief Calculates the ksdft problem total energy and its components
    *

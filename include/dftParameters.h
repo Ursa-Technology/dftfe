@@ -106,6 +106,7 @@ namespace dftfe
     bool reproducible_output;
 
     bool writeWfcSolutionFields;
+    bool printKE;
 
     bool writeDensitySolutionFields;
 

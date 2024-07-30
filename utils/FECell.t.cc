@@ -153,6 +153,20 @@ namespace dftfe
                               iPoint * numDofsPerElement] =
                 d_feCell.shape_value(iNode, pointParamDealii);
             }
+
+          double shapeValForNode = 0.0;
+          for (unsigned int iNode = 0; iNode < numDofsPerElement; iNode++)
+            {
+              shapeValForNode += realPart(
+                complexConj(shapeFuncValues[cellShapeFuncStartIndex + iNode +
+                                            iPoint * numDofsPerElement]) *
+                shapeFuncValues[cellShapeFuncStartIndex + iNode +
+                                iPoint * numDofsPerElement]);
+            }
+          if (std::abs(shapeValForNode) < 1e-3)
+            {
+              std::cout << " All shape func values are zero for a point \n";
+            }
         }
     }
   } // end of namespace utils

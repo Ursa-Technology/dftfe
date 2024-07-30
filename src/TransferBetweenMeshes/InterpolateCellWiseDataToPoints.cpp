@@ -108,7 +108,7 @@ namespace dftfe
                      d_mapCellLocalToProcLocal,
                      d_localRange,
                      d_ghostGlobalIds,
-                     1e-10); // TODO this is hardcoded
+                     1e-7); // TODO this is hardcoded
 
     MPI_Barrier(d_mpiComm);
     double endMapPoints = MPI_Wtime();
@@ -233,6 +233,7 @@ namespace dftfe
     d_mapPointToProcLocalMemSpace.copyFrom(cellLocalToProcLocal);
 
 
+    checkIfAllPointsAreFound(targetPts);
 
     MPI_Barrier(d_mpiComm);
     double endMPIPattern = MPI_Wtime();
@@ -269,6 +270,86 @@ namespace dftfe
       }
   }
 
+
+  template <typename T, dftfe::utils::MemorySpace memorySpace>
+  void
+  InterpolateCellWiseDataToPoints<T, memorySpace>::checkIfAllPointsAreFound(
+    const std::vector<std::vector<double>> &targetPts)
+  {
+    dftfe::utils::MemoryStorage<T, dftfe::utils::MemorySpace::HOST> outputData;
+
+    d_mpiCommP2PPtr = std::make_shared<
+      dftfe::utils::mpi::MPICommunicatorP2P<T,
+                                            dftfe::utils::MemorySpace::HOST>>(
+      d_mpiPatternP2PPtr, 1);
+    d_mpiCommP2PPtr->setCommunicationPrecision(
+      dftfe::utils::mpi::communicationPrecision::full);
+    outputData.resize(d_numPointsLocal);
+
+
+    outputData.setValue(0.0);
+    for (size_type iElemSrc = 0; iElemSrc < d_numCells; iElemSrc++)
+      {
+        unsigned int numberOfPointsInSrcCell = d_numPointsInCell[iElemSrc];
+        for (unsigned int iPoint = 0; iPoint < numberOfPointsInSrcCell;
+             iPoint++)
+          {
+            outputData[d_mapCellLocalToProcLocal[iElemSrc][iPoint]] = 1.0;
+          }
+      }
+
+
+    d_mpiCommP2PPtr->accumulateInsertLocallyOwned(outputData);
+
+    unsigned int pointsFound = 1;
+
+    for (unsigned int iPoint = 0; iPoint < d_numLocalPtsSze; iPoint++)
+      {
+        if (std::abs(outputData.data()[iPoint] - 1.0) > 1e-3)
+          {
+            std::cout << "rank = "
+                      << dealii::Utilities::MPI::this_mpi_process(d_mpiComm)
+                      << " out Val = " << outputData.data()[iPoint]
+                      << " x :" << targetPts[iPoint][0]
+                      << " y : " << targetPts[iPoint][1]
+                      << " z : " << targetPts[iPoint][2] << "\n";
+          }
+        if (std::abs(outputData.data()[iPoint] - 1.0) > 1e-3)
+          {
+            pointsFound = 0;
+            if (d_verbosity >= 5)
+              {
+                std::cout << "rank = "
+                          << dealii::Utilities::MPI::this_mpi_process(d_mpiComm)
+                          << " out Val = " << outputData.data()[iPoint]
+                          << " x :" << targetPts[iPoint][0]
+                          << " y : " << targetPts[iPoint][1]
+                          << " z : " << targetPts[iPoint][2] << "\n";
+              }
+          }
+      }
+
+    MPI_Allreduce(MPI_IN_PLACE,
+                  &pointsFound,
+                  1,
+                  dftfe::dataTypes::mpi_type_id(&pointsFound),
+                  MPI_MIN,
+                  d_mpiComm);
+
+    if (pointsFound == 1)
+      {
+        if ((dealii::Utilities::MPI::this_mpi_process(d_mpiComm) == 0))
+          {
+            std::cout << " All points found successfully \n";
+          }
+      }
+    else
+      {
+        AssertThrow(false,
+                    dealii::ExcMessage(
+                      " Some points were not found while interpolating "));
+      }
+  }
   template <typename T, dftfe::utils::MemorySpace memorySpace>
   void
   InterpolateCellWiseDataToPoints<T, memorySpace>::

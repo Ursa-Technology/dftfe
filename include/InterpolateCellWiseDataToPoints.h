@@ -149,6 +149,10 @@ namespace dftfe
       bool resizeData = false);
 
   private:
+    void
+    checkIfAllPointsAreFound(const std::vector<std::vector<double>> &targetPts);
+
+
     dftfe::utils::MapPointsToCells<3, 8>
       d_mapPoints; /// TODO check if M=8 is optimal
                    //    std::vector<T> d_shapeFuncValues;

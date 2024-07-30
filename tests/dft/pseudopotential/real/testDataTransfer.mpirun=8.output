@@ -29,10 +29,12 @@ Reading initial guess for electron-density.....
 
 Pseudopotential initalization....
  maxNumPoints = 2752 maxNumCells = 36
+ All points found successfully 
  Total number of points provided as input = 22016
  Total number of points found from input = 22016
  Total number of points in all procs = 22016
  maxNumPoints = 7776 maxNumCells = 43
+ All points found successfully 
  Total number of points provided as input = 62208
  Total number of points found from input = 62208
  Total number of points in all procs = 62208

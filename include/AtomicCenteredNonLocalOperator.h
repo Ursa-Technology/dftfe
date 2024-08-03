@@ -437,23 +437,8 @@ namespace dftfe
         double,
         dftfe::utils::MemorySpace::HOST>> basisOperationsPtr,
       const unsigned int                  quadratureIndex);
-    /**
-     * @brief Copies the data from distributed Vector to Padded Memory storage object.
-     * @param[in] sphericalFunctionKetTimesVectorParFlattened Distributed Vector
-     * @param[out] paddedVector Padded Vector of size
-     * noAtomsInProc*maxSingleAtomContribution*Nwfc
-     */
-    void
-    copyDistributedVectorToPaddedMemoryStorageVector(
-      const dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
-        &sphericalFunctionKetTimesVectorParFlattened,
-      dftfe::utils::MemoryStorage<ValueType, memorySpace> &paddedVector);
 
-    void
-    copyPaddedMemoryStorageVectorToDistributeVector(
-      const dftfe::utils::MemoryStorage<ValueType, memorySpace> &paddedVector,
-      dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
-        &sphericalFunctionKetTimesVectorParFlattened);
+
 
     std::map<
       unsigned int,
@@ -465,6 +450,28 @@ namespace dftfe
                               d_flattenedNonLocalCellDofIndexToProcessDofIndexMap;
     std::vector<unsigned int> d_nonlocalElemIdToCellIdVector;
 #if defined(DFTFE_WITH_DEVICE)
+    /**
+     * @brief Copies the data from distributed Vector to Padded Memory storage object.
+     * @param[in] sphericalFunctionKetTimesVectorParFlattened Distributed Vector
+     * @param[out] paddedVector Padded Vector of size
+     * noAtomsInProc*maxSingleAtomContribution*Nwfc
+     */
+    void
+    copyDistributedVectorToPaddedMemoryStorageVectorDevice(
+      const dftfe::linearAlgebra::MultiVector<ValueType,
+                                              dftfe::utils::MemorySpace::DEVICE>
+        &sphericalFunctionKetTimesVectorParFlattened,
+      dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::DEVICE>
+        &paddedVector);
+
+    void
+    copyPaddedMemoryStorageVectorToDistributeVectorDevice(
+      const dftfe::utils::MemoryStorage<ValueType,
+                                        dftfe::utils::MemorySpace::DEVICEe>
+        &paddedVector,
+      dftfe::linearAlgebra::MultiVector<ValueType,
+                                        dftfe::utils::MemorySpace::DEVICE>
+        &sphericalFunctionKetTimesVectorParFlattened);
     dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::DEVICE>
                 d_sphericalFnTimesWavefunctionMatrix;
     ValueType **hostPointerCDagger, **hostPointerCDaggeOutTemp,

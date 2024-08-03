@@ -63,6 +63,8 @@ namespace dftfe
 
     double netCharge;
 
+    /** parameters for functional tests **/
+    std::string functionalTestName;
     /** parameters for LRD preconditioner **/
 
     double      startingNormLRDLargeDamping;
@@ -104,6 +106,7 @@ namespace dftfe
     bool reproducible_output;
 
     bool writeWfcSolutionFields;
+    bool printKE;
 
     bool writeDensitySolutionFields;
 

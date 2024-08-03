@@ -99,10 +99,14 @@ namespace dftfe
     //
     generateMesh(d_parallelTriangulationUnmoved,
                  d_serialTriangulationUnmoved,
+                 d_parallelTriaCurrentRefinement,
+                 d_serialTriaCurrentRefinement,
                  generateSerialTria);
 
     generateMesh(d_parallelTriangulationMoved,
                  d_serialTriangulationUnmoved,
+                 d_parallelTriaCurrentRefinement,
+                 d_serialTriaCurrentRefinement,
                  false);
   }
 

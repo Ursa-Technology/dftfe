@@ -50,6 +50,7 @@ SET(TARGET_SRC
   ./src/dft/dft.cc
   ./src/dft/vselfBinsManager.cc
   ./src/dft/energyCalculator.cc
+  ./src/dft/energyDensity.cc
   ./src/dft/densityCalculator.cc
   ./src/dft/computeAuxProjectedDensityMatrixFromPSI.cc
   ./src/dft/densityFirstOrderResponseCalculator.cc
@@ -70,6 +71,7 @@ SET(TARGET_SRC
   ./src/excManager/SlaterBasisSet.cpp
   ./src/excManager/SphericalHarmonicFunc.cpp
   ./src/poisson/poissonSolverProblem.cc
+  ./src/poisson/MultiVectorPoissonLinearSolverProblem.cpp
   ./src/helmholtz/kerkerSolverProblem.cc
   ./src/dftOperator/KohnShamHamiltonianOperator.cc
   ./src/dftOperator/veffPrimeForLRDM.cc
@@ -100,6 +102,8 @@ SET(TARGET_SRC
   ./src/linAlg/mixingClass.cc
   ./src/solvers/dealiiLinearSolver.cc
   ./src/solvers/dealiiLinearSolverProblem.cc
+  ./src/solvers/MultiVectorCGSolver.cpp
+  ./src/solvers/MultiVectorMinResSolver.cpp
   ./src/md/molecularDynamicsClass.cc
   ./src/neb/nudgedElasticBandClass.cc
   ./src/geoOpt/geometryOptimizationClass.cc
@@ -141,6 +145,7 @@ SET(TARGET_SRC
   ./src/dft/moveAtoms.cc
   ./src/dft/moveMeshToAtoms.cc
   ./src/dft/kerker.cc
+  ./src/dft/kineticEnergyDensityCalculator.cc
   ./src/dft/pRefinedDoFHandler.cc
   ./src/dft/psiInitialGuess.cc
   ./src/dft/publicMethods.cc
@@ -183,6 +188,12 @@ SET(TARGET_SRC
   ./src/atom/AtomCenteredSphericalFunctionCoreDensitySpline.cc
   ./src/atom/AtomCenteredSphericalFunctionLocalPotentialSpline.cc
   ./src/atom/AtomCenteredSphericalFunctionProjectorSpline.cc
+  ./src/TransferBetweenMeshes/InterpolateFromCellToLocalPoints.cpp
+  ./src/TransferBetweenMeshes/TransferBetweenMeshesIncompatiblePartitioning.cpp
+  ./src/TransferBetweenMeshes/InterpolateCellWiseDataToPoints.cpp
+  ./utils/NodalData.cpp
+  ./utils/functionalTests/testMultiVectorCGForPoisson.cpp
+  ./utils/functionalTests/testDataTransfer.cpp
   ./src/pseudo/oncv/oncvClass.cc)
 
 IF ("${GPU_LANG}" STREQUAL "cuda")
@@ -194,6 +205,7 @@ SET(DEVICE_SRC
   ./src/dft/densityCalculatorDeviceKernels.cc
   ./src/dft/densityFirstOrderResponseCalculatorDeviceKernels.cc
   ./src/dft/solveVselfInBinsDevice.cc
+  ./src/dft/kineticEnergyDensityCalculatorDeviceKernels.cc
   ./src/solvers/eigenSolvers/chebyshevOrthogonalizedSubspaceIterationSolverDevice.cc
   ./src/linAlg/linearAlgebraOperationsDevice.cc
   ./src/linAlg/pseudoGSDevice.cc
@@ -222,6 +234,7 @@ SET(DEVICE_SRC
   ./src/dft/densityCalculatorDeviceKernels.cc
   ./src/dft/densityFirstOrderResponseCalculatorDeviceKernels.cc
   ./src/dft/solveVselfInBinsDevice.cc
+  ./src/dft/kineticEnergyDensityCalculatorDeviceKernels.cc
   ./src/solvers/eigenSolvers/chebyshevOrthogonalizedSubspaceIterationSolverDevice.cc
   ./src/linAlg/linearAlgebraOperationsDevice.cc
   ./src/linAlg/pseudoGSDevice.cc
@@ -395,7 +408,6 @@ ENDIF()
 
 
 #DEAL_II_INITIALIZE_CACHED_VARIABLES()
-
 
 TARGET_INCLUDE_DIRECTORIES(${TARGETLIB} PUBLIC ${DEAL_II_INCLUDE_RELDIR})
 IF("${CMAKE_BUILD_TYPE}" STREQUAL "Release")

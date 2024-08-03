@@ -32,7 +32,8 @@ namespace dftfe
   const double C_haToeV              = 27.211386245988;
   const double C_bohrToAng           = 0.529177210903;
   const double C_pi                  = 3.14159265359;
-  const double C_AngTobohr           = 1.0 / 0.529177210903;
+  const double C_AngToBohr           = 1.0 / 0.529177210903;
+
   /// 1d quadrature rule order
   template <unsigned int FEOrder>
   constexpr unsigned int

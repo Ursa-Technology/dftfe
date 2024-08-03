@@ -107,6 +107,12 @@ namespace dftfe
           R"([Standard] Writes DFT ground state wavefunction solution fields (FEM mesh nodal values) to wfcOutput.vtu file for visualization purposes. The wavefunction solution fields in wfcOutput.vtu are named wfc\_s\_k\_i in case of spin-polarized calculations and wfc\_k\_i otherwise, where s denotes the spin index (0 or 1), k denotes the k point index starting from 0, and i denotes the Kohn-Sham wavefunction index starting from 0. In the case of geometry optimization, the wavefunctions corresponding to the last ground-state solve are written.  Default: false.)");
 
         prm.declare_entry(
+          "PRINT KINETIC ENERGY",
+          "false",
+          dealii::Patterns::Bool(),
+          R"([Standard] Prints the Kinetic energy of the electrons.  Default: false.)");
+
+        prm.declare_entry(
           "WRITE DENSITY FE MESH",
           "false",
           dealii::Patterns::Bool(),
@@ -157,6 +163,15 @@ namespace dftfe
       }
       prm.leave_subsection();
 
+      prm.enter_subsection("FunctionalTest");
+      {
+        prm.declare_entry(
+          "TEST NAME",
+          "",
+          dealii::Patterns::Anything(),
+          "[Standard] Name of the Functional test that needs to be run.");
+      }
+      prm.leave_subsection();
       prm.enter_subsection("Parallelization");
       {
         prm.declare_entry(
@@ -632,8 +647,8 @@ namespace dftfe
           "EXCHANGE CORRELATION TYPE",
           "GGA-PBE",
           dealii::Patterns::Selection(
-            "LDA-PZ|LDA-PW|LDA-VWN|GGA-PBE|GGA-RPBE|MLXC-NNLDA|MLXC-NNGGA|MLXC-NNLLMGGA"),
-          R"([Standard] Parameter specifying the type of exchange-correlation to be used: LDA-PZ (Perdew Zunger Ceperley Alder correlation with Slater Exchange[PRB. 23, 5048 (1981)]), LDA-PW (Perdew-Wang 92 functional with Slater Exchange [PRB. 45, 13244 (1992)]), LDA-VWN (Vosko, Wilk \& Nusair with Slater Exchange[Can. J. Phys. 58, 1200 (1980)]), GGA-PBE (Perdew-Burke-Ernzerhof functional [PRL. 77, 3865 (1996)]), GGA-RPBE (RPBE: B. Hammer, L. B. Hansen, and J. K. Nørskov, Phys. Rev. B 59, 7413 (1999)), MLXC-NNLDA (LDA-PW + NN-LDA), MLXC-NNGGA (GGA-PBE + NN-GGA), MLXC-NNLLMGGA (GGA-PBE + NN Laplacian level MGGA). Caution: MLXC options are experimental.)");
+            "LDA-PZ|LDA-PW|LDA-VWN|GGA-PBE|GGA-RPBE|GGA-LBxPBEc|MLXC-NNLDA|MLXC-NNGGA|MLXC-NNLLMGGA"),
+          R"([Standard] Parameter specifying the type of exchange-correlation to be used: LDA-PZ (Perdew Zunger Ceperley Alder correlation with Slater Exchange[PRB. 23, 5048 (1981)]), LDA-PW (Perdew-Wang 92 functional with Slater Exchange [PRB. 45, 13244 (1992)]), LDA-VWN (Vosko, Wilk \& Nusair with Slater Exchange[Can. J. Phys. 58, 1200 (1980)]), GGA-PBE (Perdew-Burke-Ernzerhof functional [PRL. 77, 3865 (1996)]), GGA-RPBE (RPBE: B. Hammer, L. B. Hansen, and J. K. Nørskov, Phys. Rev. B 59, 7413 (1999)), GGA-LBxPBEc van Leeuwen & Baerends exchange [Phys. Rev. A 49, 2421 (1994)] with  PBE correlation [Phys. Rev. Lett. 77, 3865 (1996)], MLXC-NNLDA (LDA-PW + NN-LDA), MLXC-NNGGA (GGA-PBE + NN-GGA), MLXC-NNLLMGGA (GGA-PBE + NN Laplacian level MGGA). Caution: MLXC options are experimental.)");
 
         prm.declare_entry(
           "MODEL XC INPUT FILE",
@@ -1196,6 +1211,7 @@ namespace dftfe
     npool                                      = 1;
     maxLinearSolverIterationsHelmholtz         = 1;
 
+    functionalTestName                = "";
     radiusAtomBall                    = 0.0;
     mixingParameter                   = 0.5;
     spinMixingEnhancementFactor       = 4.0;
@@ -1264,6 +1280,7 @@ namespace dftfe
     startingWFCType                                = "";
     restrictToOnePass                              = false;
     writeWfcSolutionFields                         = false;
+    printKE                                        = false;
     writeDensitySolutionFields                     = false;
     writeDensityQuadData                           = false;
     wfcBlockSize                                   = 400;
@@ -1410,6 +1427,7 @@ namespace dftfe
     prm.enter_subsection("Post-processing Options");
     {
       writeWfcSolutionFields     = prm.get_bool("WRITE WFC FE MESH");
+      printKE                    = prm.get_bool("PRINT KINETIC ENERGY");
       writeDensitySolutionFields = prm.get_bool("WRITE DENSITY FE MESH");
       writeDensityQuadData       = prm.get_bool("WRITE DENSITY QUAD DATA");
       writeDosFile               = prm.get_bool("WRITE DENSITY OF STATES");
@@ -1422,6 +1440,11 @@ namespace dftfe
     }
     prm.leave_subsection();
 
+    prm.enter_subsection("FunctionalTest");
+    {
+      functionalTestName = prm.get("TEST NAME");
+    }
+    prm.leave_subsection();
     prm.enter_subsection("Parallelization");
     {
       npool        = prm.get_integer("NPKPT");

@@ -40,6 +40,7 @@
 #include <MemoryTransfer.h>
 #include <QuadDataCompositeWrite.h>
 #include <MPIWriteOnFile.h>
+#include <functionalTest.h>
 #include <computeAuxProjectedDensityMatrixFromPSI.h>
 
 #include <algorithm>
@@ -210,6 +211,47 @@ namespace dftfe
         (std::max(d_dftParamsPtr->pspCutoffImageCharges, d_pspCutOffTrunc));
   }
 
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  void
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::runFunctionalTest()
+  {
+    if (d_dftParamsPtr->functionalTestName == "TestDataTransfer")
+      {
+        functionalTest::testTransferFromParentToChildIncompatiblePartitioning(
+          d_BLASWrapperPtrHost,
+          d_mpiCommParent,
+          mpi_communicator,
+          interpoolcomm,
+          interBandGroupComm,
+          d_dftParamsPtr->finiteElementPolynomialOrder,
+          *d_dftParamsPtr,
+          atomLocations,
+          d_imagePositionsAutoMesh,
+          d_imageIds,
+          d_nearestAtomDistances,
+          d_domainBoundingVectors,
+          false,  // bool generateSerialTria,
+          false); // bool generateElectrostaticsTria)
+      }
+    else if (d_dftParamsPtr->functionalTestName ==
+             "TestMultiVectorPoissonSolver")
+      {
+        functionalTest::testMultiVectorPoissonSolver(
+          d_basisOperationsPtrElectroHost,
+          d_matrixFreeDataPRefined,
+          d_BLASWrapperPtrHost,
+          d_constraintsVectorElectro,
+          d_densityInQuadValues[0],
+          d_phiTotDofHandlerIndexElectro,
+          d_densityQuadratureIdElectro,
+          d_phiTotAXQuadratureIdElectro,
+          d_dftParamsPtr->verbosity,
+          d_mpiCommParent,
+          mpi_communicator);
+      }
+  }
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
@@ -1805,7 +1847,11 @@ namespace dftfe
         mkdir(d_dftParamsPtr->restartFolder.c_str(), ACCESSPERMS);
       }
 
-    if (d_dftParamsPtr->solverMode == "GS")
+    if (d_dftParamsPtr->solverMode == "FUNCTIONAL_TEST")
+      {
+        runFunctionalTest();
+      }
+    else if (d_dftParamsPtr->solverMode == "GS")
       {
         solve(true, true, d_isRestartGroundStateCalcFromChk);
         if (d_dftParamsPtr->writeBandsFile)
@@ -1824,6 +1870,14 @@ namespace dftfe
 
     if (d_dftParamsPtr->writeWfcSolutionFields)
       outputWfc();
+
+    if (d_dftParamsPtr->printKE)
+      {
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+          kineticEnergyDensityValues;
+        computeAndPrintKE(kineticEnergyDensityValues);
+      }
+
 
     if (d_dftParamsPtr->writeDensitySolutionFields)
       outputDensity();
@@ -2016,6 +2070,7 @@ namespace dftfe
     if (d_kohnShamDFTOperatorsInitialized)
       {
         delete d_kohnShamDFTOperatorPtr;
+        d_kohnShamDFTOperatorsInitialized = false;
       }
   }
 
@@ -4915,6 +4970,399 @@ namespace dftfe
       }
   }
 
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const dftfe::utils::MemoryStorage<dataTypes::number,
+                                    dftfe::utils::MemorySpace::HOST> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getEigenVectorsHost() const
+  {
+    return d_eigenVectorsFlattenedHost;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getEigenVectors() const
+  {
+    if constexpr (memorySpace == dftfe::utils::MemorySpace::HOST)
+      return d_eigenVectorsFlattenedHost;
+#ifdef DFTFE_WITH_DEVICE
+    if constexpr (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      return d_eigenVectorsFlattenedDevice;
+#endif
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  double
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getFermiEnergy() const
+  {
+    return fermiEnergy;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  double
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getNumElectrons() const
+  {
+    return numElectrons;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const std::vector<std::vector<double>> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getEigenValues() const
+  {
+    return eigenValues;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  elpaScalaManager *
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getElpaScalaManager() const
+  {
+    return d_elpaScala;
+  }
+
+#ifdef DFTFE_WITH_DEVICE
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  chebyshevOrthogonalizedSubspaceIterationSolverDevice *
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::
+    getSubspaceIterationSolverDevice()
+  {
+    return &d_subspaceIterationSolverDevice;
+  }
+
+#endif
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  chebyshevOrthogonalizedSubspaceIterationSolver *
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::
+    getSubspaceIterationSolverHost()
+  {
+    return &d_subspaceIterationSolver;
+  }
+
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  KohnShamHamiltonianOperator<memorySpace> *
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getOperatorClass()
+  {
+    return d_kohnShamDFTOperatorPtr;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  unsigned int
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getDensityDofHandlerIndex()
+  {
+    return d_densityDofHandlerIndex;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  unsigned int
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getDensityQuadratureId()
+  {
+    return d_densityQuadratureId;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const std::vector<double> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getKPointWeights() const
+  {
+    return d_kPointWeights;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  unsigned int
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getNumEigenValues() const
+  {
+    return d_numEigenValues;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  triangulationManager *
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getTriangulationManager()
+  {
+    return &d_mesh;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  dealii::AffineConstraints<double> *
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getDensityConstraint()
+  {
+    return &constraintsNone;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const dealii::MatrixFree<3, double> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getMatrixFreeDataElectro()
+    const
+  {
+    return d_matrixFreeDataPRefined;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  unsigned int
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getElectroDofHandlerIndex()
+    const
+  {
+    return d_phiTotDofHandlerIndexElectro;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  unsigned int
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getElectroQuadratureRhsId()
+    const
+  {
+    return d_densityQuadratureIdElectro;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  unsigned int
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getElectroQuadratureAxId()
+    const
+  {
+    return d_phiTotAXQuadratureIdElectro;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  std::shared_ptr<
+    dftfe::basis::FEBasisOperations<dataTypes::number,
+                                    double,
+                                    dftfe::utils::MemorySpace::HOST>>
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getBasisOperationsHost()
+  {
+    return d_basisOperationsPtrHost;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+
+  std::shared_ptr<
+    dftfe::basis::FEBasisOperations<dataTypes::number, double, memorySpace>>
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getBasisOperationsMemSpace()
+  {
+    if constexpr (memorySpace == dftfe::utils::MemorySpace::HOST)
+      return d_basisOperationsPtrHost;
+#ifdef DFTFE_WITH_DEVICE
+    if constexpr (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      return d_basisOperationsPtrDevice;
+#endif
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  std::shared_ptr<
+    dftfe::basis::
+      FEBasisOperations<double, double, dftfe::utils::MemorySpace::HOST>>
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::
+    getBasisOperationsElectroHost()
+  {
+    return d_basisOperationsPtrElectroHost;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  std::shared_ptr<dftfe::basis::FEBasisOperations<double, double, memorySpace>>
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::
+    getBasisOperationsElectroMemSpace()
+  {
+    if constexpr (memorySpace == dftfe::utils::MemorySpace::HOST)
+      return d_basisOperationsPtrElectroHost;
+#ifdef DFTFE_WITH_DEVICE
+    if constexpr (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      return d_basisOperationsPtrElectroDevice;
+#endif
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getBLASWrapperMemSpace()
+  {
+    if constexpr (memorySpace == dftfe::utils::MemorySpace::HOST)
+      return d_BLASWrapperPtrHost;
+#ifdef DFTFE_WITH_DEVICE
+    if constexpr (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+      return d_BLASWrapperPtr;
+#endif
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  std::shared_ptr<
+    dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getBLASWrapperHost()
+  {
+    return d_BLASWrapperPtrHost;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  std::vector<
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getDensityInValues()
+  {
+    return d_densityInQuadValues;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  std::vector<
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getDensityOutValues()
+  {
+    return d_densityOutQuadValues;
+  }
+
+  /// map of atom node number and atomic weight
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  std::map<dealii::types::global_dof_index, double> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getAtomNodeToChargeMap()
+  {
+    return d_atomNodeIdToChargeMap;
+  }
+
+  /// non-intersecting smeared charges of all atoms at quad points
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  std::map<dealii::CellId, std::vector<double>> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getBQuadValuesAllAtoms()
+  {
+    return d_bQuadValuesAllAtoms;
+  }
+
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  unsigned int
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::
+    getSmearedChargeQuadratureIdElectro()
+  {
+    return d_smearedChargeQuadratureIdElectro;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const dealii::AffineConstraints<double> *
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getConstraintsVectorElectro()
+  {
+    return d_constraintsVectorElectro[d_phiTotDofHandlerIndexElectro];
+  }
+
+
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const MPI_Comm &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getMPIDomain() const
+  {
+    return mpi_communicator;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const MPI_Comm &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getMPIParent() const
+  {
+    return d_mpiCommParent;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const MPI_Comm &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getMPIInterPool() const
+  {
+    return interpoolcomm;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const MPI_Comm &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getMPIInterBand() const
+  {
+    return interBandGroupComm;
+  }
+
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const std::vector<double> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getNearestAtomDistance() const
+  {
+    return d_nearestAtomDistances;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const std::vector<std::vector<double>> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getLocalVselfs() const
+  {
+    return d_localVselfs;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  const std::map<dealii::CellId, std::vector<unsigned int>> &
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getbCellNonTrivialAtomIds()
+    const
+  {
+    return d_bCellNonTrivialAtomIds;
+  }
 
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,

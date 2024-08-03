@@ -169,7 +169,7 @@ Assuming the above p4est dependency is installed, we now briefly discuss the ste
 
 \item Obtain the latest release version (9.5.2) of deal.II
 
-\item In addition to requiring C, C++ and Fortran compilers, MPI library, CMake, and Kokkos. deal.II additionally requires BOOST library. If not found externally, deal.II will resort to the bundled BOOST. Based on our experience, we recommend to use the deal.II's bundled boost (enforced by unsetting/unloading external BOOST library environment paths). Please do not install deal.II with GPU support as that is not needed by DFT-FE. Further, when installing deal.II for (DFT-FE with GPU support), one must use \verb|-DDEAL_II_ALLOW_PLATFORM_INTROSPECTION=OFF| to avoid compilation failure of DFT-FE.
+\item In addition to requiring C, C++ and Fortran compilers, deal.II requires MPI library, CMake, BOOST and Kokkos. During installation, deal.II has to be compiled with an external BOOST with version >= 1.59. Compiling deal.II with the bundled BOOST will result in compilation failure of DFT-FE. To compile deal.II with external boost one must set \verb|-DDEAL_II_FORCE_BUNDLED_BOOST=OFF| and load appropriate BOOST library or set the path to the BOOST library manually with \verb|-DBOOST_DIR=${BOOST_DIR}|. If BOOST is not installed a priori in the machine, please refer to BOOST \url{https://www.boost.org} for installation instructions. Please do not install deal.II with GPU support as that is not needed by DFT-FE. Further, when installing deal.II for (DFT-FE with GPU support), one must use \verb|-DDEAL_II_ALLOW_PLATFORM_INTROSPECTION=OFF| to avoid compilation failure of DFT-FE.
 
 \item
 \begin{verbatim}
@@ -201,7 +201,7 @@ $ make install
 -DDEAL_II_WITH_TBB=OFF
 -DDEAL_II_WITH_TASKFLOW=OFF
 -DDEAL_II_COMPONENT_EXAMPLES=OFF
--DDEAL_II_FORCE_BUNDLED_BOOST=ON
+-DDEAL_II_FORCE_BUNDLED_BOOST=OFF
 -DDEAL_II_ALLOW_PLATFORM_INTROSPECTION=OFF
 \end{verbatim}
 
@@ -228,7 +228,7 @@ $ cmake
 -DDEAL_II_WITH_64BIT_INDICES=ON
 -DDEAL_II_WITH_TBB=OFF
 -DDEAL_II_WITH_TASKFLOW=OFF 
--DDEAL_II_FORCE_BUNDLED_BOOST=ON
+-DDEAL_II_FORCE_BUNDLED_BOOST=OFF
 -DDEAL_II_ALLOW_PLATFORM_INTROSPECTION=OFF
 -DDEAL_II_WITH_P4EST=ON 
 -DP4EST_DIR=p4est_install_path 

@@ -19,6 +19,7 @@
 
 #include <constants.h>
 #include <poissonSolverProblem.h>
+#include <vectorUtilities.h>
 
 namespace dftfe
 {
@@ -164,7 +165,6 @@ namespace dftfe
     dealii::DoFHandler<3>::active_cell_iterator subCellPtr;
     rhs.reinit(*d_xPtr);
     rhs = 0;
-
     if (d_isStoreSmearedChargeRhs)
       {
         d_rhsSmearedCharge.reinit(*d_xPtr);
@@ -194,6 +194,9 @@ namespace dftfe
       d_matrixFreeVectorComponent,
       d_matrixFreeQuadratureComponentAX);
 
+    const dealii::Quadrature<3> &quadratureRuleAxTemp =
+      d_matrixFreeDataPtr->get_quadrature(d_matrixFreeQuadratureComponentAX);
+
     int isPerformStaticCondensation = (tempvec.linfty_norm() > 1e-10) ? 1 : 0;
 
     MPI_Bcast(&isPerformStaticCondensation, 1, MPI_INT, 0, mpi_communicator);
@@ -217,6 +220,7 @@ namespace dftfe
             fe_eval.distribute_local_to_global(rhs);
           }
       }
+
 
     // rhs contribution from electronic charge
     if (d_rhoValuesPtr)

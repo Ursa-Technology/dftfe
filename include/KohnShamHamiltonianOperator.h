@@ -96,6 +96,18 @@ namespace dftfe
         &                phiValues,
       const unsigned int spinIndex = 0);
 
+    /**
+     * @brief Sets the V-eff potential
+     * @param vKS_quadValues the input V-KS values stored at the quadrature points
+     * @param spinIndex spin index
+     */
+    void
+    setVEff(
+      const std::vector<
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+        &                vKS_quadValues,
+      const unsigned int spinIndex);
+
     void
     computeVEffExternalPotCorr(
       const std::map<dealii::CellId, std::vector<double>>
@@ -180,6 +192,9 @@ namespace dftfe
       const bool onlyHPrimePartForFirstOrderDensityMatResponse = false);
 
   private:
+    void
+    setVEffExternalPotCorrToZero();
+
     std::shared_ptr<
       AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
       d_ONCVnonLocalOperator;

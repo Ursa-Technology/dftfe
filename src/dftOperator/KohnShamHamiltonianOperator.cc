@@ -415,6 +415,63 @@ namespace dftfe
       d_invJacderExcWithSigmaTimesGradRhoJxWHost);
 #endif
   }
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  void
+  KohnShamHamiltonianOperator<memorySpace>::setVEff(
+    const std::vector<
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+      &                vKS_quadValues,
+    const unsigned int spinIndex)
+  {
+    const unsigned int spinPolarizedFactor = 1 + d_dftParamsPtr->spinPolarized;
+    d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
+    const unsigned int totalLocallyOwnedCells =
+      d_basisOperationsPtrHost->nCells();
+    const unsigned int numberQuadraturePoints =
+      d_basisOperationsPtrHost->nQuadsPerCell();
+#if defined(DFTFE_WITH_DEVICE)
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      d_VeffJxWHost;
+
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      d_invJacderExcWithSigmaTimesGradRhoJxWHost;
+#else
+    auto &d_VeffJxWHost = d_VeffJxW;
+
+    auto &d_invJacderExcWithSigmaTimesGradRhoJxWHost =
+      d_invJacderExcWithSigmaTimesGradRhoJxW;
+#endif
+    d_VeffJxWHost.resize(totalLocallyOwnedCells * numberQuadraturePoints, 0.0);
+    d_invJacderExcWithSigmaTimesGradRhoJxWHost.resize(0, 0.0);
+
+    for (unsigned int iCell = 0; iCell < totalLocallyOwnedCells; ++iCell)
+      {
+        auto cellJxWPtr = d_basisOperationsPtrHost->JxWBasisData().data() +
+                          iCell * numberQuadraturePoints;
+        for (unsigned int qPoint = 0; qPoint < numberQuadraturePoints; ++qPoint)
+          {
+            // TODO extend to spin polarised case
+            d_VeffJxWHost[qPoint + iCell * numberQuadraturePoints] =
+              vKS_quadValues[0][qPoint + iCell * numberQuadraturePoints] *
+              cellJxWPtr[qPoint];
+          }
+      }
+
+    resetExtPotHamFlag();
+    setVEffExternalPotCorrToZero();
+    computeCellHamiltonianMatrixExtPotContribution();
+#if defined(DFTFE_WITH_DEVICE)
+    d_VeffJxW.resize(d_VeffJxWHost.size());
+    d_VeffJxW.copyFrom(d_VeffJxWHost);
+    d_invJacderExcWithSigmaTimesGradRhoJxW.resize(
+      d_invJacderExcWithSigmaTimesGradRhoJxWHost.size());
+    d_invJacderExcWithSigmaTimesGradRhoJxW.copyFrom(
+      d_invJacderExcWithSigmaTimesGradRhoJxWHost);
+#endif
+  }
+
+
   template <dftfe::utils::MemorySpace memorySpace>
   void
   KohnShamHamiltonianOperator<memorySpace>::computeVEffExternalPotCorr(
@@ -449,6 +506,34 @@ namespace dftfe
     d_VeffExtPotJxW.copyFrom(d_VeffExtPotJxWHost);
 #endif
   }
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  void
+  KohnShamHamiltonianOperator<memorySpace>::setVEffExternalPotCorrToZero()
+  {
+    d_basisOperationsPtrHost->reinit(0, 0, d_lpspQuadratureID, false);
+    const unsigned int nCells = d_basisOperationsPtrHost->nCells();
+    const int nQuadsPerCell   = d_basisOperationsPtrHost->nQuadsPerCell();
+#if defined(DFTFE_WITH_DEVICE)
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      d_VeffExtPotJxWHost;
+#else
+    auto &d_VeffExtPotJxWHost = d_VeffExtPotJxW;
+#endif
+    d_VeffExtPotJxWHost.resize(nCells * nQuadsPerCell);
+
+    for (unsigned int iCell = 0; iCell < nCells; ++iCell)
+      {
+        for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
+          d_VeffExtPotJxWHost[iCell * nQuadsPerCell + iQuad] = 0.0;
+      }
+
+#if defined(DFTFE_WITH_DEVICE)
+    d_VeffExtPotJxW.resize(d_VeffExtPotJxWHost.size());
+    d_VeffExtPotJxW.copyFrom(d_VeffExtPotJxWHost);
+#endif
+  }
+
 
   template <dftfe::utils::MemorySpace memorySpace>
   void

@@ -936,6 +936,31 @@ namespace dftfe
 
     template void
     constraintMatrixInfo<dftfe::utils::MemorySpace::DEVICE>::distribute(
+      distributedCPUVec<dataTypes::number> &fieldVector,
+      const unsigned int                    blockSize) const;
+
+    template void
+    constraintMatrixInfo<dftfe::utils::MemorySpace::DEVICE>::
+      distribute_slave_to_master(
+        distributedCPUVec<dataTypes::number> &fieldVector,
+        const unsigned int                    blockSize) const;
+
+#if defined(USE_COMPLEX)
+    template void
+    constraintMatrixInfo<dftfe::utils::MemorySpace::DEVICE>::
+      distribute_slave_to_master(distributedCPUVec<double> &fieldVector,
+                                 const unsigned int         blockSize) const;
+#endif
+
+    template void
+    constraintMatrixInfo<dftfe::utils::MemorySpace::DEVICE>::set_zero(
+      distributedCPUVec<dataTypes::number> &fieldVector,
+      const unsigned int                    blockSize) const;
+
+
+
+    template void
+    constraintMatrixInfo<dftfe::utils::MemorySpace::DEVICE>::distribute(
       distributedDeviceVec<double> &fieldVector) const;
 
     template void

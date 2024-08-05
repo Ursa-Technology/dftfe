@@ -459,18 +459,18 @@ namespace dftfe
     void
     copyDistributedVectorToPaddedMemoryStorageVectorDevice(
       const dftfe::linearAlgebra::MultiVector<ValueType,
-                                              dftfe::utils::MemorySpace::DEVICE>
+                                              memorySpace>
         &sphericalFunctionKetTimesVectorParFlattened,
-      dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::DEVICE>
+      dftfe::utils::MemoryStorage<ValueType, memorySpace>
         &paddedVector);
 
     void
     copyPaddedMemoryStorageVectorToDistributeVectorDevice(
       const dftfe::utils::MemoryStorage<ValueType,
-                                        dftfe::utils::MemorySpace::DEVICEe>
+                                        memorySpace>
         &paddedVector,
       dftfe::linearAlgebra::MultiVector<ValueType,
-                                        dftfe::utils::MemorySpace::DEVICE>
+                                        memorySpace>
         &sphericalFunctionKetTimesVectorParFlattened);
     dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::DEVICE>
                 d_sphericalFnTimesWavefunctionMatrix;

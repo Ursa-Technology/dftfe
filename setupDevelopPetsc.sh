@@ -31,7 +31,7 @@ ELPA_PATH="/home/vikramg/DFT-softwares-gcc/elpa/install2024"
 # path for NCCL/RCCL libraries
 DCCL_PATH=""
 mdiPath=""
-torchDir="/scratch/vikramg_root/vikramg/dsambit/torch/libtorch/share/cmake/Torch"
+torchDir="/gpfs/accounts/vikramg_root/vikramg/shared_data/argha/torch/libtorch/pytorch-install/share/cmake/Torch"
 DFTD4Path="/home/vikramg/DFT-softwares-gcc/dftd4/install3.6.0"
 
 #Toggle GPU compilation
@@ -46,7 +46,7 @@ withGPUAwareMPI=OFF #Please use this option with care
 #Option to link to DCCL library (Only for GPU compilation)
 withDCCL=OFF
 withMDI=OFF
-withTorch=OFF
+withTorch=ON
 withCustomizedDealii=OFF
 
 #Compiler options and flags

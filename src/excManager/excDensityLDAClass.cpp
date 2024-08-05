@@ -179,7 +179,7 @@ namespace dftfe
           {
             exValues[i] += excValuesFromNN[i];
             pdexDensitySpinUpValues[i] +=
-              pdexcDescriptorFromNN[numDescriptors * i + 0];
+              pdexcDescriptorValuesFromNN[numDescriptors * i + 0];
             pdexDensitySpinDownValues[i] +=
               pdexcDescriptorValuesFromNN[numDescriptors * i + 1];
           }

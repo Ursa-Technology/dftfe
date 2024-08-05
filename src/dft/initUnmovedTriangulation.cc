@@ -320,7 +320,7 @@ namespace dftfe
     else if (d_dftParamsPtr->auxBasisTypeXC == "SlaterAE")
       {
 #ifdef DFTFE_WITH_TORCH
-        d_auxDensityMatrixXCInPtr = std::make_shared<AuxDensityMatrixSlater>();
+        // d_auxDensityMatrixXCInPtr = std::make_shared<AuxDensityMatrixSlater>();
         // FIXME: extract atomCoords from "atomLocations" (this is a datamember
         // of dftClass) of type std::vector<std::vector<double>> atomLocations
         // with each row representing an atom and each column has the following
@@ -336,7 +336,7 @@ namespace dftfe
           5);
         */
 
-        d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityMatrixSlater>();
+        // d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityMatrixSlater>();
         // FIXME: with same comments as above
         /*
         d_auxDensityMatrixXCOutPtr->reinitAuxDensityMatrix(

@@ -68,7 +68,7 @@ SET(TARGET_SRC
   ./src/excManager/NNLDA.cc
   ./src/excManager/NNLLMGGA.cpp
   ./src/excManager/SlaterBasisData.cpp
-  ./src/excManager/SlaterBasisSet.cpp
+  ./src/excManager/SlaterBasis.cpp
   ./src/excManager/SphericalHarmonicFunc.cpp
   ./src/poisson/poissonSolverProblem.cc
   ./src/poisson/MultiVectorPoissonLinearSolverProblem.cpp

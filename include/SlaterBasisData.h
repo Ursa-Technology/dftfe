@@ -10,7 +10,7 @@
 #  include <vector>
 #  include <memory>
 #  include <torch/torch.h>
-#  include "SlaterBasisSet.h"
+#  include "SlaterBasis.h"
 #  include "SphericalHarmonicFunc.h"
 
 namespace dftfe
@@ -21,7 +21,7 @@ namespace dftfe
     // Public Member functions declarations
     void
     evalBasisData(const std::vector<double> &quadpts,
-                  const SlaterBasisSet &     sbs,
+                  const SlaterBasis &     sbs,
                   int                        maxDerOrder);
 
     double
@@ -45,15 +45,15 @@ namespace dftfe
 
     void
     evalBasisValues(const std::vector<double> &quadpts,
-                    const SlaterBasisSet &     sbs);
+                    const SlaterBasis &     sbs);
 
     void
     evalBasisGradValues(const std::vector<double> &quadpts,
-                        const SlaterBasisSet &     sbs);
+                        const SlaterBasis &     sbs);
 
     void
     evalBasisHessianValues(const std::vector<double> &quadpts,
-                           const SlaterBasisSet &     sbs);
+                           const SlaterBasis &     sbs);
 
     torch::Tensor
     evalSlaterFunc(const torch::Tensor &  x_s,

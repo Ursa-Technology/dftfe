@@ -20,17 +20,17 @@
 
 
 
-#ifdef USE_COMPLEX
-#  include "initkPointData.cc"
-#endif
 //
 // source file for dft class initializations
 //
+#include <AuxDensityFE.h>
+#include <AuxDensityMatrixSlater.h>
 #include <dft.h>
 #include <dftUtils.h>
 #include <vectorUtilities.h>
-#include <AuxDensityFE.h>
-#include <AuxDensityMatrixSlater.h>
+#ifdef USE_COMPLEX
+#  include "initkPointData.cc"
+#endif
 
 namespace dftfe
 {

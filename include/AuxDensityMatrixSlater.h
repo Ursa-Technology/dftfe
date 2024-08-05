@@ -8,7 +8,7 @@
 #ifdef DFTFE_WITH_TORCH
 
 #  include "AuxDensityMatrix.h"
-#  include "SlaterBasisSet.h"
+#  include "SlaterBasis.h"
 #  include "SlaterBasisData.h"
 #  include <vector>
 #  include <utility>
@@ -23,7 +23,7 @@ namespace dftfe
   private:
     int             d_nQuad;
     int             d_nSpin;
-    SlaterBasisSet  d_sbs;
+    SlaterBasis  d_sbs;
     SlaterBasisData d_sbd;
 
     int d_nBasis;

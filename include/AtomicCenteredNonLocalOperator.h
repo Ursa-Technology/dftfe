@@ -188,19 +188,26 @@ namespace dftfe
     const unsigned int
     getTotalNonTrivialSphericalFnsOverAllCells() const;
 
+
     const std::vector<unsigned int> &
     getNonTrivialAllCellsSphericalFnAlphaToElemIdMap() const;
 
+    /**
+     * @brief Required in configurational forces. Cummulative sphercial Fn Id. The size is numCells in processor
+     */  
     const std::map<unsigned int, std::vector<unsigned int>> &
     getAtomIdToNonTrivialSphericalFnCellStartIndex() const;
-
+    
+    /**
+     * @brief Returns the Flattened vector of sphericalFunctionIDs in order of atomIDs of atoms in processor.
+     */    
     const std::vector<unsigned int> &
     getSphericalFnTimesVectorFlattenedVectorLocalIds() const;
 
 
     // Calls for both device and host
     /**
-     * @brief compute sht action of coupling matrix on sphericalFunctionKetTimesVectorParFlattened.
+     * @brief compute the action of coupling matrix on sphericalFunctionKetTimesVectorParFlattened.
      * @param[in] couplingtype structure of coupling matrix
      * @param[in] couplingMatrix entires of the coupling matrix V in
      * CVCconjtrans
@@ -288,6 +295,7 @@ namespace dftfe
       dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
         &sphericalFunctionKetTimesVectorParFlattened,
       dftfe::linearAlgebra::MultiVector<ValueType, memorySpace> &dst);
+
     /**
      * @brief adds the result of CVCtX onto Xout for both CPU and GPU calls
      * @param[out] Xout memoryStorage object of size
@@ -464,6 +472,12 @@ namespace dftfe
       dftfe::utils::MemoryStorage<ValueType, memorySpace>
         &paddedVector);
 
+    /**
+     * @brief Copies Padded Memory storage object to Distributed vector.
+     * @param[in] paddedVector Padded Vector of size noAtomsInProc*maxSingleAtomContribution*Nwfc    
+     * @param[out] sphericalFunctionKetTimesVectorParFlattened Distributed Vector
+     * 
+     */
     void
     copyPaddedMemoryStorageVectorToDistributeVectorDevice(
       const dftfe::utils::MemoryStorage<ValueType,
@@ -472,6 +486,8 @@ namespace dftfe
       dftfe::linearAlgebra::MultiVector<ValueType,
                                         memorySpace>
         &sphericalFunctionKetTimesVectorParFlattened);
+
+
     dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::DEVICE>
                 d_sphericalFnTimesWavefunctionMatrix;
     ValueType **hostPointerCDagger, **hostPointerCDaggeOutTemp,

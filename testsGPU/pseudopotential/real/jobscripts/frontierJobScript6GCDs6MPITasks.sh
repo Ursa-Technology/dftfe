@@ -15,12 +15,12 @@ export MPICH_OFI_NIC_POLICY = NUMA
 export MPICH_GPU_SUPPORT_ENABLED=1
 export MPICH_SMP_SINGLE_COPY_MODE=NONE
 
-export INST=/lustre/orion/nti115/scratch/phanim/phanimotam/install_DFTFE/env2
+
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INST/lib
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INST/lib/lib64
 export LD_LIBRARY_PATH=$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH
 
-export BASE=/lustre/orion/nti115/scratch/phanim/phanimotam/install_DFTFE/src/dftfe_nonLocalOperatorPaddedVmatrix/build/release/real
+export BASE=$WD/src/dftfeDebug/build/release/real
 n=`{echo $SLURM_JOB_NUM_NODES '*' 8 | bc}
 
 srun -n 6 -c 7 --gpu-bind closest $BASE/dftfe parameterFileN2_1.prm > outputN2_1

@@ -48,6 +48,25 @@ namespace dftfe
       const ValueType *   sphericalFnTimesWfcParallelVec,
       ValueType *         sphericalFnTimesWfcDealiiParallelVec,
       const unsigned int *indexMapDealiiParallelNumbering);
+
+    template <typename ValueType>
+    void
+    copyFromDealiiParallelNonLocalVecToPaddedVector(
+      const unsigned int numWfcs,
+      const unsigned int totalEntriesPadded,
+      const ValueType *  sphericalFnTimesWfcDealiiParallelVec,
+      ValueType *        sphericalFnTimesWfcPaddedVec,
+      const int *        indexMapDealiiParallelNumbering);
+
+    template <typename ValueType>
+    void
+    copyToDealiiParallelNonLocalVecFromPaddedVector(
+      const unsigned int numWfcs,
+      const unsigned int totalEntriesPadded,
+      const ValueType *  sphericalFnTimesWfcPaddedVec,
+      ValueType *        sphericalFnTimesWfcDealiiParallelVec,
+      const int *        indexMapDealiiParallelNumbering);
+
     template <typename ValueType>
     void
     addNonLocalContribution(

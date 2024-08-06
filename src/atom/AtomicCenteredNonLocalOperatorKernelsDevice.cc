@@ -81,6 +81,57 @@ namespace dftfe
     }
     template <typename ValueType>
     __global__ void
+    copyToDealiiParallelNonLocalVecFromPaddedVecKernel(
+      const unsigned int numWfcs,
+      const unsigned int totalPaddedPseudoWfcs,
+      const ValueType *  sphericalFnTimesWfcPaddedVec,
+      ValueType *        sphericalFnTimesWfcDealiiParallelVec,
+      const int *        indexMapDealiiParallelNumbering)
+    {
+      const unsigned int globalThreadId = blockIdx.x * blockDim.x + threadIdx.x;
+      const unsigned int numberEntries  = totalPaddedPseudoWfcs * numWfcs;
+
+      for (unsigned int index = globalThreadId; index < numberEntries;
+           index += blockDim.x * gridDim.x)
+        {
+          const unsigned int blockIndex      = index / numWfcs;
+          const unsigned int intraBlockIndex = index % numWfcs;
+          const int mappedIndex = indexMapDealiiParallelNumbering[blockIndex];
+
+          if (mappedIndex != -1)
+            sphericalFnTimesWfcDealiiParallelVec[mappedIndex * numWfcs +
+                                                 intraBlockIndex] =
+              sphericalFnTimesWfcPaddedVec[index];
+        }
+    }
+    template <typename ValueType>
+    __global__ void
+    copyFromDealiiParallelNonLocalVecToPaddedVecKernel(
+      const unsigned int numWfcs,
+      const unsigned int totalPaddedPseudoWfcs,
+      const ValueType *  sphericalFnTimesWfcDealiiParallelVec,
+      ValueType *        sphericalFnTimesWfcPaddedVec,
+      const int *        indexMapDealiiParallelNumbering)
+    {
+      const unsigned int globalThreadId = blockIdx.x * blockDim.x + threadIdx.x;
+      const unsigned int numberEntries  = totalPaddedPseudoWfcs * numWfcs;
+
+      for (unsigned int index = globalThreadId; index < numberEntries;
+           index += blockDim.x * gridDim.x)
+        {
+          const unsigned int blockIndex      = index / numWfcs;
+          const unsigned int intraBlockIndex = index % numWfcs;
+          const int mappedIndex = indexMapDealiiParallelNumbering[blockIndex];
+
+          if (mappedIndex != -1)
+            sphericalFnTimesWfcPaddedVec[index] =
+              sphericalFnTimesWfcDealiiParallelVec[mappedIndex * numWfcs +
+                                                   intraBlockIndex];
+        }
+    }
+
+    template <typename ValueType>
+    __global__ void
     addNonLocalContributionDeviceKernel(
       const unsigned int  contiguousBlockSize,
       const unsigned int  numContiguousBlocks,
@@ -195,6 +246,82 @@ namespace dftfe
 
     template <typename ValueType>
     void
+    copyToDealiiParallelNonLocalVecFromPaddedVector(
+      const unsigned int numWfcs,
+      const unsigned int totalEntriesPadded,
+      const ValueType *  sphericalFnTimesWfcPaddedVec,
+      ValueType *        sphericalFnTimesWfcDealiiParallelVec,
+      const int *        indexMapDealiiParallelNumbering)
+    {
+#ifdef DFTFE_WITH_DEVICE_LANG_CUDA
+      copyToDealiiParallelNonLocalVecFromPaddedVecKernel<<<
+        (numWfcs + (dftfe::utils::DEVICE_BLOCK_SIZE - 1)) /
+          dftfe::utils::DEVICE_BLOCK_SIZE * totalEntriesPadded,
+        dftfe::utils::DEVICE_BLOCK_SIZE>>>(
+        numWfcs,
+        totalEntriesPadded,
+        dftfe::utils::makeDataTypeDeviceCompatible(
+          sphericalFnTimesWfcPaddedVec),
+        dftfe::utils::makeDataTypeDeviceCompatible(
+          sphericalFnTimesWfcDealiiParallelVec),
+        indexMapDealiiParallelNumbering);
+#elif DFTFE_WITH_DEVICE_LANG_HIP
+      hipLaunchKernelGGL(copyToDealiiParallelNonLocalVecFromPaddedVecKernel,
+                         (numWfcs + (dftfe::utils::DEVICE_BLOCK_SIZE - 1)) /
+                           dftfe::utils::DEVICE_BLOCK_SIZE * totalEntriesPadded,
+                         dftfe::utils::DEVICE_BLOCK_SIZE,
+                         0,
+                         0,
+                         numWfcs,
+                         totalEntriesPadded,
+                         dftfe::utils::makeDataTypeDeviceCompatible(
+                           sphericalFnTimesWfcPaddedVec),
+                         dftfe::utils::makeDataTypeDeviceCompatible(
+                           sphericalFnTimesWfcDealiiParallelVec),
+                         indexMapDealiiParallelNumbering);
+#endif
+    }
+    template <typename ValueType>
+    void
+    copyFromDealiiParallelNonLocalVecToPaddedVector(
+      const unsigned int numWfcs,
+      const unsigned int totalEntriesPadded,
+      const ValueType *  sphericalFnTimesWfcDealiiParallelVec,
+      ValueType *        sphericalFnTimesWfcPaddedVec,
+      const int *        indexMapDealiiParallelNumbering)
+    {
+#ifdef DFTFE_WITH_DEVICE_LANG_CUDA
+      copyFromDealiiParallelNonLocalVecToPaddedVecKernel<<<
+        (numWfcs + (dftfe::utils::DEVICE_BLOCK_SIZE - 1)) /
+          dftfe::utils::DEVICE_BLOCK_SIZE * totalEntriesPadded,
+        dftfe::utils::DEVICE_BLOCK_SIZE>>>(
+        numWfcs,
+        totalEntriesPadded,
+        dftfe::utils::makeDataTypeDeviceCompatible(
+          sphericalFnTimesWfcDealiiParallelVec),
+        dftfe::utils::makeDataTypeDeviceCompatible(
+          sphericalFnTimesWfcPaddedVec),
+        indexMapDealiiParallelNumbering);
+#elif DFTFE_WITH_DEVICE_LANG_HIP
+      hipLaunchKernelGGL(copyFromDealiiParallelNonLocalVecToPaddedVecKernel,
+                         (numWfcs + (dftfe::utils::DEVICE_BLOCK_SIZE - 1)) /
+                           dftfe::utils::DEVICE_BLOCK_SIZE * totalEntriesPadded,
+                         dftfe::utils::DEVICE_BLOCK_SIZE,
+                         0,
+                         0,
+                         numWfcs,
+                         totalEntriesPadded,
+                         dftfe::utils::makeDataTypeDeviceCompatible(
+                           sphericalFnTimesWfcDealiiParallelVec),
+                         dftfe::utils::makeDataTypeDeviceCompatible(
+                           sphericalFnTimesWfcPaddedVec),
+                         indexMapDealiiParallelNumbering);
+#endif
+    }
+
+
+    template <typename ValueType>
+    void
     addNonLocalContribution(
       const unsigned int numberCellsForAtom,
       const unsigned int numberNodesPerElement,
@@ -259,6 +386,38 @@ namespace dftfe
       const dataTypes::numberFP32 *sphericalFnTimesWfcParallelVec,
       dataTypes::numberFP32 *      sphericalFnTimesWfcDealiiParallelVec,
       const unsigned int *         indexMapDealiiParallelNumbering);
+
+    template void
+    copyFromDealiiParallelNonLocalVecToPaddedVector(
+      const unsigned int       numWfcs,
+      const unsigned int       totalEntriesPadded,
+      const dataTypes::number *sphericalFnTimesWfcDealiiParallelVec,
+      dataTypes::number *      sphericalFnTimesWfcPaddedVec,
+      const int *              indexMapDealiiParallelNumbering);
+
+    template void
+    copyToDealiiParallelNonLocalVecFromPaddedVector(
+      const unsigned int       numWfcs,
+      const unsigned int       totalEntriesPadded,
+      const dataTypes::number *sphericalFnTimesWfcPaddedVec,
+      dataTypes::number *      sphericalFnTimesWfcDealiiParallelVec,
+      const int *              indexMapDealiiParallelNumbering);
+
+    template void
+    copyFromDealiiParallelNonLocalVecToPaddedVector(
+      const unsigned int           numWfcs,
+      const unsigned int           totalEntriesPadded,
+      const dataTypes::numberFP32 *sphericalFnTimesWfcDealiiParallelVec,
+      dataTypes::numberFP32 *      sphericalFnTimesWfcPaddedVec,
+      const int *                  indexMapDealiiParallelNumbering);
+
+    template void
+    copyToDealiiParallelNonLocalVecFromPaddedVector(
+      const unsigned int           numWfcs,
+      const unsigned int           totalEntriesPadded,
+      const dataTypes::numberFP32 *sphericalFnTimesWfcPaddedVec,
+      dataTypes::numberFP32 *      sphericalFnTimesWfcDealiiParallelVec,
+      const int *                  indexMapDealiiParallelNumbering);
 
     template void
     copyFromParallelNonLocalVecToAllCellsVec(

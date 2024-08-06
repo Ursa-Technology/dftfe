@@ -1,5 +1,5 @@
-#!/ccs/home/dsambit/frontier/bin/rc
-#SBATCH -A mat239
+#!/bin/sh
+#SBATCH -A nti115
 #SBATCH -J gputests
 #SBATCH -t 1:00:00
 #SBATCH -p batch
@@ -8,20 +8,17 @@
 #SBATCH --ntasks-per-gpu 1
 #SBATCH --gpu-bind closest
 
-OMP_NUM_THREADS = 1
-MPICH_VERSION_DISPLAY=1
-MPICH_ENV_DISPLAY=1
-MPICH_OFI_NIC_POLICY = NUMA 
-MPICH_GPU_SUPPORT_ENABLED=1
-MPICH_SMP_SINGLE_COPY_MODE=NONE
+export OMP_NUM_THREADS = 1
+export MPICH_VERSION_DISPLAY=1
+export MPICH_ENV_DISPLAY=1
+export MPICH_OFI_NIC_POLICY = NUMA
+export MPICH_GPU_SUPPORT_ENABLED=1
+export MPICH_SMP_SINGLE_COPY_MODE=NONE
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INST/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INST/lib/lib64
+export LD_LIBRARY_PATH=$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH
 
-LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INST/lib
-LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INST/lib/lib64
-LD_LIBRARY_PATH=$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH
-
-
-BASE = $WD/src/dftfeDebug/build/release/real
-n=`{echo $SLURM_JOB_NUM_NODES '*' 8 | bc}
+export BASE=$WD/src/dftfeDebug/build/release/real
 
 srun -n 18 -c 7 --gpu-bind closest $BASE/dftfe Input_MD_0.prm > output_MD_0
 srun -n 18 -c 7 --gpu-bind closest $BASE/dftfe Input_MD_1.prm > output_MD_1
@@ -38,5 +35,3 @@ srun -n 18 -c 7 --gpu-bind closest $BASE/dftfe parameterFileMg2x_12.prm > output
 srun -n 18 -c 7 --gpu-bind closest $BASE/dftfe parameterFileMg2x_13.prm > outputMg2x_13
 srun -n 18 -c 7 --gpu-bind closest $BASE/dftfe parameterFileBe.prm > outputBe
 srun -n 18 -c 7 --gpu-bind closest $BASE/dftfe parameterFile_LLZO.prm > outputLLZO
-
-

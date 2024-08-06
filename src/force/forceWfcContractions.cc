@@ -664,8 +664,8 @@ namespace dftfe
             // MPI_Barrier(d_mpiCommParent);
             // double kernel2_time = MPI_Wtime();
 
-            oncvClassPtr->getNonLocalOperator()->initialiseOperatorActionOnX(
-              kPointIndex);
+            // oncvClassPtr->getNonLocalOperator()->initialiseOperatorActionOnX(
+            //   kPointIndex);
 
             oncvClassPtr->getNonLocalOperator()->applyVCconjtransOnX(
               flattenedArrayBlock,

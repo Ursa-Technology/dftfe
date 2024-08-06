@@ -644,31 +644,35 @@ namespace dftfe
   const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
   oncvClass<ValueType, memorySpace>::getCouplingMatrix()
   {
+    std::vector<ValueType> Entries;
+    if (!d_HamiltonianCouplingMatrixEntriesUpdated)
+      {
+        const std::vector<unsigned int> atomIdsInProcessor =
+          d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
+        std::vector<unsigned int> atomicNumber =
+          d_atomicProjectorFnsContainer->getAtomicNumbers();
+        d_couplingMatrixEntries.clear();
+
+        for (int iAtom = 0; iAtom < atomIdsInProcessor.size(); iAtom++)
+          {
+            unsigned int atomId = atomIdsInProcessor[iAtom];
+            unsigned int Znum   = atomicNumber[atomId];
+            unsigned int numberSphericalFunctions =
+              d_atomicProjectorFnsContainer
+                ->getTotalNumberOfSphericalFunctionsPerAtom(Znum);
+            for (unsigned int alpha = 0; alpha < numberSphericalFunctions;
+                 alpha++)
+              {
+                double V =
+                  d_atomicNonLocalPseudoPotentialConstants[Znum][alpha];
+                Entries.push_back(ValueType(V));
+              }
+          }
+      }
     if constexpr (memorySpace == dftfe::utils::MemorySpace::HOST)
       {
         if (!d_HamiltonianCouplingMatrixEntriesUpdated)
           {
-            const std::vector<unsigned int> atomIdsInProcessor =
-              d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
-            std::vector<unsigned int> atomicNumber =
-              d_atomicProjectorFnsContainer->getAtomicNumbers();
-            d_couplingMatrixEntries.clear();
-            std::vector<ValueType> Entries;
-            for (int iAtom = 0; iAtom < atomIdsInProcessor.size(); iAtom++)
-              {
-                unsigned int atomId = atomIdsInProcessor[iAtom];
-                unsigned int Znum   = atomicNumber[atomId];
-                unsigned int numberSphericalFunctions =
-                  d_atomicProjectorFnsContainer
-                    ->getTotalNumberOfSphericalFunctionsPerAtom(Znum);
-                for (unsigned int alpha = 0; alpha < numberSphericalFunctions;
-                     alpha++)
-                  {
-                    double V =
-                      d_atomicNonLocalPseudoPotentialConstants[Znum][alpha];
-                    Entries.push_back(ValueType(V));
-                  }
-              }
             d_couplingMatrixEntries.resize(Entries.size());
             d_couplingMatrixEntries.copyFrom(Entries);
             d_HamiltonianCouplingMatrixEntriesUpdated = true;
@@ -681,36 +685,11 @@ namespace dftfe
       {
         if (!d_HamiltonianCouplingMatrixEntriesUpdated)
           {
-            const std::vector<unsigned int> atomIdsInProcessor =
-              d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
-            std::vector<unsigned int> atomicNumber =
-              d_atomicProjectorFnsContainer->getAtomicNumbers();
-            d_couplingMatrixEntries.clear();
-            std::vector<ValueType> Entries;
-            Entries.resize(
-              d_nonLocalOperator->getTotalNonLocalEntriesCurrentProcessor(),
-              0.0);
-            for (int iAtom = 0; iAtom < atomIdsInProcessor.size(); iAtom++)
-              {
-                unsigned int atomId = atomIdsInProcessor[iAtom];
-                unsigned int Znum   = atomicNumber[atomId];
-                unsigned int numberSphericalFunctions =
-                  d_atomicProjectorFnsContainer
-                    ->getTotalNumberOfSphericalFunctionsPerAtom(Znum);
-                for (unsigned int alpha = 0; alpha < numberSphericalFunctions;
-                     alpha++)
-                  {
-                    unsigned int globalId =
-                      d_nonLocalOperator->getGlobalDofAtomIdSphericalFnPair(
-                        atomId, alpha);
-                    const unsigned int id =
-                      d_nonLocalOperator->getLocalIdOfDistributedVec(globalId);
-                    Entries[id] = ValueType(
-                      d_atomicNonLocalPseudoPotentialConstants[Znum][alpha]);
-                  }
-              }
-            d_couplingMatrixEntries.resize(Entries.size());
-            d_couplingMatrixEntries.copyFrom(Entries);
+            std::vector<ValueType> EntriesPadded;
+            d_nonLocalOperator->paddingCouplingMatrix(
+              Entries, EntriesPadded, CouplingStructure::diagonal);
+            d_couplingMatrixEntries.resize(EntriesPadded.size());
+            d_couplingMatrixEntries.copyFrom(EntriesPadded);
             d_HamiltonianCouplingMatrixEntriesUpdated = true;
           }
         return (d_couplingMatrixEntries);

@@ -2322,15 +2322,13 @@ namespace dftfe
           }
       }
   }
-  template <typename ValueType,dftfe::utils::MemorySpace memorySpace>
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  AtomicCenteredNonLocalOperator<ValueType,memorySpace>::
+  AtomicCenteredNonLocalOperator<ValueType, memorySpace>::
     copyDistributedVectorToPaddedMemoryStorageVectorDevice(
-      const dftfe::linearAlgebra::MultiVector<ValueType,
-                                              memorySpace>
+      const dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
         &sphericalFunctionKetTimesVectorParFlattened,
-      dftfe::utils::MemoryStorage<ValueType, memorySpace>
-        &paddedVector)
+      dftfe::utils::MemoryStorage<ValueType, memorySpace> &paddedVector)
   {
     const std::vector<unsigned int> atomIdsInProcessor =
       d_atomCenteredSphericalFunctionContainer->getAtomIdsInCurrentProcess();
@@ -2344,15 +2342,12 @@ namespace dftfe
         paddedVector.begin(),
         d_sphericalFnIdsPaddedParallelNumberingMapDevice.begin());
   }
-  template <typename ValueType,dftfe::utils::MemorySpace memorySpace>
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  AtomicCenteredNonLocalOperator<ValueType,memorySpace>::
+  AtomicCenteredNonLocalOperator<ValueType, memorySpace>::
     copyPaddedMemoryStorageVectorToDistributeVectorDevice(
-      const dftfe::utils::MemoryStorage<ValueType,
-                                        memorySpace>
-        &paddedVector,
-      dftfe::linearAlgebra::MultiVector<ValueType,
-                                        memorySpace>
+      const dftfe::utils::MemoryStorage<ValueType, memorySpace> &paddedVector,
+      dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
         &sphericalFunctionKetTimesVectorParFlattened)
   {
     const std::vector<unsigned int> atomIdsInProcessor =

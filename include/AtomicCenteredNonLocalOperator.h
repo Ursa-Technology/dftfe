@@ -194,13 +194,13 @@ namespace dftfe
 
     /**
      * @brief Required in configurational forces. Cummulative sphercial Fn Id. The size is numCells in processor
-     */  
+     */
     const std::map<unsigned int, std::vector<unsigned int>> &
     getAtomIdToNonTrivialSphericalFnCellStartIndex() const;
-    
+
     /**
      * @brief Returns the Flattened vector of sphericalFunctionIDs in order of atomIDs of atoms in processor.
-     */    
+     */
     const std::vector<unsigned int> &
     getSphericalFnTimesVectorFlattenedVectorLocalIds() const;
 
@@ -210,7 +210,8 @@ namespace dftfe
      * @brief compute the action of coupling matrix on sphericalFunctionKetTimesVectorParFlattened.
      * @param[in] couplingtype structure of coupling matrix
      * @param[in] couplingMatrix entires of the coupling matrix V in
-     * CVCconjtrans. Ensure that the coupling matrix is padded. Refer to ONCVclass for template
+     * CVCconjtrans. Ensure that the coupling matrix is padded. Refer to
+     * ONCVclass for template
      * @param[out] sphericalFunctionKetTimesVectorParFlattened multivector to
      * store results of CconjtransX which is initiliased using
      * initialiseFlattenedVector call. The results are stored in
@@ -466,25 +467,22 @@ namespace dftfe
      */
     void
     copyDistributedVectorToPaddedMemoryStorageVectorDevice(
-      const dftfe::linearAlgebra::MultiVector<ValueType,
-                                              memorySpace>
+      const dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
         &sphericalFunctionKetTimesVectorParFlattened,
-      dftfe::utils::MemoryStorage<ValueType, memorySpace>
-        &paddedVector);
+      dftfe::utils::MemoryStorage<ValueType, memorySpace> &paddedVector);
 
     /**
      * @brief Copies Padded Memory storage object to Distributed vector.
-     * @param[in] paddedVector Padded Vector of size noAtomsInProc*maxSingleAtomContribution*Nwfc    
-     * @param[out] sphericalFunctionKetTimesVectorParFlattened Distributed Vector
-     * 
+     * @param[in] paddedVector Padded Vector of size
+     * noAtomsInProc*maxSingleAtomContribution*Nwfc
+     * @param[out] sphericalFunctionKetTimesVectorParFlattened Distributed
+     * Vector
+     *
      */
     void
     copyPaddedMemoryStorageVectorToDistributeVectorDevice(
-      const dftfe::utils::MemoryStorage<ValueType,
-                                        memorySpace>
-        &paddedVector,
-      dftfe::linearAlgebra::MultiVector<ValueType,
-                                        memorySpace>
+      const dftfe::utils::MemoryStorage<ValueType, memorySpace> &paddedVector,
+      dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
         &sphericalFunctionKetTimesVectorParFlattened);
 
 

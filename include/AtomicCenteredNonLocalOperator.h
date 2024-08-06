@@ -210,7 +210,7 @@ namespace dftfe
      * @brief compute the action of coupling matrix on sphericalFunctionKetTimesVectorParFlattened.
      * @param[in] couplingtype structure of coupling matrix
      * @param[in] couplingMatrix entires of the coupling matrix V in
-     * CVCconjtrans
+     * CVCconjtrans. Ensure that the coupling matrix is padded. Refer to ONCVclass for template
      * @param[out] sphericalFunctionKetTimesVectorParFlattened multivector to
      * store results of CconjtransX which is initiliased using
      * initialiseFlattenedVector call. The results are stored in
@@ -258,7 +258,7 @@ namespace dftfe
      * @param[in] kPointIndex kPoint of interst for current operation
      * @param[in] couplingtype structure of coupling matrix
      * @param[in] couplingMatrix entires of the coupling matrix V in
-     * CVCconjtrans
+     * CVCconjtrans. Ensure the coupling matrix is padded
      * @param[out] sphericalFunctionKetTimesVectorParFlattened multivector to
      * store results of CconjtransX which is initiliased using
      * initialiseFlattenedVector call

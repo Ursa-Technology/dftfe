@@ -2410,33 +2410,18 @@ namespace dftfe
                       d_densityInNodalValues[iComp],
                       d_densityResidualNodalValues[iComp]);
                   }
-                applyKerkerPreconditionerToTotalDensityResidual(
-#ifdef DFTFE_WITH_DEVICE
-                  kerkerPreconditionedResidualSolverProblemDevice,
-                  CGSolverDevice,
-#endif
-                  kerkerPreconditionedResidualSolverProblem,
-                  CGSolver,
-                  d_densityResidualNodalValues[0],
-                  d_preCondTotalDensityResidualVector);
-                d_mixingScheme.addVariableToInHist(
-                  mixingVariable::rho,
-                  d_densityInNodalValues[0].begin(),
-                  d_densityInNodalValues[0].locally_owned_size());
-                d_mixingScheme.addVariableToResidualHist(
-                  mixingVariable::rho,
-                  d_preCondTotalDensityResidualVector.begin(),
-                  d_preCondTotalDensityResidualVector.locally_owned_size());
-                if (d_dftParamsPtr->spinPolarized == 1)
+                for (unsigned int iComp = 0;
+                     iComp < d_densityOutNodalValues.size();
+                     ++iComp)
                   {
                     d_mixingScheme.addVariableToInHist(
-                      mixingVariable::magZ,
-                      d_densityInNodalValues[1].begin(),
-                      d_densityInNodalValues[1].locally_owned_size());
+                      iComp == 0 ? mixingVariable::rho : mixingVariable::magZ,
+                      d_densityInNodalValues[iComp].begin(),
+                      d_densityInNodalValues[iComp].locally_owned_size());
                     d_mixingScheme.addVariableToResidualHist(
-                      mixingVariable::magZ,
-                      d_densityResidualNodalValues[1].begin(),
-                      d_densityResidualNodalValues[1].locally_owned_size());
+                      iComp == 0 ? mixingVariable::rho : mixingVariable::magZ,
+                      d_densityResidualNodalValues[iComp].begin(),
+                      d_densityResidualNodalValues[iComp].locally_owned_size());
                   }
                 // Delete old history if it exceeds a pre-described
                 // length
@@ -2448,7 +2433,25 @@ namespace dftfe
                     std::vector<mixingVariable>{mixingVariable::rho,
                                                 mixingVariable::magZ} :
                     std::vector<mixingVariable>{mixingVariable::rho});
-                for (unsigned int iComp = 0; iComp < norms.size(); ++iComp)
+                d_mixingScheme.getOptimizedResidual(
+                  mixingVariable::rho,
+                  d_densityResidualNodalValues[0].begin(),
+                  d_densityResidualNodalValues[0].locally_owned_size());
+                applyKerkerPreconditionerToTotalDensityResidual(
+#ifdef DFTFE_WITH_DEVICE
+                  kerkerPreconditionedResidualSolverProblemDevice,
+                  CGSolverDevice,
+#endif
+                  kerkerPreconditionedResidualSolverProblem,
+                  CGSolver,
+                  d_densityResidualNodalValues[0],
+                  d_preCondTotalDensityResidualVector);
+                d_mixingScheme.mixPreconditionedResidual(
+                  mixingVariable::rho,
+                  d_preCondTotalDensityResidualVector.begin(),
+                  d_densityInNodalValues[0].begin(),
+                  d_densityInNodalValues[0].locally_owned_size());
+                for (unsigned int iComp = 1; iComp < norms.size(); ++iComp)
                   d_mixingScheme.mixVariable(
                     iComp == 0 ? mixingVariable::rho : mixingVariable::magZ,
                     d_densityInNodalValues[iComp].begin(),

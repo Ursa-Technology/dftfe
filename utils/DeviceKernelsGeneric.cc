@@ -22,7 +22,6 @@
 #include <DeviceDataTypeOverloads.h>
 #include <DeviceKernelLauncherConstants.h>
 #include <DeviceAPICalls.h>
-#include <DeviceBlasWrapper.h>
 #include <dftUtils.h>
 #include <headers.h>
 
@@ -487,10 +486,6 @@ namespace dftfe
         // std::cout<< "Device Id currently used is "<<device<< " for taskId:
         // "<<dealii::Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)<<std::endl;
         dftfe::utils::deviceReset();
-
-        // #ifdef DFTFE_WITH_DEVICE_AMD
-        //         dftfe::utils::deviceBlasWrapper::initialize();
-        // #endif
       }
 
 
@@ -1004,54 +999,6 @@ namespace dftfe
 #endif
       }
 
-      void
-      add(double *                          y,
-          const double *                    x,
-          const double                      alpha,
-          const dftfe::size_type            size,
-          dftfe::utils::deviceBlasHandle_t &deviceBlasHandle)
-      {
-        dftfe::size_type incx = 1, incy = 1;
-        dftfe::utils::deviceBlasWrapper::axpy(
-          deviceBlasHandle, size, &alpha, x, incx, y, incy);
-      }
-
-      double
-      l2_norm(const double *                    x,
-              const dftfe::size_type            size,
-              const MPI_Comm &                  mpi_communicator,
-              dftfe::utils::deviceBlasHandle_t &deviceBlasHandle)
-      {
-        dftfe::size_type incx = 1;
-        double           local_nrm, nrm = 0;
-
-        dftfe::utils::deviceBlasWrapper::nrm2(
-          deviceBlasHandle, size, x, incx, &local_nrm);
-
-        local_nrm *= local_nrm;
-        MPI_Allreduce(
-          &local_nrm, &nrm, 1, MPI_DOUBLE, MPI_SUM, mpi_communicator);
-
-        return std::sqrt(nrm);
-      }
-
-      double
-      dot(const double *                    x,
-          const double *                    y,
-          const dftfe::size_type            size,
-          const MPI_Comm &                  mpi_communicator,
-          dftfe::utils::deviceBlasHandle_t &deviceBlasHandle)
-      {
-        dftfe::size_type incx = 1, incy = 1;
-        double           local_sum, sum = 0;
-
-        dftfe::utils::deviceBlasWrapper::dot(
-          deviceBlasHandle, size, x, incx, y, incy, &local_sum);
-        MPI_Allreduce(
-          &local_sum, &sum, 1, MPI_DOUBLE, MPI_SUM, mpi_communicator);
-
-        return sum;
-      }
 
 
       template <typename ValueType1, typename ValueType2>

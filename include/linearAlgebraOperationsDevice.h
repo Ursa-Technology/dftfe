@@ -97,7 +97,7 @@ namespace dftfe
 
     void
     chebyshevFilterOverlapComputeCommunicationSinglePrec(
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                                                  BLASWrapperPtr,
       operatorDFTClass<dftfe::utils::MemorySpace::DEVICE> &operatorMatrix,
@@ -136,7 +136,7 @@ namespace dftfe
       const dataTypes::number *X,
       const unsigned int       M,
       const unsigned int       N,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                                              BLASWrapperPtr,
       const MPI_Comm &                                 mpiCommDomain,
@@ -157,7 +157,7 @@ namespace dftfe
       const dataTypes::number *X,
       const unsigned int       M,
       const unsigned int       N,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                                              BLASWrapperPtr,
       const MPI_Comm &                                 mpiCommDomain,
@@ -178,7 +178,7 @@ namespace dftfe
       const dataTypes::number *X,
       const unsigned int       M,
       const unsigned int       N,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                                              BLASWrapperPtr,
       const MPI_Comm &                                 mpiCommDomain,
@@ -197,7 +197,7 @@ namespace dftfe
       const dataTypes::number *X,
       const unsigned int       M,
       const unsigned int       N,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                                              BLASWrapperPtr,
       const MPI_Comm &                                 mpiCommDomain,
@@ -216,7 +216,7 @@ namespace dftfe
       const dataTypes::number *X,
       const unsigned int       M,
       const unsigned int       N,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                                              BLASWrapperPtr,
       const MPI_Comm &                                 mpiCommDomain,
@@ -240,7 +240,7 @@ namespace dftfe
       const MPI_Comm &         mpiCommDomain,
       utils::DeviceCCLWrapper &devicecclMpiCommDomain,
       const MPI_Comm &         interBandGroupComm,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                  BLASWrapperPtr,
       const dftParameters &dftParams,
@@ -251,7 +251,7 @@ namespace dftfe
       dataTypes::number *X,
       const unsigned int M,
       const unsigned int N,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                                              BLASWrapperPtr,
       const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
@@ -271,7 +271,7 @@ namespace dftfe
       const unsigned int       M,
       const unsigned int       N,
       const unsigned int       Nfr,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                                              BLASWrapperPtr,
       const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
@@ -286,7 +286,7 @@ namespace dftfe
       dataTypes::number *X,
       const unsigned int M,
       const unsigned int N,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                                              BLASWrapperPtr,
       const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
@@ -303,7 +303,7 @@ namespace dftfe
       dataTypes::number *X,
       const unsigned int M,
       const unsigned int N,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                                              BLASWrapperPtr,
       const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
@@ -329,7 +329,7 @@ namespace dftfe
       utils::DeviceCCLWrapper &devicecclMpiCommDomain,
       const MPI_Comm &         interBandGroupComm,
       std::vector<double> &    eigenValues,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                  BLASWrapperPtr,
       const dftParameters &dftParams,
@@ -349,7 +349,7 @@ namespace dftfe
       utils::DeviceCCLWrapper &devicecclMpiCommDomain,
       const MPI_Comm &         interBandGroupComm,
       std::vector<double> &    eigenValues,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                  BLASWrapperPtr,
       const dftParameters &dftParams,
@@ -371,7 +371,7 @@ namespace dftfe
       utils::DeviceCCLWrapper &devicecclMpiCommDomain,
       const MPI_Comm &         interBandGroupComm,
       std::vector<double> &    eigenValues,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                  BLASWrapperPtr,
       const dftParameters &dftParams,
@@ -394,7 +394,7 @@ namespace dftfe
       const double               fermiEnergy,
       std::vector<double> &      densityMatDerFermiEnergy,
       dftfe::elpaScalaManager &  elpaScala,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                  BLASWrapperPtr,
       const dftParameters &dftParams);
@@ -411,7 +411,7 @@ namespace dftfe
       const MPI_Comm &                                     mpiCommParent,
       const MPI_Comm &                                     mpiCommDomain,
       const MPI_Comm &                                     interBandGroupComm,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                  BLASWrapperPtr,
       std::vector<double> &residualNorm,
@@ -425,7 +425,7 @@ namespace dftfe
          distributedDeviceVec<dataTypes::number> &            HXBlock,
          const unsigned int                                   M,
          const unsigned int                                   N,
-         const std::shared_ptr<
+         std::shared_ptr<
            dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
            &                                              BLASWrapperPtr,
          const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
@@ -445,7 +445,7 @@ namespace dftfe
       const unsigned int                                   M,
       const unsigned int                                   N,
       const unsigned int                                   Noc,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                                              BLASWrapperPtr,
       const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
@@ -464,7 +464,7 @@ namespace dftfe
       distributedDeviceVec<dataTypes::number> &            HXBlock,
       const unsigned int                                   M,
       const unsigned int                                   N,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                                              BLASWrapperPtr,
       const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
@@ -484,7 +484,7 @@ namespace dftfe
       const unsigned int                                   M,
       const unsigned int                                   N,
       const unsigned int                                   Noc,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                                              BLASWrapperPtr,
       const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,

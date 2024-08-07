@@ -529,7 +529,7 @@ namespace dftfe
                                        const dftfe::size_type numBlocks,
                                        const dftfe::size_type startingId,
                                        const ValueType1 *     copyFromVec,
-                                       ValueType2 *           copyToVec);
+                                       ValueType2 *           copyToVec) const;
 
 
       template <typename ValueType1, typename ValueType2>
@@ -1143,7 +1143,7 @@ namespace dftfe
                                        const dftfe::size_type numBlocks,
                                        const dftfe::size_type startingId,
                                        const ValueType1 *     copyFromVec,
-                                       ValueType2 *           copyToVec);
+                                       ValueType2 *           copyToVec) const;
 
 
       template <typename ValueType1, typename ValueType2>

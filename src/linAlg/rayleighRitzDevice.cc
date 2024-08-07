@@ -91,7 +91,7 @@ namespace dftfe
       utils::DeviceCCLWrapper &devicecclMpiCommDomain,
       const MPI_Comm &         interBandGroupComm,
       std::vector<double> &    eigenValues,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                  BLASWrapperPtr,
       const dftParameters &dftParams,
@@ -375,7 +375,7 @@ namespace dftfe
       utils::DeviceCCLWrapper &devicecclMpiCommDomain,
       const MPI_Comm &         interBandGroupComm,
       std::vector<double> &    eigenValues,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                  BLASWrapperPtr,
       const dftParameters &dftParams,
@@ -849,7 +849,7 @@ namespace dftfe
       utils::DeviceCCLWrapper &devicecclMpiCommDomain,
       const MPI_Comm &         interBandGroupComm,
       std::vector<double> &    eigenValues,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                  BLASWrapperPtr,
       const dftParameters &dftParams,
@@ -1491,7 +1491,7 @@ namespace dftfe
       const double               fermiEnergy,
       std::vector<double> &      densityMatDerFermiEnergy,
       dftfe::elpaScalaManager &  elpaScala,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                  BLASWrapperPtr,
       const dftParameters &dftParams)

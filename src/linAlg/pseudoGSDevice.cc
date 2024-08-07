@@ -88,7 +88,7 @@ namespace dftfe
       const MPI_Comm &         mpiCommDomain,
       utils::DeviceCCLWrapper &devicecclMpiCommDomain,
       const MPI_Comm &         interBandGroupComm,
-      const std::shared_ptr<
+      std::shared_ptr<
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         &                  BLASWrapperPtr,
       const dftParameters &dftParams,

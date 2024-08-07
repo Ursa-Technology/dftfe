@@ -20,13 +20,11 @@
 #ifdef DFTFE_WITH_DEVICE
 #  include <solveVselfInBinsDevice.h>
 #  include <vectorUtilities.h>
-#  include <deviceKernelsGeneric.h>
 #  include <MemoryStorage.h>
 #  include <DeviceAPICalls.h>
 #  include <DeviceDataTypeOverloads.h>
 #  include <DeviceTypeConfig.h>
 #  include <DeviceKernelLauncherConstants.h>
-#  include <DeviceBlasWrapper.h>
 
 namespace dftfe
 {
@@ -150,7 +148,9 @@ namespace dftfe
 
       void
       computeAX(
-        dftfe::utils::deviceBlasHandle_t &handle,
+        const std::shared_ptr<
+          dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+          &BLASWrapperPtr,
         dftUtils::constraintMatrixInfo<dftfe::utils::MemorySpace::DEVICE>
           &                           constraintsMatrixDataInfoDevice,
         distributedDeviceVec<double> &src,
@@ -220,12 +220,12 @@ namespace dftfe
                      scalarCoeffBeta  = 0.0;
 
         if (totalLocallyOwnedCells > 0)
-          dftfe::utils::deviceKernelsGeneric::stridedCopyToBlock(
-            numberVectors,
-            totalLocallyOwnedCells * numberNodesPerElement,
-            temp.begin(), // src.begin(),
-            cellNodalVectorD.begin(),
-            cellLocalProcIndexIdMapD.begin());
+          BLASWrapperPtr->stridedCopyToBlock(numberVectors,
+                                             totalLocallyOwnedCells *
+                                               numberNodesPerElement,
+                                             temp.begin(), // src.begin(),
+                                             cellNodalVectorD.begin(),
+                                             cellLocalProcIndexIdMapD.begin());
 
 
 
@@ -237,10 +237,9 @@ namespace dftfe
         //
         // do matrix-matrix multiplication
         //
-        dftfe::utils::deviceBlasWrapper::gemmStridedBatched(
-          handle,
-          dftfe::utils::DEVICEBLAS_OP_N,
-          dftfe::utils::DEVICEBLAS_OP_N,
+        BLASWrapperPtr->xgemmStridedBatched(
+          'N',
+          'N',
           numberVectors,
           numberNodesPerElement,
           numberNodesPerElement,
@@ -258,7 +257,7 @@ namespace dftfe
           totalLocallyOwnedCells);
 
         if (totalLocallyOwnedCells > 0)
-          dftfe::utils::deviceKernelsGeneric::axpyStridedBlockAtomicAdd(
+          BLASWrapperPtr->axpyStridedBlockAtomicAdd(
             numberVectors,
             totalLocallyOwnedCells * numberNodesPerElement,
             cellStiffnessMatrixTimesVectorD.begin(),
@@ -353,14 +352,15 @@ namespace dftfe
       }
 
       void
-      computeResidualSq(dftfe::utils::deviceBlasHandle_t &handle,
-                        const double *                    vec1,
-                        const double *                    vec2,
-                        double *                          vecTemp,
-                        const double *                    onesVec,
-                        const unsigned int                numberVectors,
-                        const unsigned int                localSize,
-                        double *                          residualNormSq)
+      computeResidualSq(const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<
+                          dftfe::utils::MemorySpace::DEVICE>> &BLASWrapperPtr,
+                        const double *                         vec1,
+                        const double *                         vec2,
+                        double *                               vecTemp,
+                        const double *                         onesVec,
+                        const unsigned int                     numberVectors,
+                        const unsigned int                     localSize,
+                        double *                               residualNormSq)
       {
         if (localSize > 0)
 #  ifdef DFTFE_WITH_DEVICE_LANG_CUDA
@@ -386,20 +386,19 @@ namespace dftfe
 #  endif
 
         const double alpha = 1.0, beta = 0.0;
-        dftfe::utils::deviceBlasWrapper::gemm(handle,
-                                              dftfe::utils::DEVICEBLAS_OP_N,
-                                              dftfe::utils::DEVICEBLAS_OP_T,
-                                              1,
-                                              numberVectors,
-                                              localSize,
-                                              &alpha,
-                                              onesVec,
-                                              1,
-                                              vecTemp,
-                                              numberVectors,
-                                              &beta,
-                                              residualNormSq,
-                                              1);
+        BLASWrapperPtr->xgemm('N',
+                              'N',
+                              1,
+                              numberVectors,
+                              localSize,
+                              &alpha,
+                              onesVec,
+                              1,
+                              vecTemp,
+                              numberVectors,
+                              &beta,
+                              residualNormSq,
+                              1);
       }
     } // namespace
 
@@ -524,7 +523,7 @@ namespace dftfe
           << " poissonDevice::solveVselfInBins: time for mem allocation: "
           << time << std::endl;
 
-      cgSolver(BLASWrapperPtr->getDeviceBlasHandle(),
+      cgSolver(BLASWrapperPtr,
                constraintsMatrixDataInfoDevice,
                bD.begin(),
                diagonalAD.begin(),
@@ -550,7 +549,9 @@ namespace dftfe
 
     void
     cgSolver(
-      dftfe::utils::deviceBlasHandle_t &handle,
+      const std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &BLASWrapperPtr,
       dftUtils::constraintMatrixInfo<dftfe::utils::MemorySpace::DEVICE>
         &           constraintsMatrixDataInfoDevice,
       const double *bD,
@@ -675,7 +676,7 @@ namespace dftfe
       MPI_Barrier(mpiCommParent);
       start_time = MPI_Wtime();
 
-      computeAX(handle,
+      computeAX(BLASWrapperPtr,
                 constraintsMatrixDataInfoDevice,
                 x,
                 temp,
@@ -697,18 +698,12 @@ namespace dftfe
       // r; r.resize(localSize,0.0);
 
       // r = b
-      dftfe::utils::deviceBlasWrapper::copy(
-        handle, localSize * numberBins, bD, inc, r.begin(), inc);
+      BLASWrapperPtr->xcopy(localSize * numberBins, bD, inc, r.begin(), inc);
 
 
       // r = b - Ax i.e r - Ax
-      dftfe::utils::deviceBlasWrapper::axpy(handle,
-                                            localSize * numberBins,
-                                            &negOne,
-                                            Ax.begin(),
-                                            inc,
-                                            r.begin(),
-                                            inc);
+      BLASWrapperPtr->xaxpy(
+        localSize * numberBins, &negOne, Ax.begin(), inc, r.begin(), inc);
 
 
       // precondition r
@@ -720,7 +715,7 @@ namespace dftfe
         r.begin(), diagonalAD, numberBins, localSize, d.begin());
 
 
-      computeResidualSq(handle,
+      computeResidualSq(BLASWrapperPtr,
                         r.begin(),
                         d.begin(),
                         vecTempD.begin(),
@@ -754,7 +749,7 @@ namespace dftfe
 
       unsigned int iterationNumber = 0;
 
-      computeResidualSq(handle,
+      computeResidualSq(BLASWrapperPtr,
                         r.begin(),
                         r.begin(),
                         vecTempD.begin(),
@@ -790,7 +785,7 @@ namespace dftfe
           // computeAX(d,q);
 
 
-          computeAX(handle,
+          computeAX(BLASWrapperPtr,
                     constraintsMatrixDataInfoDevice,
                     d,
                     temp,
@@ -807,7 +802,7 @@ namespace dftfe
                     cellStiffnessMatrixTimesVectorD);
 
           // compute alpha
-          computeResidualSq(handle,
+          computeResidualSq(BLASWrapperPtr,
                             d.begin(),
                             q.begin(),
                             vecTempD.begin(),
@@ -867,12 +862,12 @@ namespace dftfe
           if (iter % 50 == 0)
             {
               // r = b
-              dftfe::utils::deviceBlasWrapper::copy(
-                handle, localSize * numberBins, bD, inc, r.begin(), inc);
+              BLASWrapperPtr->xcopy(
+                localSize * numberBins, bD, inc, r.begin(), inc);
 
               // computeAX(x,Ax);
 
-              computeAX(handle,
+              computeAX(BLASWrapperPtr,
                         constraintsMatrixDataInfoDevice,
                         x,
                         temp,
@@ -953,7 +948,7 @@ namespace dftfe
 
 
           // delta_new = r*s;
-          computeResidualSq(handle,
+          computeResidualSq(BLASWrapperPtr,
                             r.begin(),
                             s.begin(),
                             vecTempD.begin(),
@@ -1053,7 +1048,7 @@ namespace dftfe
 
 
       // compute residual norm at end
-      computeResidualSq(handle,
+      computeResidualSq(BLASWrapperPtr,
                         r.begin(),
                         r.begin(),
                         vecTempD.begin(),

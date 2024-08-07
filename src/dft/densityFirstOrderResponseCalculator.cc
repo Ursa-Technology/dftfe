@@ -30,7 +30,7 @@
 #include <DeviceDataTypeOverloads.h>
 #include <DeviceTypeConfig.h>
 #include <DeviceKernelLauncherConstants.h>
-#include <DeviceBlasWrapper.h>
+
 
 namespace dftfe
 {

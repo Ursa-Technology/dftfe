@@ -29,7 +29,6 @@
 #  include <DeviceDataTypeOverloads.h>
 #  include <DeviceAPICalls.h>
 #  include <DeviceKernelLauncherConstants.h>
-#  include <DeviceBlasWrapper.h>
 #  include <forceWfcContractionsDeviceKernels.h>
 #endif
 

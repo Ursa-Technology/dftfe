@@ -179,8 +179,6 @@ namespace dftfe
         dealii::TimerOutput::every_call,
       dealii::TimerOutput::wall_times);
 
-    dftfe::utils::deviceBlasHandle_t &deviceBlasHandle =
-      BLASWrapperPtr->getDeviceBlasHandle();
 
     //
     // allocate memory for full flattened array on device and fill it up
@@ -706,7 +704,7 @@ namespace dftfe
           devicecclMpiCommDomain,
           interBandGroupComm,
           eigenValues,
-          deviceBlasHandle,
+          BLASWrapperPtr,
           d_dftParams,
           useMixedPrecOverall);
       }
@@ -723,7 +721,7 @@ namespace dftfe
               operatorMatrix.getMPICommunicatorDomain(),
               devicecclMpiCommDomain,
               interBandGroupComm,
-              deviceBlasHandle,
+              BLASWrapperPtr,
               d_dftParams,
               useMixedPrecOverall);
 
@@ -741,7 +739,7 @@ namespace dftfe
               devicecclMpiCommDomain,
               interBandGroupComm,
               eigenValues,
-              deviceBlasHandle,
+              BLASWrapperPtr,
               d_dftParams,
               useMixedPrecOverall);
           }
@@ -760,7 +758,7 @@ namespace dftfe
               devicecclMpiCommDomain,
               interBandGroupComm,
               eigenValues,
-              deviceBlasHandle,
+              BLASWrapperPtr,
               d_dftParams,
               useMixedPrecOverall);
           }
@@ -787,7 +785,7 @@ namespace dftfe
             d_mpiCommParent,
             operatorMatrix.getMPICommunicatorDomain(),
             interBandGroupComm,
-            deviceBlasHandle,
+            BLASWrapperPtr,
             residualNorms,
             d_dftParams);
         else
@@ -802,7 +800,7 @@ namespace dftfe
             d_mpiCommParent,
             operatorMatrix.getMPICommunicatorDomain(),
             interBandGroupComm,
-            deviceBlasHandle,
+            BLASWrapperPtr,
             residualNorms,
             d_dftParams,
             true);
@@ -856,9 +854,6 @@ namespace dftfe
     const unsigned int       numberPasses,
     const bool               useMixedPrecOverall)
   {
-    dftfe::utils::deviceBlasHandle_t &deviceBlasHandle =
-      BLASWrapperPtr->getDeviceBlasHandle();
-
     //
     // allocate memory for full flattened array on device and fill it up
     //
@@ -1172,7 +1167,7 @@ namespace dftfe
           operatorMatrix.getMPICommunicatorDomain(),
           devicecclMpiCommDomain,
           interBandGroupComm,
-          deviceBlasHandle,
+          BLASWrapperPtr,
           d_dftParams,
           useMixedPrecOverall);
       }
@@ -1211,8 +1206,6 @@ namespace dftfe
     computingTimerStandard.enter_subsection(
       "Density matrix first order response on Device");
 
-    dftfe::utils::deviceBlasHandle_t &deviceBlasHandle =
-      BLASWrapperPtr->getDeviceBlasHandle();
 
     //
     // allocate memory for full flattened array on device and fill it up
@@ -1257,7 +1250,7 @@ namespace dftfe
       fermiEnergy,
       densityMatDerFermiEnergy,
       elpaScala,
-      deviceBlasHandle,
+      BLASWrapperPtr,
       d_dftParams);
 
 

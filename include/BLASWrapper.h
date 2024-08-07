@@ -1275,6 +1275,8 @@ namespace dftfe
       setMathMode(dftfe::utils::deviceBlasMath_t mathMode);
 #  endif
 
+      dftfe::utils::deviceBlasStatus_t
+      setStream(dftfe::utils::deviceStream_t streamId);
 
     private:
 #  ifdef DFTFE_WITH_DEVICE_AMD
@@ -1291,9 +1293,6 @@ namespace dftfe
 
       dftfe::utils::deviceBlasStatus_t
       destroy();
-
-      dftfe::utils::deviceBlasStatus_t
-      setStream(dftfe::utils::deviceStream_t streamId);
     };
 #endif
 

@@ -653,3 +653,165 @@ BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::MultiVectorXDot(
   std::complex<double> *      tempResults,
   const MPI_Comm &            mpi_communicator,
   std::complex<double> *      result) const;
+
+// strided copy from block constant stride
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  stridedCopyFromBlockConstantStride(const dftfe::size_type blockSizeTo,
+                                     const dftfe::size_type blockSizeFrom,
+                                     const dftfe::size_type numBlocks,
+                                     const dftfe::size_type startingId,
+                                     const double *         copyFromVec,
+                                     double *               copyToVec);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  stridedCopyFromBlockConstantStride(const dftfe::size_type blockSizeTo,
+                                     const dftfe::size_type blockSizeFrom,
+                                     const dftfe::size_type numBlocks,
+                                     const dftfe::size_type startingId,
+                                     const float *          copyFromVec,
+                                     float *                copyToVec);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  stridedCopyFromBlockConstantStride(const dftfe::size_type      blockSizeTo,
+                                     const dftfe::size_type      blockSizeFrom,
+                                     const dftfe::size_type      numBlocks,
+                                     const dftfe::size_type      startingId,
+                                     const std::complex<double> *copyFromVec,
+                                     std::complex<double> *      copyToVec);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  stridedCopyFromBlockConstantStride(const dftfe::size_type     blockSizeTo,
+                                     const dftfe::size_type     blockSizeFrom,
+                                     const dftfe::size_type     numBlocks,
+                                     const dftfe::size_type     startingId,
+                                     const std::complex<float> *copyFromVec,
+                                     std::complex<float> *      copyToVec);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  stridedCopyFromBlockConstantStride(const dftfe::size_type blockSizeTo,
+                                     const dftfe::size_type blockSizeFrom,
+                                     const dftfe::size_type numBlocks,
+                                     const dftfe::size_type startingId,
+                                     const double *         copyFromVec,
+                                     float *                copyToVec);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  stridedCopyFromBlockConstantStride(const dftfe::size_type blockSizeTo,
+                                     const dftfe::size_type blockSizeFrom,
+                                     const dftfe::size_type numBlocks,
+                                     const dftfe::size_type startingId,
+                                     const float *          copyFromVec,
+                                     double *               copyToVec);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  stridedCopyFromBlockConstantStride(const dftfe::size_type      blockSizeTo,
+                                     const dftfe::size_type      blockSizeFrom,
+                                     const dftfe::size_type      numBlocks,
+                                     const dftfe::size_type      startingId,
+                                     const std::complex<double> *copyFromVec,
+                                     std::complex<float> *       copyToVec);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  stridedCopyFromBlockConstantStride(const dftfe::size_type     blockSizeTo,
+                                     const dftfe::size_type     blockSizeFrom,
+                                     const dftfe::size_type     numBlocks,
+                                     const dftfe::size_type     startingId,
+                                     const std::complex<float> *copyFromVec,
+                                     std::complex<double> *     copyToVec);
+// strided copy  constant stride
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedCopyConstantStride(
+  const dftfe::size_type blockSize,
+  const dftfe::size_type strideTo,
+  const dftfe::size_type strideFrom,
+  const dftfe::size_type numBlocks,
+  const dftfe::size_type startingToId,
+  const dftfe::size_type startingFromId,
+  const double *         copyFromVec,
+  double *               copyToVec);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedCopyConstantStride(
+  const dftfe::size_type blockSize,
+  const dftfe::size_type strideTo,
+  const dftfe::size_type strideFrom,
+  const dftfe::size_type numBlocks,
+  const dftfe::size_type startingToId,
+  const dftfe::size_type startingFromId,
+  const float *          copyFromVec,
+  float *                copyToVec);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedCopyConstantStride(
+  const dftfe::size_type      blockSize,
+  const dftfe::size_type      strideTo,
+  const dftfe::size_type      strideFrom,
+  const dftfe::size_type      numBlocks,
+  const dftfe::size_type      startingToId,
+  const dftfe::size_type      startingFromId,
+  const std::complex<double> *copyFromVec,
+  std::complex<double> *      copyToVec);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedCopyConstantStride(
+  const dftfe::size_type     blockSize,
+  const dftfe::size_type     strideTo,
+  const dftfe::size_type     strideFrom,
+  const dftfe::size_type     numBlocks,
+  const dftfe::size_type     startingToId,
+  const dftfe::size_type     startingFromId,
+  const std::complex<float> *copyFromVec,
+  std::complex<float> *      copyToVec);
+
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedCopyConstantStride(
+  const dftfe::size_type blockSize,
+  const dftfe::size_type strideTo,
+  const dftfe::size_type strideFrom,
+  const dftfe::size_type numBlocks,
+  const dftfe::size_type startingToId,
+  const dftfe::size_type startingFromId,
+  const double *         copyFromVec,
+  float *                copyToVec);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedCopyConstantStride(
+  const dftfe::size_type blockSize,
+  const dftfe::size_type strideTo,
+  const dftfe::size_type strideFrom,
+  const dftfe::size_type numBlocks,
+  const dftfe::size_type startingToId,
+  const dftfe::size_type startingFromId,
+  const float *          copyFromVec,
+  double *               copyToVec);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedCopyConstantStride(
+  const dftfe::size_type      blockSize,
+  const dftfe::size_type      strideTo,
+  const dftfe::size_type      strideFrom,
+  const dftfe::size_type      numBlocks,
+  const dftfe::size_type      startingToId,
+  const dftfe::size_type      startingFromId,
+  const std::complex<double> *copyFromVec,
+  std::complex<float> *       copyToVec);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedCopyConstantStride(
+  const dftfe::size_type     blockSize,
+  const dftfe::size_type     strideTo,
+  const dftfe::size_type     strideFrom,
+  const dftfe::size_type     numBlocks,
+  const dftfe::size_type     startingToId,
+  const dftfe::size_type     startingFromId,
+  const std::complex<float> *copyFromVec,
+  std::complex<double> *     copyToVec);

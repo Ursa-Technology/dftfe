@@ -662,6 +662,14 @@ namespace dftfe
     public:
       BLASWrapper();
 
+      template <typename ValueType1, typename ValueType2>
+      static void
+      copyValueType1ArrToValueType2ArrDeviceCall(
+        const dftfe::size_type             size,
+        const ValueType1 *                 valueType1Arr,
+        ValueType2 *                       valueType2Arr,
+        const dftfe::utils::deviceStream_t streamId = 0);
+
       template <typename ValueType>
       void
       hadamardProduct(const unsigned int m,

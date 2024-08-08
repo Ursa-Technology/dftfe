@@ -867,3 +867,75 @@ BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::stridedCopyConstantStride(
   const dftfe::size_type     startingFromId,
   const std::complex<float> *copyFromVec,
   std::complex<double> *     copyToVec);
+
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  copyValueType1ArrToValueType2ArrDeviceCall(
+    const dftfe::size_type             size,
+    const double *                     valueType1Arr,
+    std::complex<double> *             valueType2Arr,
+    const dftfe::utils::deviceStream_t streamId);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  copyValueType1ArrToValueType2ArrDeviceCall(
+    const dftfe::size_type             size,
+    const double *                     valueType1Arr,
+    std::complex<float> *              valueType2Arr,
+    const dftfe::utils::deviceStream_t streamId);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  copyValueType1ArrToValueType2ArrDeviceCall(
+    const dftfe::size_type             size,
+    const double *                     valueType1Arr,
+    double *                           valueType2Arr,
+    const dftfe::utils::deviceStream_t streamId);
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  copyValueType1ArrToValueType2ArrDeviceCall(
+    const dftfe::size_type             size,
+    const double *                     valueType1Arr,
+    float *                            valueType2Arr,
+    const dftfe::utils::deviceStream_t streamId);
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  copyValueType1ArrToValueType2ArrDeviceCall(
+    const dftfe::size_type             size,
+    const std::complex<double> *       valueType1Arr,
+    std::complex<float> *              valueType2Arr,
+    const dftfe::utils::deviceStream_t streamId);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  copyValueType1ArrToValueType2ArrDeviceCall(
+    const dftfe::size_type             size,
+    const std::complex<float> *        valueType1Arr,
+    std::complex<double> *             valueType2Arr,
+    const dftfe::utils::deviceStream_t streamId);
+
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  copyValueType1ArrToValueType2ArrDeviceCall(
+    const dftfe::size_type             size,
+    const float *                      valueType1Arr,
+    float *                            valueType2Arr,
+    const dftfe::utils::deviceStream_t streamId);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  copyValueType1ArrToValueType2ArrDeviceCall(
+    const dftfe::size_type             size,
+    const std::complex<float> *        valueType1Arr,
+    std::complex<float> *              valueType2Arr,
+    const dftfe::utils::deviceStream_t streamId);
+
+template void
+BLASWrapper<dftfe::utils::MemorySpace::DEVICE>::
+  copyValueType1ArrToValueType2ArrDeviceCall(
+    const dftfe::size_type             size,
+    const float *                      valueType1Arr,
+    double *                           valueType2Arr,
+    const dftfe::utils::deviceStream_t streamId);

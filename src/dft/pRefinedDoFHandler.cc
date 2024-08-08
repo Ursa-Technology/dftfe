@@ -403,6 +403,10 @@ namespace dftfe
                                     d_constraintsVectorElectro,
                                     quadratureVector,
                                     additional_data);
+    if (d_dftParamsPtr->verbosity >= 4)
+      dftUtils::printCurrentMemoryUsage(mpi_communicator,
+                                        "Called prefined matrix free reinit");
+
     if (recomputeBasisData)
       {
         if (!vselfPerturbationUpdateForStress)
@@ -480,6 +484,9 @@ namespace dftfe
           }
       }
 #endif
+    if (d_dftParamsPtr->verbosity >= 4)
+      dftUtils::printCurrentMemoryUsage(mpi_communicator,
+                                        "Called febasisoperations electro reinit");
 
     //
     // locate atom core nodes

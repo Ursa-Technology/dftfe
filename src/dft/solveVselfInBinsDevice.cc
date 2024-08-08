@@ -387,7 +387,7 @@ namespace dftfe
 
         const double alpha = 1.0, beta = 0.0;
         BLASWrapperPtr->xgemm('N',
-                              'N',
+                              'T',
                               1,
                               numberVectors,
                               localSize,

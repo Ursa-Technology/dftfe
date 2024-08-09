@@ -149,6 +149,7 @@ namespace dftfe
                   << std::endl;
       MPI_Barrier(mpiComm);
 #else
+      MPI_Barrier(mpiComm);
       struct sysinfo memInfo;
       sysinfo(&memInfo);
       double totalVirtualMem = memInfo.totalram;

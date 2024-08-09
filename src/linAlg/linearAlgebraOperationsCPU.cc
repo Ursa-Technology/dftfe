@@ -886,7 +886,7 @@ namespace dftfe
 
                   const unsigned int D = N - jvec;
 
-                  // single prec gemm
+                  // full prec gemm
                   xgemm(&transA,
                         &transB,
                         &B,
@@ -981,7 +981,7 @@ namespace dftfe
                     &alpha,
                     &X[0] + jvec,
                     &N,
-                    HXBlock->data(),
+                    &X[0] + jvec,
                     &B,
                     &beta,
                     &projHamBlockDoublePrec[0],
@@ -993,8 +993,8 @@ namespace dftfe
                                                 dataTypes::numberFP32(1.0),
                                               betaSinglePrec =
                                                 dataTypes::numberFP32(0.0);
-                  for (unsigned int i = 0; i < numberDofs * B; ++i)
-                    HXBlockSinglePrec[i] = HXBlock->data()[i];
+                  // for (unsigned int i = 0; i < numberDofs * B; ++i)
+                  //   HXBlockSinglePrec[i] = HXBlock->data()[i];
                   xgemm(&transA,
                         &transB,
                         &DRem,
@@ -1003,7 +1003,7 @@ namespace dftfe
                         &alphaSinglePrec,
                         &XSinglePrec[0] + jvec + B,
                         &N,
-                        &HXBlockSinglePrec[0],
+                        &XSinglePrec[0] + jvec,
                         &B,
                         &betaSinglePrec,
                         &projHamBlockSinglePrec[0],

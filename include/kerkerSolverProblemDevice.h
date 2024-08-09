@@ -25,7 +25,6 @@
 #    include <linearSolverProblemDevice.h>
 #    include <triangulationManager.h>
 #    include <constraintMatrixInfo.h>
-#    include <deviceKernelsGeneric.h>
 #    include <MemoryStorage.h>
 #    include <dftUtils.h>
 #    include <FEBasisOperations.h>

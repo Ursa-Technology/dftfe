@@ -140,7 +140,7 @@ namespace dftfe
   void
   chebyshevOrthogonalizedSubspaceIterationSolver::solve(
     operatorDFTClass<dftfe::utils::MemorySpace::HOST> &operatorMatrix,
-    const std::shared_ptr<
+    std::shared_ptr<
       dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
       &                  BLASWrapperPtr,
     elpaScalaManager &   elpaScala,

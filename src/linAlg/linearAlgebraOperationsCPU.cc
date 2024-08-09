@@ -26,6 +26,7 @@
 #include "dftParameters.h"
 #include "dftUtils.h"
 #include "linearAlgebraOperations.h"
+#include "linearAlgebraOperationsCPU.h"
 #include "linearAlgebraOperationsInternal.h"
 #include "constants.h"
 #include "elpaScalaManager.h"
@@ -401,11 +402,8 @@ namespace dftfe
       std::shared_ptr<const dftfe::ProcessGrid> processGrid =
         elpaScala.getProcessGridDftfeScalaWrapper();
 
-      if (dftParams.useMixedPrecCGS_O && useMixedPrec)
-        computing_timer.enter_subsection(
-          "SConj=X^{T}XConj Mixed Prec, RR GEP step");
-      else
-        computing_timer.enter_subsection("SConj=X^{T}XConj, RR GEP step");
+
+      computing_timer.enter_subsection("XtHX and XtOX, RR GEP step");
       //
       // compute overlap matrix
       //
@@ -419,49 +417,45 @@ namespace dftfe
                     overlapMatPar.local_m() * overlapMatPar.local_n(),
                   T(0.0));
 
-      // SConj=X^{T}*XConj.
-      if (!(dftParams.useMixedPrecCGS_O && useMixedPrec))
+      dftfe::ScaLAPACKMatrix<T> projHamPar(numberWaveFunctions,
+                                           processGrid,
+                                           rowsBlockSize);
+      if (processGrid->is_process_active())
+        std::fill(&projHamPar.local_el(0, 0),
+                  &projHamPar.local_el(0, 0) +
+                    projHamPar.local_m() * projHamPar.local_n(),
+                  T(0.0));
+
+      if (!(useMixedPrec))
         {
-          internal::fillParallelOverlapMatrix(
-            X,
-            numberWaveFunctions * localVectorSize,
-            numberWaveFunctions,
-            processGrid,
-            interBandGroupComm,
-            operatorMatrix.getMPICommunicatorDomain(),
-            overlapMatPar,
-            dftParams);
+          XtHXXtOX(operatorMatrix,
+                   X,
+                   numberWaveFunctions,
+                   localVectorSize,
+                   processGrid,
+                   operatorMatrix.getMPICommunicatorDomain(),
+                   interBandGroupComm,
+                   dftParams,
+                   projHamPar,
+                   overlapMatPar);
         }
       else
         {
-          if (std::is_same<T, std::complex<double>>::value)
-            internal::fillParallelOverlapMatrixMixedPrec<T,
-                                                         std::complex<float>>(
-              X,
-              numberWaveFunctions * localVectorSize,
-              numberWaveFunctions,
-              processGrid,
-              interBandGroupComm,
-              operatorMatrix.getMPICommunicatorDomain(),
-              overlapMatPar,
-              dftParams);
-          else
-            internal::fillParallelOverlapMatrixMixedPrec<T, float>(
-              X,
-              numberWaveFunctions * localVectorSize,
-              numberWaveFunctions,
-              processGrid,
-              interBandGroupComm,
-              operatorMatrix.getMPICommunicatorDomain(),
-              overlapMatPar,
-              dftParams);
+          XtHXXtOXMixedPrec(operatorMatrix,
+                            X,
+                            numberWaveFunctions,
+                            dftParams.numCoreWfcXtHX,
+                            localVectorSize,
+                            processGrid,
+                            operatorMatrix.getMPICommunicatorDomain(),
+                            interBandGroupComm,
+                            dftParams,
+                            projHamPar,
+                            overlapMatPar);
         }
 
-      if (dftParams.useMixedPrecCGS_O && useMixedPrec)
-        computing_timer.leave_subsection(
-          "SConj=X^{T}XConj Mixed Prec, RR GEP step");
-      else
-        computing_timer.leave_subsection("SConj=X^{T}XConj, RR GEP step");
+
+      computing_timer.leave_subsection("XtHX and XtOX, RR GEP step");
 
       // SConj=LConj*L^{T}
       computing_timer.enter_subsection("Cholesky and triangular matrix invert");
@@ -482,6 +476,8 @@ namespace dftfe
                         overlapMatParConjTrans.local_m() *
                           overlapMatParConjTrans.local_n(),
                       T(0.0));
+
+
 
           overlapMatParConjTrans.copy_conjugate_transposed(overlapMatPar);
 
@@ -540,30 +536,6 @@ namespace dftfe
       computing_timer.leave_subsection("Cholesky and triangular matrix invert");
 
 
-      computing_timer.enter_subsection("Compute ProjHam, RR step");
-      //
-      // compute projected Hamiltonian conjugate HConjProj= X^{T}*HConj*XConj
-      //
-      dftfe::ScaLAPACKMatrix<T> projHamPar(numberWaveFunctions,
-                                           processGrid,
-                                           rowsBlockSize);
-      if (processGrid->is_process_active())
-        std::fill(&projHamPar.local_el(0, 0),
-                  &projHamPar.local_el(0, 0) +
-                    projHamPar.local_m() * projHamPar.local_n(),
-                  T(0.0));
-
-
-      XtHX(operatorMatrix,
-           X,
-           numberWaveFunctions,
-           localVectorSize,
-           processGrid,
-           operatorMatrix.getMPICommunicatorDomain(),
-           interBandGroupComm,
-           dftParams,
-           projHamPar);
-      computing_timer.leave_subsection("Compute ProjHam, RR step");
 
       computing_timer.enter_subsection(
         "Compute HSConjProj= Lconj^{-1}*HConjProj*(Lconj^{-1})^C, RR step");
@@ -735,6 +707,373 @@ namespace dftfe
         computing_timer.leave_subsection(
           "X^{T}={QConjPrime}^{C}*LConj^{-1}*X^{T} mixed prec, RR step");
     }
+     void
+    XtHXXtOXMixedPrec(
+      operatorDFTClass<dftfe::utils::MemorySpace::HOST> &operatorMatrix,
+      const dataTypes::number *                          X,
+      const unsigned int                                 N,
+      const unsigned int                                 Ncore,
+      const unsigned int                                 numberDofs,
+      const std::shared_ptr<const dftfe::ProcessGrid> &  processGrid,
+      const MPI_Comm &                                   mpiCommDomain,
+      const MPI_Comm &                                   interBandGroupComm,
+      const dftParameters &                              dftParams,
+      dftfe::ScaLAPACKMatrix<dataTypes::number> &        projHamPar,
+      dftfe::ScaLAPACKMatrix<dataTypes::number> &        projOverlapPar,
+      const bool onlyHPrimePartForFirstOrderDensityMatResponse)
+    {
+      //
+      // Get access to number of locally owned nodes on the current processor
+      //
+
+      // create temporary arrays XBlock,Hx
+      distributedCPUMultiVec<dataTypes::number> *XBlock, *HXBlock;
+
+      std::unordered_map<unsigned int, unsigned int> globalToLocalColumnIdMap;
+      std::unordered_map<unsigned int, unsigned int> globalToLocalRowIdMap;
+      linearAlgebraOperations::internal::createGlobalToLocalIdMapsScaLAPACKMat(
+        processGrid,
+        projHamPar,
+        globalToLocalRowIdMap,
+        globalToLocalColumnIdMap);
+      // band group parallelization data structures
+      const unsigned int numberBandGroups =
+        dealii::Utilities::MPI::n_mpi_processes(interBandGroupComm);
+      const unsigned int bandGroupTaskId =
+        dealii::Utilities::MPI::this_mpi_process(interBandGroupComm);
+      std::vector<unsigned int> bandGroupLowHighPlusOneIndices;
+      dftUtils::createBandParallelizationIndices(
+        interBandGroupComm, N, bandGroupLowHighPlusOneIndices);
+
+      /*
+       * X^{T}*H*Xc is done in a blocked approach for memory optimization:
+       * Sum_{blocks} X^{T}*Hc*XcBlock. The result of each X^{T}*Hc*XcBlock
+       * has a much smaller memory compared to X^{T}*Hc*Xc.
+       * X^{T} (denoted by X in the code with column major format storage)
+       * is a matrix with size (N x MLoc).
+       * MLoc, which is number of local dofs is denoted by numberDofs in the
+       * code. Xc denotes complex conjugate of X. XcBlock is a matrix of size
+       * (MLoc x B). B is the block size. A further optimization is done to
+       * reduce floating point operations: As X^{T}*Hc*Xc is a Hermitian
+       matrix,
+       * it suffices to compute only the lower triangular part. To exploit
+       this,
+       * we do X^{T}*Hc*Xc=Sum_{blocks} XTrunc^{T}*Hc*XcBlock where
+       XTrunc^{T}
+       * is a (D x MLoc) sub matrix of X^{T} with the row indices ranging
+       from
+       * the lowest global index of XcBlock (denoted by jvec in the code) to
+       N.
+       * D=N-jvec. The parallel ScaLapack matrix projHamPar is directly
+       filled
+       * from the XTrunc^{T}*Hc*XcBlock result
+       */
+
+      const unsigned int vectorsBlockSize =
+        std::min(dftParams.wfcBlockSize, bandGroupLowHighPlusOneIndices[1]);
+
+      std::vector<dataTypes::numberFP32> projHamBlockSinglePrec(
+        N * vectorsBlockSize, 0.0);
+      std::vector<dataTypes::number> projHamBlockDoublePrec(vectorsBlockSize *
+                                                              vectorsBlockSize,
+                                                            0.0);
+      std::vector<dataTypes::number> projHamBlock(N * vectorsBlockSize, 0.0);
+
+      std::vector<dataTypes::numberFP32> HXBlockSinglePrec;
+
+      std::vector<dataTypes::numberFP32> XSinglePrec(X, X + numberDofs * N);
+
+
+      if (dftParams.verbosity >= 4)
+        dftUtils::printCurrentMemoryUsage(
+          mpiCommDomain,
+          "Inside Blocked XtHX with parallel projected Ham matrix");
+
+      for (unsigned int jvec = 0; jvec < N; jvec += vectorsBlockSize)
+        {
+          // Correct block dimensions if block "goes off edge of" the matrix
+          const unsigned int B = std::min(vectorsBlockSize, N - jvec);
+          if (jvec == 0 || B != vectorsBlockSize)
+            {
+              XBlock  = &operatorMatrix.getScratchFEMultivector(B, 0);
+              HXBlock = &operatorMatrix.getScratchFEMultivector(B, 1);
+              HXBlockSinglePrec.resize(B * numberDofs);
+            }
+
+          if ((jvec + B) <=
+                bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId + 1] &&
+              (jvec + B) > bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId])
+            {
+              // fill XBlock^{T} from X:
+              for (unsigned int iNode = 0; iNode < numberDofs; ++iNode)
+                for (unsigned int iWave = 0; iWave < B; ++iWave)
+                  XBlock->data()[iNode * B + iWave] =
+                    X[iNode * N + jvec + iWave];
+
+              // evaluate H times XBlock and store in HXBlock^{T}
+              operatorMatrix.HX(*XBlock,
+                                1.0,
+                                0.0,
+                                0.0,
+                                *HXBlock,
+                                onlyHPrimePartForFirstOrderDensityMatResponse);
+
+
+
+              const char transA = 'N';
+              const char transB =
+                std::is_same<dataTypes::number, std::complex<double>>::value ?
+                  'C' :
+                  'T';
+              const dataTypes::number alpha = dataTypes::number(1.0),
+                                      beta  = dataTypes::number(0.0);
+              if (jvec + B > Ncore)
+                {
+                  const unsigned int D = N - jvec;
+
+                  // Comptute local XTrunc^{T}*HXcBlock.
+                  xgemm(&transA,
+                        &transB,
+                        &D,
+                        &B,
+                        &numberDofs,
+                        &alpha,
+                        &X[0] + jvec,
+                        &N,
+                        HXBlock->data(),
+                        &B,
+                        &beta,
+                        &projHamBlock[0],
+                        &D);
+
+                  // Sum local XTrunc^{T}*HXcBlock across domain decomposition
+                  // processors
+                  MPI_Allreduce(MPI_IN_PLACE,
+                                &projHamBlock[0],
+                                D * B,
+                                dataTypes::mpi_type_id(&projHamBlock[0]),
+                                MPI_SUM,
+                                mpiCommDomain);
+
+
+                  // Copying only the lower triangular part to the ScaLAPACK
+                  // projected Hamiltonian matrix
+                  if (processGrid->is_process_active())
+                    for (unsigned int j = 0; j < B; ++j)
+                      if (globalToLocalColumnIdMap.find(j + jvec) !=
+                          globalToLocalColumnIdMap.end())
+                        {
+                          const unsigned int localColumnId =
+                            globalToLocalColumnIdMap[j + jvec];
+                          for (unsigned int i = jvec + j; i < N; ++i)
+                            {
+                              std::unordered_map<unsigned int,
+                                                 unsigned int>::iterator it =
+                                globalToLocalRowIdMap.find(i);
+                              if (it != globalToLocalRowIdMap.end())
+                                projHamPar.local_el(it->second, localColumnId) =
+                                  projHamBlock[j * D + i - jvec];
+                            }
+                        }
+                }
+              else
+                {
+                  const dataTypes::numberFP32 alphaSinglePrec =
+                                                dataTypes::numberFP32(1.0),
+                                              betaSinglePrec =
+                                                dataTypes::numberFP32(0.0);
+
+
+                  const unsigned int D = N - jvec;
+
+                  // single prec gemm
+                  xgemm(&transA,
+                        &transB,
+                        &B,
+                        &B,
+                        &numberDofs,
+                        &alpha,
+                        &X[0] + jvec,
+                        &N,
+                        HXBlock->data(),
+                        &B,
+                        &beta,
+                        &projHamBlockDoublePrec[0],
+                        &B);
+                  const unsigned int DRem = D - B;
+                  if (DRem != 0)
+                    {
+                      for (unsigned int i = 0; i < numberDofs * B; ++i)
+                        HXBlockSinglePrec[i] = HXBlock->data()[i];
+                      xgemm(&transA,
+                            &transB,
+                            &DRem,
+                            &B,
+                            &numberDofs,
+                            &alphaSinglePrec,
+                            &XSinglePrec[0] + jvec + B,
+                            &N,
+                            &HXBlockSinglePrec[0],
+                            &B,
+                            &betaSinglePrec,
+                            &projHamBlockSinglePrec[0],
+                            &DRem);
+                    }
+
+                  MPI_Allreduce(MPI_IN_PLACE,
+                                &projHamBlockDoublePrec[0],
+                                B * B,
+                                dataTypes::mpi_type_id(
+                                  &projHamBlockDoublePrec[0]),
+                                MPI_SUM,
+                                mpiCommDomain);
+                  MPI_Allreduce(MPI_IN_PLACE,
+                                &projHamBlockSinglePrec[0],
+                                DRem * B,
+                                dataTypes::mpi_type_id(
+                                  &projHamBlockSinglePrec[0]),
+                                MPI_SUM,
+                                mpiCommDomain);
+
+                  for (unsigned int i = 0; i < B; ++i)
+                    {
+                      for (unsigned int j = 0; j < B; ++j)
+                        projHamBlock[i * D + j] =
+                          projHamBlockDoublePrec[i * B + j];
+
+                      for (unsigned int j = 0; j < DRem; ++j)
+                        projHamBlock[i * D + j + B] =
+                          projHamBlockSinglePrec[i * DRem + j];
+                    }
+
+                  if (processGrid->is_process_active())
+                    for (unsigned int j = 0; j < B; ++j)
+                      if (globalToLocalColumnIdMap.find(j + jvec) !=
+                          globalToLocalColumnIdMap.end())
+                        {
+                          const unsigned int localColumnId =
+                            globalToLocalColumnIdMap[j + jvec];
+                          for (unsigned int i = jvec + j; i < N; ++i)
+                            {
+                              std::unordered_map<unsigned int,
+                                                 unsigned int>::iterator it =
+                                globalToLocalRowIdMap.find(i);
+                              if (it != globalToLocalRowIdMap.end())
+                                projHamPar.local_el(it->second, localColumnId) =
+                                  projHamBlock[j * D + i - jvec];
+                            }
+                        }
+                }
+
+              // evaluate H times XBlock and store in HXBlock^{T}
+              // operatorMatrix.overlapMatrixTimesX(
+              //   *XBlock, 1.0, 0.0, 0.0, *HXBlock, dftParams.diagonalMassMatrix);
+
+
+
+              const unsigned int D = N - jvec;
+
+              xgemm(&transA,
+                    &transB,
+                    &B,
+                    &B,
+                    &numberDofs,
+                    &alpha,
+                    &X[0] + jvec,
+                    &N,
+                    HXBlock->data(),
+                    &B,
+                    &beta,
+                    &projHamBlockDoublePrec[0],
+                    &B);
+              const unsigned int DRem = D - B;
+              if (DRem != 0)
+                {
+                  const dataTypes::numberFP32 alphaSinglePrec =
+                                                dataTypes::numberFP32(1.0),
+                                              betaSinglePrec =
+                                                dataTypes::numberFP32(0.0);
+                  for (unsigned int i = 0; i < numberDofs * B; ++i)
+                    HXBlockSinglePrec[i] = HXBlock->data()[i];
+                  xgemm(&transA,
+                        &transB,
+                        &DRem,
+                        &B,
+                        &numberDofs,
+                        &alphaSinglePrec,
+                        &XSinglePrec[0] + jvec + B,
+                        &N,
+                        &HXBlockSinglePrec[0],
+                        &B,
+                        &betaSinglePrec,
+                        &projHamBlockSinglePrec[0],
+                        &DRem);
+                }
+
+              // Sum local XTrunc^{T}*XcBlock for double precision across
+              // domain decomposition processors
+              MPI_Allreduce(MPI_IN_PLACE,
+                            &projHamBlockDoublePrec[0],
+                            B * B,
+                            dataTypes::mpi_type_id(&projHamBlockDoublePrec[0]),
+                            MPI_SUM,
+                            mpiCommDomain);
+
+              // Sum local XTrunc^{T}*XcBlock for single precision across
+              // domain decomposition processors
+              MPI_Allreduce(MPI_IN_PLACE,
+                            &projHamBlockSinglePrec[0],
+                            DRem * B,
+                            dataTypes::mpi_type_id(&projHamBlockSinglePrec[0]),
+                            MPI_SUM,
+                            mpiCommDomain);
+
+              for (unsigned int i = 0; i < B; ++i)
+                {
+                  for (unsigned int j = 0; j < B; ++j)
+                    projHamBlock[i * D + j] = projHamBlockDoublePrec[i * B + j];
+
+                  for (unsigned int j = 0; j < DRem; ++j)
+                    projHamBlock[i * D + j + B] =
+                      projHamBlockSinglePrec[i * DRem + j];
+                }
+
+              // Copying only the lower triangular part to the ScaLAPACK
+              // overlap matrix
+              if (processGrid->is_process_active())
+                for (unsigned int j = 0; j < B; ++j)
+                  if (globalToLocalColumnIdMap.find(j + jvec) !=
+                      globalToLocalColumnIdMap.end())
+                    {
+                      const unsigned int localColumnId =
+                        globalToLocalColumnIdMap[j + jvec];
+                      for (unsigned int i = jvec + j; i < N; ++i)
+                        {
+                          std::unordered_map<unsigned int,
+                                             unsigned int>::iterator it =
+                            globalToLocalRowIdMap.find(i);
+                          if (it != globalToLocalRowIdMap.end())
+                            projOverlapPar.local_el(it->second, localColumnId) =
+                              projHamBlock[j * D + i - jvec];
+                        }
+                    }
+
+
+            } // band parallelization
+
+        } // block loop
+
+      if (numberBandGroups > 1)
+        {
+          MPI_Barrier(interBandGroupComm);
+          linearAlgebraOperations::internal::sumAcrossInterCommScaLAPACKMat(
+            processGrid, projHamPar, interBandGroupComm);
+          MPI_Barrier(interBandGroupComm);
+          linearAlgebraOperations::internal::sumAcrossInterCommScaLAPACKMat(
+            processGrid, projOverlapPar, interBandGroupComm);
+        }
+    }
+
 
     template <typename T>
     void
@@ -3402,6 +3741,235 @@ namespace dftfe
       if (numberBandGroups > 1)
         {
           MPI_Barrier(interBandGroupComm);
+          linearAlgebraOperations::internal::sumAcrossInterCommScaLAPACKMat(
+            processGrid, projHamPar, interBandGroupComm);
+        }
+    }
+
+    void
+    XtHXXtOX(operatorDFTClass<dftfe::utils::MemorySpace::HOST> &operatorMatrix,
+             const dataTypes::number *                          X,
+             const unsigned int                               numberComponents,
+             const unsigned int                               numberLocalDofs,
+             const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
+             const MPI_Comm &                                 mpiCommDomain,
+             const MPI_Comm &                           interBandGroupComm,
+             const dftParameters &                      dftParams,
+             dftfe::ScaLAPACKMatrix<dataTypes::number> &projHamPar,
+             dftfe::ScaLAPACKMatrix<dataTypes::number> &projOverlapPar,
+             const bool onlyHPrimePartForFirstOrderDensityMatResponse)
+    {
+      //
+      // Get access to number of locally owned nodes on the current processor
+      //
+
+      // create temporary arrays XBlock,Hx
+      distributedCPUMultiVec<dataTypes::number> *XBlock, *OXBlock;
+
+      std::unordered_map<unsigned int, unsigned int> globalToLocalColumnIdMap;
+      std::unordered_map<unsigned int, unsigned int> globalToLocalRowIdMap;
+      linearAlgebraOperations::internal::createGlobalToLocalIdMapsScaLAPACKMat(
+        processGrid,
+        projOverlapPar,
+        globalToLocalRowIdMap,
+        globalToLocalColumnIdMap);
+      // band group parallelization data structures
+      const unsigned int numberBandGroups =
+        dealii::Utilities::MPI::n_mpi_processes(interBandGroupComm);
+      const unsigned int bandGroupTaskId =
+        dealii::Utilities::MPI::this_mpi_process(interBandGroupComm);
+      std::vector<unsigned int> bandGroupLowHighPlusOneIndices;
+      dftUtils::createBandParallelizationIndices(
+        interBandGroupComm, numberComponents, bandGroupLowHighPlusOneIndices);
+
+      /*
+       * X^{T}*Hc*Xc is done in a blocked approach for memory optimization:
+       * Sum_{blocks} X^{T}*Hc*XcBlock. The result of each X^{T}*Hc*XcBlock
+       * has a much smaller memory compared to X^{T}*H*Xc.
+       * X^{T} (denoted by X in the code with column major format storage)
+       * is a matrix with size (N x MLoc).
+       * N is denoted by numberWaveFunctions in the code.
+       * MLoc, which is number of local dofs is denoted by numberDofs in the
+       * code. Xc denotes complex conjugate of X. XcBlock is a matrix of size
+       * (MLoc x B). B is the block size. A further optimization is done to
+       * reduce floating point operations: As X^{T}*Hc*Xc is a Hermitian matrix,
+       * it suffices to compute only the lower triangular part. To exploit this,
+       * we do X^{T}*Hc*Xc=Sum_{blocks} XTrunc^{T}*H*XcBlock where XTrunc^{T} is
+       * a (D x MLoc) sub matrix of X^{T} with the row indices ranging from the
+       * lowest global index of XcBlock (denoted by jvec in the code) to N.
+       * D=N-jvec. The parallel ScaLapack matrix projOverlapPar is directly
+       * filled from the XTrunc^{T}*Hc*XcBlock result
+       */
+
+      const unsigned int vectorsBlockSize =
+        std::min(dftParams.wfcBlockSize, bandGroupLowHighPlusOneIndices[1]);
+
+      std::vector<dataTypes::number> projBlock(numberComponents *
+                                                 vectorsBlockSize,
+                                               dataTypes::number(0.0));
+
+      if (dftParams.verbosity >= 4)
+        dftUtils::printCurrentMemoryUsage(
+          mpiCommDomain,
+          "Inside Blocked XtOX with parallel projected Overlap matrix");
+
+      for (unsigned int jvec = 0; jvec < numberComponents;
+           jvec += vectorsBlockSize)
+        {
+          // Correct block dimensions if block "goes off edge of" the matrix
+          const unsigned int B =
+            std::min(vectorsBlockSize, numberComponents - jvec);
+          if (jvec == 0 || B != vectorsBlockSize)
+            {
+              XBlock  = &operatorMatrix.getScratchFEMultivector(B, 0);
+              OXBlock = &operatorMatrix.getScratchFEMultivector(B, 1);
+            }
+
+          if ((jvec + B) <=
+                bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId + 1] &&
+              (jvec + B) > bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId])
+            {
+              // fill XBlock^{T} from X:
+              for (unsigned int iNode = 0; iNode < numberLocalDofs; ++iNode)
+                for (unsigned int iWave = 0; iWave < B; ++iWave)
+                  XBlock->data()[iNode * B + iWave] =
+                    X[iNode * numberComponents + jvec + iWave];
+
+
+              MPI_Barrier(mpiCommDomain);
+
+              // XtOX operations
+
+              // operatorMatrix.overlapMatrixTimesX(
+              //   *XBlock, 1.0, 0.0, 0.0, *OXBlock, dftParams.diagonalMassMatrix);
+              MPI_Barrier(mpiCommDomain);
+
+              const char transA = 'N';
+              const char transB =
+                std::is_same<dataTypes::number, std::complex<double>>::value ?
+                  'C' :
+                  'T';
+
+              const dataTypes::number alpha = dataTypes::number(1.0),
+                                      beta  = dataTypes::number(0.0);
+              std::fill(projBlock.begin(),
+                        projBlock.end(),
+                        dataTypes::number(0.));
+
+              const unsigned int D = numberComponents - jvec;
+
+              // Comptute local XTrunc^{T}*HXcBlock.
+              xgemm(&transA,
+                    &transB,
+                    &D,
+                    &B,
+                    &numberLocalDofs,
+                    &alpha,
+                    &X[0] + jvec,
+                    &numberComponents,
+                    OXBlock->data(),
+                    &B,
+                    &beta,
+                    &projBlock[0],
+                    &D);
+
+              MPI_Barrier(mpiCommDomain);
+              // Sum local XTrunc^{T}*HXcBlock across domain decomposition
+              // processors
+              MPI_Allreduce(MPI_IN_PLACE,
+                            &projBlock[0],
+                            D * B,
+                            dataTypes::mpi_type_id(&projBlock[0]),
+                            MPI_SUM,
+                            mpiCommDomain);
+              // Copying only the lower triangular part to the ScaLAPACK
+              // projected Hamiltonian matrix
+              if (processGrid->is_process_active())
+                for (unsigned int j = 0; j < B; ++j)
+                  if (globalToLocalColumnIdMap.find(j + jvec) !=
+                      globalToLocalColumnIdMap.end())
+                    {
+                      const unsigned int localColumnId =
+                        globalToLocalColumnIdMap[j + jvec];
+                      for (unsigned int i = j + jvec; i < numberComponents; ++i)
+                        {
+                          std::unordered_map<unsigned int,
+                                             unsigned int>::iterator it =
+                            globalToLocalRowIdMap.find(i);
+                          if (it != globalToLocalRowIdMap.end())
+                            projOverlapPar.local_el(it->second, localColumnId) =
+                              projBlock[j * D + i - jvec];
+                        }
+                    }
+
+              // XtHX operations
+              operatorMatrix.HX(*XBlock,
+                                1.0,
+                                0.0,
+                                0.0,
+                                *OXBlock,
+                                onlyHPrimePartForFirstOrderDensityMatResponse);
+              MPI_Barrier(mpiCommDomain);
+
+              std::fill(projBlock.begin(),
+                        projBlock.end(),
+                        dataTypes::number(0.));
+
+
+              // Comptute local XTrunc^{T}*HXcBlock.
+              xgemm(&transA,
+                    &transB,
+                    &D,
+                    &B,
+                    &numberLocalDofs,
+                    &alpha,
+                    &X[0] + jvec,
+                    &numberComponents,
+                    OXBlock->data(),
+                    &B,
+                    &beta,
+                    &projBlock[0],
+                    &D);
+
+              MPI_Barrier(mpiCommDomain);
+              // Sum local XTrunc^{T}*HXcBlock across domain decomposition
+              // processors
+              MPI_Allreduce(MPI_IN_PLACE,
+                            &projBlock[0],
+                            D * B,
+                            dataTypes::mpi_type_id(&projBlock[0]),
+                            MPI_SUM,
+                            mpiCommDomain);
+              // Copying only the lower triangular part to the ScaLAPACK
+              // projected Hamiltonian matrix
+              if (processGrid->is_process_active())
+                for (unsigned int j = 0; j < B; ++j)
+                  if (globalToLocalColumnIdMap.find(j + jvec) !=
+                      globalToLocalColumnIdMap.end())
+                    {
+                      const unsigned int localColumnId =
+                        globalToLocalColumnIdMap[j + jvec];
+                      for (unsigned int i = j + jvec; i < numberComponents; ++i)
+                        {
+                          std::unordered_map<unsigned int,
+                                             unsigned int>::iterator it =
+                            globalToLocalRowIdMap.find(i);
+                          if (it != globalToLocalRowIdMap.end())
+                            projHamPar.local_el(it->second, localColumnId) =
+                              projBlock[j * D + i - jvec];
+                        }
+                    }
+
+
+            } // band parallelization
+
+        } // block loop
+
+      if (numberBandGroups > 1)
+        {
+          MPI_Barrier(interBandGroupComm);
+          linearAlgebraOperations::internal::sumAcrossInterCommScaLAPACKMat(
+            processGrid, projOverlapPar, interBandGroupComm);
           linearAlgebraOperations::internal::sumAcrossInterCommScaLAPACKMat(
             processGrid, projHamPar, interBandGroupComm);
         }

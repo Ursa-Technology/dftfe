@@ -5,7 +5,7 @@
 #  include "AuxDensityMatrixSlater.h"
 #  include <stdexcept>
 #  include <cmath>
-#  include <linearAlgebraOperations.h>
+#  include <linearAlgebraOperationsCPU.h>
 
 namespace dftfe
 {

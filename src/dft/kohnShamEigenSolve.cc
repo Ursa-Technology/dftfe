@@ -20,7 +20,7 @@
 #include <vector>
 #include <dft.h>
 #include <linearAlgebraOperations.h>
-
+#include <linearAlgebraOperationsCPU.h>
 namespace dftfe
 {
   namespace internal

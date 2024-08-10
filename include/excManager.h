@@ -20,9 +20,16 @@
 
 #include <xc.h>
 #include <excDensityBaseClass.h>
-#include <excWavefunctionBaseClass.h>
+#include <ExcSSDFunctionalBaseClass.h>
 namespace dftfe
 {
+
+  enum class XCPrimaryVariable
+  {
+    DENSITY,
+    SSDETERMINANT
+  };
+
   class excManager
   {
   public:
@@ -49,25 +56,26 @@ namespace dftfe
 //    densityFamilyType
 //    getDensityBasedFamilyType() const;
 
-    wavefunctionFamilyType
-    getWavefunctionBasedFamilyType() const;
 
 
     excDensityBaseClass *
     getExcDensityObj();
 
-    excWavefunctionBaseClass *
-    getExcWavefunctionObj();
+    ExcSSDFunctionalBaseClass *
+    getExcSSDFunctionalObj();
 
 
     const excDensityBaseClass *
     getExcDensityObj() const;
 
-    const excWavefunctionBaseClass *
-    getExcWavefunctionObj() const;
+    const ExcSSDFunctionalBaseClass *
+    getExcSSDFunctionalObj() const;
 
     const bool
       isExcDependentOnGradDensity() const;
+
+    XCPrimaryVariable
+      getXCPrimaryVariable() const;
 
 
   private:
@@ -76,9 +84,10 @@ namespace dftfe
     xc_func_type *d_funcCPtr;
 
     excDensityBaseClass *     d_excDensityObjPtr;
-    excWavefunctionBaseClass *d_excWavefunctionObjPtr;
+    ExcSSDFunctionalBaseClass *d_SSDObjPtr;
 
     bool d_dependentOnGradDensity;
+    XCPrimaryVariable d_xcPrimVariable;
   };
 } // namespace dftfe
 

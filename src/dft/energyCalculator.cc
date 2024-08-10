@@ -1006,19 +1006,39 @@ namespace dftfe
               std::real(quadWeightsAll[iCell * nQuadsPerCell + iQuad]);
           }
 
-        excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
-          *auxDensityXCInRepresentationPtr,
-          quadPointsInCell,
-          quadWeightsInCell,
-          xDensityInDataOut,
-          cDensityInDataOut);
+        if (excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+          {
+            excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
+              *auxDensityXCInRepresentationPtr,
+              quadPointsInCell,
+              quadWeightsInCell,
+              xDensityInDataOut,
+              cDensityInDataOut);
 
-        excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
-          *auxDensityXCOutRepresentationPtr,
-          quadPointsInCell,
-          quadWeightsInCell,
-          xDensityOutDataOut,
-          cDensityOutDataOut);
+            excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
+              *auxDensityXCOutRepresentationPtr,
+              quadPointsInCell,
+              quadWeightsInCell,
+              xDensityOutDataOut,
+              cDensityOutDataOut);
+          }
+        else
+          {
+            excManagerPtr->getExcSSDFunctionalObj()->computeExcVxcFxc(
+              *auxDensityXCInRepresentationPtr,
+              quadPointsInCell,
+              quadWeightsInCell,
+              xDensityInDataOut,
+              cDensityInDataOut);
+
+            excManagerPtr->getExcSSDFunctionalObj()->computeExcVxcFxc(
+              *auxDensityXCOutRepresentationPtr,
+              quadPointsInCell,
+              quadWeightsInCell,
+              xDensityOutDataOut,
+              cDensityOutDataOut);
+
+          }
 
         std::vector<double> pdexDensityInSigma;
         std::vector<double> pdecDensityInSigma;

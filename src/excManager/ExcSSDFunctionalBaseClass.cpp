@@ -17,21 +17,21 @@
 // @author Vishal Subramanian
 //
 
-#include <excWavefunctionBaseClass.h>
+#include <ExcSSDFunctionalBaseClass.h>
 
 namespace dftfe
 {
-  excWavefunctionBaseClass::excWavefunctionBaseClass(bool isSpinPolarized)
+  ExcSSDFunctionalBaseClass::ExcSSDFunctionalBaseClass(bool isSpinPolarized)
     : d_isSpinPolarized(isSpinPolarized)
   {}
 
-  excWavefunctionBaseClass::~excWavefunctionBaseClass()
+  ExcSSDFunctionalBaseClass::~ExcSSDFunctionalBaseClass()
   {}
 
-  wavefunctionFamilyType
-  excWavefunctionBaseClass::getWavefunctionBasedFamilyType() const
+  SSDFamilyType
+  ExcSSDFunctionalBaseClass::getSSDFamilyType() const
   {
-    return d_wavefunctionFamilyType;
+    return d_SSDFamilyType;
   }
 
 

@@ -232,12 +232,25 @@ namespace dftfe
 
 
 
-          d_excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
-            *auxDensityXCPerturbedRepresentationPtr,
-            quadPointsInCell,
-            quadWeightsInCell,
-            xDataOut,
-            cDataOut);
+                    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+                      {
+                        d_excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
+                          *auxDensityXCPerturbedRepresentationPtr,
+                          quadPointsInCell,
+                          quadWeightsInCell,
+                          xDataOut,
+                          cDataOut);
+                      }
+                    else
+                      {
+                        d_excManagerPtr->getExcSSDFunctionalObj()->computeExcVxcFxc(
+                          *auxDensityXCPerturbedRepresentationPtr,
+                          quadPointsInCell,
+                          quadWeightsInCell,
+                          xDataOut,
+                          cDataOut);
+                      }
+
 
           const std::vector<double> &pdexDensitySpinIndex =
             spinIndex == 0 ? pdexDensitySpinUp : pdexDensitySpinDown;

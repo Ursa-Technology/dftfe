@@ -287,12 +287,24 @@ namespace dftfe
               quadWeightsAll[iCell * numberQuadraturePointsPerCell + iQuad]);
           }
 
-        d_excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
-          *auxDensityXCRepresentation,
-          quadPointsInCell,
-          quadWeightsInCell,
-          xDataOut,
-          cDataOut);
+        if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+          {
+            d_excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
+              *auxDensityXCRepresentation,
+              quadPointsInCell,
+              quadWeightsInCell,
+              xDataOut,
+              cDataOut);
+          }
+        else
+          {
+            d_excManagerPtr->getExcSSDFunctionalObj()->computeExcVxcFxc(
+              *auxDensityXCRepresentation,
+              quadPointsInCell,
+              quadWeightsInCell,
+              xDataOut,
+              cDataOut);
+          }
 
         const std::vector<double> &pdexDensitySpinIndex =
           spinIndex == 0 ? pdexDensitySpinUp : pdexDensitySpinDown;

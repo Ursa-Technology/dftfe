@@ -225,7 +225,7 @@ namespace dftfe
     const unsigned int spinIndex)
   {
     const bool isGGA =
-      d_excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA;
+      d_excManagerPtr->isExcDependentOnGradDensity();
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
     const unsigned int totalLocallyOwnedCells =
       d_basisOperationsPtrHost->nCells();
@@ -732,8 +732,7 @@ namespace dftfe
           }
         d_basisOperationsPtr->computeWeightedCellMassMatrix(
           cellRange, d_VeffJxW, tempHamMatrixRealBlock);
-        if (d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+        if (d_excManagerPtr->isExcDependentOnGradDensity())
           d_basisOperationsPtr->computeWeightedCellNjGradNiPlusNiGradNjMatrix(
             cellRange,
             d_invJacderExcWithSigmaTimesGradRhoJxW,

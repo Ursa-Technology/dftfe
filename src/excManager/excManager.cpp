@@ -31,6 +31,7 @@ namespace dftfe
     d_funcCPtr              = nullptr;
     d_excDensityObjPtr      = nullptr;
     d_excWavefunctionObjPtr = nullptr;
+    d_dependentOnGradDensity = false;
   }
 
   excManager::~excManager()
@@ -63,6 +64,13 @@ namespace dftfe
     d_funcCPtr              = nullptr;
     d_excDensityObjPtr      = nullptr;
     d_excWavefunctionObjPtr = nullptr;
+    d_dependentOnGradDensity = false;
+  }
+
+  const bool
+  excManager::isExcDependentOnGradDensity() const
+  {
+    return d_dependentOnGradDensity;
   }
 
 
@@ -88,6 +96,8 @@ namespace dftfe
         d_excDensityObjPtr = new excDensityLDAClass(d_funcXPtr, d_funcCPtr);
 
         d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+
+        d_dependentOnGradDensity = false;
       }
     else if (XCType == "LDA-PW")
       {
@@ -97,6 +107,7 @@ namespace dftfe
 
 
         d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+        d_dependentOnGradDensity = false;
       }
     else if (XCType == "LDA-VWN")
       {
@@ -105,6 +116,7 @@ namespace dftfe
         d_excDensityObjPtr = new excDensityLDAClass(d_funcXPtr, d_funcCPtr);
 
         d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+        d_dependentOnGradDensity = false;
       }
     else if (XCType == "GGA-PBE")
       {
@@ -113,6 +125,7 @@ namespace dftfe
         d_excDensityObjPtr = new excDensityGGAClass(d_funcXPtr, d_funcCPtr);
 
         d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+        d_dependentOnGradDensity = true;
       }
     else if (XCType == "GGA-RPBE")
       {
@@ -121,6 +134,7 @@ namespace dftfe
         d_excDensityObjPtr = new excDensityGGAClass(d_funcXPtr, d_funcCPtr);
 
         d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+        d_dependentOnGradDensity = true;
       }
     else if (XCType == "GGA-LBxPBEc")
       {
@@ -130,6 +144,7 @@ namespace dftfe
         d_excDensityObjPtr = new excDensityGGAClass(d_funcXPtr, d_funcCPtr);
 
         d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+        d_dependentOnGradDensity = true;
       }
     else if (XCType == "MLXC-NNLDA")
       {
@@ -139,6 +154,7 @@ namespace dftfe
           new excDensityLDAClass(d_funcXPtr, d_funcCPtr, modelXCInputFile);
 
         d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+        d_dependentOnGradDensity = false;
       }
     else if (XCType == "MLXC-NNGGA")
       {
@@ -148,6 +164,7 @@ namespace dftfe
           new excDensityGGAClass(d_funcXPtr, d_funcCPtr, modelXCInputFile);
 
         d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+        d_dependentOnGradDensity = true;
       }
     else if (XCType == "MLXC-NNLLMGGA")
       {
@@ -157,6 +174,7 @@ namespace dftfe
           new excDensityLLMGGAClass(d_funcXPtr, d_funcCPtr, modelXCInputFile);
 
         d_excWavefunctionObjPtr = new excWavefunctionNoneClass(isSpinPolarized);
+        d_dependentOnGradDensity = true;
       }
     else
       {
@@ -172,11 +190,11 @@ namespace dftfe
       }
   }
 
-  densityFamilyType
-  excManager::getDensityBasedFamilyType() const
-  {
-    return d_excDensityObjPtr->getDensityBasedFamilyType();
-  }
+//  densityFamilyType
+//  excManager::getDensityBasedFamilyType() const
+//  {
+//    return d_excDensityObjPtr->getDensityBasedFamilyType();
+//  }
 
   wavefunctionFamilyType
   excManager::getWavefunctionBasedFamilyType() const

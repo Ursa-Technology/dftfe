@@ -134,7 +134,7 @@ namespace dftfe
       d_densityInQuadValues[iComp].resize(n_q_points * nCells);
 
 
-    if (d_excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA)
+    if (d_excManagerPtr->isExcDependentOnGradDensity())
       {
         d_gradDensityInQuadValues.resize(
           d_dftParamsPtr->spinPolarized == 1 ? 2 : 1);
@@ -154,8 +154,7 @@ namespace dftfe
                                                                            1);
 
 
-        if (d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+        if (d_excManagerPtr->isExcDependentOnGradDensity())
           {
             d_gradDensityOutQuadValues.resize(
               d_dftParamsPtr->spinPolarized == 1 ? 2 : 1);
@@ -347,8 +346,7 @@ namespace dftfe
           d_densityInQuadValues[0],
           d_gradDensityInQuadValues[0],
           d_gradDensityInQuadValues[0],
-          d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA);
+          d_excManagerPtr->isExcDependentOnGradDensity());
 
         if (d_dftParamsPtr->spinPolarized == 1)
           {
@@ -375,8 +373,7 @@ namespace dftfe
               d_densityInQuadValues[1],
               d_gradDensityInQuadValues[1],
               d_gradDensityInQuadValues[1],
-              d_excManagerPtr->getDensityBasedFamilyType() ==
-                densityFamilyType::GGA);
+              d_excManagerPtr->isExcDependentOnGradDensity());
           }
 
         normalizeRhoInQuadValues();
@@ -478,8 +475,7 @@ namespace dftfe
 
 
         // loop over elements
-        if (d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+        if (d_excManagerPtr->isExcDependentOnGradDensity())
           {
 #pragma omp parallel for num_threads(d_nOMPThreads) firstprivate(denSpline)
             for (unsigned int iCell = 0;
@@ -701,7 +697,7 @@ namespace dftfe
         d_densityInQuadValues[1].resize(numCells * num_quad_points);
       }
 
-    if (d_excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA)
+    if (d_excManagerPtr->isExcDependentOnGradDensity())
       {
         d_gradDensityInQuadValues.resize(
           d_dftParamsPtr->spinPolarized == 1 ? 2 : 1);
@@ -756,8 +752,7 @@ namespace dftfe
 
 
 
-          if (d_excManagerPtr->getDensityBasedFamilyType() ==
-              densityFamilyType::GGA) // GGA
+          if (d_excManagerPtr->isExcDependentOnGradDensity()) // GGA
             {
               std::fill(gradRhoTemp.begin(), gradRhoTemp.end(), 0.0);
               if (d_dftParamsPtr->spinPolarized == 1)
@@ -1183,8 +1178,7 @@ namespace dftfe
             for (unsigned int iComp = 0; iComp < d_densityInQuadValues.size();
                  ++iComp)
               d_densityInQuadValues[iComp][iCell * n_q_points + q] *= scaling;
-            if (d_excManagerPtr->getDensityBasedFamilyType() ==
-                densityFamilyType::GGA)
+            if (d_excManagerPtr->isExcDependentOnGradDensity())
               for (unsigned int iComp = 0;
                    iComp < d_gradDensityInQuadValues.size();
                    ++iComp)
@@ -1230,8 +1224,7 @@ namespace dftfe
             for (unsigned int iComp = 0; iComp < d_densityOutQuadValues.size();
                  ++iComp)
               d_densityOutQuadValues[iComp][iCell * n_q_points + q] *= scaling;
-            if (d_excManagerPtr->getDensityBasedFamilyType() ==
-                densityFamilyType::GGA)
+            if (d_excManagerPtr->isExcDependentOnGradDensity())
               for (unsigned int iComp = 0;
                    iComp < d_gradDensityOutQuadValues.size();
                    ++iComp)

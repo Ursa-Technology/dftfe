@@ -685,7 +685,7 @@ namespace dftfe
       d_densityInQuadValues[0],
       d_gradDensityInQuadValues[0],
       d_gradDensityInQuadValues[0],
-      d_excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      d_excManagerPtr->isExcDependentOnGradDensity());
 
     MPI_Barrier(d_mpiCommParent);
     total_time = MPI_Wtime() - total_time;

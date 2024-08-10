@@ -1287,8 +1287,7 @@ namespace dftfe
           d_densityInQuadValues[0],
           d_gradDensityInQuadValues[0],
           d_gradDensityInQuadValues[0],
-          d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA);
+          d_excManagerPtr->isExcDependentOnGradDensity());
 
         if (d_dftParamsPtr->spinPolarized == 1)
           {
@@ -1308,8 +1307,7 @@ namespace dftfe
               d_densityInQuadValues[1],
               d_gradDensityInQuadValues[1],
               d_gradDensityInQuadValues[1],
-              d_excManagerPtr->getDensityBasedFamilyType() ==
-                densityFamilyType::GGA);
+              d_excManagerPtr->isExcDependentOnGradDensity());
           }
         if ((d_dftParamsPtr->solverMode == "GEOOPT"))
           {
@@ -1320,8 +1318,7 @@ namespace dftfe
 
             d_densityOutQuadValues = d_densityInQuadValues;
 
-            if (d_excManagerPtr->getDensityBasedFamilyType() ==
-                densityFamilyType::GGA)
+            if (d_excManagerPtr->isExcDependentOnGradDensity())
               d_gradDensityOutQuadValues = d_gradDensityInQuadValues;
           }
 
@@ -1435,14 +1432,12 @@ namespace dftfe
                   d_densityInQuadValues[0],
                   d_gradDensityInQuadValues[0],
                   d_gradDensityInQuadValues[0],
-                  d_excManagerPtr->getDensityBasedFamilyType() ==
-                    densityFamilyType::GGA);
+                  d_excManagerPtr->isExcDependentOnGradDensity());
 
                 addAtomicRhoQuadValuesGradients(
                   d_densityInQuadValues[0],
                   d_gradDensityInQuadValues[0],
-                  d_excManagerPtr->getDensityBasedFamilyType() ==
-                    densityFamilyType::GGA);
+                  d_excManagerPtr->isExcDependentOnGradDensity());
 
                 normalizeRhoInQuadValues();
 
@@ -1467,8 +1462,7 @@ namespace dftfe
               d_densityInQuadValues[0],
               d_gradDensityInQuadValues[0],
               d_gradDensityInQuadValues[0],
-              d_excManagerPtr->getDensityBasedFamilyType() ==
-                densityFamilyType::GGA);
+              d_excManagerPtr->isExcDependentOnGradDensity());
 
             normalizeRhoInQuadValues();
 
@@ -1492,14 +1486,12 @@ namespace dftfe
               d_densityInQuadValues[0],
               d_gradDensityInQuadValues[0],
               d_gradDensityInQuadValues[0],
-              d_excManagerPtr->getDensityBasedFamilyType() ==
-                densityFamilyType::GGA);
+              d_excManagerPtr->isExcDependentOnGradDensity());
 
             addAtomicRhoQuadValuesGradients(
               d_densityInQuadValues[0],
               d_gradDensityInQuadValues[0],
-              d_excManagerPtr->getDensityBasedFamilyType() ==
-                densityFamilyType::GGA);
+              d_excManagerPtr->isExcDependentOnGradDensity());
 
             normalizeRhoInQuadValues();
 
@@ -2328,8 +2320,7 @@ namespace dftfe
             d_dftParamsPtr->mixingParameter *
               d_dftParamsPtr->spinMixingEnhancementFactor,
             d_dftParamsPtr->adaptAndersonMixingParameter);
-        if (d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+        if (d_excManagerPtr->isExcDependentOnGradDensity())
           {
             dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
               gradRhoJxW;
@@ -2477,8 +2468,7 @@ namespace dftfe
                       d_densityInQuadValues[iComp],
                       d_gradDensityInQuadValues[iComp],
                       d_gradDensityInQuadValues[iComp],
-                      d_excManagerPtr->getDensityBasedFamilyType() ==
-                        densityFamilyType::GGA);
+                      d_excManagerPtr->isExcDependentOnGradDensity());
                   }
               }
             else if (d_dftParamsPtr->mixingMethod == "ANDERSON")
@@ -2513,8 +2503,7 @@ namespace dftfe
                       d_densityResidualQuadValues[iComp].data(),
                       d_densityResidualQuadValues[iComp].size());
                   }
-                if (d_excManagerPtr->getDensityBasedFamilyType() ==
-                    densityFamilyType::GGA)
+                if (d_excManagerPtr->isExcDependentOnGradDensity())
                   {
                     if (scfIter == 1)
                       d_gradDensityResidualQuadValues.resize(
@@ -2566,8 +2555,7 @@ namespace dftfe
                 for (unsigned int iComp = 0; iComp < norms.size(); ++iComp)
                   norm += norms[iComp] * norms[iComp];
                 norm = std::sqrt(norm / ((double)norms.size()));
-                if (d_excManagerPtr->getDensityBasedFamilyType() ==
-                    densityFamilyType::GGA)
+                if (d_excManagerPtr->isExcDependentOnGradDensity())
                   {
                     for (unsigned int iComp = 0; iComp < norms.size(); ++iComp)
                       d_mixingScheme.mixVariable(
@@ -5392,7 +5380,7 @@ namespace dftfe
     std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixXCPtr)
   {
     const bool isGGA =
-      d_excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA;
+      d_excManagerPtr->isExcDependentOnGradDensity();
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureId);
     const unsigned int totalLocallyOwnedCells =
       d_basisOperationsPtrHost->nCells();

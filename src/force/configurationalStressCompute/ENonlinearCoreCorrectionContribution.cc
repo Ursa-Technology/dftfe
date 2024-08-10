@@ -128,8 +128,7 @@ namespace dftfe
                   }
               }
 
-            if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-                  densityFamilyType::GGA &&
+            if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity() &&
                 !isCellOutsideCoreRhoTail)
               {
                 std::map<dealii::CellId, std::vector<double>>::const_iterator
@@ -306,8 +305,7 @@ namespace dftfe
                   }
               }
 
-            if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-                  densityFamilyType::GGA &&
+            if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity() &&
                 !isCellOutsideCoreRhoTail)
               {
                 std::map<dealii::CellId, std::vector<double>>::const_iterator

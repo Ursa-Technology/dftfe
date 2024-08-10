@@ -517,8 +517,7 @@ namespace dftfe
           dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
           gradDensityOutValuesSpinPolarized;
 
-        if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+        if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
           {
             gradDensityOutValuesSpinPolarized = gradRhoOutValues;
 
@@ -583,8 +582,7 @@ namespace dftfe
         std::vector<double> &pdecDensityOutSpinDown =
           cDensityOutDataOut[xcOutputDataAttributes::pdeDensitySpinDown];
 
-        if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+        if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
           {
             xDensityOutDataOut[xcOutputDataAttributes::pdeSigma] =
               std::vector<double>();
@@ -676,8 +674,7 @@ namespace dftfe
 
                     std::vector<double> pdexDensityOutSigma;
                     std::vector<double> pdecDensityOutSigma;
-                    if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-                        densityFamilyType::GGA)
+                    if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
                       {
                         pdexDensityOutSigma =
                           xDensityOutDataOut[xcOutputDataAttributes::pdeSigma];
@@ -692,8 +689,7 @@ namespace dftfe
                     std::vector<double> gradDensityXCOutSpinUp;
                     std::vector<double> gradDensityXCOutSpinDown;
 
-                    if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-                        densityFamilyType::GGA)
+                    if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
                       {
                         densityXCOutData
                           [DensityDescriptorDataAttributes::gradValuesSpinUp] =
@@ -706,8 +702,7 @@ namespace dftfe
                     dftPtr->d_auxDensityMatrixXCOutPtr->applyLocalOperations(
                       quadPointsInCell, densityXCOutData);
 
-                    if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-                        densityFamilyType::GGA)
+                    if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
                       {
                         gradDensityXCOutSpinUp = densityXCOutData
                           [DensityDescriptorDataAttributes::gradValuesSpinUp];
@@ -717,8 +712,7 @@ namespace dftfe
 
 
 
-                    if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-                        densityFamilyType::GGA)
+                    if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
                       {
                         // const std::vector<double> &temp3 =
                         //  (*dftPtr->gradRhoOutValuesSpinPolarized)
@@ -763,8 +757,7 @@ namespace dftfe
                           pdexDensityOutSpinDown[q] + pdecDensityOutSpinDown[q];
                       }
 
-                    if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-                        densityFamilyType::GGA)
+                    if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
                       {
                         for (unsigned int q = 0; q < numQuadPoints; ++q)
                           {
@@ -809,8 +802,7 @@ namespace dftfe
                                 temp1[3 * q + idim] / 2.0;
 
                           if (dftPtr->d_excManagerPtr
-                                ->getDensityBasedFamilyType() ==
-                              densityFamilyType::GGA)
+                                ->isExcDependentOnGradDensity())
                             {
                               const std::vector<double> &temp2 =
                                 hessianRhoCoreValues.find(subCellId)->second;
@@ -838,8 +830,7 @@ namespace dftfe
                       derExchCorrEnergyWithGradRhoOutSpin1Quads,
                       gradRhoCoreAtoms,
                       hessianRhoCoreAtoms,
-                      dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-                        densityFamilyType::GGA);
+                      dftPtr->d_excManagerPtr->isExcDependentOnGradDensity());
                   }
 
                 for (unsigned int q = 0; q < numQuadPoints; ++q)
@@ -863,8 +854,7 @@ namespace dftfe
                         derExchCorrEnergyWithGradRhoOutSpin1Quads[q],
                         gradRhoCoreQuads[q],
                         hessianRhoCoreQuads[q],
-                        dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-                          densityFamilyType::GGA);
+                        dftPtr->d_excManagerPtr->isExcDependentOnGradDensity());
 
                     forceEval.submit_value(F, q);
                     forceEval.submit_gradient(E, q);

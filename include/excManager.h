@@ -46,8 +46,8 @@ namespace dftfe
          bool        isSpinPolarized,
          std::string modelXCInputFile);
 
-    densityFamilyType
-    getDensityBasedFamilyType() const;
+//    densityFamilyType
+//    getDensityBasedFamilyType() const;
 
     wavefunctionFamilyType
     getWavefunctionBasedFamilyType() const;
@@ -66,6 +66,9 @@ namespace dftfe
     const excWavefunctionBaseClass *
     getExcWavefunctionObj() const;
 
+    const bool
+      isExcDependentOnGradDensity() const;
+
 
   private:
     /// objects for various exchange-correlations (from libxc package)
@@ -74,6 +77,8 @@ namespace dftfe
 
     excDensityBaseClass *     d_excDensityObjPtr;
     excWavefunctionBaseClass *d_excWavefunctionObjPtr;
+
+    bool d_dependentOnGradDensity;
   };
 } // namespace dftfe
 

@@ -184,7 +184,7 @@ namespace dftfe
       rhoPrimeValues[0],
       gradRhoPrimeValues[0],
       dummy,
-      d_excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      d_excManagerPtr->isExcDependentOnGradDensity());
 
 
     if (d_dftParamsPtr->spinPolarized == 1)
@@ -207,8 +207,7 @@ namespace dftfe
           vSpin0Values,
           gradvSpin0Values,
           dummy,
-          d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA,
+          d_excManagerPtr->isExcDependentOnGradDensity(),
           false);
 
         interpolateDensityNodalDataToQuadratureDataGeneral(
@@ -219,8 +218,7 @@ namespace dftfe
           vSpin1Values,
           gradvSpin1Values,
           dummy,
-          d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA,
+          d_excManagerPtr->isExcDependentOnGradDensity(),
           false);
 
         rhoPrimeValues[0].resize(vSpin0Values.size());

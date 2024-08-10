@@ -662,7 +662,7 @@ namespace dftfe
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
           densityOutValues[0].size(), 0.0));
 
-    if (excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA)
+    if (excManagerPtr->isExcDependentOnGradDensity())
       {
         gradDensityOutQuadValuesSpinPolarized = gradDensityOutValues;
 
@@ -842,7 +842,7 @@ namespace dftfe
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       gradDensityOutQuadValuesSpinPolarized;
 
-    if (excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA)
+    if (excManagerPtr->isExcDependentOnGradDensity())
       {
         gradDensityInQuadValuesSpinPolarized  = gradDensityInValues;
         gradDensityOutQuadValuesSpinPolarized = gradDensityOutValues;
@@ -857,8 +857,7 @@ namespace dftfe
           dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
             densityOutValues[0].size(), 0.0));
 
-        if (excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+        if (excManagerPtr->isExcDependentOnGradDensity())
           {
             gradDensityInQuadValuesSpinPolarized.push_back(
               dftfe::utils::MemoryStorage<double,
@@ -970,7 +969,7 @@ namespace dftfe
     std::vector<double> &pdecDensityInSpinDown =
       cDensityInDataOut[xcOutputDataAttributes::pdeDensitySpinDown];
 
-    if (excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA)
+    if (excManagerPtr->isExcDependentOnGradDensity())
       {
         xDensityInDataOut[xcOutputDataAttributes::pdeSigma] =
           std::vector<double>();
@@ -1023,8 +1022,7 @@ namespace dftfe
 
         std::vector<double> pdexDensityInSigma;
         std::vector<double> pdecDensityInSigma;
-        if (excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+        if (excManagerPtr->isExcDependentOnGradDensity())
           {
             pdexDensityInSigma =
               xDensityInDataOut[xcOutputDataAttributes::pdeSigma];
@@ -1039,14 +1037,12 @@ namespace dftfe
         std::vector<double> &gradDensityXCInSpinDown =
           densityXCInData[DensityDescriptorDataAttributes::gradValuesSpinDown];
 
-        if (excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+        if (excManagerPtr->isExcDependentOnGradDensity())
           auxDensityXCInRepresentationPtr->applyLocalOperations(
             quadPointsInCell, densityXCInData);
 
         std::vector<double> gradXCRhoInDotgradRhoOut;
-        if (excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+        if (excManagerPtr->isExcDependentOnGradDensity())
           {
             gradXCRhoInDotgradRhoOut.resize(nQuadsPerCell * 3);
 
@@ -1111,8 +1107,7 @@ namespace dftfe
             correlationEnergy +=
               (cEnergyDensityOut[iQuad]) *
               basisOperationsPtr->JxWBasisData()[iCell * nQuadsPerCell + iQuad];
-            if (excManagerPtr->getDensityBasedFamilyType() ==
-                densityFamilyType::GGA)
+            if (excManagerPtr->isExcDependentOnGradDensity())
               {
                 double VxcGrad = 0.0;
                 for (unsigned int isigma = 0; isigma < 3; ++isigma)

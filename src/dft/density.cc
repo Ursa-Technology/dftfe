@@ -61,8 +61,7 @@ namespace dftfe
             d_densityOutQuadValues[iComp],
             d_gradDensityOutQuadValues[iComp],
             d_gradDensityOutQuadValues[iComp],
-            d_excManagerPtr->getDensityBasedFamilyType() ==
-              densityFamilyType::GGA);
+            d_excManagerPtr->isExcDependentOnGradDensity());
 
         if (d_dftParamsPtr->verbosity >= 3)
           {
@@ -81,8 +80,7 @@ namespace dftfe
         const unsigned int nCells = d_basisOperationsPtrHost->nCells();
         d_densityOutQuadValues.resize(d_dftParamsPtr->spinPolarized == 1 ? 2 :
                                                                            1);
-        if (d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+        if (d_excManagerPtr->isExcDependentOnGradDensity())
           {
             d_gradDensityOutQuadValues.resize(
               d_dftParamsPtr->spinPolarized == 1 ? 2 : 1);
@@ -113,8 +111,7 @@ namespace dftfe
                             d_kPointWeights,
                             d_densityOutQuadValues,
                             d_gradDensityOutQuadValues,
-                            d_excManagerPtr->getDensityBasedFamilyType() ==
-                              densityFamilyType::GGA,
+                            d_excManagerPtr->isExcDependentOnGradDensity(),
                             d_mpiCommParent,
                             interpoolcomm,
                             interBandGroupComm,
@@ -138,8 +135,7 @@ namespace dftfe
                             d_kPointWeights,
                             d_densityOutQuadValues,
                             d_gradDensityOutQuadValues,
-                            d_excManagerPtr->getDensityBasedFamilyType() ==
-                              densityFamilyType::GGA,
+                            d_excManagerPtr->isExcDependentOnGradDensity(),
                             d_mpiCommParent,
                             interpoolcomm,
                             interBandGroupComm,
@@ -222,7 +218,7 @@ namespace dftfe
     // cleanup of existing rho Out and rho In data
     clearRhoData();
     d_densityInQuadValues = d_densityOutQuadValues;
-    if (d_excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA)
+    if (d_excManagerPtr->isExcDependentOnGradDensity())
       {
         d_gradDensityInQuadValues = d_gradDensityOutQuadValues;
       }
@@ -254,16 +250,14 @@ namespace dftfe
             d_densityInQuadValues[iComp],
             d_gradDensityInQuadValues[iComp],
             d_gradDensityInQuadValues[iComp],
-            d_excManagerPtr->getDensityBasedFamilyType() ==
-              densityFamilyType::GGA);
+            d_excManagerPtr->isExcDependentOnGradDensity());
 
         d_densityOutQuadValues.resize(d_densityInNodalValues.size());
         for (unsigned int iComp = 0; iComp < d_densityOutQuadValues.size();
              ++iComp)
           d_densityOutQuadValues[iComp].resize(
             d_densityInQuadValues[iComp].size());
-        if (d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+        if (d_excManagerPtr->isExcDependentOnGradDensity())
           {
             d_gradDensityOutQuadValues.resize(d_gradDensityInQuadValues.size());
             for (unsigned int iComp = 0; iComp < d_densityOutQuadValues.size();

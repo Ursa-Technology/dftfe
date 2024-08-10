@@ -144,8 +144,7 @@ namespace dftfe
     // //
     // // compute Veff
     // //
-    // if (d_excManagerPtr->getDensityBasedFamilyType() ==
-    // densityFamilyType::LDA)
+    // if (!d_excManagerPtr->isExcDependentOnGradDensity())
     //   {
     //     kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
     //                                          phiInValues,
@@ -153,8 +152,7 @@ namespace dftfe
     //                                          d_rhoCore,
     //                                          d_lpspQuadratureId);
     //   }
-    // else if (d_excManagerPtr->getDensityBasedFamilyType() ==
-    //          densityFamilyType::GGA)
+    // else if (d_excManagerPtr->isExcDependentOnGradDensity())
     //   {
     //     kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
     //                                          d_gradDensityInQuadValues,

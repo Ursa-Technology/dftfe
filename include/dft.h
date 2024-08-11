@@ -1248,12 +1248,12 @@ namespace dftfe
         &gradDensityQuadValues,
       const std::map<dealii::CellId, std::vector<double>> &rhoCore,
       const std::map<dealii::CellId, std::vector<double>> &gradRhoCore,
-      const dftfe::utils::MemoryStorage<dataTypes::number,memorySpace>
-        &eigenVectorsFlattenedMemSpace,
-      const std::vector<std::vector<double>> &       eigenValues,
-      const double                                   fermiEnergy_,
-      const double                                   fermiEnergyUp_,
-      const double                                   fermiEnergyDown_,
+      const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+        &                                     eigenVectorsFlattenedMemSpace,
+      const std::vector<std::vector<double>> &eigenValues,
+      const double                            fermiEnergy_,
+      const double                            fermiEnergyUp_,
+      const double                            fermiEnergyDown_,
       std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityMatrixXCPtr);
 
     std::shared_ptr<excManager<memorySpace>> d_excManagerPtr;

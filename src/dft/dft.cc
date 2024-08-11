@@ -2802,7 +2802,7 @@ namespace dftfe
                                      d_rhoCore,
                                      d_gradRhoCore,
                                      getEigenVectors(),
-				     eigenValues,
+                                     eigenValues,
                                      fermiEnergy,
                                      fermiEnergyUp,
                                      fermiEnergyDown,
@@ -3092,7 +3092,7 @@ namespace dftfe
                                      d_rhoCore,
                                      d_gradRhoCore,
                                      getEigenVectors(),
-				     eigenValues,
+                                     eigenValues,
                                      fermiEnergy,
                                      fermiEnergyUp,
                                      fermiEnergyDown,
@@ -3475,7 +3475,7 @@ namespace dftfe
                                      d_rhoCore,
                                      d_gradRhoCore,
                                      getEigenVectors(),
-				     eigenValues,
+                                     eigenValues,
                                      fermiEnergy,
                                      fermiEnergyUp,
                                      fermiEnergyDown,
@@ -3633,7 +3633,7 @@ namespace dftfe
                              d_rhoCore,
                              d_gradRhoCore,
                              getEigenVectors(),
-			     eigenValues,
+                             eigenValues,
                              fermiEnergy,
                              fermiEnergyUp,
                              fermiEnergyDown,
@@ -5354,11 +5354,11 @@ namespace dftfe
     const std::map<dealii::CellId, std::vector<double>> &rhoCore,
     const std::map<dealii::CellId, std::vector<double>> &gradRhoCore,
     const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
-      &eigenVectorsFlattenedMemSpace,
-    const std::vector<std::vector<double>> &       eigenValues_,
-    const double                                   fermiEnergy_,
-    const double                                   fermiEnergyUp_,
-    const double                                   fermiEnergyDown_,
+      &                                     eigenVectorsFlattenedMemSpace,
+    const std::vector<std::vector<double>> &eigenValues_,
+    const double                            fermiEnergy_,
+    const double                            fermiEnergyUp_,
+    const double                            fermiEnergyDown_,
     std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityMatrixXCPtr)
   {
     const bool isGGA = d_excManagerPtr->isExcDependentOnGradDensity();
@@ -5552,25 +5552,25 @@ namespace dftfe
     else if (d_dftParamsPtr->auxBasisTypeXC == "SlaterAE")
       {
 #ifndef USE_COMPLEX
-	      auto basisOpMemSpace = getBasisOperationsMemSpace();
-	      auto blasWrapperMemSpace = getBLASWrapperMemSpace();
-	computeAuxProjectedDensityMatrixFromPSI(eigenVectorsFlattenedMemSpace,
-                                                  d_numEigenValues,
-                                                  eigenValues_,
-                                                  fermiEnergy_,
-                                                  fermiEnergyUp_,
-                                                  fermiEnergyDown_,
-                                                  basisOpMemSpace,
-                                                  blasWrapperMemSpace,
-						  d_densityDofHandlerIndex,
-                                                  d_gllQuadratureId,
-                                                  d_kPointWeights,
-                                                  *auxDensityMatrixXCPtr,
-                                                  d_mpiCommParent,
-                                                  mpi_communicator,
-                                                  interpoolcomm,
-                                                  interBandGroupComm,
-                                                  *d_dftParamsPtr);
+        auto basisOpMemSpace     = getBasisOperationsMemSpace();
+        auto blasWrapperMemSpace = getBLASWrapperMemSpace();
+        computeAuxProjectedDensityMatrixFromPSI(eigenVectorsFlattenedMemSpace,
+                                                d_numEigenValues,
+                                                eigenValues_,
+                                                fermiEnergy_,
+                                                fermiEnergyUp_,
+                                                fermiEnergyDown_,
+                                                basisOpMemSpace,
+                                                blasWrapperMemSpace,
+                                                d_densityDofHandlerIndex,
+                                                d_gllQuadratureId,
+                                                d_kPointWeights,
+                                                *auxDensityMatrixXCPtr,
+                                                d_mpiCommParent,
+                                                mpi_communicator,
+                                                interpoolcomm,
+                                                interBandGroupComm,
+                                                *d_dftParamsPtr);
 #endif
       }
   }

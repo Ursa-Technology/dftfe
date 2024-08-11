@@ -261,7 +261,7 @@ namespace dftfe
                                  d_rhoCore,
                                  d_gradRhoCore,
                                  getEigenVectors(),
-				 eigenValues,
+                                 eigenValues,
                                  fermiEnergy,
                                  fermiEnergyUp,
                                  fermiEnergyDown,

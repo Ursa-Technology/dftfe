@@ -1248,14 +1248,8 @@ namespace dftfe
         &gradDensityQuadValues,
       const std::map<dealii::CellId, std::vector<double>> &rhoCore,
       const std::map<dealii::CellId, std::vector<double>> &gradRhoCore,
-      const dftfe::utils::MemoryStorage<dataTypes::number,
-                                        dftfe::utils::MemorySpace::HOST>
-        &eigenVectorsFlattenedHost,
-#ifdef DFTFE_WITH_DEVICE
-      const dftfe::utils::MemoryStorage<dataTypes::number,
-                                        dftfe::utils::MemorySpace::DEVICE>
-        &eigenVectorsFlattenedDevice,
-#endif
+      const dftfe::utils::MemoryStorage<dataTypes::number,memorySpace>
+        &eigenVectorsFlattenedMemSpace,
       const std::vector<std::vector<double>> &       eigenValues,
       const double                                   fermiEnergy_,
       const double                                   fermiEnergyUp_,

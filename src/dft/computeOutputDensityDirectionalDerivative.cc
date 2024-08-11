@@ -260,11 +260,8 @@ namespace dftfe
                                  d_gradDensityInQuadValues,
                                  d_rhoCore,
                                  d_gradRhoCore,
-                                 d_eigenVectorsFlattenedHost,
-#ifdef DFTFE_WITH_DEVICE
-                                 d_eigenVectorsFlattenedDevice,
-#endif
-                                 eigenValues,
+                                 getEigenVectors(),
+				 eigenValues,
                                  fermiEnergy,
                                  fermiEnergyUp,
                                  fermiEnergyDown,

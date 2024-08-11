@@ -2801,11 +2801,8 @@ namespace dftfe
                                      d_gradDensityInQuadValues,
                                      d_rhoCore,
                                      d_gradRhoCore,
-                                     d_eigenVectorsFlattenedHost,
-#ifdef DFTFE_WITH_DEVICE
-                                     d_eigenVectorsFlattenedDevice,
-#endif
-                                     eigenValues,
+                                     getEigenVectors(),
+				     eigenValues,
                                      fermiEnergy,
                                      fermiEnergyUp,
                                      fermiEnergyDown,
@@ -3094,11 +3091,8 @@ namespace dftfe
                                      d_gradDensityInQuadValues,
                                      d_rhoCore,
                                      d_gradRhoCore,
-                                     d_eigenVectorsFlattenedHost,
-#ifdef DFTFE_WITH_DEVICE
-                                     d_eigenVectorsFlattenedDevice,
-#endif
-                                     eigenValues,
+                                     getEigenVectors(),
+				     eigenValues,
                                      fermiEnergy,
                                      fermiEnergyUp,
                                      fermiEnergyDown,
@@ -3480,11 +3474,8 @@ namespace dftfe
                                      d_gradDensityOutQuadValues,
                                      d_rhoCore,
                                      d_gradRhoCore,
-                                     d_eigenVectorsFlattenedHost,
-#ifdef DFTFE_WITH_DEVICE
-                                     d_eigenVectorsFlattenedDevice,
-#endif
-                                     eigenValues,
+                                     getEigenVectors(),
+				     eigenValues,
                                      fermiEnergy,
                                      fermiEnergyUp,
                                      fermiEnergyDown,
@@ -3641,11 +3632,8 @@ namespace dftfe
                              d_gradDensityOutQuadValues,
                              d_rhoCore,
                              d_gradRhoCore,
-                             d_eigenVectorsFlattenedHost,
-#ifdef DFTFE_WITH_DEVICE
-                             d_eigenVectorsFlattenedDevice,
-#endif
-                             eigenValues,
+                             getEigenVectors(),
+			     eigenValues,
                              fermiEnergy,
                              fermiEnergyUp,
                              fermiEnergyDown,
@@ -5365,14 +5353,8 @@ namespace dftfe
       &                                                  gradDensityQuadValues,
     const std::map<dealii::CellId, std::vector<double>> &rhoCore,
     const std::map<dealii::CellId, std::vector<double>> &gradRhoCore,
-    const dftfe::utils::MemoryStorage<dataTypes::number,
-                                      dftfe::utils::MemorySpace::HOST>
-      &eigenVectorsFlattenedHost,
-#ifdef DFTFE_WITH_DEVICE
-    const dftfe::utils::MemoryStorage<dataTypes::number,
-                                      dftfe::utils::MemorySpace::DEVICE>
-      &eigenVectorsFlattenedDevice,
-#endif
+    const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+      &eigenVectorsFlattenedMemSpace,
     const std::vector<std::vector<double>> &       eigenValues_,
     const double                                   fermiEnergy_,
     const double                                   fermiEnergyUp_,
@@ -5570,36 +5552,17 @@ namespace dftfe
     else if (d_dftParamsPtr->auxBasisTypeXC == "SlaterAE")
       {
 #ifndef USE_COMPLEX
-#  ifdef DFTFE_WITH_DEVICE
-        if (d_dftParamsPtr->useDevice)
-          computeAuxProjectedDensityMatrixFromPSI(eigenVectorsFlattenedDevice,
+	      auto basisOpMemSpace = getBasisOperationsMemSpace();
+	      auto blasWrapperMemSpace = getBLASWrapperMemSpace();
+	computeAuxProjectedDensityMatrixFromPSI(eigenVectorsFlattenedMemSpace,
                                                   d_numEigenValues,
                                                   eigenValues_,
                                                   fermiEnergy_,
                                                   fermiEnergyUp_,
                                                   fermiEnergyDown_,
-                                                  d_basisOperationsPtrDevice,
-                                                  d_BLASWrapperPtr,
-                                                  d_densityDofHandlerIndex,
-                                                  d_gllQuadratureId,
-                                                  d_kPointWeights,
-                                                  *auxDensityMatrixXCPtr,
-                                                  d_mpiCommParent,
-                                                  mpi_communicator,
-                                                  interpoolcomm,
-                                                  interBandGroupComm,
-                                                  *d_dftParamsPtr);
-#  endif
-        if (!d_dftParamsPtr->useDevice)
-          computeAuxProjectedDensityMatrixFromPSI(eigenVectorsFlattenedHost,
-                                                  d_numEigenValues,
-                                                  eigenValues_,
-                                                  fermiEnergy_,
-                                                  fermiEnergyUp_,
-                                                  fermiEnergyDown_,
-                                                  d_basisOperationsPtrHost,
-                                                  d_BLASWrapperPtrHost,
-                                                  d_densityDofHandlerIndex,
+                                                  basisOpMemSpace,
+                                                  blasWrapperMemSpace,
+						  d_densityDofHandlerIndex,
                                                   d_gllQuadratureId,
                                                   d_kPointWeights,
                                                   *auxDensityMatrixXCPtr,

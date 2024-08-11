@@ -38,9 +38,9 @@ namespace dftfe
 
     void
     computeExcVxcFxc(
-      AuxDensityMatrix<memorySpace> &         auxDensityMatrix,
-      const std::vector<double> &quadPoints,
-      const std::vector<double> &quadWeights,
+      AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+      const std::vector<double> &    quadPoints,
+      const std::vector<double> &    quadWeights,
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
       const override;

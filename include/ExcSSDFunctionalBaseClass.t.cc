@@ -22,7 +22,8 @@
 namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
-  ExcSSDFunctionalBaseClass<memorySpace>::ExcSSDFunctionalBaseClass(bool isSpinPolarized)
+  ExcSSDFunctionalBaseClass<memorySpace>::ExcSSDFunctionalBaseClass(
+    bool isSpinPolarized)
     : d_isSpinPolarized(isSpinPolarized)
   {}
 

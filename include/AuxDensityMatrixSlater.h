@@ -101,11 +101,13 @@ namespace dftfe
     projectDensityEnd(const MPI_Comm &mpiComm) override;
 
     void
-    getDensityMatrixComponents_occupancies(const std::vector<double> & occupancies) const override;
+    getDensityMatrixComponents_occupancies(
+      const std::vector<double> &occupancies) const override;
 
     void
-    getDensityMatrixComponents_wavefunctions(const dftfe::utils::MemoryStorage<dataTypes::number,
-                                                                               memorySpace> & eigenVectors) const override;
+    getDensityMatrixComponents_wavefunctions(
+      const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+        &eigenVectors) const override;
   };
 } // namespace dftfe
 #endif

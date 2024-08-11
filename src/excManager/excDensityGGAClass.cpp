@@ -26,7 +26,7 @@ namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
   excDensityGGAClass<memorySpace>::excDensityGGAClass(xc_func_type *funcXPtr,
-                                         xc_func_type *funcCPtr)
+                                                      xc_func_type *funcCPtr)
     : excDensityBaseClass<memorySpace>(
         densityFamilyType::GGA,
         std::vector<DensityDescriptorDataAttributes>{
@@ -41,9 +41,10 @@ namespace dftfe
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
-  excDensityGGAClass<memorySpace>::excDensityGGAClass(xc_func_type *funcXPtr,
-                                         xc_func_type *funcCPtr,
-                                         std::string   modelXCInputFile)
+  excDensityGGAClass<memorySpace>::excDensityGGAClass(
+    xc_func_type *funcXPtr,
+    xc_func_type *funcCPtr,
+    std::string   modelXCInputFile)
     : excDensityBaseClass<memorySpace>(
         densityFamilyType::GGA,
         std::vector<DensityDescriptorDataAttributes>{
@@ -96,9 +97,9 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   excDensityGGAClass<memorySpace>::computeExcVxcFxc(
-    AuxDensityMatrix<memorySpace> &         auxDensityMatrix,
-    const std::vector<double> &quadPoints,
-    const std::vector<double> &quadWeights,
+    AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+    const std::vector<double> &    quadPoints,
+    const std::vector<double> &    quadWeights,
     std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
     std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataOut)
     const
@@ -210,7 +211,8 @@ namespace dftfe
     if (d_NNGGAPtr != nullptr)
       {
         std::vector<double> excValuesFromNN(quadWeights.size(), 0);
-        const size_t numDescriptors = this->d_densityDescriptorAttributesList.size();
+        const size_t        numDescriptors =
+          this->d_densityDescriptorAttributesList.size();
         std::vector<double> pdexcDescriptorValuesFromNN(numDescriptors *
                                                           quadWeights.size(),
                                                         0);

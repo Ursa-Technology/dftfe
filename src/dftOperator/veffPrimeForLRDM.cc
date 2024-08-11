@@ -23,7 +23,8 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   KohnShamHamiltonianOperator<memorySpace>::computeVEffPrime(
-    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCRepresentationPtr,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>>
+      auxDensityXCRepresentationPtr,
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       &rhoPrimeValues,
@@ -34,8 +35,7 @@ namespace dftfe
       &                phiPrimeValues,
     const unsigned int spinIndex)
   {
-    const bool isGGA =
-      d_excManagerPtr->isExcDependentOnGradDensity();
+    const bool isGGA = d_excManagerPtr->isExcDependentOnGradDensity();
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
     const unsigned int totalLocallyOwnedCells =
       d_basisOperationsPtrHost->nCells();
@@ -203,8 +203,9 @@ namespace dftfe
         }
 
 
-      std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCPerturbedRepresentationPtr =
-        std::make_shared<AuxDensityMatrixFE<memorySpace>>();
+      std::shared_ptr<AuxDensityMatrix<memorySpace>>
+        auxDensityXCPerturbedRepresentationPtr =
+          std::make_shared<AuxDensityMatrixFE<memorySpace>>();
       auxDensityXCPerturbedRepresentationPtr->projectDensityStart(
         perturbedDensityProjectionInputs);
 
@@ -232,24 +233,25 @@ namespace dftfe
 
 
 
-                    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
-                      {
-                        d_excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
-                          *auxDensityXCPerturbedRepresentationPtr,
-                          quadPointsInCell,
-                          quadWeightsInCell,
-                          xDataOut,
-                          cDataOut);
-                      }
-                    else
-                      {
-                        d_excManagerPtr->getExcSSDFunctionalObj()->computeExcVxcFxc(
-                          *auxDensityXCPerturbedRepresentationPtr,
-                          quadPointsInCell,
-                          quadWeightsInCell,
-                          xDataOut,
-                          cDataOut);
-                      }
+          if (d_excManagerPtr->getXCPrimaryVariable() ==
+              XCPrimaryVariable::DENSITY)
+            {
+              d_excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
+                *auxDensityXCPerturbedRepresentationPtr,
+                quadPointsInCell,
+                quadWeightsInCell,
+                xDataOut,
+                cDataOut);
+            }
+          else
+            {
+              d_excManagerPtr->getExcSSDFunctionalObj()->computeExcVxcFxc(
+                *auxDensityXCPerturbedRepresentationPtr,
+                quadPointsInCell,
+                quadWeightsInCell,
+                xDataOut,
+                cDataOut);
+            }
 
 
           const std::vector<double> &pdexDensitySpinIndex =

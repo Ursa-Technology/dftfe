@@ -592,23 +592,26 @@ namespace dftfe
                           quadWeightsAll[subCellIndex * numQuadPoints + iQuad]);
                       }
 
-                    if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+                    if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
+                        XCPrimaryVariable::DENSITY)
                       {
                         dftPtr->d_excManagerPtr->getExcDensityObj()
-                          ->computeExcVxcFxc(*(dftPtr->d_auxDensityMatrixXCOutPtr),
-                                             quadPointsInCell,
-                                             quadWeightsInCell,
-                                             xDensityOutDataOut,
-                                             cDensityOutDataOut);
+                          ->computeExcVxcFxc(
+                            *(dftPtr->d_auxDensityMatrixXCOutPtr),
+                            quadPointsInCell,
+                            quadWeightsInCell,
+                            xDensityOutDataOut,
+                            cDensityOutDataOut);
                       }
                     else
                       {
                         dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-                          ->computeExcVxcFxc(*(dftPtr->d_auxDensityMatrixXCOutPtr),
-                                             quadPointsInCell,
-                                             quadWeightsInCell,
-                                             xDensityOutDataOut,
-                                             cDensityOutDataOut);
+                          ->computeExcVxcFxc(
+                            *(dftPtr->d_auxDensityMatrixXCOutPtr),
+                            quadPointsInCell,
+                            quadWeightsInCell,
+                            xDensityOutDataOut,
+                            cDensityOutDataOut);
                       }
 
                     std::vector<double> pdexDensityOutSigma;

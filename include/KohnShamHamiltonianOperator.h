@@ -45,14 +45,14 @@ namespace dftfe
                                         dftfe::utils::MemorySpace::HOST>>
         basisOperationsPtrHost,
       std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>>
-                                  oncvClassPtr,
+                                               oncvClassPtr,
       std::shared_ptr<excManager<memorySpace>> excManagerPtr,
-      dftParameters *             dftParamsPtr,
-      const unsigned int          densityQuadratureID,
-      const unsigned int          lpspQuadratureID,
-      const unsigned int          feOrderPlusOneQuadratureID,
-      const MPI_Comm &            mpi_comm_parent,
-      const MPI_Comm &            mpi_comm_domain);
+      dftParameters *                          dftParamsPtr,
+      const unsigned int                       densityQuadratureID,
+      const unsigned int                       lpspQuadratureID,
+      const unsigned int                       feOrderPlusOneQuadratureID,
+      const MPI_Comm &                         mpi_comm_parent,
+      const MPI_Comm &                         mpi_comm_domain);
 
     void
     init(const std::vector<double> &kPointCoordinates,
@@ -91,7 +91,8 @@ namespace dftfe
      */
     void
     computeVEff(
-      std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix<memorySpace>>
+        auxDensityXCRepresentationPtr,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
         &                phiValues,
       const unsigned int spinIndex = 0);
@@ -115,7 +116,8 @@ namespace dftfe
 
     void
     computeVEffPrime(
-      std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix<memorySpace>>
+        auxDensityXCRepresentationPtr,
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &rhoPrimeValues,
@@ -214,9 +216,9 @@ namespace dftfe
                                       dftfe::utils::MemorySpace::HOST>>
       d_basisOperationsPtrHost;
     std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>>
-                                d_oncvClassPtr;
+                                             d_oncvClassPtr;
     std::shared_ptr<excManager<memorySpace>> d_excManagerPtr;
-    dftParameters *             d_dftParamsPtr;
+    dftParameters *                          d_dftParamsPtr;
 
     std::vector<dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>>
       d_cellHamiltonianMatrix;

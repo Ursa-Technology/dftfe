@@ -12,7 +12,7 @@
 namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
-  class AuxDensityMatrixFE  : public AuxDensityMatrix<memorySpace>
+  class AuxDensityMatrixFE : public AuxDensityMatrix<memorySpace>
   {
   public:
     // CAUTION: points have to be a contiguous subset of d_quadPointsSet
@@ -66,11 +66,13 @@ namespace dftfe
     projectDensityEnd(const MPI_Comm &mpiComm) override;
 
     void
-    getDensityMatrixComponents_occupancies(const std::vector<double> & occupancies) const override;
+    getDensityMatrixComponents_occupancies(
+      const std::vector<double> &occupancies) const override;
 
     void
-    getDensityMatrixComponents_wavefunctions(const dftfe::utils::MemoryStorage<dataTypes::number,
-                                                                               memorySpace> & eigenVectors) const override;
+    getDensityMatrixComponents_wavefunctions(
+      const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+        &eigenVectors) const override;
 
   private:
     std::vector<double> d_densityValsTotalAllQuads;

@@ -85,11 +85,13 @@ namespace dftfe
     projectDensityEnd(const MPI_Comm &mpiComm) = 0;
 
     virtual void
-    getDensityMatrixComponents_occupancies(const std::vector<double> & occupancies) const= 0;
+    getDensityMatrixComponents_occupancies(
+      const std::vector<double> &occupancies) const = 0;
 
     virtual void
-    getDensityMatrixComponents_wavefunctions(const dftfe::utils::MemoryStorage<dataTypes::number,
-                                                                               memorySpace> & eigenVectors) const= 0;
+    getDensityMatrixComponents_wavefunctions(
+      const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+        &eigenVectors) const = 0;
   };
 } // namespace dftfe
 

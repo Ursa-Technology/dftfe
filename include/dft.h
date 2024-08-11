@@ -1256,14 +1256,14 @@ namespace dftfe
                                         dftfe::utils::MemorySpace::DEVICE>
         &eigenVectorsFlattenedDevice,
 #endif
-      const std::vector<std::vector<double>> &eigenValues,
-      const double                            fermiEnergy_,
-      const double                            fermiEnergyUp_,
-      const double                            fermiEnergyDown_,
-      std::shared_ptr<AuxDensityMatrix<memorySpace>>       auxDensityMatrixXCPtr);
+      const std::vector<std::vector<double>> &       eigenValues,
+      const double                                   fermiEnergy_,
+      const double                                   fermiEnergyUp_,
+      const double                                   fermiEnergyDown_,
+      std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityMatrixXCPtr);
 
     std::shared_ptr<excManager<memorySpace>> d_excManagerPtr;
-    dispersionCorrection        d_dispersionCorr;
+    dispersionCorrection                     d_dispersionCorr;
 
     /**
      * stores required data for Kohn-Sham problem

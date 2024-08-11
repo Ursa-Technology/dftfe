@@ -26,10 +26,11 @@ namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
   ExcDFTPlusU<memorySpace>::ExcDFTPlusU(xc_func_type *funcXPtr,
-                                                      xc_func_type *funcCPtr)
+                                        xc_func_type *funcCPtr)
     : ExcSSDFunctionalBaseClass<memorySpace>(false) // isSpinPolarised
   {
-    d_excDensityObjPtr = new excDensityGGAClass<memorySpace>(funcXPtr, funcCPtr);
+    d_excDensityObjPtr =
+      new excDensityGGAClass<memorySpace>(funcXPtr, funcCPtr);
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -43,19 +44,15 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   ExcDFTPlusU<memorySpace>::computeExcVxcFxc(
-    AuxDensityMatrix<memorySpace> &         auxDensityMatrix,
-    const std::vector<double> &quadPoints,
-    const std::vector<double> &quadWeights,
+    AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+    const std::vector<double> &    quadPoints,
+    const std::vector<double> &    quadWeights,
     std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
     std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataOut)
     const
   {
     d_excDensityObjPtr->computeExcVxcFxc(
-      auxDensityMatrix,
-      quadPoints,
-      quadWeights,
-      xDataOut,
-      cDataOut);
+      auxDensityMatrix, quadPoints, quadWeights, xDataOut, cDataOut);
   }
 
   template <dftfe::utils::MemorySpace memorySpace>

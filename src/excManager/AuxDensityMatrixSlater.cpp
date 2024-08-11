@@ -9,7 +9,6 @@
 
 namespace dftfe
 {
-
   template <dftfe::utils::MemorySpace memorySpace>
   void
   AuxDensityMatrixSlater<memorySpace>::reinitAuxDensityMatrix(
@@ -56,7 +55,8 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::evalOverlapMatrixEnd(const MPI_Comm &mpiComm)
+  AuxDensityMatrixSlater<memorySpace>::evalOverlapMatrixEnd(
+    const MPI_Comm &mpiComm)
   {
     // MPI All Reduce
     MPI_Allreduce(d_SMatrix.data(),
@@ -212,7 +212,8 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::projectDensityMatrixEnd(const MPI_Comm &mpiComm)
+  AuxDensityMatrixSlater<memorySpace>::projectDensityMatrixEnd(
+    const MPI_Comm &mpiComm)
   {
     // MPI All Reduce d_SWFC
     MPI_Allreduce(d_SWFC.data(),
@@ -525,7 +526,8 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::projectDensityEnd(const MPI_Comm &mpiComm)
+  AuxDensityMatrixSlater<memorySpace>::projectDensityEnd(
+    const MPI_Comm &mpiComm)
   {
     // projectDensity implementation
     std::cout << "Error : No implementation yet" << std::endl;
@@ -533,7 +535,8 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::getDensityMatrixComponents_occupancies(const std::vector<double> & occupancies) const
+  AuxDensityMatrixSlater<memorySpace>::getDensityMatrixComponents_occupancies(
+    const std::vector<double> &occupancies) const
   {
     std::string errMsg = "Not implemented";
     dftfe::utils::throwException(false, errMsg);
@@ -541,16 +544,17 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::getDensityMatrixComponents_wavefunctions(const dftfe::utils::MemoryStorage<dataTypes::number,
-                                                                                                              memorySpace> & eigenVectors) const
+  AuxDensityMatrixSlater<memorySpace>::getDensityMatrixComponents_wavefunctions(
+    const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+      &eigenVectors) const
   {
     std::string errMsg = "Not implemented";
     dftfe::utils::throwException(false, errMsg);
   }
 
   template class AuxDensityMatrixSlater<dftfe::utils::MemorySpace::HOST>;
-#ifdef DFTFE_WITH_DEVICE
+#  ifdef DFTFE_WITH_DEVICE
   template class AuxDensityMatrixSlater<dftfe::utils::MemorySpace::DEVICE>;
-#endif
+#  endif
 } // namespace dftfe
 #endif

@@ -42,10 +42,10 @@ namespace dftfe
 
     // computingTimerStandard.enter_subsection("Total scf solve");
     energyCalculator<memorySpace> energyCalc(d_mpiCommParent,
-                                mpi_communicator,
-                                interpoolcomm,
-                                interBandGroupComm,
-                                *d_dftParamsPtr);
+                                             mpi_communicator,
+                                             interpoolcomm,
+                                             interBandGroupComm,
+                                             *d_dftParamsPtr);
 
 
     // set up linear solver

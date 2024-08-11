@@ -36,14 +36,14 @@ namespace dftfe
                                       dftfe::utils::MemorySpace::HOST>>
       basisOperationsPtrHost,
     std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>>
-                                oncvClassPtr,
+                                             oncvClassPtr,
     std::shared_ptr<excManager<memorySpace>> excManagerPtr,
-    dftParameters *             dftParamsPtr,
-    const unsigned int          densityQuadratureID,
-    const unsigned int          lpspQuadratureID,
-    const unsigned int          feOrderPlusOneQuadratureID,
-    const MPI_Comm &            mpi_comm_parent,
-    const MPI_Comm &            mpi_comm_domain)
+    dftParameters *                          dftParamsPtr,
+    const unsigned int                       densityQuadratureID,
+    const unsigned int                       lpspQuadratureID,
+    const unsigned int                       feOrderPlusOneQuadratureID,
+    const MPI_Comm &                         mpi_comm_parent,
+    const MPI_Comm &                         mpi_comm_domain)
     : d_kPointIndex(0)
     , d_spinIndex(0)
     , d_HamiltonianIndex(0)
@@ -224,8 +224,7 @@ namespace dftfe
       &                phiValues,
     const unsigned int spinIndex)
   {
-    const bool isGGA =
-      d_excManagerPtr->isExcDependentOnGradDensity();
+    const bool isGGA = d_excManagerPtr->isExcDependentOnGradDensity();
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
     const unsigned int totalLocallyOwnedCells =
       d_basisOperationsPtrHost->nCells();
@@ -287,7 +286,8 @@ namespace dftfe
               quadWeightsAll[iCell * numberQuadraturePointsPerCell + iQuad]);
           }
 
-        if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+        if (d_excManagerPtr->getXCPrimaryVariable() ==
+            XCPrimaryVariable::DENSITY)
           {
             d_excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
               *auxDensityXCRepresentation,

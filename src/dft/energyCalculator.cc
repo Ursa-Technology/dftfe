@@ -538,11 +538,12 @@ namespace dftfe
   } // namespace internalEnergy
 
   template <dftfe::utils::MemorySpace memorySpace>
-  energyCalculator<memorySpace>::energyCalculator(const MPI_Comm &     mpi_comm_parent,
-                                     const MPI_Comm &     mpi_comm_domain,
-                                     const MPI_Comm &     interpool_comm,
-                                     const MPI_Comm &     interbandgroup_comm,
-                                     const dftParameters &dftParams)
+  energyCalculator<memorySpace>::energyCalculator(
+    const MPI_Comm &     mpi_comm_parent,
+    const MPI_Comm &     mpi_comm_domain,
+    const MPI_Comm &     interpool_comm,
+    const MPI_Comm &     interbandgroup_comm,
+    const dftParameters &dftParams)
     : d_mpiCommParent(mpi_comm_parent)
     , mpi_communicator(mpi_comm_domain)
     , interpoolcomm(interpool_comm)
@@ -574,8 +575,8 @@ namespace dftfe
     const double                            fermiEnergy,
     const double                            fermiEnergyUp,
     const double                            fermiEnergyDown,
-    const std::shared_ptr<excManager<memorySpace>>       excManagerPtr,
-    const dispersionCorrection &            dispersionCorr,
+    const std::shared_ptr<excManager<memorySpace>> excManagerPtr,
+    const dispersionCorrection &                   dispersionCorr,
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
       &phiTotRhoInValues,
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
@@ -591,9 +592,11 @@ namespace dftfe
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       &gradDensityOutValues,
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-      &                               rhoOutValuesLpsp,
-    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCInRepresentationPtr,
-    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCOutRepresentationPtr,
+      &rhoOutValuesLpsp,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>>
+      auxDensityXCInRepresentationPtr,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>>
+                                                         auxDensityXCOutRepresentationPtr,
     const std::map<dealii::CellId, std::vector<double>> &smearedbValues,
     const std::map<dealii::CellId, std::vector<unsigned int>>
       &                                     smearedbNonTrivialAtomIds,
@@ -773,11 +776,11 @@ namespace dftfe
     const std::shared_ptr<
       dftfe::basis::
         FEBasisOperations<double, double, dftfe::utils::MemorySpace::HOST>>
-      &                               basisOperationsPtrElectro,
-    const unsigned int                densityQuadratureID,
-    const unsigned int                densityQuadratureIDElectro,
-    const unsigned int                smearedChargeQuadratureIDElectro,
-    const unsigned int                lpspQuadratureIDElectro,
+      &                basisOperationsPtrElectro,
+    const unsigned int densityQuadratureID,
+    const unsigned int densityQuadratureIDElectro,
+    const unsigned int smearedChargeQuadratureIDElectro,
+    const unsigned int lpspQuadratureIDElectro,
     const std::shared_ptr<excManager<memorySpace>> excManagerPtr,
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
       &phiTotRhoInValues,
@@ -796,9 +799,11 @@ namespace dftfe
       &gradDensityInValues,
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-      &                               gradDensityOutValues,
-    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCInRepresentationPtr,
-    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCOutRepresentationPtr,
+      &gradDensityOutValues,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>>
+      auxDensityXCInRepresentationPtr,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>>
+                                                         auxDensityXCOutRepresentationPtr,
     const std::map<dealii::CellId, std::vector<double>> &smearedbValues,
     const std::map<dealii::CellId, std::vector<unsigned int>>
       &                                     smearedbNonTrivialAtomIds,
@@ -929,20 +934,22 @@ namespace dftfe
       dftfe::basis::FEBasisOperations<dataTypes::number,
                                       double,
                                       dftfe::utils::MemorySpace::HOST>>
-      &                               basisOperationsPtr,
-    const unsigned int                quadratureId,
+      &                                            basisOperationsPtr,
+    const unsigned int                             quadratureId,
     const std::shared_ptr<excManager<memorySpace>> excManagerPtr,
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       &densityOutValues,
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-      &                               gradDensityOutValues,
-    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCInRepresentationPtr,
-    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCOutRepresentationPtr,
-    double &                          exchangeEnergy,
-    double &                          correlationEnergy,
-    double &                          excCorrPotentialTimesRho)
+      &gradDensityOutValues,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>>
+      auxDensityXCInRepresentationPtr,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>>
+            auxDensityXCOutRepresentationPtr,
+    double &exchangeEnergy,
+    double &correlationEnergy,
+    double &excCorrPotentialTimesRho)
   {
     basisOperationsPtr->reinit(0, 0, quadratureId, false);
     const unsigned int nCells        = basisOperationsPtr->nCells();
@@ -1041,7 +1048,6 @@ namespace dftfe
               quadWeightsInCell,
               xDensityOutDataOut,
               cDensityOutDataOut);
-
           }
 
         std::vector<double> pdexDensityInSigma;

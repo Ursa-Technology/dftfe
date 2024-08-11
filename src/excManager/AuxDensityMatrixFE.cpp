@@ -112,8 +112,9 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixFE<memorySpace>::evalOverlapMatrixStart(const std::vector<double> &quadpts,
-                                       const std::vector<double> &quadWt)
+  AuxDensityMatrixFE<memorySpace>::evalOverlapMatrixStart(
+    const std::vector<double> &quadpts,
+    const std::vector<double> &quadWt)
   {
     std::string errMsg = "Not implemented";
     dftfe::utils::throwException(false, errMsg);
@@ -141,7 +142,8 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixFE<memorySpace>::projectDensityMatrixEnd(const MPI_Comm &mpiComm)
+  AuxDensityMatrixFE<memorySpace>::projectDensityMatrixEnd(
+    const MPI_Comm &mpiComm)
   {
     std::string errMsg = "Not implemented";
     dftfe::utils::throwException(false, errMsg);
@@ -192,7 +194,8 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixFE<memorySpace>::getDensityMatrixComponents_occupancies(const std::vector<double> & occupancies) const
+  AuxDensityMatrixFE<memorySpace>::getDensityMatrixComponents_occupancies(
+    const std::vector<double> &occupancies) const
   {
     std::string errMsg = "Not implemented";
     dftfe::utils::throwException(false, errMsg);
@@ -200,8 +203,9 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixFE<memorySpace>::getDensityMatrixComponents_wavefunctions(const dftfe::utils::MemoryStorage<dataTypes::number,
-                                                                             memorySpace> & eigenVectors) const
+  AuxDensityMatrixFE<memorySpace>::getDensityMatrixComponents_wavefunctions(
+    const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+      &eigenVectors) const
   {
     std::string errMsg = "Not implemented";
     dftfe::utils::throwException(false, errMsg);

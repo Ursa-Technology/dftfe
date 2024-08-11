@@ -52,9 +52,9 @@ namespace dftfe
      */
     virtual void
     computeExcVxcFxc(
-      AuxDensityMatrix<memorySpace> &         auxDensityMatrix,
-      const std::vector<double> &quadPoints,
-      const std::vector<double> &quadWeights,
+      AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+      const std::vector<double> &    quadPoints,
+      const std::vector<double> &    quadWeights,
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
       const = 0;
@@ -64,7 +64,7 @@ namespace dftfe
 
   protected:
     SSDFamilyType d_SSDFamilyType;
-    bool                   d_isSpinPolarized;
+    bool          d_isSpinPolarized;
   };
 } // namespace dftfe
 

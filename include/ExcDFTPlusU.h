@@ -23,14 +23,11 @@
 #include "ExcSSDFunctionalBaseClass.h"
 namespace dftfe
 {
-
   template <dftfe::utils::MemorySpace memorySpace>
   class ExcDFTPlusU : public ExcSSDFunctionalBaseClass<memorySpace>
   {
   public:
-
-    ExcDFTPlusU(xc_func_type *funcXPtr,
-                       xc_func_type *funcCPtr);
+    ExcDFTPlusU(xc_func_type *funcXPtr, xc_func_type *funcCPtr);
 
     ~ExcDFTPlusU();
 
@@ -46,17 +43,16 @@ namespace dftfe
      */
     void
     computeExcVxcFxc(
-      AuxDensityMatrix<memorySpace> &         auxDensityMatrix,
-      const std::vector<double> &quadPoints,
-      const std::vector<double> &quadWeights,
+      AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+      const std::vector<double> &    quadPoints,
+      const std::vector<double> &    quadWeights,
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
       const override;
 
 
   public:
-
-    excDensityBaseClass<memorySpace> *     d_excDensityObjPtr;
+    excDensityBaseClass<memorySpace> *d_excDensityObjPtr;
   };
 } // namespace dftfe
 #endif // DFTFE_EXE_EXCDFTPLUSU_H

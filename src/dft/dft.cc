@@ -195,7 +195,7 @@ namespace dftfe
     symmetryPtr = new symmetryClass<FEOrder, FEOrderElectro, memorySpace>(
       this, mpi_comm_parent, mpi_comm_domain, _interpoolcomm);
 
-    d_excManagerPtr                   = std::make_shared<excManager<memorySpace>>();
+    d_excManagerPtr = std::make_shared<excManager<memorySpace>>();
     d_isRestartGroundStateCalcFromChk = false;
 
 #if defined(DFTFE_WITH_DEVICE)
@@ -2086,10 +2086,10 @@ namespace dftfe
 
     // computingTimerStandard.enter_subsection("Total scf solve");
     energyCalculator<memorySpace> energyCalc(d_mpiCommParent,
-                                mpi_communicator,
-                                interpoolcomm,
-                                interBandGroupComm,
-                                *d_dftParamsPtr);
+                                             mpi_communicator,
+                                             interpoolcomm,
+                                             interBandGroupComm,
+                                             *d_dftParamsPtr);
 
 
     // set up linear solver
@@ -5373,14 +5373,13 @@ namespace dftfe
                                       dftfe::utils::MemorySpace::DEVICE>
       &eigenVectorsFlattenedDevice,
 #endif
-    const std::vector<std::vector<double>> &eigenValues_,
-    const double                            fermiEnergy_,
-    const double                            fermiEnergyUp_,
-    const double                            fermiEnergyDown_,
-    std::shared_ptr<AuxDensityMatrix<memorySpace>>       auxDensityMatrixXCPtr)
+    const std::vector<std::vector<double>> &       eigenValues_,
+    const double                                   fermiEnergy_,
+    const double                                   fermiEnergyUp_,
+    const double                                   fermiEnergyDown_,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityMatrixXCPtr)
   {
-    const bool isGGA =
-      d_excManagerPtr->isExcDependentOnGradDensity();
+    const bool isGGA = d_excManagerPtr->isExcDependentOnGradDensity();
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureId);
     const unsigned int totalLocallyOwnedCells =
       d_basisOperationsPtrHost->nCells();

@@ -23,7 +23,6 @@
 #include <ExcSSDFunctionalBaseClass.h>
 namespace dftfe
 {
-
   enum class XCPrimaryVariable
   {
     DENSITY,
@@ -54,8 +53,8 @@ namespace dftfe
          bool        isSpinPolarized,
          std::string modelXCInputFile);
 
-//    densityFamilyType
-//    getDensityBasedFamilyType() const;
+    //    densityFamilyType
+    //    getDensityBasedFamilyType() const;
 
 
 
@@ -73,10 +72,10 @@ namespace dftfe
     getExcSSDFunctionalObj() const;
 
     const bool
-      isExcDependentOnGradDensity() const;
+    isExcDependentOnGradDensity() const;
 
     XCPrimaryVariable
-      getXCPrimaryVariable() const;
+    getXCPrimaryVariable() const;
 
 
   private:
@@ -84,10 +83,10 @@ namespace dftfe
     xc_func_type *d_funcXPtr;
     xc_func_type *d_funcCPtr;
 
-    excDensityBaseClass<memorySpace> *     d_excDensityObjPtr;
+    excDensityBaseClass<memorySpace> *      d_excDensityObjPtr;
     ExcSSDFunctionalBaseClass<memorySpace> *d_SSDObjPtr;
 
-    bool d_dependentOnGradDensity;
+    bool              d_dependentOnGradDensity;
     XCPrimaryVariable d_xcPrimVariable;
   };
 } // namespace dftfe

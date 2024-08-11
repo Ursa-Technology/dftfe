@@ -149,6 +149,7 @@ namespace dftfe
    *
    * @author Sambit Das, Shiva Rudraraju, Phani Motamarri, Krishnendu Ghosh
    */
+  template <dftfe::utils::MemorySpace memorySpace>
   class energyCalculator
   {
   public:
@@ -230,7 +231,7 @@ namespace dftfe
       const double                            fermiEnergy,
       const double                            fermiEnergyUp,
       const double                            fermiEnergyDown,
-      const std::shared_ptr<excManager>       excManagerPtr,
+      const std::shared_ptr<excManager<memorySpace>>       excManagerPtr,
       const dispersionCorrection &            dispersionCorr,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
         &phiTotRhoInValues,
@@ -248,8 +249,8 @@ namespace dftfe
         &gradDensityOutValues,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
         &                               rhoOutValuesLpsp,
-      std::shared_ptr<AuxDensityMatrix> auxDensityXCInRepresentationPtr,
-      std::shared_ptr<AuxDensityMatrix> auxDensityXCOutRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCInRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCOutRepresentationPtr,
       const std::map<dealii::CellId, std::vector<double>> &smearedbValues,
       const std::map<dealii::CellId, std::vector<unsigned int>>
         &                                     smearedbNonTrivialAtomIds,
@@ -278,7 +279,7 @@ namespace dftfe
       const unsigned int                densityQuadratureIDElectro,
       const unsigned int                smearedChargeQuadratureIDElectro,
       const unsigned int                lpspQuadratureIDElectro,
-      const std::shared_ptr<excManager> excManagerPtr,
+      const std::shared_ptr<excManager<memorySpace>> excManagerPtr,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
         &phiTotRhoInValues,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
@@ -297,8 +298,8 @@ namespace dftfe
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &                               gradDensityOutValues,
-      std::shared_ptr<AuxDensityMatrix> AuxDensityXCInRepresentationPtr,
-      std::shared_ptr<AuxDensityMatrix> AuxDensityXCOutRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix<memorySpace>> AuxDensityXCInRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix<memorySpace>> AuxDensityXCOutRepresentationPtr,
       const std::map<dealii::CellId, std::vector<double>> &smearedbValues,
       const std::map<dealii::CellId, std::vector<unsigned int>>
         &                                     smearedbNonTrivialAtomIds,
@@ -306,6 +307,7 @@ namespace dftfe
       const std::map<dealii::types::global_dof_index, double>
         &        atomElectrostaticNodeIdToChargeMap,
       const bool smearedNuclearCharges);
+
 
 
     void
@@ -316,15 +318,15 @@ namespace dftfe
                                         dftfe::utils::MemorySpace::HOST>>
         &                               basisOperationsPtr,
       const unsigned int                quadratureId,
-      const std::shared_ptr<excManager> excManagerPtr,
+      const std::shared_ptr<excManager<memorySpace>> excManagerPtr,
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &densityInValues,
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &                               gradDensityOutValues,
-      std::shared_ptr<AuxDensityMatrix> AuxDensityXCInRepresentationPtr,
-      std::shared_ptr<AuxDensityMatrix> auxDensityXCOutRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix<memorySpace>> AuxDensityXCInRepresentationPtr,
+      std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCOutRepresentationPtr,
       double &                          exchangeEnergy,
       double &                          correlationEnergy,
       double &                          excCorrPotentialTimesRho);

@@ -20,7 +20,8 @@
 
 namespace dftfe
 {
-  excDensityBaseClass::excDensityBaseClass(
+  template <dftfe::utils::MemorySpace memorySpace>
+  excDensityBaseClass<memorySpace>::excDensityBaseClass(
     const densityFamilyType familyType,
     const std::vector<DensityDescriptorDataAttributes>
       &densityDescriptorAttributesList)
@@ -29,14 +30,16 @@ namespace dftfe
   {}
 
 
+  template <dftfe::utils::MemorySpace memorySpace>
   densityFamilyType
-  excDensityBaseClass::getDensityBasedFamilyType() const
+  excDensityBaseClass<memorySpace>::getDensityBasedFamilyType() const
   {
     return d_familyType;
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   const std::vector<DensityDescriptorDataAttributes> &
-  excDensityBaseClass::getDensityDescriptorAttributesList() const
+  excDensityBaseClass<memorySpace>::getDensityDescriptorAttributesList() const
   {
     return d_densityDescriptorAttributesList;
   }

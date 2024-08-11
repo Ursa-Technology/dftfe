@@ -7,9 +7,10 @@
 
 namespace dftfe
 {
-  excDensityLLMGGAClass::excDensityLLMGGAClass(xc_func_type *funcXPtr,
+  template <dftfe::utils::MemorySpace memorySpace>
+  excDensityLLMGGAClass<memorySpace>::excDensityLLMGGAClass(xc_func_type *funcXPtr,
                                                xc_func_type *funcCPtr)
-    : excDensityBaseClass(densityFamilyType::LLMGGA,
+    : excDensityBaseClass<memorySpace>(densityFamilyType::LLMGGA,
                           std::vector<DensityDescriptorDataAttributes>{
                             DensityDescriptorDataAttributes::valuesSpinUp,
                             DensityDescriptorDataAttributes::valuesSpinDown,
@@ -23,10 +24,11 @@ namespace dftfe
     d_NNLLMGGAPtr = nullptr;
   }
 
-  excDensityLLMGGAClass::excDensityLLMGGAClass(xc_func_type *funcXPtr,
+  template <dftfe::utils::MemorySpace memorySpace>
+  excDensityLLMGGAClass<memorySpace>::excDensityLLMGGAClass(xc_func_type *funcXPtr,
                                                xc_func_type *funcCPtr,
                                                std::string   modelXCInputFile)
-    : excDensityBaseClass(densityFamilyType::LLMGGA,
+    : excDensityBaseClass<memorySpace>(densityFamilyType::LLMGGA,
                           std::vector<DensityDescriptorDataAttributes>{
                             DensityDescriptorDataAttributes::valuesSpinUp,
                             DensityDescriptorDataAttributes::valuesSpinDown,
@@ -42,14 +44,16 @@ namespace dftfe
 #endif
   }
 
-  excDensityLLMGGAClass::~excDensityLLMGGAClass()
+  template <dftfe::utils::MemorySpace memorySpace>
+  excDensityLLMGGAClass<memorySpace>::~excDensityLLMGGAClass()
   {
     if (d_NNLLMGGAPtr != nullptr)
       delete d_NNLLMGGAPtr;
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityLLMGGAClass::checkInputOutputDataAttributesConsistency(
+  excDensityLLMGGAClass<memorySpace>::checkInputOutputDataAttributesConsistency(
     const std::vector<xcOutputDataAttributes> &outputDataAttributes) const
   {
     const std::vector<xcOutputDataAttributes> allowedOutputDataAttributes = {
@@ -77,9 +81,10 @@ namespace dftfe
       }
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityLLMGGAClass::computeExcVxcFxc(
-    AuxDensityMatrix &         auxDensityMatrix,
+  excDensityLLMGGAClass<memorySpace>::computeExcVxcFxc(
+    AuxDensityMatrix<memorySpace> &         auxDensityMatrix,
     const std::vector<double> &quadPoints,
     const std::vector<double> &quadWeights,
     std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
@@ -96,19 +101,19 @@ namespace dftfe
       densityDescriptorData;
 
     // d_densityDescriptorAttributesList not defined
-    for (size_t i = 0; i < d_densityDescriptorAttributesList.size(); i++)
+    for (size_t i = 0; i < this->d_densityDescriptorAttributesList.size(); i++)
       {
-        if (d_densityDescriptorAttributesList[i] ==
+        if (this->d_densityDescriptorAttributesList[i] ==
               DensityDescriptorDataAttributes::valuesSpinUp ||
-            d_densityDescriptorAttributesList[i] ==
+            this->d_densityDescriptorAttributesList[i] ==
               DensityDescriptorDataAttributes::valuesSpinDown)
-          densityDescriptorData[d_densityDescriptorAttributesList[i]] =
+          densityDescriptorData[this->d_densityDescriptorAttributesList[i]] =
             std::vector<double>(quadWeights.size(), 0);
-        else if (d_densityDescriptorAttributesList[i] ==
+        else if (this->d_densityDescriptorAttributesList[i] ==
                    DensityDescriptorDataAttributes::gradValuesSpinUp ||
-                 d_densityDescriptorAttributesList[i] ==
+                 this->d_densityDescriptorAttributesList[i] ==
                    DensityDescriptorDataAttributes::gradValuesSpinDown)
-          densityDescriptorData[d_densityDescriptorAttributesList[i]] =
+          densityDescriptorData[this->d_densityDescriptorAttributesList[i]] =
             std::vector<double>(3 * quadWeights.size(), 0);
       }
 
@@ -217,7 +222,7 @@ namespace dftfe
     if (d_NNLLMGGAPtr != nullptr)
       {
         std::vector<double> excValuesFromNN(quadWeights.size(), 0);
-        const size_t numDescriptors = d_densityDescriptorAttributesList.size();
+        const size_t numDescriptors = this->d_densityDescriptorAttributesList.size();
         std::vector<double> pdexcDescriptorValuesFromNN(numDescriptors *
                                                           quadWeights.size(),
                                                         0);
@@ -395,7 +400,7 @@ namespace dftfe
                     std::vector<double> excValuesFromNNFD(quadWeights.size(),
                                                           0);
                     const size_t        numDescriptors =
-                      d_densityDescriptorAttributesList.size();
+                      this->d_densityDescriptorAttributesList.size();
                     std::vector<double> pdexcDescriptorValuesFromNNFD(
                       numDescriptors * quadWeights.size(), 0);
 
@@ -584,4 +589,9 @@ namespace dftfe
           }
       } // VxcCompute check
   }
+
+  template class excDensityLLMGGAClass<dftfe::utils::MemorySpace::HOST>;
+#ifdef DFTFE_WITH_DEVICE
+  template class excDensityLLMGGAClass<dftfe::utils::MemorySpace::DEVICE>;
+#endif
 } // namespace dftfe

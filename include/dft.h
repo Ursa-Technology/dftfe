@@ -67,7 +67,6 @@
 
 #include <mixingClass.h>
 #include <oncvClass.h>
-#include <AuxDensityMatrix.h>
 
 namespace dftfe
 {
@@ -1261,9 +1260,9 @@ namespace dftfe
       const double                            fermiEnergy_,
       const double                            fermiEnergyUp_,
       const double                            fermiEnergyDown_,
-      std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixXCPtr);
+      std::shared_ptr<AuxDensityMatrix<memorySpace>>       auxDensityMatrixXCPtr);
 
-    std::shared_ptr<excManager> d_excManagerPtr;
+    std::shared_ptr<excManager<memorySpace>> d_excManagerPtr;
     dispersionCorrection        d_dispersionCorr;
 
     /**
@@ -1693,8 +1692,8 @@ namespace dftfe
       d_densityTotalOutValuesLpspQuad, d_densityTotalInValuesLpspQuad,
       d_gradDensityTotalOutValuesLpspQuad, d_gradDensityTotalInValuesLpspQuad;
 
-    std::shared_ptr<AuxDensityMatrix> d_auxDensityMatrixXCInPtr;
-    std::shared_ptr<AuxDensityMatrix> d_auxDensityMatrixXCOutPtr;
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> d_auxDensityMatrixXCInPtr;
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> d_auxDensityMatrixXCOutPtr;
 
     // For multipole boundary conditions
     double              d_monopole;

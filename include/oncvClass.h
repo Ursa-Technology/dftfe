@@ -99,7 +99,7 @@ namespace dftfe
       unsigned int                            sparsityPatternQuadratureId,
       unsigned int                            nlpspQuadratureId,
       unsigned int                            densityQuadratureIdElectro,
-      std::shared_ptr<excManager>             excFunctionalPtr,
+      std::shared_ptr<excManager<memorySpace>>             excFunctionalPtr,
       const std::vector<std::vector<double>> &atomLocations,
       unsigned int                            numEigenValues,
       const bool                              singlePrecNonLocalOperator);
@@ -281,7 +281,7 @@ namespace dftfe
     unsigned int                d_densityQuadratureIdElectro;
     unsigned int                d_sparsityPatternQuadratureId;
     unsigned int                d_nlpspQuadratureId;
-    std::shared_ptr<excManager> d_excManagerPtr;
+    std::shared_ptr<excManager<memorySpace>> d_excManagerPtr;
     std::shared_ptr<
       dftfe::basis::
         FEBasisOperations<ValueType, double, dftfe::utils::MemorySpace::HOST>>

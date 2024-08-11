@@ -21,15 +21,18 @@
 
 namespace dftfe
 {
-  ExcSSDFunctionalBaseClass::ExcSSDFunctionalBaseClass(bool isSpinPolarized)
+  template <dftfe::utils::MemorySpace memorySpace>
+  ExcSSDFunctionalBaseClass<memorySpace>::ExcSSDFunctionalBaseClass(bool isSpinPolarized)
     : d_isSpinPolarized(isSpinPolarized)
   {}
 
-  ExcSSDFunctionalBaseClass::~ExcSSDFunctionalBaseClass()
+  template <dftfe::utils::MemorySpace memorySpace>
+  ExcSSDFunctionalBaseClass<memorySpace>::~ExcSSDFunctionalBaseClass()
   {}
 
+  template <dftfe::utils::MemorySpace memorySpace>
   SSDFamilyType
-  ExcSSDFunctionalBaseClass::getSSDFamilyType() const
+  ExcSSDFunctionalBaseClass<memorySpace>::getSSDFamilyType() const
   {
     return d_SSDFamilyType;
   }

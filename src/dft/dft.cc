@@ -195,7 +195,7 @@ namespace dftfe
     symmetryPtr = new symmetryClass<FEOrder, FEOrderElectro, memorySpace>(
       this, mpi_comm_parent, mpi_comm_domain, _interpoolcomm);
 
-    d_excManagerPtr                   = std::make_shared<excManager>();
+    d_excManagerPtr                   = std::make_shared<excManager<memorySpace>>();
     d_isRestartGroundStateCalcFromChk = false;
 
 #if defined(DFTFE_WITH_DEVICE)
@@ -2085,7 +2085,7 @@ namespace dftfe
       matrix_free_data.get_quadrature(d_densityQuadratureId);
 
     // computingTimerStandard.enter_subsection("Total scf solve");
-    energyCalculator energyCalc(d_mpiCommParent,
+    energyCalculator<memorySpace> energyCalc(d_mpiCommParent,
                                 mpi_communicator,
                                 interpoolcomm,
                                 interBandGroupComm,
@@ -5377,7 +5377,7 @@ namespace dftfe
     const double                            fermiEnergy_,
     const double                            fermiEnergyUp_,
     const double                            fermiEnergyDown_,
-    std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixXCPtr)
+    std::shared_ptr<AuxDensityMatrix<memorySpace>>       auxDensityMatrixXCPtr)
   {
     const bool isGGA =
       d_excManagerPtr->isExcDependentOnGradDensity();

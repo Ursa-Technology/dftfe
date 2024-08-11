@@ -37,7 +37,7 @@ namespace dftfe
       basisOperationsPtrHost,
     std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>>
                                 oncvClassPtr,
-    std::shared_ptr<excManager> excManagerPtr,
+    std::shared_ptr<excManager<memorySpace>> excManagerPtr,
     dftParameters *             dftParamsPtr,
     const unsigned int          densityQuadratureID,
     const unsigned int          lpspQuadratureID,
@@ -219,7 +219,7 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   KohnShamHamiltonianOperator<memorySpace>::computeVEff(
-    std::shared_ptr<AuxDensityMatrix> auxDensityXCRepresentation,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCRepresentation,
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
       &                phiValues,
     const unsigned int spinIndex)

@@ -537,7 +537,8 @@ namespace dftfe
 
   } // namespace internalEnergy
 
-  energyCalculator::energyCalculator(const MPI_Comm &     mpi_comm_parent,
+  template <dftfe::utils::MemorySpace memorySpace>
+  energyCalculator<memorySpace>::energyCalculator(const MPI_Comm &     mpi_comm_parent,
                                      const MPI_Comm &     mpi_comm_domain,
                                      const MPI_Comm &     interpool_comm,
                                      const MPI_Comm &     interbandgroup_comm,
@@ -551,9 +552,10 @@ namespace dftfe
             (dealii::Utilities::MPI::this_mpi_process(mpi_comm_parent) == 0))
   {}
 
+  template <dftfe::utils::MemorySpace memorySpace>
   // compute energies
   double
-  energyCalculator::computeEnergy(
+  energyCalculator<memorySpace>::computeEnergy(
     const std::shared_ptr<
       dftfe::basis::FEBasisOperations<dataTypes::number,
                                       double,
@@ -572,7 +574,7 @@ namespace dftfe
     const double                            fermiEnergy,
     const double                            fermiEnergyUp,
     const double                            fermiEnergyDown,
-    const std::shared_ptr<excManager>       excManagerPtr,
+    const std::shared_ptr<excManager<memorySpace>>       excManagerPtr,
     const dispersionCorrection &            dispersionCorr,
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
       &phiTotRhoInValues,
@@ -590,8 +592,8 @@ namespace dftfe
       &gradDensityOutValues,
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
       &                               rhoOutValuesLpsp,
-    std::shared_ptr<AuxDensityMatrix> auxDensityXCInRepresentationPtr,
-    std::shared_ptr<AuxDensityMatrix> auxDensityXCOutRepresentationPtr,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCInRepresentationPtr,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCOutRepresentationPtr,
     const std::map<dealii::CellId, std::vector<double>> &smearedbValues,
     const std::map<dealii::CellId, std::vector<unsigned int>>
       &                                     smearedbNonTrivialAtomIds,
@@ -760,8 +762,9 @@ namespace dftfe
 
   // compute energie residual,
   // E_KS-E_HWF=\int(V_{in}(\rho_{out}-\rho_{in}))+E_{pot}[\rho_{out}]-E_{pot}[\rho_{in}]
+  template <dftfe::utils::MemorySpace memorySpace>
   double
-  energyCalculator::computeEnergyResidual(
+  energyCalculator<memorySpace>::computeEnergyResidual(
     const std::shared_ptr<
       dftfe::basis::FEBasisOperations<dataTypes::number,
                                       double,
@@ -775,7 +778,7 @@ namespace dftfe
     const unsigned int                densityQuadratureIDElectro,
     const unsigned int                smearedChargeQuadratureIDElectro,
     const unsigned int                lpspQuadratureIDElectro,
-    const std::shared_ptr<excManager> excManagerPtr,
+    const std::shared_ptr<excManager<memorySpace>> excManagerPtr,
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
       &phiTotRhoInValues,
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
@@ -794,8 +797,8 @@ namespace dftfe
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       &                               gradDensityOutValues,
-    std::shared_ptr<AuxDensityMatrix> auxDensityXCInRepresentationPtr,
-    std::shared_ptr<AuxDensityMatrix> auxDensityXCOutRepresentationPtr,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCInRepresentationPtr,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCOutRepresentationPtr,
     const std::map<dealii::CellId, std::vector<double>> &smearedbValues,
     const std::map<dealii::CellId, std::vector<unsigned int>>
       &                                     smearedbNonTrivialAtomIds,
@@ -919,23 +922,24 @@ namespace dftfe
     return std::abs(totalEnergy);
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  energyCalculator::computeXCEnergyTermsSpinPolarized(
+  energyCalculator<memorySpace>::computeXCEnergyTermsSpinPolarized(
     const std::shared_ptr<
       dftfe::basis::FEBasisOperations<dataTypes::number,
                                       double,
                                       dftfe::utils::MemorySpace::HOST>>
       &                               basisOperationsPtr,
     const unsigned int                quadratureId,
-    const std::shared_ptr<excManager> excManagerPtr,
+    const std::shared_ptr<excManager<memorySpace>> excManagerPtr,
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       &densityOutValues,
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       &                               gradDensityOutValues,
-    std::shared_ptr<AuxDensityMatrix> auxDensityXCInRepresentationPtr,
-    std::shared_ptr<AuxDensityMatrix> auxDensityXCOutRepresentationPtr,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCInRepresentationPtr,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCOutRepresentationPtr,
     double &                          exchangeEnergy,
     double &                          correlationEnergy,
     double &                          excCorrPotentialTimesRho)
@@ -1144,8 +1148,9 @@ namespace dftfe
   }
 
 
+  template <dftfe::utils::MemorySpace memorySpace>
   double
-  energyCalculator::computeEntropicEnergy(
+  energyCalculator<memorySpace>::computeEntropicEnergy(
     const std::vector<std::vector<double>> &eigenValues,
     const std::vector<double> &             kPointWeights,
     const double                            fermiEnergy,
@@ -1245,4 +1250,10 @@ namespace dftfe
 
     return temperature * entropy;
   }
+
+  template class energyCalculator<dftfe::utils::MemorySpace::HOST>;
+#ifdef DFTFE_WITH_DEVICE
+  template class energyCalculator<dftfe::utils::MemorySpace::DEVICE>;
+#endif
+
 } // namespace dftfe

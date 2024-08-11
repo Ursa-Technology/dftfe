@@ -41,7 +41,7 @@ namespace dftfe
       matrix_free_data.get_quadrature(d_densityQuadratureId);
 
     // computingTimerStandard.enter_subsection("Total scf solve");
-    energyCalculator energyCalc(d_mpiCommParent,
+    energyCalculator<memorySpace> energyCalc(d_mpiCommParent,
                                 mpi_communicator,
                                 interpoolcomm,
                                 interBandGroupComm,

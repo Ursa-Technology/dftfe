@@ -15,26 +15,35 @@
 // ---------------------------------------------------------------------
 //
 
-#ifndef DFTFE_EXCDENSIYLDACLASS_H
-#define DFTFE_EXCDENSIYLDACLASS_H
+#ifndef DFTFE_EXE_EXCDFTPLUSU_H
+#define DFTFE_EXE_EXCDFTPLUSU_H
 
-#include <xc.h>
-#include <excDensityBaseClass.h>
+
+
+#include "ExcSSDFunctionalBaseClass.h"
 namespace dftfe
 {
-  class NNLDA;
+
   template <dftfe::utils::MemorySpace memorySpace>
-  class excDensityLDAClass : public excDensityBaseClass<memorySpace>
+  class ExcDFTPlusU : public ExcSSDFunctionalBaseClass<memorySpace>
   {
   public:
-    excDensityLDAClass(xc_func_type *funcXPtr, xc_func_type *funcCPtr);
 
-    excDensityLDAClass(xc_func_type *funcXPtr,
-                       xc_func_type *funcCPtr,
-                       std::string   modelXCInputFile);
+    ExcDFTPlusU(xc_func_type *funcXPtr,
+                       xc_func_type *funcCPtr);
 
-    ~excDensityLDAClass();
+    ~ExcDFTPlusU();
 
+    void
+    applyWaveFunctionDependentVxc() const override;
+    void
+    updateWaveFunctionDependentVxc() const override;
+    double
+    computeWaveFunctionDependentExcEnergy() const override;
+
+    /**
+     * x and c denotes exchange and correlation respectively
+     */
     void
     computeExcVxcFxc(
       AuxDensityMatrix<memorySpace> &         auxDensityMatrix,
@@ -44,17 +53,10 @@ namespace dftfe
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
       const override;
 
-    void
-    checkInputOutputDataAttributesConsistency(
-      const std::vector<xcOutputDataAttributes> &outputDataAttributes)
-      const override;
 
+  public:
 
-  private:
-    NNLDA *       d_NNLDAPtr;
-    xc_func_type *d_funcXPtr;
-    xc_func_type *d_funcCPtr;
+    excDensityBaseClass<memorySpace> *     d_excDensityObjPtr;
   };
 } // namespace dftfe
-
-#endif // DFTFE_EXCDENSIYLDACLASS_H
+#endif // DFTFE_EXE_EXCDFTPLUSU_H

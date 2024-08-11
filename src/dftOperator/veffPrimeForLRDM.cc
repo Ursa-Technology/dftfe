@@ -17,13 +17,13 @@
 // @author Sambit Das, Nikhil Kodali
 //
 #include <KohnShamHamiltonianOperator.h>
-#include <AuxDensityFE.h>
+#include <AuxDensityMatrixFE.h>
 namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
   void
   KohnShamHamiltonianOperator<memorySpace>::computeVEffPrime(
-    std::shared_ptr<AuxDensityMatrix> auxDensityXCRepresentationPtr,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCRepresentationPtr,
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       &rhoPrimeValues,
@@ -203,8 +203,8 @@ namespace dftfe
         }
 
 
-      std::shared_ptr<AuxDensityMatrix> auxDensityXCPerturbedRepresentationPtr =
-        std::make_shared<AuxDensityFE>();
+      std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCPerturbedRepresentationPtr =
+        std::make_shared<AuxDensityMatrixFE<memorySpace>>();
       auxDensityXCPerturbedRepresentationPtr->projectDensityStart(
         perturbedDensityProjectionInputs);
 

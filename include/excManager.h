@@ -30,6 +30,7 @@ namespace dftfe
     SSDETERMINANT
   };
 
+  template <dftfe::utils::MemorySpace memorySpace>
   class excManager
   {
   public:
@@ -58,17 +59,17 @@ namespace dftfe
 
 
 
-    excDensityBaseClass *
+    excDensityBaseClass<memorySpace> *
     getExcDensityObj();
 
-    ExcSSDFunctionalBaseClass *
+    ExcSSDFunctionalBaseClass<memorySpace> *
     getExcSSDFunctionalObj();
 
 
-    const excDensityBaseClass *
+    const excDensityBaseClass<memorySpace> *
     getExcDensityObj() const;
 
-    const ExcSSDFunctionalBaseClass *
+    const ExcSSDFunctionalBaseClass<memorySpace> *
     getExcSSDFunctionalObj() const;
 
     const bool
@@ -83,8 +84,8 @@ namespace dftfe
     xc_func_type *d_funcXPtr;
     xc_func_type *d_funcCPtr;
 
-    excDensityBaseClass *     d_excDensityObjPtr;
-    ExcSSDFunctionalBaseClass *d_SSDObjPtr;
+    excDensityBaseClass<memorySpace> *     d_excDensityObjPtr;
+    ExcSSDFunctionalBaseClass<memorySpace> *d_SSDObjPtr;
 
     bool d_dependentOnGradDensity;
     XCPrimaryVariable d_xcPrimVariable;

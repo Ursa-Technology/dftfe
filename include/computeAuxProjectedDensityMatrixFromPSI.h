@@ -42,7 +42,7 @@ namespace dftfe
     const unsigned int         matrixFreeDofhandlerIndex,
     const unsigned int         quadratureIndex,
     const std::vector<double> &kPointWeights,
-    AuxDensityMatrix &         auxDensityMatrixRepresentation,
+    AuxDensityMatrix<memorySpace> &         auxDensityMatrixRepresentation,
     const MPI_Comm &           mpiCommParent,
     const MPI_Comm &           domainComm,
     const MPI_Comm &           interpoolcomm,

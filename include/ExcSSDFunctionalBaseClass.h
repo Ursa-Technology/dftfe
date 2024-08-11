@@ -32,6 +32,7 @@ namespace dftfe
     MGGA
   };
 
+  template <dftfe::utils::MemorySpace memorySpace>
   class ExcSSDFunctionalBaseClass
   {
   public:
@@ -51,7 +52,7 @@ namespace dftfe
      */
     virtual void
     computeExcVxcFxc(
-      AuxDensityMatrix &         auxDensityMatrix,
+      AuxDensityMatrix<memorySpace> &         auxDensityMatrix,
       const std::vector<double> &quadPoints,
       const std::vector<double> &quadWeights,
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
@@ -67,4 +68,5 @@ namespace dftfe
   };
 } // namespace dftfe
 
+#include "ExcSSDFunctionalBaseClass.t.cc"
 #endif // DFTFE_EXCSSDFUNCTIONALBASECLASS_H

@@ -40,7 +40,6 @@ namespace dftfe
    */
   namespace linearAlgebraOperations
   {
-
     /** @brief Orthogonalize given subspace using GramSchmidt orthogonalization
      *
      *  @param[in,out]  X Given subspace as flattened array of multi-vectors.
@@ -364,7 +363,7 @@ namespace dftfe
       const dftParameters &                              dftParams,
       dftfe::ScaLAPACKMatrix<dataTypes::number> &        projHamPar,
       dftfe::ScaLAPACKMatrix<dataTypes::number> &        projOverlapPar,
-      const bool onlyHPrimePartForFirstOrderDensityMatResponse = false);      
+      const bool onlyHPrimePartForFirstOrderDensityMatResponse = false);
 
   } // namespace linearAlgebraOperations
 

@@ -656,7 +656,6 @@ namespace dftfe
 
 
 
-
   } // namespace linearAlgebraOperations
 
 } // namespace dftfe

@@ -224,7 +224,7 @@ namespace dftfe
       // copy back YArray to XArray
     }
 
-   //
+    //
     // evaluate upper bound of the spectrum using k-step Lanczos iteration
     //
     template <typename T, dftfe::utils::MemorySpace memorySpace>
@@ -261,7 +261,7 @@ namespace dftfe
         local_size, T(0.0));
       T *XHostDataPtr = XHost.data();
 #else
-      T *XHostDataPtr = X.data();
+      T *                 XHostDataPtr = X.data();
 #endif
 
 
@@ -410,7 +410,6 @@ namespace dftfe
 
 
 
-
     template std::pair<double, double>
     lanczosLowerUpperBoundEigenSpectrum(
       const std::shared_ptr<
@@ -506,7 +505,6 @@ namespace dftfe
       const double        b,
       const double        a0);
 #endif
-
 
 
 

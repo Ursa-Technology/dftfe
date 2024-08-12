@@ -426,7 +426,7 @@ namespace dftfe
                     projHamPar.local_m() * projHamPar.local_n(),
                   T(0.0));
 
-      if (!(useMixedPrec))
+      if (!(useMixedPrec) || dftParams.numCoreWfcXtHX == 0)
         {
           XtHXXtOX(operatorMatrix,
                    X,
@@ -707,7 +707,7 @@ namespace dftfe
         computing_timer.leave_subsection(
           "X^{T}={QConjPrime}^{C}*LConj^{-1}*X^{T} mixed prec, RR step");
     }
-     void
+    void
     XtHXXtOXMixedPrec(
       operatorDFTClass<dftfe::utils::MemorySpace::HOST> &operatorMatrix,
       const dataTypes::number *                          X,
@@ -967,7 +967,8 @@ namespace dftfe
 
               // evaluate H times XBlock and store in HXBlock^{T}
               // operatorMatrix.overlapMatrixTimesX(
-              //   *XBlock, 1.0, 0.0, 0.0, *HXBlock, dftParams.diagonalMassMatrix);
+              //   *XBlock, 1.0, 0.0, 0.0, *HXBlock,
+              //   dftParams.diagonalMassMatrix);
 
 
 
@@ -982,7 +983,7 @@ namespace dftfe
                     &X[0] + jvec,
                     &N,
                     &X[0] + jvec,
-                    &B,
+                    &N,
                     &beta,
                     &projHamBlockDoublePrec[0],
                     &B);
@@ -1004,7 +1005,7 @@ namespace dftfe
                         &XSinglePrec[0] + jvec + B,
                         &N,
                         &XSinglePrec[0] + jvec,
-                        &B,
+                        &N,
                         &betaSinglePrec,
                         &projHamBlockSinglePrec[0],
                         &DRem);
@@ -3841,7 +3842,8 @@ namespace dftfe
               // XtOX operations
 
               // operatorMatrix.overlapMatrixTimesX(
-              //   *XBlock, 1.0, 0.0, 0.0, *OXBlock, dftParams.diagonalMassMatrix);
+              //   *XBlock, 1.0, 0.0, 0.0, *OXBlock,
+              //   dftParams.diagonalMassMatrix);
               MPI_Barrier(mpiCommDomain);
 
               const char transA = 'N';
@@ -3867,8 +3869,8 @@ namespace dftfe
                     &alpha,
                     &X[0] + jvec,
                     &numberComponents,
-                    OXBlock->data(),
-                    &B,
+                    &X[0] + jvec,
+                    &numberComponents,
                     &beta,
                     &projBlock[0],
                     &D);
@@ -3974,8 +3976,6 @@ namespace dftfe
             processGrid, projHamPar, interBandGroupComm);
         }
     }
-
-
 
 
 

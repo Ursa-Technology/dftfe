@@ -60,7 +60,24 @@ namespace dftfe
     //
     dftPtr->d_densityOutQuadValues.resize(
       dftPtr->getParametersObject().spinPolarized == 1 ? 2 : 1);
-    if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
+
+    bool isGradDensityDataRequired = false;
+    if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
+        XCPrimaryVariable::DENSITY)
+      {
+        isGradDensityDataRequired =
+          (dftPtr->d_excManagerPtr->getExcDensityObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+    else if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isGradDensityDataRequired =
+          (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+
+    if (isGradDensityDataRequired)
       {
         dftPtr->d_gradDensityOutQuadValues.resize(
           dftPtr->getParametersObject().spinPolarized == 1 ? 2 : 1);
@@ -97,7 +114,7 @@ namespace dftfe
                           0.0);
               }
             //
-            if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
+            if (isGradDensityDataRequired)
               {
                 std::fill(gradRhoOut.begin(), gradRhoOut.end(), 0.0);
                 if (dftPtr->getParametersObject().spinPolarized == 1)
@@ -131,7 +148,7 @@ namespace dftfe
                     else
                       rhoOut[q_point] +=
                         rhoRecvd[iSymm][globalCellId[cell->id()]][proc][point];
-                    if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
+                    if (isGradDensityDataRequired)
                       {
                         if (dftPtr->getParametersObject().spinPolarized == 1)
                           {
@@ -164,7 +181,7 @@ namespace dftfe
                   dftPtr->d_densityOutQuadValues[0][iCell * num_quad_points +
                                                     q_point] = rhoOut[q_point];
                 //
-                if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
+                if (isGradDensityDataRequired)
                   {
                     if (dftPtr->getParametersObject().spinPolarized == 1)
                       {
@@ -280,7 +297,23 @@ namespace dftfe
         rhoTempSpinPolarized.resize(2 * totPoints, 0.0);
       }
     //
-    if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
+    bool isGradDensityDataRequired = false;
+    if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
+        XCPrimaryVariable::DENSITY)
+      {
+        isGradDensityDataRequired =
+          (dftPtr->d_excManagerPtr->getExcDensityObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+    else if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isGradDensityDataRequired =
+          (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+
+    if (isGradDensityDataRequired)
       {
         gradRhoLocal.resize(3 * totPoints, 0.0);
         gradRhoTemp.resize(3 * totPoints, 0.0);
@@ -304,7 +337,7 @@ namespace dftfe
             tempPsiBeta.resize(numPoint);
             quadPointList.resize(numPoint);
             //
-            if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
+            if (isGradDensityDataRequired)
               {
                 tempGradPsi.resize(numPoint);
                 tempGradPsiTempAlpha.resize(numPoint);
@@ -322,7 +355,7 @@ namespace dftfe
                 tempPsiAlpha[iList].reinit(2);
                 tempPsiBeta[iList].reinit(2);
                 //
-                if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
+                if (isGradDensityDataRequired)
                   {
                     tempGradPsi[iList].resize(2);
                     tempGradPsiTempAlpha[iList].resize(2);
@@ -400,8 +433,7 @@ namespace dftfe
                                           1][i]),
                             tempPsiBeta);
                         //
-                        if (dftPtr->d_excManagerPtr
-                              ->isExcDependentOnGradDensity())
+                        if (isGradDensityDataRequired)
                           {
                             fe_values.get_function_gradients(
                               (eigenVectors[(1 + dftPtr->getParametersObject()
@@ -453,8 +485,7 @@ namespace dftfe
                                    tempPsiAlpha[iList](0) +
                                  tempPsiAlpha[iList](1) *
                                    tempPsiAlpha[iList](1));
-                            if (dftPtr->d_excManagerPtr
-                                  ->isExcDependentOnGradDensity())
+                            if (isGradDensityDataRequired)
                               {
                                 for (unsigned int j = 0; j < 3; ++j)
                                   {
@@ -602,7 +633,7 @@ namespace dftfe
     //
     MPI_Allreduce(
       &rhoTemp[0], &rhoLocal[0], totPoints, MPI_DOUBLE, MPI_SUM, interpoolcomm);
-    if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
+    if (isGradDensityDataRequired)
       MPI_Allreduce(&gradRhoTemp[0],
                     &gradRhoLocal[0],
                     3 * totPoints,
@@ -617,7 +648,7 @@ namespace dftfe
                       MPI_DOUBLE,
                       MPI_SUM,
                       interpoolcomm);
-        if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
+        if (isGradDensityDataRequired)
           MPI_Allreduce(&gradRhoTempSpinPolarized[0],
                         &gradRhoLocalSpinPolarized[0],
                         6 * totPoints,
@@ -680,7 +711,7 @@ namespace dftfe
         recvdData.clear();
       }
     //
-    if (dftPtr->d_excManagerPtr->isExcDependentOnGradDensity())
+    if (isGradDensityDataRequired)
       {
         sendData.resize(3 * (1 + dftPtr->getParametersObject().spinPolarized) *
                         totPoints);

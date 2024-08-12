@@ -1279,6 +1279,22 @@ namespace dftfe
           d_densityInNodalValues[0].local_element(i) =
             d_rhoInNodalValuesRead.local_element(i);
 
+        bool isGradDensityDataDependent = false;
+        if (d_excManagerPtr->getXCPrimaryVariable() ==
+            XCPrimaryVariable::DENSITY)
+          {
+            isGradDensityDataDependent =
+              (d_excManagerPtr->getExcDensityObj()
+                 ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+          }
+        else if (d_excManagerPtr->getXCPrimaryVariable() ==
+                 XCPrimaryVariable::SSDETERMINANT)
+          {
+            isGradDensityDataDependent =
+              (d_excManagerPtr->getExcSSDFunctionalObj()
+                 ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+          }
+
         interpolateDensityNodalDataToQuadratureDataGeneral(
           d_basisOperationsPtrElectroHost,
           d_densityDofHandlerIndexElectro,
@@ -1287,7 +1303,7 @@ namespace dftfe
           d_densityInQuadValues[0],
           d_gradDensityInQuadValues[0],
           d_gradDensityInQuadValues[0],
-          d_excManagerPtr->isExcDependentOnGradDensity());
+          isGradDensityDataDependent);
 
         if (d_dftParamsPtr->spinPolarized == 1)
           {
@@ -1307,7 +1323,7 @@ namespace dftfe
               d_densityInQuadValues[1],
               d_gradDensityInQuadValues[1],
               d_gradDensityInQuadValues[1],
-              d_excManagerPtr->isExcDependentOnGradDensity());
+              isGradDensityDataDependent);
           }
         if ((d_dftParamsPtr->solverMode == "GEOOPT"))
           {
@@ -1318,7 +1334,7 @@ namespace dftfe
 
             d_densityOutQuadValues = d_densityInQuadValues;
 
-            if (d_excManagerPtr->isExcDependentOnGradDensity())
+            if (isGradDensityDataDependent)
               d_gradDensityOutQuadValues = d_gradDensityInQuadValues;
           }
 
@@ -1376,6 +1392,21 @@ namespace dftfe
     init_bc = MPI_Wtime();
 
 
+    bool isGradDensityDataDependent = false;
+    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+      {
+        isGradDensityDataDependent =
+          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
+           densityFamilyType::GGA);
+      }
+    else if (d_excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isGradDensityDataDependent =
+          (d_excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+
     // false option reinitializes vself bins from scratch wheras true option
     // only updates the boundary conditions
     const bool updateOnlyBinsBc = !updateImagesAndKPointsAndVselfBins;
@@ -1432,12 +1463,11 @@ namespace dftfe
                   d_densityInQuadValues[0],
                   d_gradDensityInQuadValues[0],
                   d_gradDensityInQuadValues[0],
-                  d_excManagerPtr->isExcDependentOnGradDensity());
+                  isGradDensityDataDependent);
 
-                addAtomicRhoQuadValuesGradients(
-                  d_densityInQuadValues[0],
-                  d_gradDensityInQuadValues[0],
-                  d_excManagerPtr->isExcDependentOnGradDensity());
+                addAtomicRhoQuadValuesGradients(d_densityInQuadValues[0],
+                                                d_gradDensityInQuadValues[0],
+                                                isGradDensityDataDependent);
 
                 normalizeRhoInQuadValues();
 
@@ -1462,7 +1492,7 @@ namespace dftfe
               d_densityInQuadValues[0],
               d_gradDensityInQuadValues[0],
               d_gradDensityInQuadValues[0],
-              d_excManagerPtr->isExcDependentOnGradDensity());
+              isGradDensityDataDependent);
 
             normalizeRhoInQuadValues();
 
@@ -1486,12 +1516,11 @@ namespace dftfe
               d_densityInQuadValues[0],
               d_gradDensityInQuadValues[0],
               d_gradDensityInQuadValues[0],
-              d_excManagerPtr->isExcDependentOnGradDensity());
+              isGradDensityDataDependent);
 
-            addAtomicRhoQuadValuesGradients(
-              d_densityInQuadValues[0],
-              d_gradDensityInQuadValues[0],
-              d_excManagerPtr->isExcDependentOnGradDensity());
+            addAtomicRhoQuadValuesGradients(d_densityInQuadValues[0],
+                                            d_gradDensityInQuadValues[0],
+                                            isGradDensityDataDependent);
 
             normalizeRhoInQuadValues();
 
@@ -2276,6 +2305,21 @@ namespace dftfe
                            1e-3 :
                            d_dftParamsPtr->chebyshevTolerance;
 
+    bool isGradDensityDataDependent = false;
+    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+      {
+        isGradDensityDataDependent =
+          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
+           densityFamilyType::GGA);
+      }
+    else if (d_excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isGradDensityDataDependent =
+          (d_excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+
     // call the mixing scheme with the mixing variables
     // Have to be called once for each variable
     // initialise the variables in the mixing scheme
@@ -2320,7 +2364,7 @@ namespace dftfe
             d_dftParamsPtr->mixingParameter *
               d_dftParamsPtr->spinMixingEnhancementFactor,
             d_dftParamsPtr->adaptAndersonMixingParameter);
-        if (d_excManagerPtr->isExcDependentOnGradDensity())
+        if (isGradDensityDataDependent)
           {
             dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
               gradRhoJxW;
@@ -2468,7 +2512,7 @@ namespace dftfe
                       d_densityInQuadValues[iComp],
                       d_gradDensityInQuadValues[iComp],
                       d_gradDensityInQuadValues[iComp],
-                      d_excManagerPtr->isExcDependentOnGradDensity());
+                      isGradDensityDataDependent);
                   }
               }
             else if (d_dftParamsPtr->mixingMethod == "ANDERSON")
@@ -2503,7 +2547,7 @@ namespace dftfe
                       d_densityResidualQuadValues[iComp].data(),
                       d_densityResidualQuadValues[iComp].size());
                   }
-                if (d_excManagerPtr->isExcDependentOnGradDensity())
+                if (isGradDensityDataDependent)
                   {
                     if (scfIter == 1)
                       d_gradDensityResidualQuadValues.resize(
@@ -2555,7 +2599,7 @@ namespace dftfe
                 for (unsigned int iComp = 0; iComp < norms.size(); ++iComp)
                   norm += norms[iComp] * norms[iComp];
                 norm = std::sqrt(norm / ((double)norms.size()));
-                if (d_excManagerPtr->isExcDependentOnGradDensity())
+                if (isGradDensityDataDependent)
                   {
                     for (unsigned int iComp = 0; iComp < norms.size(); ++iComp)
                       d_mixingScheme.mixVariable(
@@ -5361,7 +5405,21 @@ namespace dftfe
     const double                            fermiEnergyDown_,
     std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityMatrixXCPtr)
   {
-    const bool isGGA = d_excManagerPtr->isExcDependentOnGradDensity();
+    bool isGradDensityDataDependent = false;
+    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+      {
+        isGradDensityDataDependent =
+          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
+           densityFamilyType::GGA);
+      }
+    else if (d_excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isGradDensityDataDependent =
+          (d_excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+    const bool isGGA = isGradDensityDataDependent;
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureId);
     const unsigned int totalLocallyOwnedCells =
       d_basisOperationsPtrHost->nCells();

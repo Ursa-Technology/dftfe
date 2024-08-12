@@ -71,9 +71,6 @@ namespace dftfe
     const ExcSSDFunctionalBaseClass<memorySpace> *
     getExcSSDFunctionalObj() const;
 
-    const bool
-    isExcDependentOnGradDensity() const;
-
     XCPrimaryVariable
     getXCPrimaryVariable() const;
 
@@ -86,7 +83,6 @@ namespace dftfe
     excDensityBaseClass<memorySpace> *      d_excDensityObjPtr;
     ExcSSDFunctionalBaseClass<memorySpace> *d_SSDObjPtr;
 
-    bool              d_dependentOnGradDensity;
     XCPrimaryVariable d_xcPrimVariable;
   };
 } // namespace dftfe

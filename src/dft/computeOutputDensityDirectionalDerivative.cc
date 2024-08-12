@@ -169,6 +169,21 @@ namespace dftfe
       dummy,
       false);
 
+    bool isGradDensityDataDependent = false;
+    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+      {
+        isGradDensityDataDependent =
+          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
+           densityFamilyType::GGA);
+      }
+    else if (d_excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isGradDensityDataDependent =
+          (d_excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+
     // interpolate nodal data to quadrature data
     std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
@@ -184,7 +199,7 @@ namespace dftfe
       rhoPrimeValues[0],
       gradRhoPrimeValues[0],
       dummy,
-      d_excManagerPtr->isExcDependentOnGradDensity());
+      isGradDensityDataDependent);
 
 
     if (d_dftParamsPtr->spinPolarized == 1)
@@ -207,7 +222,7 @@ namespace dftfe
           vSpin0Values,
           gradvSpin0Values,
           dummy,
-          d_excManagerPtr->isExcDependentOnGradDensity(),
+          isGradDensityDataDependent,
           false);
 
         interpolateDensityNodalDataToQuadratureDataGeneral(
@@ -218,7 +233,7 @@ namespace dftfe
           vSpin1Values,
           gradvSpin1Values,
           dummy,
-          d_excManagerPtr->isExcDependentOnGradDensity(),
+          isGradDensityDataDependent,
           false);
 
         rhoPrimeValues[0].resize(vSpin0Values.size());

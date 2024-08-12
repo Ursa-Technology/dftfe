@@ -224,7 +224,21 @@ namespace dftfe
       &                phiValues,
     const unsigned int spinIndex)
   {
-    const bool isGGA = d_excManagerPtr->isExcDependentOnGradDensity();
+    bool isGradDensityDataRequired = false;
+    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+      {
+        isGradDensityDataRequired =
+          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
+           densityFamilyType::GGA);
+      }
+    else if (d_excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isGradDensityDataRequired =
+          (d_excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+    const bool isGGA = isGradDensityDataRequired;
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
     const unsigned int totalLocallyOwnedCells =
       d_basisOperationsPtrHost->nCells();
@@ -296,9 +310,10 @@ namespace dftfe
               xDataOut,
               cDataOut);
           }
-        else
+        else if (d_excManagerPtr->getXCPrimaryVariable() ==
+                 XCPrimaryVariable::SSDETERMINANT)
           {
-            d_excManagerPtr->getExcSSDFunctionalObj()->computeExcVxcFxc(
+            d_excManagerPtr->getExcSSDFunctionalObj()->computeOutputXCData(
               *auxDensityXCRepresentation,
               quadPointsInCell,
               quadWeightsInCell,
@@ -744,7 +759,23 @@ namespace dftfe
           }
         d_basisOperationsPtr->computeWeightedCellMassMatrix(
           cellRange, d_VeffJxW, tempHamMatrixRealBlock);
-        if (d_excManagerPtr->isExcDependentOnGradDensity())
+
+        bool isGradDensityDataDependent = false;
+        if (d_excManagerPtr->getXCPrimaryVariable() ==
+            XCPrimaryVariable::DENSITY)
+          {
+            isGradDensityDataDependent =
+              (d_excManagerPtr->getExcDensityObj()
+                 ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+          }
+        else if (d_excManagerPtr->getXCPrimaryVariable() ==
+                 XCPrimaryVariable::SSDETERMINANT)
+          {
+            isGradDensityDataDependent =
+              (d_excManagerPtr->getExcSSDFunctionalObj()
+                 ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+          }
+        if (isGradDensityDataDependent)
           d_basisOperationsPtr->computeWeightedCellNjGradNiPlusNiGradNjMatrix(
             cellRange,
             d_invJacderExcWithSigmaTimesGradRhoJxW,

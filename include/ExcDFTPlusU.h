@@ -27,7 +27,10 @@ namespace dftfe
   class ExcDFTPlusU : public ExcSSDFunctionalBaseClass<memorySpace>
   {
   public:
-    ExcDFTPlusU(xc_func_type *funcXPtr, xc_func_type *funcCPtr);
+    ExcDFTPlusU(xc_func_type *          funcXPtr,
+                xc_func_type *          funcCPtr,
+                unsigned int            numSpins,
+                const densityFamilyType densityFamilyType);
 
     ~ExcDFTPlusU();
 
@@ -42,7 +45,7 @@ namespace dftfe
      * x and c denotes exchange and correlation respectively
      */
     void
-    computeExcVxcFxc(
+    computeOutputXCData(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
       const std::vector<double> &    quadPoints,
       const std::vector<double> &    quadWeights,

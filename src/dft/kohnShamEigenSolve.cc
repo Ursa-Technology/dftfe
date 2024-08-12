@@ -144,7 +144,22 @@ namespace dftfe
     // //
     // // compute Veff
     // //
-    // if (!d_excManagerPtr->isExcDependentOnGradDensity())
+    //    bool isGradDensityDataDependent = false;
+    //    if (d_excManagerPtr->getXCPrimaryVariable() ==
+    //    XCPrimaryVariable::DENSITY)
+    //      {
+    //        isGradDensityDataDependent =
+    //        (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType()
+    //        == densityFamilyType::GGA) ;
+    //      }
+    //    else if (d_excManagerPtr->getXCPrimaryVariable() ==
+    //    XCPrimaryVariable::SSDETERMINANT)
+    //      {
+    //        isGradDensityDataDependent =
+    //        (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType()
+    //        == densityFamilyType::GGA) ;
+    //      }
+    // if (!isGradDensityDataDependent)
     //   {
     //     kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
     //                                          phiInValues,
@@ -152,7 +167,7 @@ namespace dftfe
     //                                          d_rhoCore,
     //                                          d_lpspQuadratureId);
     //   }
-    // else if (d_excManagerPtr->isExcDependentOnGradDensity())
+    // else if (isGradDensityDataDependent)
     //   {
     //     kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
     //                                          d_gradDensityInQuadValues,

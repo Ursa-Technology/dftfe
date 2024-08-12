@@ -667,7 +667,22 @@ namespace dftfe
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
           densityOutValues[0].size(), 0.0));
 
-    if (excManagerPtr->isExcDependentOnGradDensity())
+    bool isGradDensityDataDependent = false;
+    if (excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+      {
+        isGradDensityDataDependent =
+          (excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
+           densityFamilyType::GGA);
+      }
+    else if (excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isGradDensityDataDependent =
+          (excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+
+    if (isGradDensityDataDependent)
       {
         gradDensityOutQuadValuesSpinPolarized = gradDensityOutValues;
 
@@ -850,7 +865,22 @@ namespace dftfe
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       gradDensityOutQuadValuesSpinPolarized;
 
-    if (excManagerPtr->isExcDependentOnGradDensity())
+    bool isGradDensityDataDependent = false;
+    if (excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+      {
+        isGradDensityDataDependent =
+          (excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
+           densityFamilyType::GGA);
+      }
+    else if (excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isGradDensityDataDependent =
+          (excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+
+    if (isGradDensityDataDependent)
       {
         gradDensityInQuadValuesSpinPolarized  = gradDensityInValues;
         gradDensityOutQuadValuesSpinPolarized = gradDensityOutValues;
@@ -865,7 +895,7 @@ namespace dftfe
           dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>(
             densityOutValues[0].size(), 0.0));
 
-        if (excManagerPtr->isExcDependentOnGradDensity())
+        if (isGradDensityDataDependent)
           {
             gradDensityInQuadValuesSpinPolarized.push_back(
               dftfe::utils::MemoryStorage<double,
@@ -980,7 +1010,22 @@ namespace dftfe
     std::vector<double> &pdecDensityInSpinDown =
       cDensityInDataOut[xcOutputDataAttributes::pdeDensitySpinDown];
 
-    if (excManagerPtr->isExcDependentOnGradDensity())
+    bool isGradDensityDataDependent = false;
+    if (excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+      {
+        isGradDensityDataDependent =
+          (excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
+           densityFamilyType::GGA);
+      }
+    else if (excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isGradDensityDataDependent =
+          (excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+
+    if (isGradDensityDataDependent)
       {
         xDensityInDataOut[xcOutputDataAttributes::pdeSigma] =
           std::vector<double>();
@@ -1033,16 +1078,17 @@ namespace dftfe
               xDensityOutDataOut,
               cDensityOutDataOut);
           }
-        else
+        else if (excManagerPtr->getXCPrimaryVariable() ==
+                 XCPrimaryVariable::SSDETERMINANT)
           {
-            excManagerPtr->getExcSSDFunctionalObj()->computeExcVxcFxc(
+            excManagerPtr->getExcSSDFunctionalObj()->computeOutputXCData(
               *auxDensityXCInRepresentationPtr,
               quadPointsInCell,
               quadWeightsInCell,
               xDensityInDataOut,
               cDensityInDataOut);
 
-            excManagerPtr->getExcSSDFunctionalObj()->computeExcVxcFxc(
+            excManagerPtr->getExcSSDFunctionalObj()->computeOutputXCData(
               *auxDensityXCOutRepresentationPtr,
               quadPointsInCell,
               quadWeightsInCell,
@@ -1052,7 +1098,7 @@ namespace dftfe
 
         std::vector<double> pdexDensityInSigma;
         std::vector<double> pdecDensityInSigma;
-        if (excManagerPtr->isExcDependentOnGradDensity())
+        if (isGradDensityDataDependent)
           {
             pdexDensityInSigma =
               xDensityInDataOut[xcOutputDataAttributes::pdeSigma];
@@ -1067,12 +1113,12 @@ namespace dftfe
         std::vector<double> &gradDensityXCInSpinDown =
           densityXCInData[DensityDescriptorDataAttributes::gradValuesSpinDown];
 
-        if (excManagerPtr->isExcDependentOnGradDensity())
+        if (isGradDensityDataDependent)
           auxDensityXCInRepresentationPtr->applyLocalOperations(
             quadPointsInCell, densityXCInData);
 
         std::vector<double> gradXCRhoInDotgradRhoOut;
-        if (excManagerPtr->isExcDependentOnGradDensity())
+        if (isGradDensityDataDependent)
           {
             gradXCRhoInDotgradRhoOut.resize(nQuadsPerCell * 3);
 
@@ -1137,7 +1183,7 @@ namespace dftfe
             correlationEnergy +=
               (cEnergyDensityOut[iQuad]) *
               basisOperationsPtr->JxWBasisData()[iCell * nQuadsPerCell + iQuad];
-            if (excManagerPtr->isExcDependentOnGradDensity())
+            if (isGradDensityDataDependent)
               {
                 double VxcGrad = 0.0;
                 for (unsigned int isigma = 0; isigma < 3; ++isigma)

@@ -78,7 +78,7 @@ namespace dftfe
       const = 0;
 
 
-    const densityFamilyType d_familyType;
+    densityFamilyType d_densityFamilyType;
     const std::vector<DensityDescriptorDataAttributes>
       d_densityDescriptorAttributesList;
   };

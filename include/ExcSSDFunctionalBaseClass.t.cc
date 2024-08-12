@@ -23,8 +23,8 @@ namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
   ExcSSDFunctionalBaseClass<memorySpace>::ExcSSDFunctionalBaseClass(
-    bool isSpinPolarized)
-    : d_isSpinPolarized(isSpinPolarized)
+    const densityFamilyType densityFamilyType)
+    : d_densityFamilyType(densityFamilyType)
   {}
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -36,6 +36,13 @@ namespace dftfe
   ExcSSDFunctionalBaseClass<memorySpace>::getSSDFamilyType() const
   {
     return d_SSDFamilyType;
+  }
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  densityFamilyType
+  ExcSSDFunctionalBaseClass<memorySpace>::getDensityBasedFamilyType() const
+  {
+    return d_densityFamilyType;
   }
 
 

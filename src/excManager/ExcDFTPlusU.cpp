@@ -18,6 +18,8 @@
 //
 
 #include "excDensityGGAClass.h"
+#include "excDensityLDAClass.h"
+#include "excDensityLLMGGAClass.h"
 #include "ExcDFTPlusU.h"
 #include "Exceptions.h"
 #include <dftfeDataTypes.h>
@@ -25,12 +27,33 @@
 namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
-  ExcDFTPlusU<memorySpace>::ExcDFTPlusU(xc_func_type *funcXPtr,
-                                        xc_func_type *funcCPtr)
-    : ExcSSDFunctionalBaseClass<memorySpace>(false) // isSpinPolarised
+  ExcDFTPlusU<memorySpace>::ExcDFTPlusU(
+    xc_func_type *          funcXPtr,
+    xc_func_type *          funcCPtr,
+    unsigned int            numSpins,
+    const densityFamilyType densityFamilyType)
+    : ExcSSDFunctionalBaseClass<memorySpace>(densityFamilyType)
   {
-    d_excDensityObjPtr =
-      new excDensityGGAClass<memorySpace>(funcXPtr, funcCPtr);
+    if (densityFamilyType == densityFamilyType::LDA)
+      {
+        d_excDensityObjPtr =
+          new excDensityLDAClass<memorySpace>(funcXPtr, funcCPtr);
+      }
+    else if (densityFamilyType == densityFamilyType::GGA)
+      {
+        d_excDensityObjPtr =
+          new excDensityGGAClass<memorySpace>(funcXPtr, funcCPtr);
+      }
+    else if (densityFamilyType == densityFamilyType::LLMGGA)
+      {
+        d_excDensityObjPtr =
+          new excDensityLLMGGAClass<memorySpace>(funcXPtr, funcCPtr);
+      }
+    else
+      {
+        std::string errMsg = "Not implemented";
+        dftfe::utils::throwException(false, errMsg);
+      }
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -43,7 +66,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<memorySpace>::computeExcVxcFxc(
+  ExcDFTPlusU<memorySpace>::computeOutputXCData(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
     const std::vector<double> &    quadPoints,
     const std::vector<double> &    quadWeights,

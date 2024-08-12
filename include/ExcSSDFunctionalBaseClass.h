@@ -36,7 +36,10 @@ namespace dftfe
   class ExcSSDFunctionalBaseClass
   {
   public:
-    ExcSSDFunctionalBaseClass(bool isSpinPolarized);
+    ExcSSDFunctionalBaseClass(const densityFamilyType densityFamilyType);
+
+    densityFamilyType
+    getDensityBasedFamilyType() const;
 
     virtual ~ExcSSDFunctionalBaseClass();
 
@@ -51,7 +54,7 @@ namespace dftfe
      * x and c denotes exchange and correlation respectively
      */
     virtual void
-    computeExcVxcFxc(
+    computeOutputXCData(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
       const std::vector<double> &    quadPoints,
       const std::vector<double> &    quadWeights,
@@ -63,8 +66,8 @@ namespace dftfe
     getSSDFamilyType() const;
 
   protected:
-    SSDFamilyType d_SSDFamilyType;
-    bool          d_isSpinPolarized;
+    densityFamilyType d_densityFamilyType;
+    SSDFamilyType     d_SSDFamilyType;
   };
 } // namespace dftfe
 

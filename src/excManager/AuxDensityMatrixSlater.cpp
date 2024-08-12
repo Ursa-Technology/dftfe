@@ -263,247 +263,131 @@ namespace dftfe
   namespace
   {
     void
-    fillDensityAttributeData(std::vector<double> &            attributeData,
-                             const std::vector<double> &      values,
-                             const std::pair<size_t, size_t> &indexRange)
-    {
-      size_t startIndex = indexRange.first;
-      size_t endIndex   = indexRange.second;
-
-      if (startIndex > endIndex || endIndex >= attributeData.size() ||
-          endIndex >= values.size())
+        fillDensityAttributeData(std::vector<double> &            attributeData,
+                                 const std::vector<double> &      values,
+                                 const std::pair<size_t, size_t> &indexRange)
         {
-          throw std::invalid_argument("Invalid index range for densityData");
-        }
+          size_t startIndex = indexRange.first;
+          size_t endIndex   = indexRange.second;
 
-      for (size_t i = startIndex; i <= endIndex; ++i)
-        {
-          attributeData[i] = values[i];
+          if (startIndex > endIndex || endIndex >= attributeData.size() ||
+              endIndex - startIndex >= values.size())
+          {
+            throw std::invalid_argument("Invalid index range for densityData");
+          }
+
+          std::copy(values.begin(), values.begin() + (endIndex - startIndex + 1),
+                    attributeData.begin() + startIndex);
         }
-    }
   } // namespace
 
   void
-  AuxDensityMatrixSlater::applyLocalOperations(
-    const std::vector<double> &Points,
-    std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
-      &densityData)
-  {
-    int                       DMSpinOffset = d_nBasis * d_nBasis;
-    std::pair<size_t, size_t> indexRange;
+    AuxDensityMatrixSlater::applyLocalOperations(
+            const std::vector<double> &                                     Points,
+            std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>> &densityData)
+    {
+      int                       DMSpinOffset = d_nBasis * d_nBasis;
+      std::pair<size_t, size_t> indexRange;
 
-    for (int iQuad = 0; iQuad < Points.size(); iQuad++)
+      for (int iQuad = 0; iQuad < Points.size() / 3; iQuad++)
       {
         std::vector<double> rhoUp(1, 0.0);
         std::vector<double> rhoDown(1, 0.0);
-        std::vector<double> rhoTotal(1, 0.0);
         std::vector<double> gradrhoUp(3, 0.0);
         std::vector<double> gradrhoDown(3, 0.0);
-        std::vector<double> HessianrhoUp(9, 0.0);
-        std::vector<double> HessianrhoDown(9, 0.0);
-        std::vector<double> LaplacianrhoUp(1, 0.0);
-        std::vector<double> LaplacianrhoDown(1, 0.0);
 
         for (int i = 0; i < d_nBasis; i++)
+        {
+          for (int j = 0; j < d_nBasis; j++)
           {
-            for (int j = 0; j < d_nBasis; j++)
+
+            for (int iSpin = 0; iSpin < d_nSpin; iSpin++)
+            {
+
+              if (iSpin == 0)
               {
-                for (int iSpin = 0; iSpin < d_nSpin; iSpin++)
-                  {
-                    if (iSpin == 0)
-                      {
-                        rhoUp[0] += d_DM[i * d_nBasis + j] *
-                                    d_sbd.getBasisValues(iQuad * d_nBasis + i) *
-                                    d_sbd.getBasisValues(iQuad * d_nBasis + j);
+                rhoUp[0] += d_DM[i * d_nBasis + j] *
+                            d_sbd.getBasisValues(iQuad * d_nBasis + i) *
+                            d_sbd.getBasisValues(iQuad * d_nBasis + j);
 
-                        for (int derIndex = 0; derIndex < 3; derIndex++)
-                          {
-                            gradrhoUp[derIndex] +=
-                              d_DM[i * d_nBasis + j] *
-                              (d_sbd.getBasisGradValues(iQuad * d_nBasis +
-                                                        3 * i + derIndex) *
-                                 d_sbd.getBasisValues(iQuad * d_nBasis + j) +
-                               d_sbd.getBasisGradValues(iQuad * d_nBasis +
-                                                        3 * j + derIndex) *
-                                 d_sbd.getBasisValues(iQuad * d_nBasis + i));
-                          }
-
-                        for (int derIndex1 = 0; derIndex1 < 3; derIndex1++)
-                          {
-                            for (int derIndex2 = 0; derIndex2 < 3; derIndex2++)
-                              {
-                                HessianrhoUp[derIndex1 * 3 + derIndex2] +=
-                                  d_DM[i * d_nBasis + j] *
-                                  (d_sbd.getBasisHessianValues(
-                                     iQuad * d_nBasis + 9 * i + 3 * derIndex1 +
-                                     derIndex2) *
-                                     d_sbd.getBasisValues(iQuad * d_nBasis +
-                                                          j) +
-                                   d_sbd.getBasisGradValues(iQuad * d_nBasis +
-                                                            3 * i + derIndex1) *
-                                     d_sbd.getBasisGradValues(
-                                       iQuad * d_nBasis + 3 * j + derIndex2) +
-                                   d_sbd.getBasisGradValues(iQuad * d_nBasis +
-                                                            3 * i + derIndex2) *
-                                     d_sbd.getBasisGradValues(
-                                       iQuad * d_nBasis + 3 * j + derIndex1) +
-                                   d_sbd.getBasisValues(iQuad * d_nBasis + i) *
-                                     d_sbd.getBasisHessianValues(
-                                       iQuad * d_nBasis + 9 * j +
-                                       3 * derIndex1 + derIndex2));
-                              }
-                          }
-                      }
-
-                    if (iSpin == 1)
-                      {
-                        rhoDown[0] +=
-                          d_DM[DMSpinOffset + i * d_nBasis + j] *
-                          d_sbd.getBasisValues(iQuad * d_nBasis + i) *
-                          d_sbd.getBasisValues(iQuad * d_nBasis + j);
-
-                        for (int derIndex = 0; derIndex < 3; derIndex++)
-                          {
-                            gradrhoDown[derIndex] +=
-                              d_DM[DMSpinOffset + i * d_nBasis + j] *
-                              (d_sbd.getBasisGradValues(iQuad * d_nBasis +
-                                                        3 * i + derIndex) *
-                                 d_sbd.getBasisValues(iQuad * d_nBasis + j) +
-                               d_sbd.getBasisGradValues(iQuad * d_nBasis +
-                                                        3 * j + derIndex) *
-                                 d_sbd.getBasisValues(iQuad * d_nBasis + i));
-                          }
-
-                        for (int derIndex1 = 0; derIndex1 < 3; derIndex1++)
-                          {
-                            for (int derIndex2 = 0; derIndex2 < 3; derIndex2++)
-                              {
-                                HessianrhoDown[derIndex1 * 3 + derIndex2] +=
-                                  d_DM[DMSpinOffset + i * d_nBasis + j] *
-                                  (d_sbd.getBasisHessianValues(
-                                     iQuad * d_nBasis + 9 * i + 3 * derIndex1 +
-                                     derIndex2) *
-                                     d_sbd.getBasisValues(iQuad * d_nBasis +
-                                                          j) +
-                                   d_sbd.getBasisGradValues(iQuad * d_nBasis +
-                                                            3 * i + derIndex1) *
-                                     d_sbd.getBasisGradValues(
-                                       iQuad * d_nBasis + 3 * j + derIndex2) +
-                                   d_sbd.getBasisGradValues(iQuad * d_nBasis +
-                                                            3 * i + derIndex2) *
-                                     d_sbd.getBasisGradValues(
-                                       iQuad * d_nBasis + 3 * j + derIndex1) +
-                                   d_sbd.getBasisValues(iQuad * d_nBasis + i) *
-                                     d_sbd.getBasisHessianValues(
-                                       iQuad * d_nBasis + 9 * j +
-                                       3 * derIndex1 + derIndex2));
-                              }
-                          }
-                      }
-                  }
+                for (int derIndex = 0; derIndex < 3; derIndex++)
+                {
+                  gradrhoUp[derIndex] +=
+                          d_DM[i * d_nBasis + j] *
+                          (d_sbd.getBasisGradValues(iQuad * d_nBasis * 3 +
+                                                    3 * i + derIndex) *
+                           d_sbd.getBasisValues(iQuad * d_nBasis + j) +
+                           d_sbd.getBasisGradValues(iQuad * d_nBasis * 3 +
+                                                    3 * j + derIndex) *
+                           d_sbd.getBasisValues(iQuad * d_nBasis + i));
+                }
               }
+
+              if (iSpin == 1)
+              {
+                rhoDown[0] +=
+                        d_DM[DMSpinOffset + i * d_nBasis + j] *
+                        d_sbd.getBasisValues(iQuad * d_nBasis + i) *
+                        d_sbd.getBasisValues(iQuad * d_nBasis + j);
+                for (int derIndex = 0; derIndex < 3; derIndex++)
+                {
+                  gradrhoDown[derIndex] +=
+                          d_DM[DMSpinOffset + i * d_nBasis + j] *
+                          (d_sbd.getBasisGradValues(iQuad * d_nBasis * 3 +
+                                                    3 * i + derIndex) *
+                           d_sbd.getBasisValues(iQuad * d_nBasis + j) +
+                           d_sbd.getBasisGradValues(iQuad * d_nBasis * 3 +
+                                                    3 * j + derIndex) *
+                           d_sbd.getBasisValues(iQuad * d_nBasis + i));
+                }
+              }
+            }
           }
-
-        rhoTotal[0]       = rhoUp[0] + rhoDown[0];
-        LaplacianrhoUp[0] = HessianrhoUp[0] + HessianrhoUp[4] + HessianrhoUp[8];
-        LaplacianrhoDown[0] =
-          HessianrhoDown[0] + HessianrhoDown[4] + HessianrhoDown[8];
-
+        }
 
         indexRange = std::make_pair(iQuad, iQuad);
-        if (densityData.find(DensityDescriptorDataAttributes::valuesTotal) ==
-            densityData.end())
-          {
-            fillDensityAttributeData(
-              densityData[DensityDescriptorDataAttributes::valuesTotal],
-              rhoTotal,
-              indexRange);
-          }
 
-        if (densityData.find(DensityDescriptorDataAttributes::valuesSpinUp) ==
+        if (densityData.find(DensityDescriptorDataAttributes::valuesSpinUp) !=
             densityData.end())
-          {
-            fillDensityAttributeData(
-              densityData[DensityDescriptorDataAttributes ::valuesSpinUp],
-              rhoUp,
-              indexRange);
-          }
+        {
+          fillDensityAttributeData(
+                  densityData[DensityDescriptorDataAttributes::valuesSpinUp],
+                  rhoUp,
+                  indexRange);
+        }
 
-        if (densityData.find(DensityDescriptorDataAttributes::valuesSpinDown) ==
+        if (densityData.find(DensityDescriptorDataAttributes::valuesSpinDown) !=
             densityData.end())
-          {
-            fillDensityAttributeData(
-              densityData[DensityDescriptorDataAttributes ::valuesSpinDown],
-              rhoDown,
-              indexRange);
-          }
+        {
+          fillDensityAttributeData(
+                  densityData[DensityDescriptorDataAttributes::valuesSpinDown],
+                  rhoDown,
+                  indexRange);
+        }
 
         indexRange = std::make_pair(iQuad * 3, iQuad * 3 + 2);
 
         if (densityData.find(
-              DensityDescriptorDataAttributes::gradValuesSpinUp) ==
+                DensityDescriptorDataAttributes::gradValuesSpinUp) !=
             densityData.end())
-          {
-            fillDensityAttributeData(
-              densityData[DensityDescriptorDataAttributes ::gradValuesSpinUp],
-              gradrhoUp,
-              indexRange);
-          }
+        {
+          fillDensityAttributeData(
+                  densityData[DensityDescriptorDataAttributes::gradValuesSpinUp],
+                  gradrhoUp,
+                  indexRange);
+        }
 
         if (densityData.find(
-              DensityDescriptorDataAttributes::gradValuesSpinDown) ==
+                DensityDescriptorDataAttributes::gradValuesSpinDown) !=
             densityData.end())
-          {
-            fillDensityAttributeData(
-              densityData[DensityDescriptorDataAttributes ::gradValuesSpinDown],
-              gradrhoDown,
-              indexRange);
-          }
-
-        indexRange = std::make_pair(iQuad * 9, iQuad * 9 + 8);
-        if (densityData.find(DensityDescriptorDataAttributes::hessianSpinUp) ==
-            densityData.end())
-          {
-            fillDensityAttributeData(
-              densityData[DensityDescriptorDataAttributes ::hessianSpinUp],
-              HessianrhoUp,
-              indexRange);
-          }
-
-        // Check for hessianSpinDown attribute
-        if (densityData.find(
-              DensityDescriptorDataAttributes::hessianSpinDown) ==
-            densityData.end())
-          {
-            fillDensityAttributeData(
-              densityData[DensityDescriptorDataAttributes ::hessianSpinDown],
-              HessianrhoDown,
-              indexRange);
-          }
-
-
-        indexRange = std::make_pair(iQuad, iQuad);
-        if (densityData.find(
-              DensityDescriptorDataAttributes::laplacianSpinUp) ==
-            densityData.end())
-          {
-            fillDensityAttributeData(
-              densityData[DensityDescriptorDataAttributes ::laplacianSpinUp],
-              LaplacianrhoUp,
-              indexRange);
-          }
-
-        if (densityData.find(
-              DensityDescriptorDataAttributes::laplacianSpinDown) ==
-            densityData.end())
-          {
-            fillDensityAttributeData(
-              densityData[DensityDescriptorDataAttributes ::laplacianSpinDown],
-              LaplacianrhoDown,
-              indexRange);
-          }
+        {
+          fillDensityAttributeData(
+                  densityData[DensityDescriptorDataAttributes::gradValuesSpinDown],
+                  gradrhoDown,
+                  indexRange);
+        }
       }
-  }
+    }
 
   void
   AuxDensityMatrixSlater::projectDensityStart(

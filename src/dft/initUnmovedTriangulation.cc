@@ -317,7 +317,7 @@ namespace dftfe
         d_auxDensityMatrixXCInPtr  = std::make_shared<AuxDensityFE>();
         d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityFE>();
       }
-    else if (d_dftParamsPtr->auxBasisTypeXC == "SlaterAE")
+    else if (d_dftParamsPtr->auxBasisTypeXC == "SLATER")
       {
 #ifdef DFTFE_WITH_TORCH
         // d_auxDensityMatrixXCInPtr = std::make_shared<AuxDensityMatrixSlater>();
@@ -346,9 +346,44 @@ namespace dftfe
           2,
           5);
         */
+
+      // Map of atomic number to atomic symbol
+        std::unordered_map<int, std::string> atomicSymbols = {
+            {1, "H"}, {2, "He"}, {3, "Li"}, {4, "Be"},
+            {5, "B"}, {6, "C"}, {7, "N"}, {8, "O"},
+            {9, "F"}, {10, "Ne"},
+            // Add more elements as needed
+        };
+
+      std::vector<std::pair<std::string, std::vector<double>>> atomCoords;
+
+      for (const auto& atom : atomLocations) {
+            int atomicNumber = static_cast<int>(atom[0]);
+            std::string symbol = atomicSymbols[atomicNumber]; // Lookup atomic symbol
+
+            // Assuming atom[2], atom[3], atom[4] are x, y, z coordinates
+            std::vector<double> coords = {atom[2], atom[3], atom[4]};
+
+            atomCoords.emplace_back(symbol, coords);
+        }
+
+      // std::shared_ptr<AuxDensityMatrixSlater> d_auxDensityMatrixXCInPtr;
+      // std::shared_ptr<AuxDensityMatrixSlater> d_auxDensityMatrixXCOutPtr;
+
+
+      d_auxDensityMatrixXCInPtr = std::make_shared<AuxDensityMatrixSlater>();
+      d_auxDensityMatrixXCInPtr->reinitAuxDensityMatrix(atomCoords,
+          d_dftParamsPtr->auxBasisDataXC,
+          2,
+          1);
+      d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityMatrixSlater>();
+      d_auxDensityMatrixXCOutPtr->reinitAuxDensityMatrix(
+          atomCoords,
+          d_dftParamsPtr->auxBasisDataXC,
+          2,
+          1);
 #endif
       }
-
 
     computing_timer.leave_subsection("unmoved setup");
   }

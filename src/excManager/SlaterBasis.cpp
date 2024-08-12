@@ -128,7 +128,7 @@ namespace dftfe
       /*
        * Written in a format that ignores the first line
        */
-      std::ifstream file("../Data/" + basisName);
+      std::ifstream file(basisName);
       if (file.is_open())
       {
         std::string                          line;

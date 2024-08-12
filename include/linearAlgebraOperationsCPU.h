@@ -329,13 +329,16 @@ namespace dftfe
       const bool onlyHPrimePartForFirstOrderDensityMatResponse = false);
 
     /**
-     * @brief C
-     *
+     * @brief Computes the projection of Hamiltonian and Overlap with only a single extraction.
+     * Single extraction will be beneficial in full M, PAW cases.
      * @param X Vector of Vectors containing multi-wavefunction fields
      * @param numberComponents number of wavefunctions associated with a given node
+     * @param numberLocalDofs number of DOFs owned in the current procesor
      * @param processGrid two-dimensional processor grid corresponding to the parallel projHamPar
      * @param projHamPar parallel ScaLAPACKMatrix which stores the computed projection
-     * of the operation into the given subspace
+     * of the Hamiltonian into the given subspace
+     * @param projOverlapPar parallel ScaLAPACKMatrix which stores the computed projection
+     * of the Overlap into the given subspace
      */
     void
     XtHXXtOX(operatorDFTClass<dftfe::utils::MemorySpace::HOST> &operatorMatrix,
@@ -349,7 +352,21 @@ namespace dftfe
              dftfe::ScaLAPACKMatrix<dataTypes::number> &projHamPar,
              dftfe::ScaLAPACKMatrix<dataTypes::number> &projOverlapPar,
              const bool onlyHPrimePartForFirstOrderDensityMatResponse = false);
-
+    /**
+     * @brief Computes the projection of Hamiltonian and Overlap with only a single extraction with mixed precision.
+     * Single extraction will be beneficial in full M, PAW cases.
+     * THe projected Hamiltonain has full precision along blocks of diagonal and
+     * for states greater than Ncore THe projected Overlap will be of full
+     * precision along the diagonal.
+     * @param X Vector of Vectors containing multi-wavefunction fields
+     * @param numberComponents number of wavefunctions associated with a given node
+     * @param numberLocalDofs number of DOFs owned in the current procesor
+     * @param processGrid two-dimensional processor grid corresponding to the parallel projHamPar
+     * @param projHamPar parallel ScaLAPACKMatrix which stores the computed projection
+     * of the Hamiltonian into the given subspace
+     * @param projOverlapPar parallel ScaLAPACKMatrix which stores the computed projection
+     * of the Overlap into the given subspace
+     */
     void
     XtHXXtOXMixedPrec(
       operatorDFTClass<dftfe::utils::MemorySpace::HOST> &operatorMatrix,

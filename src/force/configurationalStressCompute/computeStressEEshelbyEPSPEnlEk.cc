@@ -998,7 +998,8 @@ namespace dftfe
 
             phiTotEvalElectro.reinit(cell);
             phiTotEvalElectro.read_dof_values_plain(phiTotRhoOutElectro);
-            phiTotEvalElectro.evaluate(true, true);
+            phiTotEvalElectro.evaluate(dealii::EvaluationFlags::values |
+                                       dealii::EvaluationFlags::gradients);
 
             if (d_dftParams.smearedNuclearCharges &&
                 nonTrivialSmearedChargeAtomImageIdsMacroCell.size() > 0)
@@ -1007,7 +1008,8 @@ namespace dftfe
                 phiTotEvalSmearedCharge.reinit(cell);
                 phiTotEvalSmearedCharge.read_dof_values_plain(
                   phiTotRhoOutElectro);
-                phiTotEvalSmearedCharge.evaluate(false, true);
+                phiTotEvalSmearedCharge.evaluate(
+                  dealii::EvaluationFlags::gradients);
               }
 
             std::fill(rhoQuadsElectro.begin(),

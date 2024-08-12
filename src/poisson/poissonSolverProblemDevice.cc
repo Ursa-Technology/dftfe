@@ -247,12 +247,12 @@ namespace dftfe
           {
             fe_eval.reinit(macrocell);
             fe_eval.read_dof_values_plain(tempvec);
-            fe_eval.evaluate(false, true);
+            fe_eval.evaluate(dealii::EvaluationFlags::gradients);
             for (unsigned int q = 0; q < fe_eval.n_q_points; ++q)
               {
                 fe_eval.submit_gradient(-quarter * fe_eval.get_gradient(q), q);
               }
-            fe_eval.integrate(false, true);
+            fe_eval.integrate(dealii::EvaluationFlags::gradients);
             fe_eval.distribute_local_to_global(rhs);
           }
       }
@@ -300,7 +300,7 @@ namespace dftfe
               {
                 fe_eval_density.submit_value(rhoQuads[q], q);
               }
-            fe_eval_density.integrate(true, false);
+            fe_eval_density.integrate(dealii::EvaluationFlags::values);
             fe_eval_density.distribute_local_to_global(rhs);
           }
       }
@@ -367,7 +367,7 @@ namespace dftfe
                   {
                     fe_eval_sc.submit_value(smearedbQuads[q], q);
                   }
-                fe_eval_sc.integrate(true, false);
+                fe_eval_sc.integrate(dealii::EvaluationFlags::values);
 
                 fe_eval_sc.distribute_local_to_global(rhs);
 
@@ -378,7 +378,7 @@ namespace dftfe
                       {
                         fe_eval_sc.submit_value(smearedbQuads[q], q);
                       }
-                    fe_eval_sc.integrate(true, false);
+                    fe_eval_sc.integrate(dealii::EvaluationFlags::values);
 
                     fe_eval_sc.distribute_local_to_global(d_rhsSmearedCharge);
                   }
@@ -434,7 +434,7 @@ namespace dftfe
                   {
                     fe_eval_sc2.submit_gradient(smearedbQuads[q], q);
                   }
-                fe_eval_sc2.integrate(false, true);
+                fe_eval_sc2.integrate(dealii::EvaluationFlags::gradients);
                 fe_eval_sc2.distribute_local_to_global(rhs);
               }
           }
@@ -1254,7 +1254,7 @@ namespace dftfe
     for (int i = 0; i < p; i++)
       for (int j = 0; j < q; j++)
         {
-          double value = shapeData.shape_values[j + i * q][0] *
+          double value = shapeData.shape_values[j + i * q] *
                          std::sqrt(shapeData.quadrature.weight(j));
           shapeFunction[j + i * q]               = value;
           shapeFunction[i + j * p + q * (p + q)] = value;
@@ -1263,7 +1263,7 @@ namespace dftfe
     for (int i = 0; i < q; i++)
       for (int j = 0; j < q; j++)
         {
-          double grad = shapeData.shape_gradients_collocation[j + i * q][0] *
+          double grad = shapeData.shape_gradients_collocation[j + i * q] *
                         std::sqrt(shapeData.quadrature.weight(j)) /
                         std::sqrt(shapeData.quadrature.weight(i));
           shapeFunction[j + i * q + q * p]           = grad;

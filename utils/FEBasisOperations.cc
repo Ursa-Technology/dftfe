@@ -16,7 +16,7 @@
 //
 #include <FEBasisOperations.h>
 #include <FEBasisOperationsKernelsInternal.h>
-
+#include <dftUtils.h>
 namespace dftfe
 {
   namespace basis
@@ -145,16 +145,36 @@ namespace dftfe
         dealii::ExcMessage(
           "DFT-FE Error: Inconsistent size of update flags for FEBasisOperations class."));
 
+      dftUtils::printCurrentMemoryUsage(
+        d_matrixFreeDataPtr->get_vector_partitioner(d_dofHandlerID)
+          ->get_mpi_communicator(),
+        "Entered call to febasis init");
 
       d_dofHandlerID        = dofHandlerID;
       d_quadratureIDsVector = quadratureID;
       d_updateFlags         = updateFlags;
       initializeIndexMaps();
+      dftUtils::printCurrentMemoryUsage(
+        d_matrixFreeDataPtr->get_vector_partitioner(d_dofHandlerID)
+          ->get_mpi_communicator(),
+        "indexmaps febasis init");
       initializeMPIPattern();
+      dftUtils::printCurrentMemoryUsage(
+        d_matrixFreeDataPtr->get_vector_partitioner(d_dofHandlerID)
+          ->get_mpi_communicator(),
+        "mpipattern febasis init");
       initializeShapeFunctionAndJacobianData();
+      dftUtils::printCurrentMemoryUsage(
+        d_matrixFreeDataPtr->get_vector_partitioner(d_dofHandlerID)
+          ->get_mpi_communicator(),
+        "shapefn init");
       if constexpr (!std::is_same<ValueTypeBasisCoeff,
                                   ValueTypeBasisData>::value)
         initializeShapeFunctionAndJacobianBasisData();
+      dftUtils::printCurrentMemoryUsage(
+        d_matrixFreeDataPtr->get_vector_partitioner(d_dofHandlerID)
+          ->get_mpi_communicator(),
+        "shapefnbasisdata init");
     }
 
 
@@ -896,6 +916,10 @@ namespace dftfe
            ++iQuadIndex)
         {
           unsigned int quadID = d_quadratureIDsVector[iQuadIndex];
+          dftUtils::printCurrentMemoryUsage(
+            d_matrixFreeDataPtr->get_vector_partitioner(d_dofHandlerID)
+              ->get_mpi_communicator(),
+            "shapefn init quad index " + std::to_string(quadID));
           const dealii::Quadrature<3> &quadrature =
             d_matrixFreeDataPtr->get_quadrature(quadID);
           dealii::FEValues<3> fe_values(
@@ -949,6 +973,10 @@ namespace dftfe
           auto &d_shapeFunctionGradientDataTransposeHost =
             d_shapeFunctionGradientDataTranspose[quadID];
 #endif
+          dftUtils::printCurrentMemoryUsage(
+            d_matrixFreeDataPtr->get_vector_partitioner(d_dofHandlerID)
+              ->get_mpi_communicator(),
+            "shapefn 0 quad index " + std::to_string(quadID));
 
           if (d_updateFlags[iQuadIndex] & update_quadpoints)
             {
@@ -956,16 +984,28 @@ namespace dftfe
               d_quadPoints[quadID].resize(d_nCells *
                                           d_nQuadsPerCell[iQuadIndex] * 3);
             }
+          dftUtils::printCurrentMemoryUsage(
+            d_matrixFreeDataPtr->get_vector_partitioner(d_dofHandlerID)
+              ->get_mpi_communicator(),
+            "qp 0 quad index " + std::to_string(quadID));
           d_shapeFunctionDataHost.clear();
           if (d_updateFlags[iQuadIndex] & update_values)
             d_shapeFunctionDataHost.resize(d_nQuadsPerCell[iQuadIndex] *
                                              d_nDofsPerCell,
                                            0.0);
+          dftUtils::printCurrentMemoryUsage(
+            d_matrixFreeDataPtr->get_vector_partitioner(d_dofHandlerID)
+              ->get_mpi_communicator(),
+            "sfn 0 quad index " + std::to_string(quadID));
           d_shapeFunctionDataTransposeHost.clear();
           if ((d_updateFlags[iQuadIndex] & update_values) &&
               (d_updateFlags[iQuadIndex] & update_transpose))
             d_shapeFunctionDataTransposeHost.resize(
               d_nQuadsPerCell[iQuadIndex] * d_nDofsPerCell, 0.0);
+          dftUtils::printCurrentMemoryUsage(
+            d_matrixFreeDataPtr->get_vector_partitioner(d_dofHandlerID)
+              ->get_mpi_communicator(),
+            "sfnt 0 quad index " + std::to_string(quadID));
           d_shapeFunctionGradientDataInternalLayoutHost.clear();
           d_shapeFunctionGradientDataHost.clear();
           d_shapeFunctionGradientDataTransposeHost.clear();
@@ -979,12 +1019,21 @@ namespace dftfe
                 d_shapeFunctionGradientDataTransposeHost.resize(
                   d_nQuadsPerCell[iQuadIndex] * d_nDofsPerCell * 3, 0.0);
             }
+          dftUtils::printCurrentMemoryUsage(
+            d_matrixFreeDataPtr->get_vector_partitioner(d_dofHandlerID)
+              ->get_mpi_communicator(),
+            "grad 0 quad index " + std::to_string(quadID));
 
           d_JxWDataHost.clear();
           if ((d_updateFlags[iQuadIndex] & update_jxw))
             d_JxWDataHost.resize(d_nCells * d_nQuadsPerCell[iQuadIndex]);
+          dftUtils::printCurrentMemoryUsage(
+            d_matrixFreeDataPtr->get_vector_partitioner(d_dofHandlerID)
+              ->get_mpi_communicator(),
+            "jxw 0 quad index " + std::to_string(quadID));
 
-          d_inverseJacobianDataHost.clear();
+          if (!areAllCellsAffine)
+            d_inverseJacobianDataHost.clear();
           if (d_updateFlags[iQuadIndex] & update_inversejacobians)
             d_inverseJacobianDataHost.resize(
               areAllCellsCartesian ?
@@ -994,6 +1043,10 @@ namespace dftfe
                    d_nCells * 9 * d_nQuadsPerCell[iQuadIndex]));
           const unsigned int nJacobiansPerCell =
             areAllCellsAffine ? 1 : d_nQuadsPerCell[iQuadIndex];
+          dftUtils::printCurrentMemoryUsage(
+            d_matrixFreeDataPtr->get_vector_partitioner(d_dofHandlerID)
+              ->get_mpi_communicator(),
+            "invj 0 quad index " + std::to_string(quadID));
 
 
           if (d_updateFlags[iQuadIndex] & update_values)
@@ -1225,7 +1278,8 @@ namespace dftfe
           if ((d_updateFlags[iQuadIndex] & update_jxw))
             d_JxWDataHost.resize(d_nCells * d_nQuadsPerCell[iQuadIndex]);
 
-          d_inverseJacobianDataHost.clear();
+          if (!areAllCellsAffine)
+            d_inverseJacobianDataHost.clear();
           if (d_updateFlags[iQuadIndex] & update_inversejacobians)
             d_inverseJacobianDataHost.resize(
               areAllCellsCartesian ?

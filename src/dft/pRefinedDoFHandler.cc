@@ -190,6 +190,9 @@ namespace dftfe
   {
     d_dofHandlerPRefined.distribute_dofs(d_dofHandlerPRefined.get_fe());
     d_dofHandlerRhoNodal.distribute_dofs(d_dofHandlerRhoNodal.get_fe());
+    if (d_dftParamsPtr->verbosity >= 4)
+      dftUtils::printCurrentMemoryUsage(mpi_communicator,
+                                        "entered initpRefinedObjects");
 
     d_supportPointsPRefined.clear();
     dealii::DoFTools::map_dofs_to_support_points(dealii::MappingQ1<3, 3>(),
@@ -270,6 +273,8 @@ namespace dftfe
     double init_bins;
     MPI_Barrier(d_mpiCommParent);
     init_bins = MPI_Wtime();
+    if (d_dftParamsPtr->verbosity >= 4)
+      dftUtils::printCurrentMemoryUsage(mpi_communicator, "entered init bins");
     //
     // Dirichlet BC constraints on the boundary of fictitious ball
     // used for computing self-potential (Vself) using Poisson problem
@@ -307,6 +312,8 @@ namespace dftfe
                                                     0.0);
         computing_timer.leave_subsection("Create atom bins");
       }
+    if (d_dftParamsPtr->verbosity >= 4)
+      dftUtils::printCurrentMemoryUsage(mpi_communicator, "exiting init bins");
 
     MPI_Barrier(d_mpiCommParent);
     init_bins = MPI_Wtime() - init_bins;
@@ -365,11 +372,15 @@ namespace dftfe
 
     for (unsigned int i = 3; i < d_constraintsVectorElectro.size(); ++i)
       matrixFreeDofHandlerVectorInput.push_back(&d_dofHandlerPRefined);
+    if (d_dftParamsPtr->verbosity >= 4)
+      dftUtils::printCurrentMemoryUsage(mpi_communicator, "init forces");
 
     forcePtr->initMoved(matrixFreeDofHandlerVectorInput,
                         d_constraintsVectorElectro,
                         true);
     d_forceDofHandlerIndexElectro = d_constraintsVectorElectro.size() - 1;
+    if (d_dftParamsPtr->verbosity >= 4)
+      dftUtils::printCurrentMemoryUsage(mpi_communicator, "exit forces");
 
 
     std::vector<dealii::Quadrature<1>> quadratureVector;
@@ -418,6 +429,14 @@ namespace dftfe
               dftfe::basis::update_gradients | dftfe::basis::update_quadpoints |
               dftfe::basis::update_transpose;
 
+            dftfe::basis::UpdateFlags updateFlagsLPSP =
+              dftfe::basis::update_values | dftfe::basis::update_jxw;
+
+            dftfe::basis::UpdateFlags updateFlagsphiTotAX =
+              d_dftParamsPtr->useDevice && FEOrder != FEOrderElectro ?
+                dftfe::basis::update_gradients :
+                dftfe::basis::update_default;
+
             std::vector<unsigned int> quadratureIndices{
               d_densityQuadratureIdElectro,
               d_lpspQuadratureIdElectro,
@@ -425,7 +444,7 @@ namespace dftfe
               d_phiTotAXQuadratureIdElectro};
             std::vector<dftfe::basis::UpdateFlags> updateFlags{
               updateFlagsAll,
-              updateFlagsAll,
+              updateFlagsLPSP,
               dftfe::basis::update_quadpoints,
               updateFlagsAll};
             d_basisOperationsPtrElectroHost->init(d_matrixFreeDataPRefined,
@@ -485,8 +504,8 @@ namespace dftfe
       }
 #endif
     if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator,
-                                        "Called febasisoperations electro reinit");
+      dftUtils::printCurrentMemoryUsage(
+        mpi_communicator, "Called febasisoperations electro reinit");
 
     //
     // locate atom core nodes

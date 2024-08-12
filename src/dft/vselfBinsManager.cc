@@ -22,6 +22,7 @@
 
 #include "createBinsSanityCheck.cc"
 #include "solveVselfInBins.cc"
+#include <dftUtils.h>
 namespace dftfe
 {
   namespace internal
@@ -516,6 +517,8 @@ namespace dftfe
                                         dealii::TimerOutput::wall_times);
 
     computing_timer.enter_subsection("create bins: initial overheads");
+    dftUtils::printCurrentMemoryUsage(mpi_communicator,
+                                      "entered createAtomBins");
 
     d_bins.clear();
     d_binsImages.clear();
@@ -666,6 +669,7 @@ namespace dftfe
     (d_bins[0]).insert(0);
     int binCount = 0;
     // iterate from atom 1 onwards
+    dftUtils::printCurrentMemoryUsage(mpi_communicator, "entering atomloop");
     for (int i = 1; i < numberGlobalAtoms; ++i)
       {
         const std::set<int> &interactingAtoms = interactionMap[i];
@@ -729,6 +733,7 @@ namespace dftfe
             (d_bins[binCount]).insert(i);
           }
       }
+    dftUtils::printCurrentMemoryUsage(mpi_communicator, "exited atomloop");
 
 
     const int numberBins = binCount + 1;
@@ -775,6 +780,7 @@ namespace dftfe
     //
     // set constraint matrices for each bin
     //
+    dftUtils::printCurrentMemoryUsage(mpi_communicator, "entering binloop");
     for (int iBin = 0; iBin < numberBins; ++iBin)
       {
         /*
@@ -797,6 +803,8 @@ namespace dftfe
           pcout << "bin " << iBin
                 << ": number of global atoms: " << numberGlobalAtomsInBin
                 << std::endl;
+        dftUtils::printCurrentMemoryUsage(mpi_communicator,
+                                          "entering atombinloop");
 
         for (int index = 0; index < numberGlobalAtomsInBin; ++index)
           {
@@ -828,6 +836,8 @@ namespace dftfe
                   }
               }
           }
+        dftUtils::printCurrentMemoryUsage(mpi_communicator,
+                                          "exited atombinloop");
 
         int numberImageAtomsInBin = imageIdsOfAtomsInCurrentBin.size();
 
@@ -859,6 +869,8 @@ namespace dftfe
             for (unsigned int idim = 0; idim < 3; idim++)
               inhomogBoundaryVecVselfDerR[idim] = 0.0;
 
+            dftUtils::printCurrentMemoryUsage(mpi_communicator,
+                                              "entering supportpointbinloop");
             for (iterMap = supportPoints.begin();
                  iterMap != supportPoints.end();
                  ++iterMap)
@@ -1026,13 +1038,63 @@ namespace dftfe
                   } // locally relevant dofs
 
               } // nodal loop
-
+            pcout << "size of d_closestAtomBin :"
+                  << dealii::Utilities::MPI::sum(
+                       (((sizeof(dealii::types::global_dof_index) +
+                          sizeof(int)) *
+                         d_closestAtomBin[iBin].size()) +
+                        sizeof(d_closestAtomBin[iBin])),
+                       mpi_communicator) /
+                       1024.0 / 1024.0 / 1024.0
+                  << std::endl;
+            pcout << "size of boundaryNodeMap :"
+                  << dealii::Utilities::MPI::sum(
+                       (((sizeof(dealii::types::global_dof_index) +
+                          sizeof(int)) *
+                         boundaryNodeMap.size()) +
+                        sizeof(boundaryNodeMap)),
+                       mpi_communicator) /
+                       1024.0 / 1024.0 / 1024.0
+                  << std::endl;
+            pcout << "size of boundaryNodeMapOnlyChargeId :"
+                  << dealii::Utilities::MPI::sum(
+                       (((sizeof(dealii::types::global_dof_index) +
+                          sizeof(int)) *
+                         boundaryNodeMapOnlyChargeId.size()) +
+                        sizeof(boundaryNodeMapOnlyChargeId)),
+                       mpi_communicator) /
+                       1024.0 / 1024.0 / 1024.0
+                  << std::endl;
+            pcout << "size of dofClosestChargeLocationMap :"
+                  << dealii::Utilities::MPI::sum(
+                       (((sizeof(dealii::types::global_dof_index) +
+                          sizeof(dealii::Point<3>)) *
+                         dofClosestChargeLocationMap.size()) +
+                        sizeof(dofClosestChargeLocationMap)),
+                       mpi_communicator) /
+                       1024.0 / 1024.0 / 1024.0
+                  << std::endl;
+            pcout << "size of vSelfBinNodeMap :"
+                  << dealii::Utilities::MPI::sum(
+                       (((sizeof(dealii::types::global_dof_index) +
+                          sizeof(double)) *
+                         vSelfBinNodeMap.size()) +
+                        sizeof(vSelfBinNodeMap)),
+                       mpi_communicator) /
+                       1024.0 / 1024.0 / 1024.0
+                  << std::endl;
+            dftUtils::printCurrentMemoryUsage(mpi_communicator,
+                                              "exited supportpointbinloop");
+            // MPI_Finalize();
+            // exit(0);
             // First Apply correct dirichlet boundary conditions on elements
             // with atleast one solved node
             dealii::DoFHandler<3>::active_cell_iterator cell =
                                                           dofHandler
                                                             .begin_active(),
                                                         endc = dofHandler.end();
+            dftUtils::printCurrentMemoryUsage(mpi_communicator,
+                                              "entering cellbinloop1");
             for (; cell != endc; ++cell)
               {
                 if (cell->is_locally_owned() || cell->is_ghost())
@@ -1149,12 +1211,16 @@ namespace dftfe
                         // atleast one solved node
                   }     // cell locally owned
               }         // cell loop
+            dftUtils::printCurrentMemoryUsage(mpi_communicator,
+                                              "exited cellbinloop1");
 
             const std::map<dealii::types::global_dof_index, int>
               &closestAtomBinMap = d_closestAtomBin[iBin];
 
             bool checkPassed = true;
             cell = dofHandler.begin_active(), endc = dofHandler.end();
+            dftUtils::printCurrentMemoryUsage(mpi_communicator,
+                                              "entering cellbinloop2");
             for (; cell != endc; ++cell)
               if (cell->is_locally_owned())
                 {
@@ -1260,6 +1326,8 @@ namespace dftfe
                         checkPassed = false;
                     }
                 } // cell locally owned
+            dftUtils::printCurrentMemoryUsage(mpi_communicator,
+                                              "exited cellbinloop2");
 
 
             int temp = 0;
@@ -1287,6 +1355,7 @@ namespace dftfe
             << radiusAtomBallReduced << std::endl;
 
         inhomogBoundaryVec.update_ghost_values();
+        dftUtils::printCurrentMemoryUsage(mpi_communicator, "entering dofloop");
         for (auto index : locally_relevant_dofs)
           {
             if (!onlyHangingNodeConstraints.is_constrained(index) &&
@@ -1297,6 +1366,7 @@ namespace dftfe
                   index, inhomogBoundaryVec[index]);
               }
           }
+        dftUtils::printCurrentMemoryUsage(mpi_communicator, "exited dofloop");
 
 
         d_vselfBinConstraintMatrices[4 * iBin].merge(
@@ -1311,6 +1381,7 @@ namespace dftfe
         d_vselfBinConstraintMatrices[4 * iBin].close();
         constraintsVector.push_back(&(d_vselfBinConstraintMatrices[4 * iBin]));
 
+        dftUtils::printCurrentMemoryUsage(mpi_communicator, "entering dimloop");
         for (unsigned int idim = 0; idim < 3; idim++)
           {
             inhomogBoundaryVecVselfDerR[idim].update_ghost_values();
@@ -1340,9 +1411,11 @@ namespace dftfe
             constraintsVector.push_back(
               &(d_vselfBinConstraintMatrices[4 * iBin + idim + 1]));
           }
+        dftUtils::printCurrentMemoryUsage(mpi_communicator, "exited dimloop");
 
         /*
-           for (unsigned int i = 0; i < inhomogBoundaryVec.local_size(); ++i)
+           for (unsigned int i = 0; i < inhomogBoundaryVec.locally_owned_size();
+        ++i)
            {
            const dealii::types::global_dof_index
         globalNodeId=inhomogBoundaryVec.get_partitioner()->local_to_global(i);
@@ -1357,6 +1430,7 @@ namespace dftfe
         }
          */
       } // bin loop
+    dftUtils::printCurrentMemoryUsage(mpi_communicator, "exited binloop");
 
     computing_timer.leave_subsection("create bins: set boundary conditions");
 

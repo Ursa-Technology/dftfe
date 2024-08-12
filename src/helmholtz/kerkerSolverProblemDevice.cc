@@ -192,7 +192,7 @@ namespace dftfe
         for (unsigned int q = 0; q < fe_eval.n_q_points; ++q)
           fe_eval.submit_value(residualQuads[q], q);
 
-        fe_eval.integrate(true, false);
+        fe_eval.integrate(dealii::EvaluationFlags::values);
 
         fe_eval.distribute_local_to_global(rhs);
       }
@@ -715,7 +715,7 @@ namespace dftfe
     for (int i = 0; i < p; i++)
       for (int j = 0; j < q; j++)
         {
-          double value = shapeData.shape_values[j + i * q][0] *
+          double value = shapeData.shape_values[j + i * q] *
                          std::sqrt(shapeData.quadrature.weight(j));
           shapeFunction[j + i * q]               = value;
           shapeFunction[i + j * p + q * (p + q)] = value;
@@ -724,7 +724,7 @@ namespace dftfe
     for (int i = 0; i < q; i++)
       for (int j = 0; j < q; j++)
         {
-          double grad = shapeData.shape_gradients_collocation[j + i * q][0] *
+          double grad = shapeData.shape_gradients_collocation[j + i * q] *
                         std::sqrt(shapeData.quadrature.weight(j)) /
                         std::sqrt(shapeData.quadrature.weight(i));
           shapeFunction[j + i * q + q * p]           = grad;

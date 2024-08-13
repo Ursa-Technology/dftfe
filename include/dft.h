@@ -67,7 +67,6 @@
 
 #include <mixingClass.h>
 #include <oncvClass.h>
-#include <AuxDensityMatrix.h>
 
 namespace dftfe
 {
@@ -1249,22 +1248,16 @@ namespace dftfe
         &gradDensityQuadValues,
       const std::map<dealii::CellId, std::vector<double>> &rhoCore,
       const std::map<dealii::CellId, std::vector<double>> &gradRhoCore,
-      const dftfe::utils::MemoryStorage<dataTypes::number,
-                                        dftfe::utils::MemorySpace::HOST>
-        &eigenVectorsFlattenedHost,
-#ifdef DFTFE_WITH_DEVICE
-      const dftfe::utils::MemoryStorage<dataTypes::number,
-                                        dftfe::utils::MemorySpace::DEVICE>
-        &eigenVectorsFlattenedDevice,
-#endif
+      const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+        &                                     eigenVectorsFlattenedMemSpace,
       const std::vector<std::vector<double>> &eigenValues,
       const double                            fermiEnergy_,
       const double                            fermiEnergyUp_,
       const double                            fermiEnergyDown_,
-      std::shared_ptr<AuxDensityMatrix>       auxDensityMatrixXCPtr);
+      std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityMatrixXCPtr);
 
-    std::shared_ptr<excManager> d_excManagerPtr;
-    dispersionCorrection        d_dispersionCorr;
+    std::shared_ptr<excManager<memorySpace>> d_excManagerPtr;
+    dispersionCorrection                     d_dispersionCorr;
 
     /**
      * stores required data for Kohn-Sham problem
@@ -1693,8 +1686,8 @@ namespace dftfe
       d_densityTotalOutValuesLpspQuad, d_densityTotalInValuesLpspQuad,
       d_gradDensityTotalOutValuesLpspQuad, d_gradDensityTotalInValuesLpspQuad;
 
-    std::shared_ptr<AuxDensityMatrix> d_auxDensityMatrixXCInPtr;
-    std::shared_ptr<AuxDensityMatrix> d_auxDensityMatrixXCOutPtr;
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> d_auxDensityMatrixXCInPtr;
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> d_auxDensityMatrixXCOutPtr;
 
     // For multipole boundary conditions
     double              d_monopole;

@@ -55,14 +55,12 @@ SET(TARGET_SRC
   ./src/dft/computeAuxProjectedDensityMatrixFromPSI.cc
   ./src/dft/densityFirstOrderResponseCalculator.cc
   ./src/dft/applyMultipoleDirichletBC.cc
-  ./src/excManager/excDensityBaseClass.cpp
   ./src/excManager/excDensityLDAClass.cpp
-  ./src/excManager/excWavefunctionBaseClass.cpp
   ./src/excManager/excDensityGGAClass.cpp
   ./src/excManager/excDensityLLMGGAClass.cpp
   ./src/excManager/excManager.cpp
-  ./src/excManager/excWavefunctionNoneClass.cpp
-  ./src/excManager/AuxDensityFE.cpp
+        ./src/excManager/AuxDensityMatrixFE.cpp
+        ./src/excManager/ExcDFTPlusU.cpp
   ./src/excManager/AuxDensityMatrixSlater.cpp
   ./src/excManager/NNGGA.cc
   ./src/excManager/NNLDA.cc
@@ -213,7 +211,6 @@ SET(DEVICE_SRC
   ./src/force/forceWfcContractionsDeviceKernels.cc
   ./utils/constraintMatrixInfoDevice.cc
   ./utils/DeviceAPICalls.cu.cc
-  ./utils/DeviceBlasWrapper.cu.cc
   ./utils/BLASWrapperDevice.cu.cc
   ./utils/MPICommunicatorP2PKernelsDevice.cc
   ./src/solvers/linearSolverDevice.cc
@@ -242,7 +239,6 @@ SET(DEVICE_SRC
   ./src/force/forceWfcContractionsDeviceKernels.cc
   ./utils/constraintMatrixInfoDevice.cc
   ./utils/DeviceAPICalls.hip.cc
-  ./utils/DeviceBlasWrapper.hip.cc
   ./utils/BLASWrapperDevice.hip.cc
   ./utils/MPICommunicatorP2PKernelsDevice.cc
   ./src/solvers/linearSolverDevice.cc

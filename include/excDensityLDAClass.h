@@ -23,7 +23,8 @@
 namespace dftfe
 {
   class NNLDA;
-  class excDensityLDAClass : public excDensityBaseClass
+  template <dftfe::utils::MemorySpace memorySpace>
+  class excDensityLDAClass : public excDensityBaseClass<memorySpace>
   {
   public:
     excDensityLDAClass(xc_func_type *funcXPtr, xc_func_type *funcCPtr);
@@ -36,9 +37,9 @@ namespace dftfe
 
     void
     computeExcVxcFxc(
-      AuxDensityMatrix &         auxDensityMatrix,
-      const std::vector<double> &quadPoints,
-      const std::vector<double> &quadWeights,
+      AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+      const std::vector<double> &    quadPoints,
+      const std::vector<double> &    quadWeights,
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
       const override;

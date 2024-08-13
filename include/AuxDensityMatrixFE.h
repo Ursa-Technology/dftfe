@@ -2,8 +2,8 @@
 // Created by Sambit Das.
 //
 
-#ifndef DFTFE_AUXDM_AUXDENSITYFE_H
-#define DFTFE_AUXDM_AUXDENSITYFE_H
+#ifndef DFTFE_AUXDM_AUXDENSITYMATRIXFE_H
+#define DFTFE_AUXDM_AUXDENSITYMATRIXFE_H
 
 #include <vector>
 #include <utility>
@@ -11,7 +11,8 @@
 
 namespace dftfe
 {
-  class AuxDensityFE : public AuxDensityMatrix
+  template <dftfe::utils::MemorySpace memorySpace>
+  class AuxDensityMatrixFE : public AuxDensityMatrix<memorySpace>
   {
   public:
     // CAUTION: points have to be a contiguous subset of d_quadPointsSet
@@ -64,6 +65,14 @@ namespace dftfe
     void
     projectDensityEnd(const MPI_Comm &mpiComm) override;
 
+    void
+    getDensityMatrixComponents_occupancies(
+      const std::vector<double> &occupancies) const override;
+
+    void
+    getDensityMatrixComponents_wavefunctions(
+      const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+        &eigenVectors) const override;
 
   private:
     std::vector<double> d_densityValsTotalAllQuads;
@@ -76,4 +85,4 @@ namespace dftfe
   };
 } // namespace dftfe
 
-#endif // DFTFE_AUXDM_AUXDENSITYFE_H
+#endif // DFTFE_AUXDM_AUXDENSITYMATRIXFE_H

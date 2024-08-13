@@ -14,30 +14,38 @@
 //
 // ---------------------------------------------------------------------
 //
-#ifndef DFTFE_EXCDENSITYGGACLASS_H
-#define DFTFE_EXCDENSITYGGACLASS_H
 
-#include <xc.h>
-#include <excDensityBaseClass.h>
+#ifndef DFTFE_EXE_EXCDFTPLUSU_H
+#define DFTFE_EXE_EXCDFTPLUSU_H
+
+
+
+#include "ExcSSDFunctionalBaseClass.h"
 namespace dftfe
 {
-  class NNGGA;
   template <dftfe::utils::MemorySpace memorySpace>
-  class excDensityGGAClass : public excDensityBaseClass<memorySpace>
+  class ExcDFTPlusU : public ExcSSDFunctionalBaseClass<memorySpace>
   {
   public:
-    excDensityGGAClass(xc_func_type *funcXPtr, xc_func_type *funcCPtr);
+    ExcDFTPlusU(xc_func_type *          funcXPtr,
+                xc_func_type *          funcCPtr,
+                unsigned int            numSpins,
+                const densityFamilyType densityFamilyType);
 
-
-    excDensityGGAClass(xc_func_type *funcXPtr,
-                       xc_func_type *funcCPtr,
-                       std::string   modelXCInputFile);
-
-
-    ~excDensityGGAClass();
+    ~ExcDFTPlusU();
 
     void
-    computeExcVxcFxc(
+    applyWaveFunctionDependentVxc() const override;
+    void
+    updateWaveFunctionDependentVxc() const override;
+    double
+    computeWaveFunctionDependentExcEnergy() const override;
+
+    /**
+     * x and c denotes exchange and correlation respectively
+     */
+    void
+    computeOutputXCData(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
       const std::vector<double> &    quadPoints,
       const std::vector<double> &    quadWeights,
@@ -45,17 +53,9 @@ namespace dftfe
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
       const override;
 
-    void
-    checkInputOutputDataAttributesConsistency(
-      const std::vector<xcOutputDataAttributes> &outputDataAttributes)
-      const override;
 
-  private:
-    NNGGA *             d_NNGGAPtr;
-    xc_func_type *      d_funcXPtr;
-    xc_func_type *      d_funcCPtr;
-    std::vector<double> d_spacingFDStencil;
-    unsigned int        d_vxcDivergenceTermFDStencilSize;
+  public:
+    excDensityBaseClass<memorySpace> *d_excDensityObjPtr;
   };
 } // namespace dftfe
-#endif // DFTFE_EXCDENSITYGGACLASS_H
+#endif // DFTFE_EXE_EXCDFTPLUSU_H

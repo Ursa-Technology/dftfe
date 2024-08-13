@@ -32,6 +32,16 @@ namespace dftfe
     MGGA
   };
 
+  /**
+   * @brief This class provides the structure for all
+   * Exc functional dependent on Single Slater Determinant
+   * such as DFT+U, Hybrid and Tau dependent MGGA.
+   * This derived class of this class provides the
+   * description to handle non-multiplicative potential
+   * arising for the above formualtions
+   *
+   * @author Vishal Subramanian, Sambit Das
+   */
   template <dftfe::utils::MemorySpace memorySpace>
   class ExcSSDFunctionalBaseClass
   {
@@ -51,7 +61,9 @@ namespace dftfe
     computeWaveFunctionDependentExcEnergy() const = 0;
 
     /**
-     * x and c denotes exchange and correlation respectively
+     * x and c denotes exchange and correlation respectively.
+     * This function computes the rho and tau dependent parts
+     * of the Exc and Vxc functionals
      */
     virtual void
     computeOutputXCData(

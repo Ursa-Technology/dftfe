@@ -35,21 +35,21 @@ namespace dftfe
       &                phiPrimeValues,
     const unsigned int spinIndex)
   {
-    bool isGradDensityDataRequired = false;
+    bool isIntegrationByPartsGradDensityDependenceVxc = false;
     if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
       {
-        isGradDensityDataRequired =
+        isIntegrationByPartsGradDensityDependenceVxc =
           (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
            densityFamilyType::GGA);
       }
     else if (d_excManagerPtr->getXCPrimaryVariable() ==
              XCPrimaryVariable::SSDETERMINANT)
       {
-        isGradDensityDataRequired =
+        isIntegrationByPartsGradDensityDependenceVxc =
           (d_excManagerPtr->getExcSSDFunctionalObj()
              ->getDensityBasedFamilyType() == densityFamilyType::GGA);
       }
-    const bool isGGA = isGradDensityDataRequired;
+    const bool isGGA = isIntegrationByPartsGradDensityDependenceVxc;
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
     const unsigned int totalLocallyOwnedCells =
       d_basisOperationsPtrHost->nCells();

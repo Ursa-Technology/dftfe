@@ -11,6 +11,7 @@
 #include <string>
 #include <unordered_map>
 #include <mpi.h>
+#include <dftUtils.h>
 
 namespace dftfe
 {
@@ -27,6 +28,7 @@ namespace dftfe
     laplacianSpinDown
   };
 
+  template <dftfe::utils::MemorySpace memorySpace>
   class AuxDensityMatrix
   {
   public:
@@ -81,6 +83,15 @@ namespace dftfe
      */
     virtual void
     projectDensityEnd(const MPI_Comm &mpiComm) = 0;
+
+    virtual void
+    getDensityMatrixComponents_occupancies(
+      const std::vector<double> &occupancies) const = 0;
+
+    virtual void
+    getDensityMatrixComponents_wavefunctions(
+      const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+        &eigenVectors) const = 0;
   };
 } // namespace dftfe
 

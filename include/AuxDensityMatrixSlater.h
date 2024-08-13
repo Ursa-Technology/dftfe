@@ -18,7 +18,8 @@
 
 namespace dftfe
 {
-  class AuxDensityMatrixSlater : public AuxDensityMatrix
+  template <dftfe::utils::MemorySpace memorySpace>
+  class AuxDensityMatrixSlater : public AuxDensityMatrix<memorySpace>
   {
   private:
     int             d_nQuad;
@@ -98,6 +99,15 @@ namespace dftfe
 
     void
     projectDensityEnd(const MPI_Comm &mpiComm) override;
+
+    void
+    getDensityMatrixComponents_occupancies(
+      const std::vector<double> &occupancies) const override;
+
+    void
+    getDensityMatrixComponents_wavefunctions(
+      const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+        &eigenVectors) const override;
   };
 } // namespace dftfe
 #endif

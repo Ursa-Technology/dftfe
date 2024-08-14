@@ -1,8 +1,9 @@
 //
-// Created by Arghadwip Paul.
+// Created by Arghadwip Paul, Sambit Das
 //
-#ifdef DFTFE_WITH_TORCH
-#  include "AuxDensityMatrixSlater.h"
+#  include "AuxDensityMatrixAtomicBasis.h"
+#  include "SlaterBasis.h"
+#  include "GaussianBasis.h"
 #  include <stdexcept>
 #  include <cmath>
 #  include <linearAlgebraOperationsCPU.h>
@@ -11,14 +12,20 @@ namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::reinitAuxDensityMatrix(
-    const std::vector<std::pair<std::string, std::vector<double>>> &atomCoords,
-    const std::string &auxBasisFile,
-    const int          nSpin,
-    const int          maxDerOrder)
+  AuxDensityMatrixAtomicBasis<memorySpace>::reinit(const auxDMAtomicBasisType,
+      const std::vector<std::pair<std::string, std::vector<double>>>
+        &                atomCoords,
+      const std::unordered_map<std::string, std::string> & atomBasisFileNames,
+      const int          nSpin,
+      const int          maxDerOrder)
   {
-    d_sbs.constructBasisSet(atomCoords, auxBasisFile);
-    d_nBasis      = d_sbs.getNumBasis();
+    if (auxDMAtomicBasisType==AuxDMAtomicBasisType::Slater)
+       d_atomicBasisPtr= std::make_unique<SlaterBasis>();
+    else if(auxDMAtomicBasisType==AuxDMAtomicBasisType::Slater) 
+       d_atomicBasisPtr= std::make_unique<GaussianBasis>();
+
+    d_atomicBasisPtr->constructBasisSet(atomCoords, atomBasisFileNames);
+    d_nBasis      = d_atomicBasisPtr->getNumBasis();
     d_nSpin       = nSpin;
     d_maxDerOrder = maxDerOrder;
     d_DM.assign(d_nSpin * d_nBasis * d_nBasis, 0.0);
@@ -26,11 +33,11 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::evalOverlapMatrixStart(
+  AuxDensityMatrixAtomicBasis<memorySpace>::evalOverlapMatrixStart(
     const std::vector<double> &quadpts,
     const std::vector<double> &quadWt)
   {
-    d_sbd.evalBasisData(quadpts, d_sbs, d_maxDerOrder);
+    d_atomicBasisData.evalBasisData(quadpts, d_sbs, d_maxDerOrder);
     d_SMatrix = std::vector<double>(d_nBasis * d_nBasis, 0.0);
 
     for (int i = 0; i < d_nBasis; ++i)
@@ -40,8 +47,8 @@ namespace dftfe
             double sum = 0.0;
             for (int iQuad = 0; iQuad < quadWt.size(); iQuad++)
               {
-                sum += d_sbd.getBasisValues(iQuad * d_nBasis + i) *
-                       d_sbd.getBasisValues(iQuad * d_nBasis + j) *
+                sum += d_atomicBasisData.getBasisValues(iQuad * d_nBasis + i) *
+                       d_atomicBasisData.getBasisValues(iQuad * d_nBasis + j) *
                        quadWt[iQuad];
               }
             d_SMatrix[i * d_nBasis + j] = sum;
@@ -55,7 +62,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::evalOverlapMatrixEnd(
+  AuxDensityMatrixAtomicBasis<memorySpace>::evalOverlapMatrixEnd(
     const MPI_Comm &mpiComm)
   {
     // MPI All Reduce
@@ -70,7 +77,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::evalOverlapMatrixInv()
+  AuxDensityMatrixAtomicBasis<memorySpace>::evalOverlapMatrixInv()
   {
     d_SMatrixInv = d_SMatrix;
     // Invert using Cholesky
@@ -161,14 +168,14 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   std::vector<double> &
-  AuxDensityMatrixSlater<memorySpace>::getOverlapMatrixInv()
+  AuxDensityMatrixAtomicBasis<memorySpace>::getOverlapMatrixInv()
   {
     return d_SMatrixInv;
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::projectDensityMatrixStart(
+  AuxDensityMatrixAtomicBasis<memorySpace>::projectDensityMatrixStart(
     std::unordered_map<std::string, std::vector<double>> &projectionInputs,
     int                                                   iSpin)
   {
@@ -178,7 +185,7 @@ namespace dftfe
     auto &psiFunc                              = projectionInputs["psiFunc"];
     auto &quadWt                               = projectionInputs["quadWt"];
     d_fValues                                  = projectionInputs["fValues"];
-    std::vector<double> SlaterBasisValWeighted = d_sbd.getBasisValuesAll();
+    std::vector<double> SlaterBasisValWeighted = d_atomicBasisData.getBasisValuesAll();
 
     d_nQuad = quadWt.size();
     d_nWFC  = psiFunc.size() / d_nQuad;
@@ -212,7 +219,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::projectDensityMatrixEnd(
+  AuxDensityMatrixAtomicBasis<memorySpace>::projectDensityMatrixEnd(
     const MPI_Comm &mpiComm)
   {
     // MPI All Reduce d_SWFC
@@ -292,7 +299,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::applyLocalOperations(
+  AuxDensityMatrixAtomicBasis<memorySpace>::applyLocalOperations(
     const std::vector<double> &Points,
     std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
       &densityData)
@@ -318,19 +325,19 @@ namespace dftfe
               if (iSpin == 0)
               {
                 rhoUp[0] += d_DM[i * d_nBasis + j] *
-                            d_sbd.getBasisValues(iQuad * d_nBasis + i) *
-                            d_sbd.getBasisValues(iQuad * d_nBasis + j);
+                            d_atomicBasisData.getBasisValues(iQuad * d_nBasis + i) *
+                            d_atomicBasisData.getBasisValues(iQuad * d_nBasis + j);
 
                 for (int derIndex = 0; derIndex < 3; derIndex++)
                 {
                   gradrhoUp[derIndex] +=
                           d_DM[i * d_nBasis + j] *
-                          (d_sbd.getBasisGradValues(iQuad * d_nBasis * 3 +
+                          (d_atomicBasisData.getBasisGradValues(iQuad * d_nBasis * 3 +
                                                     3 * i + derIndex) *
-                           d_sbd.getBasisValues(iQuad * d_nBasis + j) +
-                           d_sbd.getBasisGradValues(iQuad * d_nBasis * 3 +
+                           d_atomicBasisData.getBasisValues(iQuad * d_nBasis + j) +
+                           d_atomicBasisData.getBasisGradValues(iQuad * d_nBasis * 3 +
                                                     3 * j + derIndex) *
-                           d_sbd.getBasisValues(iQuad * d_nBasis + i));
+                           d_atomicBasisData.getBasisValues(iQuad * d_nBasis + i));
                 }
               }
 
@@ -338,18 +345,18 @@ namespace dftfe
               {
                 rhoDown[0] +=
                         d_DM[DMSpinOffset + i * d_nBasis + j] *
-                        d_sbd.getBasisValues(iQuad * d_nBasis + i) *
-                        d_sbd.getBasisValues(iQuad * d_nBasis + j);
+                        d_atomicBasisData.getBasisValues(iQuad * d_nBasis + i) *
+                        d_atomicBasisData.getBasisValues(iQuad * d_nBasis + j);
                 for (int derIndex = 0; derIndex < 3; derIndex++)
                 {
                   gradrhoDown[derIndex] +=
                           d_DM[DMSpinOffset + i * d_nBasis + j] *
-                          (d_sbd.getBasisGradValues(iQuad * d_nBasis * 3 +
+                          (d_atomicBasisData.getBasisGradValues(iQuad * d_nBasis * 3 +
                                                     3 * i + derIndex) *
-                           d_sbd.getBasisValues(iQuad * d_nBasis + j) +
-                           d_sbd.getBasisGradValues(iQuad * d_nBasis * 3 +
+                           d_atomicBasisData.getBasisValues(iQuad * d_nBasis + j) +
+                           d_atomicBasisData.getBasisGradValues(iQuad * d_nBasis * 3 +
                                                     3 * j + derIndex) *
-                           d_sbd.getBasisValues(iQuad * d_nBasis + i));
+                           d_atomicBasisData.getBasisValues(iQuad * d_nBasis + i));
                 }
               }
             }
@@ -402,7 +409,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::projectDensityStart(
+  AuxDensityMatrixAtomicBasis<memorySpace>::projectDensityStart(
     std::unordered_map<std::string, std::vector<double>> &projectionInputs)
   {
     // projectDensity implementation
@@ -411,7 +418,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::projectDensityEnd(
+  AuxDensityMatrixAtomicBasis<memorySpace>::projectDensityEnd(
     const MPI_Comm &mpiComm)
   {
     // projectDensity implementation
@@ -420,7 +427,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::getDensityMatrixComponents_occupancies(
+  AuxDensityMatrixAtomicBasis<memorySpace>::getDensityMatrixComponents_occupancies(
     const std::vector<double> &occupancies) const
   {
     std::string errMsg = "Not implemented";
@@ -429,7 +436,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater<memorySpace>::getDensityMatrixComponents_wavefunctions(
+  AuxDensityMatrixAtomicBasis<memorySpace>::getDensityMatrixComponents_wavefunctions(
     const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
       &eigenVectors) const
   {
@@ -437,9 +444,8 @@ namespace dftfe
     dftfe::utils::throwException(false, errMsg);
   }
 
-  template class AuxDensityMatrixSlater<dftfe::utils::MemorySpace::HOST>;
+  template class AuxDensityMatrixAtomicBasis<dftfe::utils::MemorySpace::HOST>;
 #  ifdef DFTFE_WITH_DEVICE
-  template class AuxDensityMatrixSlater<dftfe::utils::MemorySpace::DEVICE>;
+  template class AuxDensityMatrixAtomicBasis<dftfe::utils::MemorySpace::DEVICE>;
 #  endif
 } // namespace dftfe
-#endif

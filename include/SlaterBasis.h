@@ -17,14 +17,14 @@
 // @author Arghadwip Paul, Bikash Kanungo 
 //
 
-#ifndef DFTFE_SLATER_SLATERBASIS_H
-#define DFTFE_SLATER_SLATERBASIS_H
+#ifndef DFTFE_SLATERBASIS_H
+#define DFTFE_SLATERBASIS_H
 
 #include <vector>
 #include <unordered_map>
 #include <string>
 #include <utility>
-
+#include "AtomicBasis.h"
 namespace dftfe
 {
   struct SlaterPrimitive
@@ -43,7 +43,7 @@ namespace dftfe
     const SlaterPrimitive *sp;     // pointer to the SlaterPrimitive 
   };
 
-  class SlaterBasis
+  class SlaterBasis: public AtomicBasis
   {
 
   public:
@@ -52,33 +52,25 @@ namespace dftfe
     ~SlaterBasis(); // Destructor
 
 
-    void
+    virtual void
     constructBasisSet(
       const std::vector<std::pair<std::string, std::vector<double>>>
         &                atomCoords,
-      const std::unordered_map<std::string, std::string> & atomBasisFileNames);
+      const std::unordered_map<std::string, std::string> & atomBasisFileNames) override;
 
-
-    const std::vector<SlaterBasisInfo> &
-    getSlaterBasisInfo() const;
-
-    int
-    getNumBasis() const;
+    virtual int getNumBasis() const override;
   
-    double 
-      getBasisValue(const unsigned int basisId, 
-                        const std::vector<double> & x) const;
+    virtual double getBasisValue(const unsigned int basisId, 
+                        const std::vector<double> & x) const override;
     
-    std::vector<double>
-      getBasisGradient(const unsigned int basisId, 
-                        const std::vector<double> & x) const;
+    virtual std::vector<double> getBasisGradient(
+                        const unsigned int basisId, 
+                        const std::vector<double> & x) const override;
     
-    double 
+    virtual double 
       getBasisLaplacian(const unsigned int basisId, 
-                        const std::vector<double> & x) const;
-  
+                        const std::vector<double> & x) const override;
   private:
-    // std::unordered_map<std::string, std::string> d_atomToSlaterBasisName;
     std::unordered_map<std::string, std::vector<SlaterPrimitive *>>
       d_atomToSlaterPrimitivesPtr;
     std::vector<SlaterBasisInfo> d_slaterBasisInfo;
@@ -87,5 +79,4 @@ namespace dftfe
     double d_angleTol;
   };
 } // namespace dftfe
-
-#endif // DFTFE_SLATER_SLATERBASIS_H
+#endif // DFTFE_SLATERBASIS_H

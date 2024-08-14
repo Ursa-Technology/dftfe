@@ -38,7 +38,7 @@ namespace dftfe
 
     void
     applyLocalOperations(
-      const std::vector<double> &Points,
+      const std::vector<double> &quadpts,
       std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
         &densityData) override;
 
@@ -104,7 +104,7 @@ namespace dftfe
     std::vector<double> d_DM;
     std::vector<double> d_SMatrix;
     std::vector<double> d_SMatrixInv;
-    std::vector<double> d_SWFC;
+    std::vector<double> d_basisWFCInnerProducts;
     std::vector<double> d_fValues;
 
     int d_nWFC;

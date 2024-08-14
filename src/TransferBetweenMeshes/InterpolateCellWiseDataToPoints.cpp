@@ -33,7 +33,6 @@
 #  include <DeviceAPICalls.h>
 #  include <DeviceDataTypeOverloads.h>
 #  include <DeviceKernelLauncherConstants.h>
-#  include <linearAlgebraOperations.h>
 #  include <linearAlgebraOperationsDevice.h>
 #  include <vectorUtilities.h>
 #  include <DeviceAPICalls.h>

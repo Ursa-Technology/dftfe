@@ -19,6 +19,7 @@
 #include <chebyshevOrthogonalizedSubspaceIterationSolver.h>
 #include <dftUtils.h>
 #include <linearAlgebraOperations.h>
+#include <linearAlgebraOperationsCPU.h>
 #include <vectorUtilities.h>
 
 static const unsigned int order_lookup[][2] = {

@@ -779,6 +779,20 @@ namespace dftfe
                                   -const2,
                                   kernelActionSpin1);
 
+    bool isGradDensityDataDependent = false;
+    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+      {
+        isGradDensityDataDependent =
+          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
+           densityFamilyType::GGA);
+      }
+    else if (d_excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isGradDensityDataDependent =
+          (d_excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
     for (unsigned int iComp = 0; iComp < d_densityInNodalValues.size(); ++iComp)
       interpolateDensityNodalDataToQuadratureDataGeneral(
         d_basisOperationsPtrElectroHost,
@@ -788,7 +802,7 @@ namespace dftfe
         d_densityInQuadValues[iComp],
         d_gradDensityInQuadValues[iComp],
         d_gradDensityInQuadValues[iComp],
-        d_excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA);
+        isGradDensityDataDependent);
 
     MPI_Barrier(d_mpiCommParent);
     total_time = MPI_Wtime() - total_time;

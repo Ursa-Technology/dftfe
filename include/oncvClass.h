@@ -94,15 +94,15 @@ namespace dftfe
         dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
         BLASWrapperPtrDevice,
 #endif
-      unsigned int                            densityQuadratureId,
-      unsigned int                            localContributionQuadratureId,
-      unsigned int                            sparsityPatternQuadratureId,
-      unsigned int                            nlpspQuadratureId,
-      unsigned int                            densityQuadratureIdElectro,
-      std::shared_ptr<excManager>             excFunctionalPtr,
-      const std::vector<std::vector<double>> &atomLocations,
-      unsigned int                            numEigenValues,
-      const bool                              singlePrecNonLocalOperator);
+      unsigned int                             densityQuadratureId,
+      unsigned int                             localContributionQuadratureId,
+      unsigned int                             sparsityPatternQuadratureId,
+      unsigned int                             nlpspQuadratureId,
+      unsigned int                             densityQuadratureIdElectro,
+      std::shared_ptr<excManager<memorySpace>> excFunctionalPtr,
+      const std::vector<std::vector<double>> & atomLocations,
+      unsigned int                             numEigenValues,
+      const bool                               singlePrecNonLocalOperator);
 
     /**
      * @brief Initialises all the data members with addresses/values to/of dftClass.
@@ -273,15 +273,15 @@ namespace dftfe
     const unsigned int d_this_mpi_process;
 
     // conditional stream object
-    dealii::ConditionalOStream  pcout;
-    bool                        d_useDevice;
-    unsigned int                d_densityQuadratureId;
-    unsigned int                d_localContributionQuadratureId;
-    unsigned int                d_nuclearChargeQuadratureIdElectro;
-    unsigned int                d_densityQuadratureIdElectro;
-    unsigned int                d_sparsityPatternQuadratureId;
-    unsigned int                d_nlpspQuadratureId;
-    std::shared_ptr<excManager> d_excManagerPtr;
+    dealii::ConditionalOStream               pcout;
+    bool                                     d_useDevice;
+    unsigned int                             d_densityQuadratureId;
+    unsigned int                             d_localContributionQuadratureId;
+    unsigned int                             d_nuclearChargeQuadratureIdElectro;
+    unsigned int                             d_densityQuadratureIdElectro;
+    unsigned int                             d_sparsityPatternQuadratureId;
+    unsigned int                             d_nlpspQuadratureId;
+    std::shared_ptr<excManager<memorySpace>> d_excManagerPtr;
     std::shared_ptr<
       dftfe::basis::
         FEBasisOperations<ValueType, double, dftfe::utils::MemorySpace::HOST>>

@@ -111,15 +111,15 @@ namespace dftfe
       dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
       BLASWrapperPtrDevice,
 #endif
-    unsigned int                            densityQuadratureId,
-    unsigned int                            localContributionQuadratureId,
-    unsigned int                            sparsityPatternQuadratureId,
-    unsigned int                            nlpspQuadratureId,
-    unsigned int                            densityQuadratureIdElectro,
-    std::shared_ptr<excManager>             excFunctionalPtr,
-    const std::vector<std::vector<double>> &atomLocations,
-    unsigned int                            numEigenValues,
-    const bool                              singlePrecNonLocalOperator)
+    unsigned int                             densityQuadratureId,
+    unsigned int                             localContributionQuadratureId,
+    unsigned int                             sparsityPatternQuadratureId,
+    unsigned int                             nlpspQuadratureId,
+    unsigned int                             densityQuadratureIdElectro,
+    std::shared_ptr<excManager<memorySpace>> excFunctionalPtr,
+    const std::vector<std::vector<double>> & atomLocations,
+    unsigned int                             numEigenValues,
+    const bool                               singlePrecNonLocalOperator)
   {
     MPI_Barrier(d_mpiCommParent);
     d_BasisOperatorHostPtr = basisOperationsHostPtr;

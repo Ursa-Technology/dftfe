@@ -5,12 +5,13 @@
 #  include "AuxDensityMatrixSlater.h"
 #  include <stdexcept>
 #  include <cmath>
-#  include <linearAlgebraOperations.h>
+#  include <linearAlgebraOperationsCPU.h>
 
 namespace dftfe
 {
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater::reinitAuxDensityMatrix(
+  AuxDensityMatrixSlater<memorySpace>::reinitAuxDensityMatrix(
     const std::vector<std::pair<std::string, std::vector<double>>> &atomCoords,
     const std::string &auxBasisFile,
     const int          nSpin,
@@ -23,8 +24,9 @@ namespace dftfe
     d_DM.assign(d_nSpin * d_nBasis * d_nBasis, 0.0);
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater::evalOverlapMatrixStart(
+  AuxDensityMatrixSlater<memorySpace>::evalOverlapMatrixStart(
     const std::vector<double> &quadpts,
     const std::vector<double> &quadWt)
   {
@@ -51,8 +53,10 @@ namespace dftfe
       }
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater::evalOverlapMatrixEnd(const MPI_Comm &mpiComm)
+  AuxDensityMatrixSlater<memorySpace>::evalOverlapMatrixEnd(
+    const MPI_Comm &mpiComm)
   {
     // MPI All Reduce
     MPI_Allreduce(d_SMatrix.data(),
@@ -64,8 +68,9 @@ namespace dftfe
     evalOverlapMatrixInv();
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater::evalOverlapMatrixInv()
+  AuxDensityMatrixSlater<memorySpace>::evalOverlapMatrixInv()
   {
     d_SMatrixInv = d_SMatrix;
     // Invert using Cholesky
@@ -154,14 +159,16 @@ namespace dftfe
       }
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   std::vector<double> &
-  AuxDensityMatrixSlater::getOverlapMatrixInv()
+  AuxDensityMatrixSlater<memorySpace>::getOverlapMatrixInv()
   {
     return d_SMatrixInv;
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater::projectDensityMatrixStart(
+  AuxDensityMatrixSlater<memorySpace>::projectDensityMatrixStart(
     std::unordered_map<std::string, std::vector<double>> &projectionInputs,
     int                                                   iSpin)
   {
@@ -203,8 +210,10 @@ namespace dftfe
                   reinterpret_cast<const unsigned int *>(&d_nBasis));
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater::projectDensityMatrixEnd(const MPI_Comm &mpiComm)
+  AuxDensityMatrixSlater<memorySpace>::projectDensityMatrixEnd(
+    const MPI_Comm &mpiComm)
   {
     // MPI All Reduce d_SWFC
     MPI_Allreduce(d_SWFC.data(),
@@ -283,8 +292,9 @@ namespace dftfe
     }
   } // namespace
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater::applyLocalOperations(
+  AuxDensityMatrixSlater<memorySpace>::applyLocalOperations(
     const std::vector<double> &Points,
     std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
       &densityData)
@@ -505,19 +515,46 @@ namespace dftfe
       }
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater::projectDensityStart(
+  AuxDensityMatrixSlater<memorySpace>::projectDensityStart(
     std::unordered_map<std::string, std::vector<double>> &projectionInputs)
   {
     // projectDensity implementation
     std::cout << "Error : No implementation yet" << std::endl;
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixSlater::projectDensityEnd(const MPI_Comm &mpiComm)
+  AuxDensityMatrixSlater<memorySpace>::projectDensityEnd(
+    const MPI_Comm &mpiComm)
   {
     // projectDensity implementation
     std::cout << "Error : No implementation yet" << std::endl;
   }
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  void
+  AuxDensityMatrixSlater<memorySpace>::getDensityMatrixComponents_occupancies(
+    const std::vector<double> &occupancies) const
+  {
+    std::string errMsg = "Not implemented";
+    dftfe::utils::throwException(false, errMsg);
+  }
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  void
+  AuxDensityMatrixSlater<memorySpace>::getDensityMatrixComponents_wavefunctions(
+    const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+      &eigenVectors) const
+  {
+    std::string errMsg = "Not implemented";
+    dftfe::utils::throwException(false, errMsg);
+  }
+
+  template class AuxDensityMatrixSlater<dftfe::utils::MemorySpace::HOST>;
+#  ifdef DFTFE_WITH_DEVICE
+  template class AuxDensityMatrixSlater<dftfe::utils::MemorySpace::DEVICE>;
+#  endif
 } // namespace dftfe
 #endif

@@ -29,7 +29,7 @@
 #include <dft.h>
 #include <dftUtils.h>
 #include <vectorUtilities.h>
-#include <AuxDensityFE.h>
+#include <AuxDensityMatrixFE.h>
 #include <AuxDensityMatrixSlater.h>
 
 namespace dftfe
@@ -314,13 +314,16 @@ namespace dftfe
 
     if (d_dftParamsPtr->auxBasisTypeXC == "FE")
       {
-        d_auxDensityMatrixXCInPtr  = std::make_shared<AuxDensityFE>();
-        d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityFE>();
+        d_auxDensityMatrixXCInPtr =
+          std::make_shared<AuxDensityMatrixFE<memorySpace>>();
+        d_auxDensityMatrixXCOutPtr =
+          std::make_shared<AuxDensityMatrixFE<memorySpace>>();
       }
     else if (d_dftParamsPtr->auxBasisTypeXC == "SlaterAE")
       {
 #ifdef DFTFE_WITH_TORCH
-        d_auxDensityMatrixXCInPtr = std::make_shared<AuxDensityMatrixSlater>();
+        d_auxDensityMatrixXCInPtr =
+          std::make_shared<AuxDensityMatrixSlater<memorySpace>>();
         // FIXME: extract atomCoords from "atomLocations" (this is a datamember
         // of dftClass) of type std::vector<std::vector<double>> atomLocations
         // with each row representing an atom and each column has the following
@@ -336,7 +339,8 @@ namespace dftfe
           5);
         */
 
-        d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityMatrixSlater>();
+        d_auxDensityMatrixXCOutPtr =
+          std::make_shared<AuxDensityMatrixSlater<memorySpace>>();
         // FIXME: with same comments as above
         /*
         d_auxDensityMatrixXCOutPtr->reinitAuxDensityMatrix(

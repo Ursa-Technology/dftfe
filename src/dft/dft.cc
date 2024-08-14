@@ -357,9 +357,6 @@ namespace dftfe
   dftClass<FEOrder, FEOrderElectro, memorySpace>::set()
   {
     computingTimerStandard.enter_subsection("Atomic system initialization");
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator,
-                                        "Entered call to set");
 
     d_numEigenValues = d_dftParamsPtr->numberEigenValues;
 
@@ -458,8 +455,6 @@ namespace dftfe
                   "atomic numbers beyond 50."));
           }
       }
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "call to set 1");
 
     //
     // read Gaussian atomic displacements
@@ -482,8 +477,6 @@ namespace dftfe
 
         d_isAtomsGaussianDisplacementsReadFromFile = true;
       }
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "call to set 2");
 
     //
     // read domain bounding Vectors
@@ -520,9 +513,6 @@ namespace dftfe
         "vectors in the domain vectors file."));
 
     pcout << "number of atoms types: " << atomTypes.size() << "\n";
-
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "call to set 3");
 
     //
     // determine number of electrons
@@ -608,9 +598,6 @@ namespace dftfe
                   << d_dftParamsPtr->numCoreWfcRR << std::endl;
           }
       }
-
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "call to set 4");
 
 #ifdef DFTFE_WITH_DEVICE
     if (d_dftParamsPtr->useDevice && d_dftParamsPtr->autoDeviceBlockSizes)
@@ -770,9 +757,6 @@ namespace dftfe
           }
       }
 #endif
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "call to set 5");
-
     if (d_dftParamsPtr->constraintMagnetization)
       {
         numElectronsUp   = std::ceil(static_cast<double>(numElectrons) / 2.0);
@@ -796,8 +780,6 @@ namespace dftfe
                   << std::endl;
           }
       }
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "call to set 6");
     // convert pseudopotential files in upf format to dftfe format
     if (d_dftParamsPtr->verbosity >= 1)
       {
@@ -821,8 +803,6 @@ namespace dftfe
     nlccFlag = dealii::Utilities::MPI::sum(nlccFlag, d_mpiCommParent);
     if (nlccFlag > 0 && d_dftParamsPtr->isPseudopotential == true)
       d_dftParamsPtr->nonLinearCoreCorrection = true;
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "call to set 7");
     // estimate total number of wave functions from atomic orbital filling
     if (d_dftParamsPtr->startingWFCType == "ATOMIC")
       determineOrbitalFilling();
@@ -832,9 +812,6 @@ namespace dftfe
       dealii::ExcMessage(
         "DFT-FE Error: Incorrect input value used- SPECTRUM SPLIT CORE EIGENSTATES should be less than the total number of wavefunctions."));
     d_numEigenValuesRR = d_numEigenValues - d_dftParamsPtr->numCoreWfcRR;
-
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "call to set 8");
 
 #ifdef USE_COMPLEX
     if (d_dftParamsPtr->solverMode == "NSCF")
@@ -862,8 +839,6 @@ namespace dftfe
     if (d_dftParamsPtr->mixingMethod == "LOW_RANK_DIELECM_PRECOND")
       d_densityMatDerFermiEnergy.resize((d_dftParamsPtr->spinPolarized + 1) *
                                         d_kPointWeights.size());
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "call to set 9");
 
     a0.clear();
     bLow.clear();
@@ -886,9 +861,6 @@ namespace dftfe
                                           d_numEigenValuesRR);
       }
 
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "call to set 10");
-
     if (d_dftParamsPtr->isPseudopotential == true)
       {
         // pcout<<"dft.cc 827 ONCV Number of cells DEBUG:
@@ -905,9 +877,6 @@ namespace dftfe
             d_dftParamsPtr->verbosity,
             d_dftParamsPtr->useDevice);
       }
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "call to set 11");
-
     if (d_dftParamsPtr->verbosity >= 1)
       if (d_dftParamsPtr->nonLinearCoreCorrection == true)
         pcout
@@ -917,9 +886,6 @@ namespace dftfe
     d_elpaScala->processGridELPASetup(d_numEigenValues,
                                       d_numEigenValuesRR,
                                       *d_dftParamsPtr);
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "call to set 12");
-
     MPI_Barrier(d_mpiCommParent);
     computingTimerStandard.leave_subsection("Atomic system initialization");
   }
@@ -1114,9 +1080,6 @@ namespace dftfe
   dftClass<FEOrder, FEOrderElectro, memorySpace>::init()
   {
     computingTimerStandard.enter_subsection("KSDFT problem initialization");
-
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "Entering init");
 
     d_BLASWrapperPtrHost = std::make_shared<
       dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>();

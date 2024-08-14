@@ -190,10 +190,6 @@ namespace dftfe
   {
     d_dofHandlerPRefined.distribute_dofs(d_dofHandlerPRefined.get_fe());
     d_dofHandlerRhoNodal.distribute_dofs(d_dofHandlerRhoNodal.get_fe());
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator,
-                                        "entered initpRefinedObjects");
-
     d_supportPointsPRefined.clear();
     dealii::DoFTools::map_dofs_to_support_points(dealii::MappingQ1<3, 3>(),
                                                  d_dofHandlerPRefined,
@@ -273,8 +269,6 @@ namespace dftfe
     double init_bins;
     MPI_Barrier(d_mpiCommParent);
     init_bins = MPI_Wtime();
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "entered init bins");
     //
     // Dirichlet BC constraints on the boundary of fictitious ball
     // used for computing self-potential (Vself) using Poisson problem
@@ -312,9 +306,6 @@ namespace dftfe
                                                     0.0);
         computing_timer.leave_subsection("Create atom bins");
       }
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "exiting init bins");
-
     MPI_Barrier(d_mpiCommParent);
     init_bins = MPI_Wtime() - init_bins;
     if (d_dftParamsPtr->verbosity >= 4)
@@ -372,16 +363,11 @@ namespace dftfe
 
     for (unsigned int i = 3; i < d_constraintsVectorElectro.size(); ++i)
       matrixFreeDofHandlerVectorInput.push_back(&d_dofHandlerPRefined);
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "init forces");
 
     forcePtr->initMoved(matrixFreeDofHandlerVectorInput,
                         d_constraintsVectorElectro,
                         true);
     d_forceDofHandlerIndexElectro = d_constraintsVectorElectro.size() - 1;
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "exit forces");
-
 
     std::vector<dealii::Quadrature<1>> quadratureVector;
     quadratureVector.push_back(dealii::QGauss<1>(
@@ -414,9 +400,6 @@ namespace dftfe
                                     d_constraintsVectorElectro,
                                     quadratureVector,
                                     additional_data);
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator,
-                                        "Called prefined matrix free reinit");
 
     if (recomputeBasisData)
       {
@@ -503,10 +486,6 @@ namespace dftfe
           }
       }
 #endif
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(
-        mpi_communicator, "Called febasisoperations electro reinit");
-
     //
     // locate atom core nodes
     //

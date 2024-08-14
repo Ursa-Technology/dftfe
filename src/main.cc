@@ -49,8 +49,6 @@ main(int argc, char *argv[])
 {
   //
   MPI_Init(&argc, &argv);
-  dftfe::dftUtils::printCurrentMemoryUsage(MPI_COMM_WORLD,
-                                           "Entered call to main");
 
 #if defined(DFTFE_WITH_MDI)
   MPI_Comm mpi_world_comm;

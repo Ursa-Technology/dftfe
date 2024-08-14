@@ -38,13 +38,17 @@ namespace dftfe
           else  
             return 1.0/sqrt(M_PI);
         }
-
+    
         inline double Blm(const int l, const int m)
         {
-          return sqrt(((2.0*l + 1)*boost::math::factorial<double>(l-m))/(2.0*boost::math::factorial<double>(l+m)));
+          if (m==0)
+            return sqrt((2.0*l+1)/2.0);
+          else
+            return Blm(l, m-1)/sqrt((l-m+1.0)*(l+m));
+          //return sqrt(((2.0*l + 1)*boost::math::factorial<double>(l-m))/(2.0*boost::math::factorial<double>(l+m)));
         }
       } // end of local namespace
-      
+
       void convertCartesianToSpherical(const std::vector<double> & x, 
           double & r, 
           double & theta, 

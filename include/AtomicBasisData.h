@@ -11,7 +11,7 @@
 
 namespace dftfe
 {
-  class AtomBasisData
+  class AtomicBasisData
   {
   public:
 
@@ -19,7 +19,7 @@ namespace dftfe
     void
     evalBasisData(const std::vector<double> &quadpts,
                   const AtomicBasis &     atomicBasis,
-                  const unsigned int                        maxDerOrder);
+                  const unsigned int      maxDerOrder);
 
     const std::vector<double> &
     getBasisValues() const;

@@ -61,12 +61,13 @@ SET(TARGET_SRC
   ./src/excManager/excManager.cpp
         ./src/excManager/AuxDensityMatrixFE.cpp
         ./src/excManager/ExcDFTPlusU.cpp
-  ./src/excManager/AuxDensityMatrixSlater.cpp
+  ./src/excManager/AuxDensityMatrixAtomicBasis.cpp
   ./src/excManager/NNGGA.cc
   ./src/excManager/NNLDA.cc
   ./src/excManager/NNLLMGGA.cpp
-  ./src/excManager/SlaterBasisData.cpp
+  ./src/excManager/AtomicBasisData.cpp
   ./src/excManager/SlaterBasis.cpp
+  ./src/excManager/AtomicBasis.cpp  
   ./src/excManager/SphericalHarmonicFunc.cpp
   ./src/poisson/poissonSolverProblem.cc
   ./src/poisson/MultiVectorPoissonLinearSolverProblem.cpp

@@ -469,12 +469,7 @@ namespace dftfe
     // MPI tasks
     const unsigned int one                  = 1;
     double             constrainedNodeValue = 0.0;
-    // dftfe::utils::deviceKernelsGeneric::dot(
-    // d_meanValueConstraintDeviceVec.begin(),
-    // vec.begin(),
-    // d_xLocalDof,
-    // mpi_communicator,
-    // *d_deviceBlasHandlePtr); //FIX ME
+
     d_BLASWrapperPtr->xdot(d_xLocalDof,
                            d_meanValueConstraintDeviceVec.begin(),
                            one,
@@ -518,12 +513,7 @@ namespace dftfe
               d_meanValueConstraintProcId,
               mpi_communicator);
 
-    // dftfe::utils::deviceKernelsGeneric::add(
-    //   vec.begin(),
-    //   d_meanValueConstraintDeviceVec.begin(),
-    //   constrainedNodeValue,
-    //   d_xLocalDof,
-    //   *d_deviceBlasHandlePtr); //FIX ME
+
 
     d_BLASWrapperPtr->add(vec.begin(),
                           d_meanValueConstraintDeviceVec.begin(),

@@ -36,14 +36,14 @@ namespace dftfe
                                       dftfe::utils::MemorySpace::HOST>>
       basisOperationsPtrHost,
     std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>>
-                                oncvClassPtr,
-    std::shared_ptr<excManager> excManagerPtr,
-    dftParameters *             dftParamsPtr,
-    const unsigned int          densityQuadratureID,
-    const unsigned int          lpspQuadratureID,
-    const unsigned int          feOrderPlusOneQuadratureID,
-    const MPI_Comm &            mpi_comm_parent,
-    const MPI_Comm &            mpi_comm_domain)
+                                             oncvClassPtr,
+    std::shared_ptr<excManager<memorySpace>> excManagerPtr,
+    dftParameters *                          dftParamsPtr,
+    const unsigned int                       densityQuadratureID,
+    const unsigned int                       lpspQuadratureID,
+    const unsigned int                       feOrderPlusOneQuadratureID,
+    const MPI_Comm &                         mpi_comm_parent,
+    const MPI_Comm &                         mpi_comm_domain)
     : d_kPointIndex(0)
     , d_spinIndex(0)
     , d_HamiltonianIndex(0)
@@ -219,13 +219,26 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   KohnShamHamiltonianOperator<memorySpace>::computeVEff(
-    std::shared_ptr<AuxDensityMatrix> auxDensityXCRepresentation,
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityXCRepresentation,
     const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
       &                phiValues,
     const unsigned int spinIndex)
   {
-    const bool isGGA =
-      d_excManagerPtr->getDensityBasedFamilyType() == densityFamilyType::GGA;
+    bool isIntegrationByPartsGradDensityDependenceVxc = false;
+    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+      {
+        isIntegrationByPartsGradDensityDependenceVxc =
+          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
+           densityFamilyType::GGA);
+      }
+    else if (d_excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isIntegrationByPartsGradDensityDependenceVxc =
+          (d_excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+    const bool isGGA = isIntegrationByPartsGradDensityDependenceVxc;
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
     const unsigned int totalLocallyOwnedCells =
       d_basisOperationsPtrHost->nCells();
@@ -287,12 +300,26 @@ namespace dftfe
               quadWeightsAll[iCell * numberQuadraturePointsPerCell + iQuad]);
           }
 
-        d_excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
-          *auxDensityXCRepresentation,
-          quadPointsInCell,
-          quadWeightsInCell,
-          xDataOut,
-          cDataOut);
+        if (d_excManagerPtr->getXCPrimaryVariable() ==
+            XCPrimaryVariable::DENSITY)
+          {
+            d_excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
+              *auxDensityXCRepresentation,
+              quadPointsInCell,
+              quadWeightsInCell,
+              xDataOut,
+              cDataOut);
+          }
+        else if (d_excManagerPtr->getXCPrimaryVariable() ==
+                 XCPrimaryVariable::SSDETERMINANT)
+          {
+            d_excManagerPtr->getExcSSDFunctionalObj()->computeOutputXCData(
+              *auxDensityXCRepresentation,
+              quadPointsInCell,
+              quadWeightsInCell,
+              xDataOut,
+              cDataOut);
+          }
 
         const std::vector<double> &pdexDensitySpinIndex =
           spinIndex == 0 ? pdexDensitySpinUp : pdexDensitySpinDown;
@@ -732,8 +759,23 @@ namespace dftfe
           }
         d_basisOperationsPtr->computeWeightedCellMassMatrix(
           cellRange, d_VeffJxW, tempHamMatrixRealBlock);
-        if (d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+
+        bool isGradDensityDataDependent = false;
+        if (d_excManagerPtr->getXCPrimaryVariable() ==
+            XCPrimaryVariable::DENSITY)
+          {
+            isGradDensityDataDependent =
+              (d_excManagerPtr->getExcDensityObj()
+                 ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+          }
+        else if (d_excManagerPtr->getXCPrimaryVariable() ==
+                 XCPrimaryVariable::SSDETERMINANT)
+          {
+            isGradDensityDataDependent =
+              (d_excManagerPtr->getExcSSDFunctionalObj()
+                 ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+          }
+        if (isGradDensityDataDependent)
           d_basisOperationsPtr->computeWeightedCellNjGradNiPlusNiGradNjMatrix(
             cellRange,
             d_invJacderExcWithSigmaTimesGradRhoJxW,

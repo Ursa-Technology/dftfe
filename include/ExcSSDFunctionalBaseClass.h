@@ -15,55 +15,58 @@
 // ---------------------------------------------------------------------
 //
 
+#ifndef DFTFE_EXCSSDFUNCTIONALBASECLASS_H
+#define DFTFE_EXCSSDFUNCTIONALBASECLASS_H
 
-#ifndef DFTFE_EXCDENSITYBASECLASS_H
-#define DFTFE_EXCDENSITYBASECLASS_H
-
+#include "AuxDensityMatrix.h"
 #include <vector>
 #include <fstream>
 #include <iostream>
-#include <map>
-#include "AuxDensityMatrix.h"
-
+#include "excDensityBaseClass.h"
 namespace dftfe
 {
-  enum class densityFamilyType
+  enum class SSDFamilyType
   {
-    LDA,
-    GGA,
-    LLMGGA,
+    HYBRID,
+    DFTPlusU,
+    MGGA
   };
 
-  enum class xcOutputDataAttributes
-  {
-    e, // energy density per unit volume
-    vSpinUp,
-    vSpinDown,
-    pdeDensitySpinUp,
-    pdeDensitySpinDown,
-    pdeSigma,
-    pdeLaplacianSpinUp,
-    pdeLaplacianSpinDown
-  };
-
+  /**
+   * @brief This class provides the structure for all
+   * Exc functional dependent on Single Slater Determinant
+   * such as DFT+U, Hybrid and Tau dependent MGGA.
+   * This derived class of this class provides the
+   * description to handle non-multiplicative potential
+   * arising for the above formualtions
+   *
+   * @author Vishal Subramanian, Sambit Das
+   */
   template <dftfe::utils::MemorySpace memorySpace>
-  class excDensityBaseClass
+  class ExcSSDFunctionalBaseClass
   {
   public:
-    excDensityBaseClass(const densityFamilyType familyType,
-                        const std::vector<DensityDescriptorDataAttributes>
-                          &densityDescriptorAttributesList);
+    ExcSSDFunctionalBaseClass(const densityFamilyType densityFamilyType);
+
     densityFamilyType
     getDensityBasedFamilyType() const;
 
-    const std::vector<DensityDescriptorDataAttributes> &
-    getDensityDescriptorAttributesList() const;
+    virtual ~ExcSSDFunctionalBaseClass();
+
+    virtual void
+    applyWaveFunctionDependentVxc() const = 0;
+    virtual void
+    updateWaveFunctionDependentVxc() const = 0;
+    virtual double
+    computeWaveFunctionDependentExcEnergy() const = 0;
 
     /**
-     * x and c denotes exchange and correlation respectively
+     * x and c denotes exchange and correlation respectively.
+     * This function computes the rho and tau dependent parts
+     * of the Exc and Vxc functionals
      */
     virtual void
-    computeExcVxcFxc(
+    computeOutputXCData(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
       const std::vector<double> &    quadPoints,
       const std::vector<double> &    quadWeights,
@@ -71,19 +74,14 @@ namespace dftfe
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
       const = 0;
 
+    SSDFamilyType
+    getSSDFamilyType() const;
+
   protected:
-    virtual void
-    checkInputOutputDataAttributesConsistency(
-      const std::vector<xcOutputDataAttributes> &outputDataAttributes)
-      const = 0;
-
-
     densityFamilyType d_densityFamilyType;
-    const std::vector<DensityDescriptorDataAttributes>
-      d_densityDescriptorAttributesList;
+    SSDFamilyType     d_SSDFamilyType;
   };
-
 } // namespace dftfe
 
-#include "excDensityBaseClass.t.cc"
-#endif // DFTFE_EXCDENSITYBASECLASS_H
+#include "ExcSSDFunctionalBaseClass.t.cc"
+#endif // DFTFE_EXCSSDFUNCTIONALBASECLASS_H

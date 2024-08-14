@@ -20,9 +20,16 @@
 
 #include <xc.h>
 #include <excDensityBaseClass.h>
-#include <excWavefunctionBaseClass.h>
+#include <ExcSSDFunctionalBaseClass.h>
 namespace dftfe
 {
+  enum class XCPrimaryVariable
+  {
+    DENSITY,
+    SSDETERMINANT
+  };
+
+  template <dftfe::utils::MemorySpace memorySpace>
   class excManager
   {
   public:
@@ -46,25 +53,26 @@ namespace dftfe
          bool        isSpinPolarized,
          std::string modelXCInputFile);
 
-    densityFamilyType
-    getDensityBasedFamilyType() const;
-
-    wavefunctionFamilyType
-    getWavefunctionBasedFamilyType() const;
+    //    densityFamilyType
+    //    getDensityBasedFamilyType() const;
 
 
-    excDensityBaseClass *
+
+    excDensityBaseClass<memorySpace> *
     getExcDensityObj();
 
-    excWavefunctionBaseClass *
-    getExcWavefunctionObj();
+    ExcSSDFunctionalBaseClass<memorySpace> *
+    getExcSSDFunctionalObj();
 
 
-    const excDensityBaseClass *
+    const excDensityBaseClass<memorySpace> *
     getExcDensityObj() const;
 
-    const excWavefunctionBaseClass *
-    getExcWavefunctionObj() const;
+    const ExcSSDFunctionalBaseClass<memorySpace> *
+    getExcSSDFunctionalObj() const;
+
+    XCPrimaryVariable
+    getXCPrimaryVariable() const;
 
 
   private:
@@ -72,8 +80,10 @@ namespace dftfe
     xc_func_type *d_funcXPtr;
     xc_func_type *d_funcCPtr;
 
-    excDensityBaseClass *     d_excDensityObjPtr;
-    excWavefunctionBaseClass *d_excWavefunctionObjPtr;
+    excDensityBaseClass<memorySpace> *      d_excDensityObjPtr;
+    ExcSSDFunctionalBaseClass<memorySpace> *d_SSDObjPtr;
+
+    XCPrimaryVariable d_xcPrimVariable;
   };
 } // namespace dftfe
 

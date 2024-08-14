@@ -46,6 +46,7 @@ namespace dftfe
     pdeLaplacianSpinDown
   };
 
+  template <dftfe::utils::MemorySpace memorySpace>
   class excDensityBaseClass
   {
   public:
@@ -63,9 +64,9 @@ namespace dftfe
      */
     virtual void
     computeExcVxcFxc(
-      AuxDensityMatrix &         auxDensityMatrix,
-      const std::vector<double> &quadPoints,
-      const std::vector<double> &quadWeights,
+      AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+      const std::vector<double> &    quadPoints,
+      const std::vector<double> &    quadWeights,
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
       std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
       const = 0;
@@ -77,11 +78,12 @@ namespace dftfe
       const = 0;
 
 
-    const densityFamilyType d_familyType;
+    densityFamilyType d_densityFamilyType;
     const std::vector<DensityDescriptorDataAttributes>
       d_densityDescriptorAttributesList;
   };
 
 } // namespace dftfe
 
+#include "excDensityBaseClass.t.cc"
 #endif // DFTFE_EXCDENSITYBASECLASS_H

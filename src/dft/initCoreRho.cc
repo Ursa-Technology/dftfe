@@ -103,6 +103,20 @@ namespace dftfe
       for (unsigned int j = 0; j < 3; j++)
         zeroTensor2[i][j] = 0.0;
 
+    bool isGradDensityDataDependent = false;
+    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
+      {
+        isGradDensityDataDependent =
+          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
+           densityFamilyType::GGA);
+      }
+    else if (d_excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isGradDensityDataDependent =
+          (d_excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
     // loop over elements
     //
     cell = dofHandler.begin_active();
@@ -121,8 +135,7 @@ namespace dftfe
 
             std::vector<double> &hessianRhoCoreQuadValues =
               d_hessianRhoCore[cell->id()];
-            if (d_excManagerPtr->getDensityBasedFamilyType() ==
-                densityFamilyType::GGA)
+            if (isGradDensityDataDependent)
               hessianRhoCoreQuadValues.resize(n_q_points * 9, 0.0);
 
             std::vector<dealii::Tensor<1, 3, double>> gradRhoCoreAtom(
@@ -196,8 +209,7 @@ namespace dftfe
                     gradRhoCoreQuadValues[3 * q + 1] += gradRhoCoreAtom[q][1];
                     gradRhoCoreQuadValues[3 * q + 2] += gradRhoCoreAtom[q][2];
 
-                    if (d_excManagerPtr->getDensityBasedFamilyType() ==
-                        densityFamilyType::GGA)
+                    if (isGradDensityDataDependent)
                       {
                         for (unsigned int iDim = 0; iDim < 3; ++iDim)
                           {
@@ -229,8 +241,7 @@ namespace dftfe
 
                     std::vector<double> &hessianRhoCoreAtomCell =
                       d_hessianRhoCoreAtoms[iAtom][cell->id()];
-                    if (d_excManagerPtr->getDensityBasedFamilyType() ==
-                        densityFamilyType::GGA)
+                    if (isGradDensityDataDependent)
                       hessianRhoCoreAtomCell.resize(n_q_points * 9, 0.0);
 
                     for (unsigned int q = 0; q < n_q_points; ++q)
@@ -239,8 +250,7 @@ namespace dftfe
                         gradRhoCoreAtomCell[3 * q + 1] = gradRhoCoreAtom[q][1];
                         gradRhoCoreAtomCell[3 * q + 2] = gradRhoCoreAtom[q][2];
 
-                        if (d_excManagerPtr->getDensityBasedFamilyType() ==
-                            densityFamilyType::GGA)
+                        if (isGradDensityDataDependent)
                           {
                             for (unsigned int iDim = 0; iDim < 3; ++iDim)
                               {
@@ -320,8 +330,7 @@ namespace dftfe
                     gradRhoCoreQuadValues[3 * q + 1] += gradRhoCoreAtom[q][1];
                     gradRhoCoreQuadValues[3 * q + 2] += gradRhoCoreAtom[q][2];
 
-                    if (d_excManagerPtr->getDensityBasedFamilyType() ==
-                        densityFamilyType::GGA)
+                    if (isGradDensityDataDependent)
                       {
                         for (unsigned int iDim = 0; iDim < 3; ++iDim)
                           {
@@ -354,8 +363,7 @@ namespace dftfe
                     std::vector<double> &hessianRhoCoreAtomCell =
                       d_hessianRhoCoreAtoms[numberGlobalCharges + iImageCharge]
                                            [cell->id()];
-                    if (d_excManagerPtr->getDensityBasedFamilyType() ==
-                        densityFamilyType::GGA)
+                    if (isGradDensityDataDependent)
                       hessianRhoCoreAtomCell.resize(n_q_points * 9);
 
                     for (unsigned int q = 0; q < n_q_points; ++q)
@@ -364,8 +372,7 @@ namespace dftfe
                         gradRhoCoreAtomCell[3 * q + 1] = gradRhoCoreAtom[q][1];
                         gradRhoCoreAtomCell[3 * q + 2] = gradRhoCoreAtom[q][2];
 
-                        if (d_excManagerPtr->getDensityBasedFamilyType() ==
-                            densityFamilyType::GGA)
+                        if (isGradDensityDataDependent)
                           {
                             for (unsigned int iDim = 0; iDim < 3; ++iDim)
                               {

@@ -127,6 +127,19 @@ namespace dftfe
                 const unsigned int   lenVar);
 
 
+    void
+    getOptimizedResidual(const mixingVariable mixingVariableName,
+                         double *             outputVariable,
+                         const unsigned int   lenVar);
+
+
+    void
+    mixPreconditionedResidual(const mixingVariable mixingVariableName,
+                              double *             inputVariable,
+                              double *             outputVariable,
+                              const unsigned int   lenVar);
+
+
   private:
     /**
      * @brief Computes the matrix A and c vector that will be needed for anderson mixing.

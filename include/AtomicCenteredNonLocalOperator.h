@@ -188,22 +188,30 @@ namespace dftfe
     const unsigned int
     getTotalNonTrivialSphericalFnsOverAllCells() const;
 
+
     const std::vector<unsigned int> &
     getNonTrivialAllCellsSphericalFnAlphaToElemIdMap() const;
 
+    /**
+     * @brief Required in configurational forces. Cummulative sphercial Fn Id. The size is numCells in processor
+     */
     const std::map<unsigned int, std::vector<unsigned int>> &
     getAtomIdToNonTrivialSphericalFnCellStartIndex() const;
 
+    /**
+     * @brief Returns the Flattened vector of sphericalFunctionIDs in order of atomIDs of atoms in processor.
+     */
     const std::vector<unsigned int> &
     getSphericalFnTimesVectorFlattenedVectorLocalIds() const;
 
 
     // Calls for both device and host
     /**
-     * @brief compute sht action of coupling matrix on sphericalFunctionKetTimesVectorParFlattened.
+     * @brief compute the action of coupling matrix on sphericalFunctionKetTimesVectorParFlattened.
      * @param[in] couplingtype structure of coupling matrix
      * @param[in] couplingMatrix entires of the coupling matrix V in
-     * CVCconjtrans
+     * CVCconjtrans. Ensure that the coupling matrix is padded. Refer to
+     * ONCVclass for template
      * @param[out] sphericalFunctionKetTimesVectorParFlattened multivector to
      * store results of CconjtransX which is initiliased using
      * initialiseFlattenedVector call. The results are stored in
@@ -251,7 +259,7 @@ namespace dftfe
      * @param[in] kPointIndex kPoint of interst for current operation
      * @param[in] couplingtype structure of coupling matrix
      * @param[in] couplingMatrix entires of the coupling matrix V in
-     * CVCconjtrans
+     * CVCconjtrans. Ensure the coupling matrix is padded
      * @param[out] sphericalFunctionKetTimesVectorParFlattened multivector to
      * store results of CconjtransX which is initiliased using
      * initialiseFlattenedVector call
@@ -288,6 +296,7 @@ namespace dftfe
       dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
         &sphericalFunctionKetTimesVectorParFlattened,
       dftfe::linearAlgebra::MultiVector<ValueType, memorySpace> &dst);
+
     /**
      * @brief adds the result of CVCtX onto Xout for both CPU and GPU calls
      * @param[out] Xout memoryStorage object of size
@@ -299,6 +308,18 @@ namespace dftfe
     applyCOnVCconjtransX(ValueType *                                 Xout,
                          const std::pair<unsigned int, unsigned int> cellRange);
 
+    /**
+     * @brief Called only for GPU runs where the coupling matrix has to be padded
+     * @param[in] entries COupling matrix entries without padding in the atomId
+     * order
+     * @param[out] entriesPadded Padding of coupling matrix entries
+     * @param[in] couplingtype Determines the dimension of entriesPadded and the
+     * padding mechanism elements
+     */
+    void
+    paddingCouplingMatrix(const std::vector<ValueType> &entries,
+                          std::vector<ValueType> &      entriesPadded,
+                          const CouplingStructure       couplingtype);
 
   protected:
     bool                d_AllReduceCompleted;
@@ -426,6 +447,8 @@ namespace dftfe
         dftfe::utils::MemorySpace::HOST>> basisOperationsPtr,
       const unsigned int                  quadratureIndex);
 
+
+
     std::map<
       unsigned int,
       dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST>>
@@ -436,6 +459,33 @@ namespace dftfe
                               d_flattenedNonLocalCellDofIndexToProcessDofIndexMap;
     std::vector<unsigned int> d_nonlocalElemIdToCellIdVector;
 #if defined(DFTFE_WITH_DEVICE)
+    /**
+     * @brief Copies the data from distributed Vector to Padded Memory storage object.
+     * @param[in] sphericalFunctionKetTimesVectorParFlattened Distributed Vector
+     * @param[out] paddedVector Padded Vector of size
+     * noAtomsInProc*maxSingleAtomContribution*Nwfc
+     */
+    void
+    copyDistributedVectorToPaddedMemoryStorageVectorDevice(
+      const dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
+        &sphericalFunctionKetTimesVectorParFlattened,
+      dftfe::utils::MemoryStorage<ValueType, memorySpace> &paddedVector);
+
+    /**
+     * @brief Copies Padded Memory storage object to Distributed vector.
+     * @param[in] paddedVector Padded Vector of size
+     * noAtomsInProc*maxSingleAtomContribution*Nwfc
+     * @param[out] sphericalFunctionKetTimesVectorParFlattened Distributed
+     * Vector
+     *
+     */
+    void
+    copyPaddedMemoryStorageVectorToDistributeVectorDevice(
+      const dftfe::utils::MemoryStorage<ValueType, memorySpace> &paddedVector,
+      dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
+        &sphericalFunctionKetTimesVectorParFlattened);
+
+
     dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::DEVICE>
                 d_sphericalFnTimesWavefunctionMatrix;
     ValueType **hostPointerCDagger, **hostPointerCDaggeOutTemp,
@@ -445,6 +495,11 @@ namespace dftfe
       **deviceWfcPointers;
     std::vector<unsigned int> d_nonlocalElemIdToLocalElemIdMap;
 
+    // The below memory storage objects receives the copy of the distributed
+    // ketTimesWfc data in a padded form. THe padding is done by
+    // copyDistributedVectorToPaddedMemoryStorageVector
+    dftfe::utils::MemoryStorage<ValueType, memorySpace>
+      d_sphericalFnTimesVectorDevice;
     // Data structures moved from KSOperatorDevice
     std::vector<ValueType> d_cellHamiltonianMatrixNonLocalFlattenedConjugate;
     dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::DEVICE>
@@ -455,16 +510,17 @@ namespace dftfe
     dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::DEVICE>
       d_cellHamMatrixTimesWaveMatrixNonLocalDevice;
     dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::DEVICE>
-      d_sphericalFnTimesVectorAllCellsDevice;
-
-
+                           d_sphericalFnTimesVectorAllCellsDevice;
     std::vector<ValueType> d_sphericalFnTimesVectorAllCellsReduction;
     dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::DEVICE>
       d_sphericalFnTimesVectorAllCellsReductionDevice;
 
     std::vector<unsigned int> d_sphericalFnIdsParallelNumberingMap;
+    std::vector<int>          d_sphericalFnIdsPaddedParallelNumberingMap;
     dftfe::utils::MemoryStorage<unsigned int, dftfe::utils::MemorySpace::DEVICE>
-                     d_sphericalFnIdsParallelNumberingMapDevice;
+      d_sphericalFnIdsParallelNumberingMapDevice;
+    dftfe::utils::MemoryStorage<int, dftfe::utils::MemorySpace::DEVICE>
+                     d_sphericalFnIdsPaddedParallelNumberingMapDevice;
     std::vector<int> d_indexMapFromPaddedNonLocalVecToParallelNonLocalVec;
     dftfe::utils::MemoryStorage<int, dftfe::utils::MemorySpace::DEVICE>
                               d_indexMapFromPaddedNonLocalVecToParallelNonLocalVecDevice;

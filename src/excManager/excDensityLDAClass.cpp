@@ -24,12 +24,14 @@
 
 namespace dftfe
 {
-  excDensityLDAClass::excDensityLDAClass(xc_func_type *funcXPtr,
-                                         xc_func_type *funcCPtr)
-    : excDensityBaseClass(densityFamilyType::LDA,
-                          std::vector<DensityDescriptorDataAttributes>{
-                            DensityDescriptorDataAttributes::valuesSpinUp,
-                            DensityDescriptorDataAttributes::valuesSpinDown})
+  template <dftfe::utils::MemorySpace memorySpace>
+  excDensityLDAClass<memorySpace>::excDensityLDAClass(xc_func_type *funcXPtr,
+                                                      xc_func_type *funcCPtr)
+    : excDensityBaseClass<memorySpace>(
+        densityFamilyType::LDA,
+        std::vector<DensityDescriptorDataAttributes>{
+          DensityDescriptorDataAttributes::valuesSpinUp,
+          DensityDescriptorDataAttributes::valuesSpinDown})
   {
     d_funcXPtr = funcXPtr;
     d_funcCPtr = funcCPtr;
@@ -38,13 +40,16 @@ namespace dftfe
 #endif
   }
 
-  excDensityLDAClass::excDensityLDAClass(xc_func_type *funcXPtr,
-                                         xc_func_type *funcCPtr,
-                                         std::string   modelXCInputFile)
-    : excDensityBaseClass(densityFamilyType::LDA,
-                          std::vector<DensityDescriptorDataAttributes>{
-                            DensityDescriptorDataAttributes::valuesSpinUp,
-                            DensityDescriptorDataAttributes::valuesSpinDown})
+  template <dftfe::utils::MemorySpace memorySpace>
+  excDensityLDAClass<memorySpace>::excDensityLDAClass(
+    xc_func_type *funcXPtr,
+    xc_func_type *funcCPtr,
+    std::string   modelXCInputFile)
+    : excDensityBaseClass<memorySpace>(
+        densityFamilyType::LDA,
+        std::vector<DensityDescriptorDataAttributes>{
+          DensityDescriptorDataAttributes::valuesSpinUp,
+          DensityDescriptorDataAttributes::valuesSpinDown})
   {
     d_funcXPtr = funcXPtr;
     d_funcCPtr = funcCPtr;
@@ -53,14 +58,16 @@ namespace dftfe
 #endif
   }
 
-  excDensityLDAClass::~excDensityLDAClass()
+  template <dftfe::utils::MemorySpace memorySpace>
+  excDensityLDAClass<memorySpace>::~excDensityLDAClass()
   {
     if (d_NNLDAPtr != nullptr)
       delete d_NNLDAPtr;
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityLDAClass::checkInputOutputDataAttributesConsistency(
+  excDensityLDAClass<memorySpace>::checkInputOutputDataAttributesConsistency(
     const std::vector<xcOutputDataAttributes> &outputDataAttributes) const
   {
     const std::vector<xcOutputDataAttributes> allowedOutputDataAttributes = {
@@ -84,11 +91,12 @@ namespace dftfe
       }
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityLDAClass::computeExcVxcFxc(
-    AuxDensityMatrix &         auxDensityMatrix,
-    const std::vector<double> &quadPoints,
-    const std::vector<double> &quadWeights,
+  excDensityLDAClass<memorySpace>::computeExcVxcFxc(
+    AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+    const std::vector<double> &    quadPoints,
+    const std::vector<double> &    quadWeights,
     std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
     std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataOut)
     const
@@ -103,9 +111,10 @@ namespace dftfe
     std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
       densityDescriptorData;
 
-    for (unsigned int i = 0; i < d_densityDescriptorAttributesList.size(); i++)
+    for (unsigned int i = 0; i < this->d_densityDescriptorAttributesList.size();
+         i++)
       {
-        densityDescriptorData[d_densityDescriptorAttributesList[i]] =
+        densityDescriptorData[this->d_densityDescriptorAttributesList[i]] =
           std::vector<double>(quadWeights.size(), 0);
       }
 
@@ -167,7 +176,7 @@ namespace dftfe
       {
         std::vector<double> excValuesFromNN(quadWeights.size(), 0);
         const unsigned int  numDescriptors =
-          d_densityDescriptorAttributesList.size();
+          this->d_densityDescriptorAttributesList.size();
         std::vector<double> pdexcDescriptorValuesFromNN(numDescriptors *
                                                           quadWeights.size(),
                                                         0);
@@ -214,4 +223,9 @@ namespace dftfe
           }
       }
   }
+
+  template class excDensityLDAClass<dftfe::utils::MemorySpace::HOST>;
+#ifdef DFTFE_WITH_DEVICE
+  template class excDensityLDAClass<dftfe::utils::MemorySpace::DEVICE>;
+#endif
 } // namespace dftfe

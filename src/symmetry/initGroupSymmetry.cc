@@ -76,8 +76,23 @@ namespace dftfe
     recv_buf_size.clear();
     rhoRecvd.clear();
     groupOffsets.clear();
-    if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-        densityFamilyType::GGA)
+
+    bool isGradDensityDataRequired = false;
+    if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
+        XCPrimaryVariable::DENSITY)
+      {
+        isGradDensityDataRequired =
+          (dftPtr->d_excManagerPtr->getExcDensityObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+    else if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isGradDensityDataRequired =
+          (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+    if (isGradDensityDataRequired)
       gradRhoRecvd.clear();
   }
   //================================================================================================================================================
@@ -139,8 +154,23 @@ namespace dftfe
     recv_buf_size.resize(numSymm);
     rhoRecvd.resize(numSymm);
     groupOffsets.resize(numSymm);
-    if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-        densityFamilyType::GGA)
+
+    bool isGradDensityDataRequired = false;
+    if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
+        XCPrimaryVariable::DENSITY)
+      {
+        isGradDensityDataRequired =
+          (dftPtr->d_excManagerPtr->getExcDensityObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+    else if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
+             XCPrimaryVariable::SSDETERMINANT)
+      {
+        isGradDensityDataRequired =
+          (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      }
+    if (isGradDensityDataRequired)
       gradRhoRecvd.resize(numSymm);
     //
     const dealii::parallel::distributed::Triangulation<3> &triangulationSer =
@@ -178,8 +208,7 @@ namespace dftfe
           std::vector<std::vector<std::vector<double>>>(cell_id);
         groupOffsets[iSymm] =
           std::vector<std::vector<std::vector<int>>>(cell_id);
-        if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-            densityFamilyType::GGA)
+        if (isGradDensityDataRequired)
           gradRhoRecvd[iSymm] =
             std::vector<std::vector<std::vector<double>>>(cell_id);
       }
@@ -652,8 +681,7 @@ namespace dftfe
           (1 + dftPtr->getParametersObject().spinPolarized) * mpi_offsets1[i];
       }
     //
-    if (dftPtr->d_excManagerPtr->getDensityBasedFamilyType() ==
-        densityFamilyType::GGA)
+    if (isGradDensityDataRequired)
       {
         cell = (dftPtr->dofHandlerEigen).begin_active();
         for (int i = 0; i < dftPtr->n_mpi_processes; i++)

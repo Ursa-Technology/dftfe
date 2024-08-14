@@ -1,15 +1,13 @@
 //
-// Created by Arghadwip Paul.
+// Created by Arghadwip Paul, Sambit Das
 //
 
 #ifndef DFTFE_AUXDM_AUXDENSITYMATRIXSLATER_H
 #define DFTFE_AUXDM_AUXDENSITYMATRIXSLATER_H
 
-#ifdef DFTFE_WITH_TORCH
-
 #  include "AuxDensityMatrix.h"
-#  include "SlaterBasis.h"
-#  include "SlaterBasisData.h"
+#  include "AtomicBasis.h"
+#  include "AtomicBasisData.h"
 #  include <vector>
 #  include <utility>
 #  include <map>
@@ -18,47 +16,31 @@
 
 namespace dftfe
 {
-  template <dftfe::utils::MemorySpace memorySpace>
-  class AuxDensityMatrixSlater : public AuxDensityMatrix<memorySpace>
+
+  enum class AuxDMAtomicBasisType
   {
-  private:
-    int             d_nQuad;
-    int             d_nSpin;
-    SlaterBasis  d_sbs;
-    SlaterBasisData d_sbd;
+    Slater,
+    Gaussian
+  };
 
-    int d_nBasis;
-    int d_maxDerOrder;
-
-    std::vector<double> d_DM;
-    std::vector<double> d_SMatrix;
-    std::vector<double> d_SMatrixInv;
-    std::vector<double> d_SWFC;
-    std::vector<double> d_fValues;
-
-    int d_nWFC;
-    int d_iSpin;
-
+  template <dftfe::utils::MemorySpace memorySpace>
+  class AuxDensityMatrixAtomicBasis : public AuxDensityMatrix<memorySpace>
+  {
+  public:
 
     void
-    evalOverlapMatrixInv();
-    std::vector<double> &
-    getOverlapMatrixInv();
+    reinit(const auxDMAtomicBasisType,
+      const std::vector<std::pair<std::string, std::vector<double>>>
+        &                atomCoords,
+      const std::unordered_map<std::string, std::string> & atomBasisFileNames,
+      const int          nSpin,
+      const int          maxDerOrder);
 
-  public:
     void
     applyLocalOperations(
       const std::vector<double> &Points,
       std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
         &densityData) override;
-
-    void
-    reinitAuxDensityMatrix(
-      const std::vector<std::pair<std::string, std::vector<double>>>
-        &                atomCoords,
-      const std::string &auxBasisFile,
-      const int          nSpin,
-      const int          maxDerOrder);
 
     void
     evalOverlapMatrixStart(const std::vector<double> &quadpts,
@@ -108,7 +90,32 @@ namespace dftfe
     getDensityMatrixComponents_wavefunctions(
       const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
         &eigenVectors) const override;
+
+
+  private:
+    int             d_nQuad;
+    int             d_nSpin;
+    std::unique_ptr<AtomicBasis>  d_atomicBasisPtr;
+    AtomicBasisData d_atomicBasisData;
+
+    int d_nBasis;
+    int d_maxDerOrder;
+
+    std::vector<double> d_DM;
+    std::vector<double> d_SMatrix;
+    std::vector<double> d_SMatrixInv;
+    std::vector<double> d_SWFC;
+    std::vector<double> d_fValues;
+
+    int d_nWFC;
+    int d_iSpin;
+
+
+    void
+    evalOverlapMatrixInv();
+    std::vector<double> &
+    getOverlapMatrixInv();
+
   };
 } // namespace dftfe
-#endif
 #endif // DFTFE_AUXDM_AUXDENSITYMATRIXSLATER_H

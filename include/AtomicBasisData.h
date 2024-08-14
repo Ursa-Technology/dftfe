@@ -21,14 +21,14 @@ namespace dftfe
                   const AtomicBasis &     atomicBasis,
                   const unsigned int                        maxDerOrder);
 
-    std::vector<double> &
+    const std::vector<double> &
     getBasisValues() const;
 
 
-    std::vector<double> &
+    const std::vector<double> &
     getBasisGradValues() const;
 
-    std::vector<double> &
+    const std::vector<double> &
     getBasisLaplacianValues() const;
 
 

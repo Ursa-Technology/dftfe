@@ -124,6 +124,8 @@ SET(TARGET_SRC
   ./utils/QuadDataCompositeWrite.cpp
   ./utils/PeriodicTable.cc
   ./utils/FiniteDifference.cc
+  ./utils/StringOperations.cpp
+  ./utils/SphericalFunctionUtil.cpp
   ./src/dft/dftd.cc
   ./src/mdi/MDIEngine.cpp
   ./src/mdi/libraryMDI.cpp

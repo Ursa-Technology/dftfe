@@ -14,11 +14,11 @@
 //
 // ---------------------------------------------------------------------
 //
-// @author Arghadwip Paul, Bikash Kanungo 
+// @author Bikash Kanungo 
 //
 
-#ifndef DFTFE_SLATER_SLATERBASIS_H
-#define DFTFE_SLATER_SLATERBASIS_H
+#ifndef DFTFE_GAUSSIANBASIS_H
+#define DFTFE_GAUSSIANBASIS_H
 
 #include <vector>
 #include <unordered_map>
@@ -27,29 +27,30 @@
 
 namespace dftfe
 {
-  struct SlaterPrimitive
+  struct ContractedGaussian 
   {
-    int    n;     // principal quantum number
+    int    nG;     // number of primitive Gaussians that are contracted
     int    l;     // azimuthal (angular) quantum number
     int    m;     // magnetic quantum number
-    double alpha; // exponent of the basis
-    double normConst; // normalization constant for the radial part 
+    std::vector<double> alpha; // exponent of each of the primtive Gaussians
+    std::vector<double> c; // coefficient of each of the primtive Gaussians
+    std::vector<double> norm; // normalization constant for the radial part of each of the primitive Gaussians
   };
 
-  struct SlaterBasisInfo
+  struct GaussianBasisInfo
   {
     const std::string  * symbol; // atom symbol
     const double *  center; // atom center coordinates
-    const SlaterPrimitive *sp;     // pointer to the SlaterPrimitive 
+    const ContractedGaussian *sp;     // pointer to the ContractedGaussian
   };
 
-  class SlaterBasis
+  class GaussianBasis
   {
 
   public:
-    SlaterBasis(const double rTol = 1e-10, 
+    GaussianBasis(const double rTol = 1e-10, 
                    const double angleTol = 1e-10);  // Constructor
-    ~SlaterBasis(); // Destructor
+    ~GaussianBasis(); // Destructor
 
 
     void
@@ -59,8 +60,8 @@ namespace dftfe
       const std::string &auxBasisFileName);
 
 
-    const std::vector<SlaterBasisInfo> &
-    getSlaterBasisInfo() const;
+    const std::vector<GaussianBasisInfo> &
+    getGaussianBasisInfo() const;
 
     int
     getNumberBasis() const;
@@ -78,14 +79,14 @@ namespace dftfe
                         const std::vector<double> & x) const;
   
   private:
-    // std::unordered_map<std::string, std::string> d_atomToSlaterBasisName;
-    std::unordered_map<std::string, std::vector<SlaterPrimitive *>>
-      d_atomToSlaterPrimitivesPtr;
-    std::vector<SlaterBasisInfo> d_slaterBasisInfo;
+    // std::unordered_map<std::string, std::string> d_atomToGaussianBasisName;
+    std::unordered_map<std::string, std::vector<ContractedGaussian *>>
+      d_atomToContractedGaussiansPtr;
+    std::vector<GaussianBasisInfo> d_gaussianBasisInfo;
     std::vector<std::pair<std::string, std::vector<double>>> d_atomSymbolsAndCoords;
     double d_rTol;
     double d_angleTol;
   };
 } // namespace dftfe
 
-#endif // DFTFE_SLATER_SLATERBASIS_H
+#endif // DFTFE_GAUSSIANBASIS_H

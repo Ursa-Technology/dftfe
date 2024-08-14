@@ -922,19 +922,35 @@ namespace dftfe
             "shapefn init quad index " + std::to_string(quadID));
           const dealii::Quadrature<3> &quadrature =
             d_matrixFreeDataPtr->get_quadrature(quadID);
+          auto dealiiUpdateFlags = dealii::update_default;
+          if (d_updateFlags[iQuadIndex] & update_jxw)
+            dealiiUpdateFlags = dealiiUpdateFlags | dealii::update_JxW_values;
+          if (d_updateFlags[iQuadIndex] & update_inversejacobians)
+            dealiiUpdateFlags =
+              dealiiUpdateFlags | dealii::update_inverse_jacobians;
+          if (d_updateFlags[iQuadIndex] & update_quadpoints)
+            dealiiUpdateFlags =
+              dealiiUpdateFlags | dealii::update_quadrature_points;
           dealii::FEValues<3> fe_values(
             d_matrixFreeDataPtr->get_dof_handler(d_dofHandlerID).get_fe(),
             quadrature,
-            dealii::update_quadrature_points | dealii::update_jacobians |
-              dealii::update_JxW_values | dealii::update_inverse_jacobians);
+            dealiiUpdateFlags);
+          dealiiUpdateFlags = dealii::update_default;
+          if (d_updateFlags[iQuadIndex] & update_values)
+            dealiiUpdateFlags = dealiiUpdateFlags | dealii::update_values;
+          if (d_updateFlags[iQuadIndex] & update_gradients)
+            dealiiUpdateFlags = dealiiUpdateFlags | dealii::update_gradients;
           dealii::FEValues<3> fe_values_reference(
             d_matrixFreeDataPtr->get_dof_handler(d_dofHandlerID).get_fe(),
             quadrature,
-            dealii::update_values | dealii::update_gradients);
-          dealii::Triangulation<3> reference_cell;
-          dealii::GridGenerator::hyper_cube(reference_cell, 0., 1.);
-          fe_values_reference.reinit(reference_cell.begin());
-
+            dealiiUpdateFlags);
+          if ((d_updateFlags[iQuadIndex] & update_values) |
+              (d_updateFlags[iQuadIndex] & update_gradients))
+            {
+              dealii::Triangulation<3> reference_cell;
+              dealii::GridGenerator::hyper_cube(reference_cell, 0., 1.);
+              fe_values_reference.reinit(reference_cell.begin());
+            }
           d_nQuadsPerCell[iQuadIndex] = quadrature.size();
 
 #if defined(DFTFE_WITH_DEVICE)
@@ -1207,19 +1223,32 @@ namespace dftfe
           unsigned int quadID = d_quadratureIDsVector[iQuadIndex];
           const dealii::Quadrature<3> &quadrature =
             d_matrixFreeDataPtr->get_quadrature(quadID);
+          auto dealiiUpdateFlags = dealii::update_default;
+          if (d_updateFlags[iQuadIndex] & update_jxw)
+            dealiiUpdateFlags = dealiiUpdateFlags | dealii::update_JxW_values;
+          if (d_updateFlags[iQuadIndex] & update_inversejacobians)
+            dealiiUpdateFlags =
+              dealiiUpdateFlags | dealii::update_inverse_jacobians;
           dealii::FEValues<3> fe_values(
             d_matrixFreeDataPtr->get_dof_handler(d_dofHandlerID).get_fe(),
             quadrature,
-            dealii::update_jacobians | dealii::update_JxW_values |
-              dealii::update_inverse_jacobians);
-
+            dealiiUpdateFlags);
+          dealiiUpdateFlags = dealii::update_default;
+          if (d_updateFlags[iQuadIndex] & update_values)
+            dealiiUpdateFlags = dealiiUpdateFlags | dealii::update_values;
+          if (d_updateFlags[iQuadIndex] & update_gradients)
+            dealiiUpdateFlags = dealiiUpdateFlags | dealii::update_gradients;
           dealii::FEValues<3> fe_values_reference(
             d_matrixFreeDataPtr->get_dof_handler(d_dofHandlerID).get_fe(),
             quadrature,
-            dealii::update_values | dealii::update_gradients);
-          dealii::Triangulation<3> reference_cell;
-          dealii::GridGenerator::hyper_cube(reference_cell, 0., 1.);
-          fe_values_reference.reinit(reference_cell.begin());
+            dealiiUpdateFlags);
+          if ((d_updateFlags[iQuadIndex] & update_values) |
+              (d_updateFlags[iQuadIndex] & update_gradients))
+            {
+              dealii::Triangulation<3> reference_cell;
+              dealii::GridGenerator::hyper_cube(reference_cell, 0., 1.);
+              fe_values_reference.reinit(reference_cell.begin());
+            }
 #if defined(DFTFE_WITH_DEVICE)
           dftfe::utils::MemoryStorage<ValueTypeBasisData,
                                       dftfe::utils::MemorySpace::HOST>

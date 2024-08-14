@@ -76,7 +76,7 @@ namespace dftfe
       std::vector<std::string>
       split(const std::string & inpStr, 
           std::string delimiter /*= " "*/,
-          bool skipAdjacentDelimiters /*= true */);
+          bool skipAdjacentDelimiters /*= true */)
       {
         std::vector<std::string> outStrs(0);
         if(skipAdjacentDelimiters)

@@ -26,6 +26,7 @@
 #include <boost/math/special_functions/spherical_harmonic.hpp>
 #include <boost/math/special_functions/factorials.hpp>
 
+#include "StringOperations.h"
 #include "SphericalFunctionUtil.h"
 #include "Exceptions.h"
 #include "SlaterBasis.h"
@@ -215,7 +216,7 @@ namespace dftfe
               basisName;
             utils::throwException(false, msg);
           }
-          std::vector<std::string> words = split(iss.str(), " ", true);
+          std::vector<std::string> words = utils::stringOps::split(iss.str(), " ", true);
           std::string msg = "Undefined number of entries found in Slater basis file " 
                             + basisName + ". Expects only two entries: nl quantum numbers and the Slater exponent";
           utils::throwException(words.size() == 2, msg);
@@ -225,12 +226,12 @@ namespace dftfe
           char lChar = nlString.back();
           std::string nStr = nlString.substr(0, nlString.size() - 1);
           int n;
-          bool isValidN = strToInt(nStr, n);
+          bool isValidN = utils::stringOps::strToInt(nStr, n);
           utils::throwException(isValidN, "Invalid n quantum number specified in file " + basisName);
           
           // process alpha
           double      alpha;
-          bool isValidAlpha = strToDouble(words[1], alpha);
+          bool isValidAlpha = utils::stringOps::strToDouble(words[1], alpha);
           utils::throwException(isValidAlpha, "Invalid exponent specified in file " + basisName);
           
           // normalization constant for the radial part of Slater function

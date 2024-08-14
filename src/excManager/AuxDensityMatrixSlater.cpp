@@ -17,7 +17,7 @@ namespace dftfe
     const int          maxDerOrder)
   {
     d_sbs.constructBasisSet(atomCoords, auxBasisFile);
-    d_nBasis      = d_sbs.getSlaterBasisSize();
+    d_nBasis      = d_sbs.getNumBasis();
     d_nSpin       = nSpin;
     d_maxDerOrder = maxDerOrder;
     d_DM.assign(d_nSpin * d_nBasis * d_nBasis, 0.0);

@@ -56,14 +56,14 @@ namespace dftfe
     constructBasisSet(
       const std::vector<std::pair<std::string, std::vector<double>>>
         &                atomCoords,
-      const std::string &auxBasisFileName);
+      const std::unordered_map<std::string, std::string> & atomBasisFileNames);
 
 
     const std::vector<SlaterBasisInfo> &
     getSlaterBasisInfo() const;
 
     int
-    getNumberBasis() const;
+    getNumBasis() const;
   
     double 
       getBasisValue(const unsigned int basisId, 

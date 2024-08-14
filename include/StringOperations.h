@@ -24,7 +24,7 @@
 
 #ifndef DFTFE_STRINGOPERATIONS_H
 #define DFTFE_STRINGOPERATIONS_H
-namespace dftefe
+namespace dftfe
 {
   namespace utils
   {
@@ -65,4 +65,3 @@ namespace dftefe
   }   // end of namespace utils
 } // end of namespace dftfe
 #endif // DFTFE_STRINGOPERATIONS_H
-

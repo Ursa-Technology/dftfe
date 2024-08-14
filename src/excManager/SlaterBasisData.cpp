@@ -15,7 +15,7 @@ namespace dftfe
         int                        maxDerOrder)
     {
       int nQuad  = quadpts.size() / 3;
-      int nBasis = sbs.getSlaterBasisSize();
+      int nBasis = sbs.getNumBasis();
 
       switch (maxDerOrder)
       {
@@ -48,7 +48,7 @@ namespace dftfe
     SlaterBasisData::evalBasisValues(const std::vector<double> &quadpts,
         const SlaterBasis &     sbs)
     {
-      int  nBasis    = sbs.getSlaterBasisSize();
+      int  nBasis    = sbs.getNumBasis();
       auto quadpts_t = torch::tensor(quadpts, torch::dtype(torch::kDouble));
       const std::vector<SlaterBasisInfo> &basisInfo = sbs.getSlaterBasisInfo();
 
@@ -94,7 +94,7 @@ namespace dftfe
     SlaterBasisData::evalBasisGradValues(const std::vector<double> &quadpts,
         const SlaterBasis &     sbs)
     {
-      int  nBasis    = sbs.getSlaterBasisSize();
+      int  nBasis    = sbs.getNumBasis();
       auto quadpts_t = torch::tensor(quadpts, torch::dtype(torch::kDouble));
       const std::vector<SlaterBasisInfo> &basisInfo = sbs.getSlaterBasisInfo();
       // Slice the tensor to create x_t, y_t, z_t
@@ -151,7 +151,7 @@ namespace dftfe
     SlaterBasisData::evalBasisHessianValues(const std::vector<double> &quadpts,
         const SlaterBasis &     sbs)
     {
-      int  nBasis    = sbs.getSlaterBasisSize();
+      int  nBasis    = sbs.getNumBasis();
       auto quadpts_t = torch::tensor(quadpts, torch::dtype(torch::kDouble));
       const std::vector<SlaterBasisInfo> &basisInfo = sbs.getSlaterBasisInfo();
 

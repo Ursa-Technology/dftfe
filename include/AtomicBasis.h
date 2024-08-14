@@ -49,12 +49,13 @@ namespace dftfe
 
     virtual int getNumBasis() const = 0;
   
-    virtual double getBasisValue(const unsigned int basisId, 
+    virtual std::vector<double> getBasisValue(const unsigned int basisId, 
                         const std::vector<double> & x) const = 0;
     
     virtual std::vector<double> getBasisGradient(const unsigned int basisId, 
                         const std::vector<double> & x) const = 0;
-    virtual double 
+    
+    virtual std::vector<double> 
       getBasisLaplacian(const unsigned int basisId, 
                         const std::vector<double> & x) const = 0;
   };

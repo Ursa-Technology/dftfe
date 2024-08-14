@@ -60,14 +60,14 @@ namespace dftfe
 
     virtual int getNumBasis() const override;
   
-    virtual double getBasisValue(const unsigned int basisId, 
+    virtual std::vector<double> getBasisValue(const unsigned int basisId, 
                         const std::vector<double> & x) const override;
     
     virtual std::vector<double> getBasisGradient(
                         const unsigned int basisId, 
                         const std::vector<double> & x) const override;
     
-    virtual double 
+    virtual std::vector<double> 
       getBasisLaplacian(const unsigned int basisId, 
                         const std::vector<double> & x) const override;
   private:

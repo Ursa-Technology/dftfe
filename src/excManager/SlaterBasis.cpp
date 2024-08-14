@@ -21,6 +21,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <map>
+#include <cmath>
 #include <iostream>
 #include <boost/math/special_functions/legendre.hpp>
 #include <boost/math/special_functions/spherical_harmonic.hpp>
@@ -679,29 +680,8 @@ namespace dftfe
     }
 
 
-  double SlaterBasis::getBasisValue(const unsigned int basisId, 
-      const std::vector<double> & x) const
-  {
-    const SlaterBasisInfo & info = d_slaterBasisInfo[basisId];
-    const double * x0 = info.center;
-    const SlaterPrimitive * sp = info.sp;
-    const double alpha = sp->alpha;
-    const int n = sp->n;
-    const int l = sp->l;
-    const int m = sp->m;
-    const double normConst = sp->normConst;
-    std::vector<double> dx(3);
-    for(unsigned int i = 0; i < 3; ++i)
-    {
-      dx[i] = x[i] - x0[i];
-    }
-
-    double returnValue = normConst*getSlaterValue(dx, n, l, m, alpha, d_rTol, d_angleTol);
-    return returnValue;
-  }
-
   std::vector<double> 
-    SlaterBasis::getBasisGradient(const unsigned int basisId, 
+    SlaterBasis::getBasisValue(const unsigned int basisId, 
         const std::vector<double> & x) const
     {
       const SlaterBasisInfo & info = d_slaterBasisInfo[basisId];
@@ -712,18 +692,22 @@ namespace dftfe
       const int l = sp->l;
       const int m = sp->m;
       const double normConst = sp->normConst;
+      const unsigned int nPoints = round(x.size()/3);
+      std::vector<double> returnValue(nPoints,0.0);
       std::vector<double> dx(3);
-      for(unsigned int i = 0; i < 3; ++i)
-        dx[i] = x[i] - x0[i];
-
-      std::vector<double> returnValue = getSlaterGradient(dx, n, l, m, alpha, d_rTol, d_angleTol);
-      for(unsigned int i = 0; i < returnValue.size(); ++i)
-        returnValue[i] *= normConst;
-
+      for(unsigned int iPoint = 0; iPoint < nPoints; ++iPoint)
+      {
+        for(unsigned int j = 0; j < 3; ++j)
+        {
+          dx[j] = x[iPoint*3+j] - x0[j];
+        }
+        returnValue[iPoint] = normConst*getSlaterValue(dx, n, l, m, alpha, d_rTol, d_angleTol);
+      }
       return returnValue;
     }
 
-  double SlaterBasis::getBasisLaplacian(const unsigned int basisId, 
+  std::vector<double> SlaterBasis::getBasisGradient(
+      const unsigned int basisId, 
       const std::vector<double> & x) const
   {
     const SlaterBasisInfo & info = d_slaterBasisInfo[basisId];
@@ -734,11 +718,47 @@ namespace dftfe
     const int l = sp->l;
     const int m = sp->m;
     const double normConst = sp->normConst;
+    const unsigned int nPoints = round(x.size()/3);
+    std::vector<double> returnValue(3*nPoints,0.0);
     std::vector<double> dx(3);
-    for(unsigned int i = 0; i < 3; ++i)
-      dx[i] = x[i] - x0[i];
+    for(unsigned int iPoint = 0; iPoint < nPoints; ++iPoint)
+    {
+      for(unsigned int j = 0; j < 3; ++j)
+      {
+        dx[j] = x[iPoint*3+j] - x0[j];
+      }
 
-    double returnValue = normConst*getSlaterLaplacian(dx, n, l, m, alpha, d_rTol, d_angleTol);
+      std::vector<double> tmp = getSlaterGradient(dx, n, l, m, alpha, d_rTol, d_angleTol);
+      for(unsigned int j = 0; j < 3; ++j)
+        returnValue[iPoint*3+j] = normConst*tmp[j];
+    }
+    return returnValue;
+  }
+
+  std::vector<double> SlaterBasis::getBasisLaplacian(
+      const unsigned int basisId, 
+      const std::vector<double> & x) const
+  {
+    const SlaterBasisInfo & info = d_slaterBasisInfo[basisId];
+    const double * x0 = info.center;
+    const SlaterPrimitive * sp = info.sp;
+    const double alpha = sp->alpha;
+    const int n = sp->n;
+    const int l = sp->l;
+    const int m = sp->m;
+    const double normConst = sp->normConst;
+    const unsigned int nPoints = round(x.size()/3);
+    std::vector<double> returnValue(nPoints,0.0);
+    std::vector<double> dx(3);
+    for(unsigned int iPoint = 0; iPoint < nPoints; ++iPoint)
+    {
+      for(unsigned int j = 0; j < 3; ++j)
+      {
+        dx[j] = x[iPoint*3+j] - x0[j];
+      }
+
+      returnValue[iPoint] = normConst*getSlaterLaplacian(dx, n, l, m, alpha, d_rTol, d_angleTol);
+    }
     return returnValue;
   }
 }

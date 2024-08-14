@@ -7,7 +7,6 @@
 
 #  include <vector>
 #  include <memory>
-
 #  include "AtomicBasis.h"
 
 namespace dftfe
@@ -38,19 +37,6 @@ namespace dftfe
     std::vector<double> d_basisValues;
     std::vector<double> d_basisGradValues;
     std::vector<double> d_basisLaplacianValues;
-
-    void
-    evalBasisValues(const std::vector<double> &quadpts,
-                    const AtomicBasis &     atomicBasis);
-
-    void
-    evalBasisGradValues(const std::vector<double> &quadpts,
-                        const AtomicBasis &     atomicBasis);
-
-    void
-    evalBasisLaplacianValues(const std::vector<double> &quadpts,
-                            const AtomicBasis &     atomicBasis);
-
   };
 } // namespace dftfe
 #endif // DFTFE_ATOMBASISDATA_H

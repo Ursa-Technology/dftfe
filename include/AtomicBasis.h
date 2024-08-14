@@ -27,7 +27,7 @@
 
 namespace dftfe
 {
-  class SlaterBasis
+  class AtomicBasis
   {
 
   public:

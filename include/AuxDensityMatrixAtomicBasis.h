@@ -17,19 +17,13 @@
 namespace dftfe
 {
 
-  enum class AuxDMAtomicBasisType
-  {
-    Slater,
-    Gaussian
-  };
-
   template <dftfe::utils::MemorySpace memorySpace>
   class AuxDensityMatrixAtomicBasis : public AuxDensityMatrix<memorySpace>
   {
   public:
 
     void
-    reinit(const auxDMAtomicBasisType,
+    reinit(const AtomicBasis::BasisType basisType,
       const std::vector<std::pair<std::string, std::vector<double>>>
         &                atomCoords,
       const std::unordered_map<std::string, std::string> & atomBasisFileNames,

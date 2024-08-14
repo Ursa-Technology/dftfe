@@ -12,16 +12,16 @@ namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixAtomicBasis<memorySpace>::reinit(const auxDMAtomicBasisType,
+  AuxDensityMatrixAtomicBasis<memorySpace>::reinit(const AtomicBasis::BasisType basisType,
       const std::vector<std::pair<std::string, std::vector<double>>>
         &                atomCoords,
       const std::unordered_map<std::string, std::string> & atomBasisFileNames,
       const int          nSpin,
       const int          maxDerOrder)
   {
-    if (auxDMAtomicBasisType==AuxDMAtomicBasisType::Slater)
+    if (basisType==AtomicBasis::BasisType::SLATER)
        d_atomicBasisPtr= std::make_unique<SlaterBasis>();
-    else if(auxDMAtomicBasisType==AuxDMAtomicBasisType::Gaussian) 
+    else if(basisType==AtomicBasis::BasisType::GAUSSIAN) 
        d_atomicBasisPtr= std::make_unique<GaussianBasis>();
 
     d_atomicBasisPtr->constructBasisSet(atomCoords, atomBasisFileNames);

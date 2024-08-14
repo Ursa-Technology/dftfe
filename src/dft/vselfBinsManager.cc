@@ -1026,53 +1026,6 @@ namespace dftfe
                   } // locally relevant dofs
 
               } // nodal loop
-            pcout << "size of d_closestAtomBin :"
-                  << dealii::Utilities::MPI::sum(
-                       (((sizeof(dealii::types::global_dof_index) +
-                          sizeof(int)) *
-                         d_closestAtomBin[iBin].size()) +
-                        sizeof(d_closestAtomBin[iBin])),
-                       mpi_communicator) /
-                       1024.0 / 1024.0 / 1024.0
-                  << std::endl;
-            pcout << "size of boundaryNodeMap :"
-                  << dealii::Utilities::MPI::sum(
-                       (((sizeof(dealii::types::global_dof_index) +
-                          sizeof(int)) *
-                         boundaryNodeMap.size()) +
-                        sizeof(boundaryNodeMap)),
-                       mpi_communicator) /
-                       1024.0 / 1024.0 / 1024.0
-                  << std::endl;
-            pcout << "size of boundaryNodeMapOnlyChargeId :"
-                  << dealii::Utilities::MPI::sum(
-                       (((sizeof(dealii::types::global_dof_index) +
-                          sizeof(int)) *
-                         boundaryNodeMapOnlyChargeId.size()) +
-                        sizeof(boundaryNodeMapOnlyChargeId)),
-                       mpi_communicator) /
-                       1024.0 / 1024.0 / 1024.0
-                  << std::endl;
-            pcout << "size of dofClosestChargeLocationMap :"
-                  << dealii::Utilities::MPI::sum(
-                       (((sizeof(dealii::types::global_dof_index) +
-                          sizeof(dealii::Point<3>)) *
-                         dofClosestChargeLocationMap.size()) +
-                        sizeof(dofClosestChargeLocationMap)),
-                       mpi_communicator) /
-                       1024.0 / 1024.0 / 1024.0
-                  << std::endl;
-            pcout << "size of vSelfBinNodeMap :"
-                  << dealii::Utilities::MPI::sum(
-                       (((sizeof(dealii::types::global_dof_index) +
-                          sizeof(double)) *
-                         vSelfBinNodeMap.size()) +
-                        sizeof(vSelfBinNodeMap)),
-                       mpi_communicator) /
-                       1024.0 / 1024.0 / 1024.0
-                  << std::endl;
-            // MPI_Finalize();
-            // exit(0);
             // First Apply correct dirichlet boundary conditions on elements
             // with atleast one solved node
             dealii::DoFHandler<3>::active_cell_iterator cell =

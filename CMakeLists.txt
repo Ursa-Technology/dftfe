@@ -68,7 +68,6 @@ SET(TARGET_SRC
   ./src/excManager/AtomicBasisData.cpp
   ./src/excManager/SlaterBasis.cpp
   ./src/excManager/GaussianBasis.cpp  
-  ./src/excManager/SphericalHarmonicFunc.cpp
   ./src/poisson/poissonSolverProblem.cc
   ./src/poisson/MultiVectorPoissonLinearSolverProblem.cpp
   ./src/helmholtz/kerkerSolverProblem.cc

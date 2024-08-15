@@ -6,7 +6,8 @@
 #  include "GaussianBasis.h"
 #  include <stdexcept>
 #  include <cmath>
-#  include <linearAlgebraOperationsCPU.h>
+// #  include <linearAlgebraOperationsCPU.h>
+#  include <linearAlgebraOperations.h>
 
 namespace dftfe
 {
@@ -189,7 +190,7 @@ namespace dftfe
 
     d_nQuad = quadWt.size();
     d_nWFC  = psiFunc.size() / d_nQuad;
-    d_basisWfcInnerProducts  = std::vector<double>(d_nBasis * d_nWFC, 0.0);
+    d_basisWFCInnerProducts  = std::vector<double>(d_nBasis * d_nWFC, 0.0);
 
 
     for (int i = 0; i < d_nQuad; ++i)
@@ -213,7 +214,7 @@ namespace dftfe
                   psiFunc.data(),
                   reinterpret_cast<const unsigned int *>(&d_nWFC),
                   &beta,
-                  d_basisWfcInnerProducts.data(),
+                  d_basisWFCInnerProducts.data(),
                   reinterpret_cast<const unsigned int *>(&d_nBasis));
   }
 
@@ -222,10 +223,10 @@ namespace dftfe
   AuxDensityMatrixAtomicBasis<memorySpace>::projectDensityMatrixEnd(
     const MPI_Comm &mpiComm)
   {
-    // MPI All Reduce d_basisWfcInnerProducts
-    MPI_Allreduce(d_basisWfcInnerProducts.data(),
-                  d_basisWfcInnerProducts.data(),
-                  d_basisWfcInnerProducts.size(),
+    // MPI All Reduce d_basisWFCInnerProducts
+    MPI_Allreduce(d_basisWFCInnerProducts.data(),
+                  d_basisWFCInnerProducts.data(),
+                  d_basisWFCInnerProducts.size(),
                   MPI_DOUBLE,
                   MPI_SUM,
                   mpiComm);
@@ -243,7 +244,7 @@ namespace dftfe
                   &alpha,
                   overlapInv.data(),
                   reinterpret_cast<const unsigned int *>(&d_nBasis),
-                  d_basisWfcInnerProducts.data(),
+                  d_basisWFCInnerProducts.data(),
                   reinterpret_cast<const unsigned int *>(&d_nBasis),
                   &beta,
                   BB.data(),
@@ -335,7 +336,7 @@ namespace dftfe
         for (int i = 0; i < d_nBasis; i++)
           for (int j = 0; j < d_nBasis; j++)  
             for (int derIndex = 0; derIndex < 3; derIndex++)
-                gradrhoUp[3*iQuad+derIndex] +=
+                gradRhoUp[3*iQuad+derIndex] +=
                         d_DM[i * d_nBasis + j] *
                         (basisGradValues[iQuad * d_nBasis * 3 +
                                                   3 * i + derIndex] *
@@ -354,7 +355,7 @@ namespace dftfe
         for (int i = 0; i < d_nBasis; i++)
           for (int j = 0; j < d_nBasis; j++)  
             for (int derIndex = 0; derIndex < 3; derIndex++)
-                gradrhoUp[3*iQuad+derIndex] +=
+                gradRhoDown[3*iQuad+derIndex] +=
                         d_DM[DMSpinOffset+i * d_nBasis + j] *
                         (basisGradValues[iQuad * d_nBasis * 3 +
                                                   3 * i + derIndex] *

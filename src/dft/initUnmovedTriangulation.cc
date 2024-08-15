@@ -23,16 +23,16 @@
 //
 // source file for dft class initializations
 //
-#include <AuxDensityFE.h>
-#include <AuxDensityMatrixSlater.h>
 #include <dft.h>
 #include <dftUtils.h>
 #include <vectorUtilities.h>
 #ifdef USE_COMPLEX
 #  include "initkPointData.cc"
 #endif
+#include <AuxDensityFE.h>
 #include <AuxDensityMatrixFE.h>
-#include <AuxDensityMatrixSlater.h>
+#include <AuxDensityMatrixAtomicBasis.h>
+#include <PeriodicTable.h>
 
 namespace dftfe
 {
@@ -323,73 +323,45 @@ namespace dftfe
       }
     else if (d_dftParamsPtr->auxBasisTypeXC == "SLATER")
       {
-#ifdef DFTFE_WITH_TORCH
 
-        d_auxDensityMatrixXCInPtr =
-          std::make_shared<AuxDensityMatrixSlater<memorySpace>>();
-        // FIXME: extract atomCoords from "atomLocations" (this is a datamember
-        // of dftClass) of type std::vector<std::vector<double>> atomLocations
-        // with each row representing an atom and each column has the following
-        // data: atomic number, valence number,
-        // and x,y,z cartesian coordiantes with respect to origin at domain
-        // center
-        /*
-        d_auxDensityMatrixXCInPtr->reinitAuxDensityMatrix(
-          const std::vector<std::pair<std::string, std::vector<double>>>
-            &atomCoords,
-          d_dftParamsPtr->auxBasisTypeXC,
-          2,
-          5);
-        */
+      d_auxDensityMatrixXCInPtr =
+          std::make_shared<AuxDensityMatrixAtomicBasis<memorySpace>>();
 
-        d_auxDensityMatrixXCOutPtr =
-          std::make_shared<AuxDensityMatrixSlater<memorySpace>>();
-        // FIXME: with same comments as above
-        /*
-        d_auxDensityMatrixXCOutPtr->reinitAuxDensityMatrix(
-          const std::vector<std::pair<std::string, std::vector<double>>>
-            &atomCoords,
-          d_dftParamsPtr->auxBasisTypeXC,
-          2,
-          5);
-        */
+      if (!d_auxDensityMatrixXCInPtr) {
+        std::cerr << "Error: d_auxDensityMatrixXCInPtr is nullptr!" << std::endl;
+      }
 
-      // Map of atomic number to atomic symbol
-        std::unordered_map<int, std::string> atomicSymbols = {
-            {1, "H"}, {2, "He"}, {3, "Li"}, {4, "Be"},
-            {5, "B"}, {6, "C"}, {7, "N"}, {8, "O"},
-            {9, "F"}, {10, "Ne"},
-            // Add more elements as needed
-        };
+      d_auxDensityMatrixXCOutPtr =
+          std::make_shared<AuxDensityMatrixAtomicBasis<memorySpace>>();
+
+      if (!d_auxDensityMatrixXCOutPtr) {
+        std::cerr << "Error: d_auxDensityMatrixXCOutPtr is nullptr!" << std::endl;
+      }
 
       std::vector<std::pair<std::string, std::vector<double>>> atomCoords;
+      dftfe::pseudoUtils::PeriodicTable pTable;
 
       for (const auto& atom : atomLocations) {
-            int atomicNumber = static_cast<int>(atom[0]);
-            std::string symbol = atomicSymbols[atomicNumber]; // Lookup atomic symbol
+        int atomicNumber = static_cast<int>(atom[0]);
+        std::string atomicSymbol = pTable.symbol(atomicNumber);
 
-            // Assuming atom[2], atom[3], atom[4] are x, y, z coordinates
-            std::vector<double> coords = {atom[2], atom[3], atom[4]};
+        // Assuming atom[2], atom[3], atom[4] are x, y, z coordinates
+        std::vector<double> coords = {atom[2], atom[3], atom[4]};
 
-            atomCoords.emplace_back(symbol, coords);
-        }
-
-      // std::shared_ptr<AuxDensityMatrixSlater> d_auxDensityMatrixXCInPtr;
-      // std::shared_ptr<AuxDensityMatrixSlater> d_auxDensityMatrixXCOutPtr;
+        atomCoords.emplace_back(atomicSymbol, coords);
+      }
 
 
-      d_auxDensityMatrixXCInPtr = std::make_shared<AuxDensityMatrixSlater>();
-      d_auxDensityMatrixXCInPtr->reinitAuxDensityMatrix(atomCoords,
+      d_auxDensityMatrixXCInPtr->reinit(atomCoords,
           d_dftParamsPtr->auxBasisDataXC,
           2,
           1);
-      d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityMatrixSlater>();
-      d_auxDensityMatrixXCOutPtr->reinitAuxDensityMatrix(
+
+      d_auxDensityMatrixXCOutPtr->reinit(
           atomCoords,
           d_dftParamsPtr->auxBasisDataXC,
           2,
           1);
-#endif
       }
 
     computing_timer.leave_subsection("unmoved setup");

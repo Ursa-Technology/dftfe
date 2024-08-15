@@ -1244,7 +1244,7 @@ namespace dftfe
     for (int i = 0; i < p; i++)
       for (int j = 0; j < q; j++)
         {
-#if (DEAL_II_VERSION_MAJOR >= 9 && DEAL_II_VERSION_MINOR >=6)
+#if (DEAL_II_VERSION_MAJOR >= 9 && DEAL_II_VERSION_MINOR >= 6)
           double value = shapeData.shape_values[j + i * q] *
                          std::sqrt(shapeData.quadrature.weight(j));
 #else
@@ -1258,7 +1258,7 @@ namespace dftfe
     for (int i = 0; i < q; i++)
       for (int j = 0; j < q; j++)
         {
-#if (DEAL_II_VERSION_MAJOR >= 9 && DEAL_II_VERSION_MINOR >=6)
+#if (DEAL_II_VERSION_MAJOR >= 9 && DEAL_II_VERSION_MINOR >= 6)
           double grad = shapeData.shape_gradients_collocation[j + i * q] *
                         std::sqrt(shapeData.quadrature.weight(j)) /
                         std::sqrt(shapeData.quadrature.weight(i));

@@ -2,8 +2,8 @@
 // Created by Arghadwip Paul, Sambit Das
 //
 
-#ifndef DFTFE_AUXDM_AUXDENSITYMATRIXSLATER_H
-#define DFTFE_AUXDM_AUXDENSITYMATRIXSLATER_H
+#ifndef DFTFE_AUXDM_AUXDENSITYMATRIXATOMICBASIS_H
+#define DFTFE_AUXDM_AUXDENSITYMATRIXATOMICBASIS_H
 
 #  include "AuxDensityMatrix.h"
 #  include "AtomicBasis.h"
@@ -112,4 +112,4 @@ namespace dftfe
 
   };
 } // namespace dftfe
-#endif // DFTFE_AUXDM_AUXDENSITYMATRIXSLATER_H
+#endif // DFTFE_AUXDM_AUXDENSITYMATRIXATOMICBASIS_H

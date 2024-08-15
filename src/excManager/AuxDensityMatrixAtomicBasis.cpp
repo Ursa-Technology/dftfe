@@ -23,7 +23,7 @@ namespace dftfe
     if (basisType==AtomicBasis::BasisType::SLATER)
        d_atomicBasisPtr= std::make_unique<SlaterBasis>();
     else if(basisType==AtomicBasis::BasisType::GAUSSIAN) 
-       d_atomicBasisPtr= std::make_unique<GaussianBasis>();
+       // d_atomicBasisPtr= std::make_unique<GaussianBasis>();
 
     d_atomicBasisPtr->constructBasisSet(atomCoords, atomBasisFileNames);
     d_nBasis      = d_atomicBasisPtr->getNumBasis();
@@ -38,7 +38,12 @@ namespace dftfe
     const std::vector<double> &quadpts,
     const std::vector<double> &quadWt)
   {
-    d_atomicBasisData.evalBasisData(quadpts, d_sbs, d_maxDerOrder);
+    if (d_atomicBasisPtr) {
+    	d_atomicBasisData.evalBasisData(quadpts, *d_atomicBasisPtr, d_maxDerOrder);
+    }
+    else {
+	throw std::runtime_error("Error: d_atomicBasisPtr is null.");
+    }
     d_SMatrix = std::vector<double>(d_nBasis * d_nBasis, 0.0);
     const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();
     for (int i = 0; i < d_nBasis; ++i)

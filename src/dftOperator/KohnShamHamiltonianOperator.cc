@@ -18,6 +18,11 @@
 //
 
 #include <KohnShamHamiltonianOperator.h>
+#ifdef _OPENMP
+#  include <omp.h>
+#else
+#  define omp_get_thread_num() 0
+#endif
 namespace dftfe
 {
   //
@@ -69,6 +74,33 @@ namespace dftfe
                       dealii::TimerOutput::never,
                       dealii::TimerOutput::wall_times)
   {
+    d_nOMPThreads = 1;
+    if (const char *penv = std::getenv("DFTFE_NUM_THREADS"))
+      {
+        try
+          {
+            d_nOMPThreads = std::stoi(std::string(penv));
+          }
+        catch (...)
+          {
+            AssertThrow(
+              false,
+              dealii::ExcMessage(
+                std::string(
+                  "When specifying the <DFTFE_NUM_THREADS> environment "
+                  "variable, it needs to be something that can be interpreted "
+                  "as an integer. The text you have in the environment "
+                  "variable is <") +
+                penv + ">"));
+          }
+
+        AssertThrow(d_nOMPThreads > 0,
+                    dealii::ExcMessage(
+                      "When specifying the <DFTFE_NUM_THREADS> environment "
+                      "variable, it needs to be a positive number."));
+      }
+    d_nOMPThreads =
+      memorySpace == dftfe::utils::MemorySpace::DEVICE ? 1 : d_nOMPThreads;
     if (d_dftParamsPtr->isPseudopotential)
       d_ONCVnonLocalOperator = oncvClassPtr->getNonLocalOperator();
     if (d_dftParamsPtr->isPseudopotential && d_dftParamsPtr->useSinglePrecCheby)
@@ -602,14 +634,14 @@ namespace dftfe
       d_cellWaveFunctionMatrixSrcSinglePrec.resize(nCells * nDofsPerCell *
                                                    numWaveFunctions);
     if (d_cellWaveFunctionMatrixDst.size() <
-        d_cellsBlockSizeHX * nDofsPerCell * numWaveFunctions)
-      d_cellWaveFunctionMatrixDst.resize(d_cellsBlockSizeHX * nDofsPerCell *
-                                         numWaveFunctions);
+        d_nOMPThreads * d_cellsBlockSizeHX * nDofsPerCell * numWaveFunctions)
+      d_cellWaveFunctionMatrixDst.resize(d_nOMPThreads * d_cellsBlockSizeHX *
+                                         nDofsPerCell * numWaveFunctions);
     if (d_dftParamsPtr->useSinglePrecCheby &&
         d_cellWaveFunctionMatrixDstSinglePrec.size() <
-          d_cellsBlockSizeHX * nDofsPerCell * numWaveFunctions)
+          d_nOMPThreads * d_cellsBlockSizeHX * nDofsPerCell * numWaveFunctions)
       d_cellWaveFunctionMatrixDstSinglePrec.resize(
-        d_cellsBlockSizeHX * nDofsPerCell * numWaveFunctions);
+        d_nOMPThreads * d_cellsBlockSizeHX * nDofsPerCell * numWaveFunctions);
 
     if (d_dftParamsPtr->isPseudopotential)
       {
@@ -893,6 +925,7 @@ namespace dftfe
        0) &&
       !onlyHPrimePartForFirstOrderDensityMatResponse;
 
+#pragma omp parallel for num_threads(d_nOMPThreads)
     for (unsigned int iCell = 0; iCell < numCells; iCell += d_cellsBlockSizeHX)
       {
         std::pair<unsigned int, unsigned int> cellRange(
@@ -909,6 +942,7 @@ namespace dftfe
           d_basisOperationsPtr->d_flattenedCellDofIndexToProcessDofIndexMap
               .data() +
             cellRange.first * numDoFsPerCell);
+#pragma omp critical(hx_Cconj)
         if (hasNonlocalComponents)
           d_ONCVnonLocalOperator->applyCconjtransOnX(
             d_cellWaveFunctionMatrixSrc.data() +
@@ -928,6 +962,7 @@ namespace dftfe
           true);
       }
 
+#pragma omp parallel for num_threads(d_nOMPThreads)
     for (unsigned int iCell = 0; iCell < numCells; iCell += d_cellsBlockSizeHX)
       {
         std::pair<unsigned int, unsigned int> cellRange(
@@ -949,20 +984,28 @@ namespace dftfe
           numDoFsPerCell,
           numDoFsPerCell * numDoFsPerCell,
           &scalarCoeffBeta,
-          d_cellWaveFunctionMatrixDst.data(),
+          d_cellWaveFunctionMatrixDst.data() +
+            omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
+              numberWavefunctions,
           numberWavefunctions,
           numDoFsPerCell * numberWavefunctions,
           cellRange.second - cellRange.first);
         if (hasNonlocalComponents)
           d_ONCVnonLocalOperator->applyCOnVCconjtransX(
-            d_cellWaveFunctionMatrixDst.data(), cellRange);
+            d_cellWaveFunctionMatrixDst.data() +
+              omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
+                numberWavefunctions,
+            cellRange);
+#pragma omp critical(hx_assembly)
         d_BLASWrapperPtr->axpyStridedBlockAtomicAdd(
           numberWavefunctions,
           numDoFsPerCell * (cellRange.second - cellRange.first),
           scalarHX,
           d_basisOperationsPtr->cellInverseSqrtMassVectorBasisData().data() +
             cellRange.first * numDoFsPerCell,
-          d_cellWaveFunctionMatrixDst.data(),
+          d_cellWaveFunctionMatrixDst.data() +
+            omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
+              numberWavefunctions,
           dst.data(),
           d_basisOperationsPtr->d_flattenedCellDofIndexToProcessDofIndexMap
               .data() +
@@ -1019,6 +1062,7 @@ namespace dftfe
         if constexpr (memorySpace == dftfe::utils::MemorySpace::HOST)
           if (d_dftParamsPtr->isPseudopotential)
             d_ONCVnonLocalOperator->initialiseOperatorActionOnX(d_kPointIndex);
+#pragma omp parallel for num_threads(d_nOMPThreads)
         for (unsigned int iCell = 0; iCell < numCells;
              iCell += d_cellsBlockSizeHX)
           {
@@ -1033,6 +1077,7 @@ namespace dftfe
               d_basisOperationsPtr->d_flattenedCellDofIndexToProcessDofIndexMap
                   .data() +
                 cellRange.first * numDoFsPerCell);
+#pragma omp critical(hxc_Cconj)
             if (hasNonlocalComponents)
               d_ONCVnonLocalOperator->applyCconjtransOnX(
                 d_cellWaveFunctionMatrixSrc.data() +
@@ -1078,6 +1123,7 @@ namespace dftfe
       }
     if (!skip3)
       {
+#pragma omp parallel for num_threads(d_nOMPThreads)
         for (unsigned int iCell = 0; iCell < numCells;
              iCell += d_cellsBlockSizeHX)
           {
@@ -1100,20 +1146,28 @@ namespace dftfe
               numDoFsPerCell,
               numDoFsPerCell * numDoFsPerCell,
               &scalarCoeffBeta,
-              d_cellWaveFunctionMatrixDst.data(),
+              d_cellWaveFunctionMatrixDst.data() +
+                omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
+                  numberWavefunctions,
               numberWavefunctions,
               numDoFsPerCell * numberWavefunctions,
               cellRange.second - cellRange.first);
             if (hasNonlocalComponents)
               d_ONCVnonLocalOperator->applyCOnVCconjtransX(
-                d_cellWaveFunctionMatrixDst.data(), cellRange);
+                d_cellWaveFunctionMatrixDst.data() +
+                  omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
+                    numberWavefunctions,
+                cellRange);
+#pragma omp critical(hxc_assembly)
             d_BLASWrapperPtr->axpyStridedBlockAtomicAdd(
               numberWavefunctions,
               numDoFsPerCell * (cellRange.second - cellRange.first),
               scalarHX,
               d_basisOperationsPtr->cellInverseMassVectorBasisData().data() +
                 cellRange.first * numDoFsPerCell,
-              d_cellWaveFunctionMatrixDst.data(),
+              d_cellWaveFunctionMatrixDst.data() +
+                omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
+                  numberWavefunctions,
               dst.data(),
               d_basisOperationsPtr->d_flattenedCellDofIndexToProcessDofIndexMap
                   .data() +
@@ -1174,6 +1228,7 @@ namespace dftfe
           if (d_dftParamsPtr->isPseudopotential)
             d_ONCVnonLocalOperatorSinglePrec->initialiseOperatorActionOnX(
               d_kPointIndex);
+#pragma omp parallel for num_threads(d_nOMPThreads)
         for (unsigned int iCell = 0; iCell < numCells;
              iCell += d_cellsBlockSizeHX)
           {
@@ -1188,6 +1243,7 @@ namespace dftfe
               d_basisOperationsPtr->d_flattenedCellDofIndexToProcessDofIndexMap
                   .data() +
                 cellRange.first * numDoFsPerCell);
+#pragma omp critical(hxc_Cconj)
             if (hasNonlocalComponents)
               d_ONCVnonLocalOperatorSinglePrec->applyCconjtransOnX(
                 d_cellWaveFunctionMatrixSrcSinglePrec.data() +
@@ -1235,6 +1291,7 @@ namespace dftfe
       }
     if (!skip3)
       {
+#pragma omp parallel for num_threads(d_nOMPThreads)
         for (unsigned int iCell = 0; iCell < numCells;
              iCell += d_cellsBlockSizeHX)
           {
@@ -1257,20 +1314,28 @@ namespace dftfe
               numDoFsPerCell,
               numDoFsPerCell * numDoFsPerCell,
               &scalarCoeffBeta,
-              d_cellWaveFunctionMatrixDstSinglePrec.data(),
+              d_cellWaveFunctionMatrixDstSinglePrec.data() +
+                omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
+                  numberWavefunctions,
               numberWavefunctions,
               numDoFsPerCell * numberWavefunctions,
               cellRange.second - cellRange.first);
             if (hasNonlocalComponents)
               d_ONCVnonLocalOperatorSinglePrec->applyCOnVCconjtransX(
-                d_cellWaveFunctionMatrixDstSinglePrec.data(), cellRange);
+                d_cellWaveFunctionMatrixDstSinglePrec.data() +
+                  omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
+                    numberWavefunctions,
+                cellRange);
+#pragma omp critical(hxc_assembly)
             d_BLASWrapperPtr->axpyStridedBlockAtomicAdd(
               numberWavefunctions,
               numDoFsPerCell * (cellRange.second - cellRange.first),
               scalarHX,
               d_basisOperationsPtr->cellInverseMassVectorBasisData().data() +
                 cellRange.first * numDoFsPerCell,
-              d_cellWaveFunctionMatrixDstSinglePrec.data(),
+              d_cellWaveFunctionMatrixDstSinglePrec.data() +
+                omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
+                  numberWavefunctions,
               dst.data(),
               d_basisOperationsPtr->d_flattenedCellDofIndexToProcessDofIndexMap
                   .data() +

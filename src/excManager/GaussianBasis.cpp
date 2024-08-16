@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <map>
 #include <iostream>
+#include <cmath>
 
 #include "Exceptions.h"
 #include "GaussianBasis.h"

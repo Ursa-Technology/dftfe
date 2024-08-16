@@ -184,6 +184,7 @@ namespace dftfe
 
     d_iSpin                                    = iSpin;
     auto &psiFunc                              = projectionInputs["psiFunc"];
+    auto &quadpts                              = projectionInputs["quadpts"];
     auto &quadWt                               = projectionInputs["quadWt"];
     d_fValues                                  = projectionInputs["fValues"];
     d_atomicBasisData.evalBasisData(quadpts, *d_atomicBasisPtr, 0);    

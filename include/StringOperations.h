@@ -50,17 +50,23 @@ namespace dftfe
         Examples: 
         1. delimiter = " " will use a space as a delimiter
         2. delimiter = ", " will use both comma, space as a delimiter
-        @param[in] skipAdjacent Booleam to specify whether to merge adjacent delimiters.
+        @param[in] skipAdjacentDelimiters Boolean to specify whether to merge adjacent delimiters.
                    To elaborate, if set to false, then two adjacent delimiters will be 
                    treated as containing an empty string which will be added to the output.
                    If set to true, adjacent delimiters will be treated as a single delimiter
                    Default: true
+        @param[in] skipLeadTrailWhiteSpace Boolean to specify whether to skip any leading and trailing
+                   whitespaces. If set to false, leading and trailing whitespaces are treated as non-empty
+                   strings and included in the output. If set to true, leading and trailing whitespaces
+                   are not included. 
+                   Default = true
        *@return A vector of strings obtained by spliting \p inpStr
        */
       std::vector<std::string> 
       split(const std::string & inpStr, 
           std::string delimiter = " ",
-          bool skipAdjacentDelimiters = true); 
+          bool skipAdjacentDelimiters = true,
+          bool skipLeadTrailWhiteSpace = true);
     } // end of namespace stringOps
   }   // end of namespace utils
 } // end of namespace dftfe

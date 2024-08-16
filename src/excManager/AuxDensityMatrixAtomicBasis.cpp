@@ -23,7 +23,7 @@ namespace dftfe
     if (basisType==AtomicBasis::BasisType::SLATER)
        d_atomicBasisPtr= std::make_unique<SlaterBasis>();
     else if(basisType==AtomicBasis::BasisType::GAUSSIAN) 
-       d_atomicBasisPtr= std::make_unique<GaussianBasis>();
+       // d_atomicBasisPtr= std::make_unique<GaussianBasis>();
 
     d_atomicBasisPtr->constructBasisSet(atomCoords, atomBasisFileNames);
     d_nBasis      = d_atomicBasisPtr->getNumBasis();

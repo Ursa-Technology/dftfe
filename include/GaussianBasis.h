@@ -24,12 +24,15 @@
 #include <unordered_map>
 #include <string>
 #include <utility>
+#include <string>
+
+#include "AtomicBasis.h"
 
 namespace dftfe
 {
   struct ContractedGaussian 
   {
-    int    nG;     // number of primitive Gaussians that are contracted
+    int    nC;     // number of primitive Gaussians that are contracted
     int    l;     // azimuthal (angular) quantum number
     int    m;     // magnetic quantum number
     std::vector<double> alpha; // exponent of each of the primtive Gaussians
@@ -41,52 +44,44 @@ namespace dftfe
   {
     const std::string  * symbol; // atom symbol
     const double *  center; // atom center coordinates
-    const ContractedGaussian *sp;     // pointer to the ContractedGaussian
+    const ContractedGaussian *cg;     // pointer to the ContractedGaussian
   };
 
-  class GaussianBasis
+  class GaussianBasis: public AtomicBasis
   {
+    public:
+      GaussianBasis(const double rTol = 1e-10, 
+          const double angleTol = 1e-10);  // Constructor
+      ~GaussianBasis(); // Destructor
 
-  public:
-    GaussianBasis(const double rTol = 1e-10, 
-                   const double angleTol = 1e-10);  // Constructor
-    ~GaussianBasis(); // Destructor
+      void
+        constructBasisSet(
+            const std::vector<std::pair<std::string, std::vector<double>>>
+            &                atomCoords,
+            const std::unordered_map<std::string, std::string> & atomBasisFileNames);
 
+      int
+        getNumBasis() const;
 
-    void
-    constructBasisSet(
-      const std::vector<std::pair<std::string, std::vector<double>>>
-        &                atomCoords,
-      const std::string &auxBasisFileName);
+      std::vector<double> 
+        getBasisValue(const unsigned int basisId, 
+            const std::vector<double> & x) const;
 
+      std::vector<double>
+        getBasisGradient(const unsigned int basisId, 
+            const std::vector<double> & x) const;
 
-    const std::vector<GaussianBasisInfo> &
-    getGaussianBasisInfo() const;
+      std::vector<double> 
+        getBasisLaplacian(const unsigned int basisId, 
+            const std::vector<double> & x) const;
 
-    int
-    getNumberBasis() const;
-  
-    double 
-      getBasisValue(const unsigned int basisId, 
-                        const std::vector<double> & x) const;
-    
-    std::vector<double>
-      getBasisGradient(const unsigned int basisId, 
-                        const std::vector<double> & x) const;
-    
-    double 
-      getBasisLaplacian(const unsigned int basisId, 
-                        const std::vector<double> & x) const;
-  
-  private:
-    // std::unordered_map<std::string, std::string> d_atomToGaussianBasisName;
-    std::unordered_map<std::string, std::vector<ContractedGaussian *>>
-      d_atomToContractedGaussiansPtr;
-    std::vector<GaussianBasisInfo> d_gaussianBasisInfo;
-    std::vector<std::pair<std::string, std::vector<double>>> d_atomSymbolsAndCoords;
-    double d_rTol;
-    double d_angleTol;
+    private:
+      std::unordered_map<std::string, std::vector<ContractedGaussian *>>
+        d_atomToContractedGaussiansPtr;
+      std::vector<GaussianBasisInfo> d_gaussianBasisInfo;
+      std::vector<std::pair<std::string, std::vector<double>>> d_atomSymbolsAndCoords;
+      double d_rTol;
+      double d_angleTol;
   };
-} // namespace dftfe
-
+}
 #endif // DFTFE_GAUSSIANBASIS_H

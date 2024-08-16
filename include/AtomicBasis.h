@@ -45,7 +45,7 @@ namespace dftfe
     constructBasisSet(
       const std::vector<std::pair<std::string, std::vector<double>>>
         &                atomCoords,
-      const std::unordered_map<std::string, std::string> & atomBasisFileNames);
+      const std::unordered_map<std::string, std::string> & atomBasisFileNames) = 0;
 
     virtual int getNumBasis() const = 0;
   

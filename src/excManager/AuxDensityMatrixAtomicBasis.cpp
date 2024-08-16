@@ -38,7 +38,7 @@ namespace dftfe
     const std::vector<double> &quadpts,
     const std::vector<double> &quadWt)
   {
-    d_atomicBasisData.evalBasisData(quadpts, d_sbs, d_maxDerOrder);
+    d_atomicBasisData.evalBasisData(quadpts, *d_atomicBasisPtr, 0);
     d_SMatrix = std::vector<double>(d_nBasis * d_nBasis, 0.0);
     const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();
     for (int i = 0; i < d_nBasis; ++i)
@@ -186,6 +186,7 @@ namespace dftfe
     auto &psiFunc                              = projectionInputs["psiFunc"];
     auto &quadWt                               = projectionInputs["quadWt"];
     d_fValues                                  = projectionInputs["fValues"];
+    d_atomicBasisData.evalBasisData(quadpts, *d_atomicBasisPtr, 0);    
     std::vector<double> basisValsWeighted = d_atomicBasisData.getBasisValues();
 
     d_nQuad = quadWt.size();
@@ -287,6 +288,7 @@ namespace dftfe
   {
     const unsigned int  DMSpinOffset = d_nBasis * d_nBasis;
     const unsigned int nQuad=quadpts.size()/3;
+    d_atomicBasisData.evalBasisData(quadpts, *d_atomicBasisPtr, d_maxDerOrder);  
     const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();
     const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisGradValues();
     const std::vector<double> & basisLaplacianValues=d_atomicBasisData.getBasisLaplacianValues();    

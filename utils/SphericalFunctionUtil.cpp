@@ -79,7 +79,7 @@ namespace dftfe
         }
       }
 
-      inline double Clm(const int l, const int m)
+      double Clm(const int l, const int m)
       {
         int modM = std::abs(m);
         return Am(modM)*Blm(l, modM);
@@ -161,7 +161,7 @@ namespace dftfe
         }
       }
 
-      inline double d2PlmDTheta2(const int l, const int m, const double theta)
+      double d2PlmDTheta2(const int l, const int m, const double theta)
       {
         if(std::abs(m) > l)
           return 0.0;

@@ -2,8 +2,8 @@
 // Created by Arghadwip Paul, Sambit Das
 //
 
-#ifndef DFTFE_AUXDM_AUXDENSITYMATRIXSLATER_H
-#define DFTFE_AUXDM_AUXDENSITYMATRIXSLATER_H
+#ifndef DFTFE_AUXDM_AUXDENSITYMATRIXATOMICBASIS_H
+#define DFTFE_AUXDM_AUXDENSITYMATRIXATOMICBASIS_H
 
 #  include "AuxDensityMatrix.h"
 #  include "AtomicBasis.h"
@@ -17,19 +17,13 @@
 namespace dftfe
 {
 
-  enum class AuxDMAtomicBasisType
-  {
-    Slater,
-    Gaussian
-  };
-
   template <dftfe::utils::MemorySpace memorySpace>
   class AuxDensityMatrixAtomicBasis : public AuxDensityMatrix<memorySpace>
   {
   public:
 
     void
-    reinit(const auxDMAtomicBasisType,
+    reinit(const AtomicBasis::BasisType basisType,
       const std::vector<std::pair<std::string, std::vector<double>>>
         &                atomCoords,
       const std::unordered_map<std::string, std::string> & atomBasisFileNames,
@@ -38,7 +32,7 @@ namespace dftfe
 
     void
     applyLocalOperations(
-      const std::vector<double> &Points,
+      const std::vector<double> &quadpts,
       std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
         &densityData) override;
 
@@ -104,7 +98,7 @@ namespace dftfe
     std::vector<double> d_DM;
     std::vector<double> d_SMatrix;
     std::vector<double> d_SMatrixInv;
-    std::vector<double> d_SWFC;
+    std::vector<double> d_basisWFCInnerProducts;
     std::vector<double> d_fValues;
 
     int d_nWFC;
@@ -118,4 +112,4 @@ namespace dftfe
 
   };
 } // namespace dftfe
-#endif // DFTFE_AUXDM_AUXDENSITYMATRIXSLATER_H
+#endif // DFTFE_AUXDM_AUXDENSITYMATRIXATOMICBASIS_H

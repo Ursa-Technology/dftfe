@@ -6,23 +6,24 @@
 #  include "GaussianBasis.h"
 #  include <stdexcept>
 #  include <cmath>
-#  include <linearAlgebraOperationsCPU.h>
+// #  include <linearAlgebraOperationsCPU.h>
+#  include <linearAlgebraOperations.h>
 
 namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  AuxDensityMatrixAtomicBasis<memorySpace>::reinit(const auxDMAtomicBasisType,
+  AuxDensityMatrixAtomicBasis<memorySpace>::reinit(const AtomicBasis::BasisType basisType,
       const std::vector<std::pair<std::string, std::vector<double>>>
         &                atomCoords,
       const std::unordered_map<std::string, std::string> & atomBasisFileNames,
       const int          nSpin,
       const int          maxDerOrder)
   {
-    if (auxDMAtomicBasisType==AuxDMAtomicBasisType::Slater)
+    if (basisType==AtomicBasis::BasisType::SLATER)
        d_atomicBasisPtr= std::make_unique<SlaterBasis>();
-    else if(auxDMAtomicBasisType==AuxDMAtomicBasisType::Slater) 
-       d_atomicBasisPtr= std::make_unique<GaussianBasis>();
+    else if(basisType==AtomicBasis::BasisType::GAUSSIAN) 
+       // d_atomicBasisPtr= std::make_unique<GaussianBasis>();
 
     d_atomicBasisPtr->constructBasisSet(atomCoords, atomBasisFileNames);
     d_nBasis      = d_atomicBasisPtr->getNumBasis();
@@ -37,9 +38,14 @@ namespace dftfe
     const std::vector<double> &quadpts,
     const std::vector<double> &quadWt)
   {
-    d_atomicBasisData.evalBasisData(quadpts, d_sbs, d_maxDerOrder);
+    if (d_atomicBasisPtr) {
+    	d_atomicBasisData.evalBasisData(quadpts, *d_atomicBasisPtr, d_maxDerOrder);
+    }
+    else {
+	throw std::runtime_error("Error: d_atomicBasisPtr is null.");
+    }
     d_SMatrix = std::vector<double>(d_nBasis * d_nBasis, 0.0);
-
+    const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();
     for (int i = 0; i < d_nBasis; ++i)
       {
         for (int j = i; j < d_nBasis; ++j)
@@ -47,8 +53,8 @@ namespace dftfe
             double sum = 0.0;
             for (int iQuad = 0; iQuad < quadWt.size(); iQuad++)
               {
-                sum += d_atomicBasisData.getBasisValues(iQuad * d_nBasis + i) *
-                       d_atomicBasisData.getBasisValues(iQuad * d_nBasis + j) *
+                sum += basisValues[iQuad * d_nBasis + i] *
+                       basisValues[iQuad * d_nBasis + j] *
                        quadWt[iQuad];
               }
             d_SMatrix[i * d_nBasis + j] = sum;
@@ -155,7 +161,7 @@ namespace dftfe
               }
           }
       }
-    frobenius_norm = std::sqrt(frobenius_norm);
+    frobenius_norm = std::sqrt(frobenius_norm/d_nBasis);
     if (frobenius_norm > 1E-8)
       {
         std::cout << "frobenius norm of inversion : " << frobenius_norm
@@ -179,24 +185,24 @@ namespace dftfe
     std::unordered_map<std::string, std::vector<double>> &projectionInputs,
     int                                                   iSpin)
   {
-    // eval <SlaterBasis|WFC> matrix d_SWFC
+    // eval <AtomicBasis|WFC> matrix d_basisWFCInnerProducts
 
     d_iSpin                                    = iSpin;
     auto &psiFunc                              = projectionInputs["psiFunc"];
     auto &quadWt                               = projectionInputs["quadWt"];
     d_fValues                                  = projectionInputs["fValues"];
-    std::vector<double> SlaterBasisValWeighted = d_atomicBasisData.getBasisValuesAll();
+    std::vector<double> basisValsWeighted = d_atomicBasisData.getBasisValues();
 
     d_nQuad = quadWt.size();
     d_nWFC  = psiFunc.size() / d_nQuad;
-    d_SWFC  = std::vector<double>(d_nBasis * d_nWFC, 0.0);
+    d_basisWFCInnerProducts  = std::vector<double>(d_nBasis * d_nWFC, 0.0);
 
 
     for (int i = 0; i < d_nQuad; ++i)
       {
         for (int j = 0; j < d_nBasis; ++j)
           {
-            SlaterBasisValWeighted[i * d_nBasis + j] *= quadWt[i];
+            basisValsWeighted[i * d_nBasis + j] *= quadWt[i];
           }
       }
 
@@ -208,12 +214,12 @@ namespace dftfe
                   reinterpret_cast<const unsigned int *>(&d_nWFC),
                   reinterpret_cast<const unsigned int *>(&d_nQuad),
                   &alpha,
-                  SlaterBasisValWeighted.data(),
+                  basisValsWeighted.data(),
                   reinterpret_cast<const unsigned int *>(&d_nBasis),
                   psiFunc.data(),
                   reinterpret_cast<const unsigned int *>(&d_nWFC),
                   &beta,
-                  d_SWFC.data(),
+                  d_basisWFCInnerProducts.data(),
                   reinterpret_cast<const unsigned int *>(&d_nBasis));
   }
 
@@ -222,15 +228,15 @@ namespace dftfe
   AuxDensityMatrixAtomicBasis<memorySpace>::projectDensityMatrixEnd(
     const MPI_Comm &mpiComm)
   {
-    // MPI All Reduce d_SWFC
-    MPI_Allreduce(d_SWFC.data(),
-                  d_SWFC.data(),
-                  d_SWFC.size(),
+    // MPI All Reduce d_basisWFCInnerProducts
+    MPI_Allreduce(d_basisWFCInnerProducts.data(),
+                  d_basisWFCInnerProducts.data(),
+                  d_basisWFCInnerProducts.size(),
                   MPI_DOUBLE,
                   MPI_SUM,
                   mpiComm);
 
-    auto SlaterOverlapInv = this->getOverlapMatrixInv();
+    auto overlapInv = this->getOverlapMatrixInv();
     // Multiply S^(-1) * <S|W> = BB
     std::vector<double> BB(d_nBasis * d_nWFC, 0.0);
     double              alpha = 1.0;
@@ -241,9 +247,9 @@ namespace dftfe
                   reinterpret_cast<const unsigned int *>(&d_nWFC),
                   reinterpret_cast<const unsigned int *>(&d_nBasis),
                   &alpha,
-                  SlaterOverlapInv.data(),
+                  overlapInv.data(),
                   reinterpret_cast<const unsigned int *>(&d_nBasis),
-                  d_SWFC.data(),
+                  d_basisWFCInnerProducts.data(),
                   reinterpret_cast<const unsigned int *>(&d_nBasis),
                   &beta,
                   BB.data(),
@@ -276,136 +282,152 @@ namespace dftfe
   }
 
 
-  namespace
-  {
-    void
-        fillDensityAttributeData(std::vector<double> &            attributeData,
-                                 const std::vector<double> &      values,
-                                 const std::pair<size_t, size_t> &indexRange)
-        {
-          size_t startIndex = indexRange.first;
-          size_t endIndex   = indexRange.second;
-
-          if (startIndex > endIndex || endIndex >= attributeData.size() ||
-              endIndex - startIndex >= values.size())
-          {
-            throw std::invalid_argument("Invalid index range for densityData");
-          }
-
-          std::copy(values.begin(), values.begin() + (endIndex - startIndex + 1),
-                    attributeData.begin() + startIndex);
-        }
-  } // namespace
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
   AuxDensityMatrixAtomicBasis<memorySpace>::applyLocalOperations(
-    const std::vector<double> &Points,
+    const std::vector<double> &quadpts,
     std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
       &densityData)
   {
-    int                       DMSpinOffset = d_nBasis * d_nBasis;
-    std::pair<size_t, size_t> indexRange;
+    const unsigned int  DMSpinOffset = d_nBasis * d_nBasis;
+    const unsigned int nQuad=quadpts.size()/3;
+    const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();
+    const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisGradValues();
+    const std::vector<double> & basisLaplacianValues=d_atomicBasisData.getBasisLaplacianValues();    
 
-      for (int iQuad = 0; iQuad < Points.size() / 3; iQuad++)
-      {
-        std::vector<double> rhoUp(1, 0.0);
-        std::vector<double> rhoDown(1, 0.0);
-        std::vector<double> gradrhoUp(3, 0.0);
-        std::vector<double> gradrhoDown(3, 0.0);
-
+    if (densityData.find(DensityDescriptorDataAttributes::valuesSpinUp) !=
+        densityData.end())
+    {
+      std::vector<double> & rhoUp=densityData[DensityDescriptorDataAttributes::valuesSpinUp];
+      for (int iQuad = 0; iQuad < nQuad; iQuad++)
         for (int i = 0; i < d_nBasis; i++)
-        {
           for (int j = 0; j < d_nBasis; j++)
-          {
-
-            for (int iSpin = 0; iSpin < d_nSpin; iSpin++)
-            {
-
-              if (iSpin == 0)
-              {
-                rhoUp[0] += d_DM[i * d_nBasis + j] *
-                            d_atomicBasisData.getBasisValues(iQuad * d_nBasis + i) *
-                            d_atomicBasisData.getBasisValues(iQuad * d_nBasis + j);
-
-                for (int derIndex = 0; derIndex < 3; derIndex++)
-                {
-                  gradrhoUp[derIndex] +=
-                          d_DM[i * d_nBasis + j] *
-                          (d_atomicBasisData.getBasisGradValues(iQuad * d_nBasis * 3 +
-                                                    3 * i + derIndex) *
-                           d_atomicBasisData.getBasisValues(iQuad * d_nBasis + j) +
-                           d_atomicBasisData.getBasisGradValues(iQuad * d_nBasis * 3 +
-                                                    3 * j + derIndex) *
-                           d_atomicBasisData.getBasisValues(iQuad * d_nBasis + i));
-                }
-              }
-
-              if (iSpin == 1)
-              {
-                rhoDown[0] +=
-                        d_DM[DMSpinOffset + i * d_nBasis + j] *
-                        d_atomicBasisData.getBasisValues(iQuad * d_nBasis + i) *
-                        d_atomicBasisData.getBasisValues(iQuad * d_nBasis + j);
-                for (int derIndex = 0; derIndex < 3; derIndex++)
-                {
-                  gradrhoDown[derIndex] +=
-                          d_DM[DMSpinOffset + i * d_nBasis + j] *
-                          (d_atomicBasisData.getBasisGradValues(iQuad * d_nBasis * 3 +
-                                                    3 * i + derIndex) *
-                           d_atomicBasisData.getBasisValues(iQuad * d_nBasis + j) +
-                           d_atomicBasisData.getBasisGradValues(iQuad * d_nBasis * 3 +
-                                                    3 * j + derIndex) *
-                           d_atomicBasisData.getBasisValues(iQuad * d_nBasis + i));
-                }
-              }
-            }
-          }
-        }
-
-        indexRange = std::make_pair(iQuad, iQuad);
-
-        if (densityData.find(DensityDescriptorDataAttributes::valuesSpinUp) !=
-            densityData.end())
-        {
-          fillDensityAttributeData(
-                  densityData[DensityDescriptorDataAttributes::valuesSpinUp],
-                  rhoUp,
-                  indexRange);
-        }
-
-        if (densityData.find(DensityDescriptorDataAttributes::valuesSpinDown) !=
-            densityData.end())
-        {
-          fillDensityAttributeData(
-                  densityData[DensityDescriptorDataAttributes::valuesSpinDown],
-                  rhoDown,
-                  indexRange);
-        }
-
-        indexRange = std::make_pair(iQuad * 3, iQuad * 3 + 2);
-
-        if (densityData.find(
-                DensityDescriptorDataAttributes::gradValuesSpinUp) !=
-            densityData.end())
-        {
-          fillDensityAttributeData(
-                  densityData[DensityDescriptorDataAttributes::gradValuesSpinUp],
-                  gradrhoUp,
-                  indexRange);
-        }
-
-        if (densityData.find(
-                DensityDescriptorDataAttributes::gradValuesSpinDown) !=
-            densityData.end())
-        {
-          fillDensityAttributeData(
-                  densityData[DensityDescriptorDataAttributes::gradValuesSpinDown],
-                  gradrhoDown,
-                  indexRange);
-        }
-      }
+                rhoUp[iQuad] += d_DM[i * d_nBasis + j] *
+                            basisValues[iQuad * d_nBasis + i] *
+                            basisValues[iQuad * d_nBasis + j];
     }
+
+    if (densityData.find(DensityDescriptorDataAttributes::valuesSpinDown) !=
+        densityData.end())
+    {
+      std::vector<double> & rhoDown=densityData[DensityDescriptorDataAttributes::valuesSpinUp];
+      for (int iQuad = 0; iQuad < nQuad; iQuad++)
+        for (int i = 0; i < d_nBasis; i++)
+          for (int j = 0; j < d_nBasis; j++)
+                rhoDown[iQuad] += d_DM[DMSpinOffset+i * d_nBasis + j] *
+                            basisValues[iQuad * d_nBasis + i] *
+                            basisValues[iQuad * d_nBasis + j];
+    }
+
+    if (densityData.find(DensityDescriptorDataAttributes::valuesTotal) !=
+        densityData.end())
+    {
+      std::vector<double> & rho=densityData[DensityDescriptorDataAttributes::valuesTotal];
+      for (int iQuad = 0; iQuad < nQuad; iQuad++)
+        for (int i = 0; i < d_nBasis; i++)
+          for (int j = 0; j < d_nBasis; j++)
+                rho[iQuad] += (d_DM[i * d_nBasis + j] +d_DM[DMSpinOffset+i * d_nBasis + j]) *
+                            basisValues[iQuad * d_nBasis + i] *
+                            basisValues[iQuad * d_nBasis + j];
+    }
+
+    if (densityData.find(
+            DensityDescriptorDataAttributes::gradValuesSpinUp) !=
+        densityData.end())
+    {
+      std::vector<double> & gradRhoUp=densityData[DensityDescriptorDataAttributes::gradValuesSpinUp];
+      for (int iQuad = 0; iQuad < nQuad; iQuad++)
+        for (int i = 0; i < d_nBasis; i++)
+          for (int j = 0; j < d_nBasis; j++)  
+            for (int derIndex = 0; derIndex < 3; derIndex++)
+                gradRhoUp[3*iQuad+derIndex] +=
+                        d_DM[i * d_nBasis + j] *
+                        (basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * i + derIndex] *
+                         basisValues[iQuad * d_nBasis + j] +
+                         basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * j + derIndex] *
+                         basisValues[iQuad * d_nBasis + i]);
+    }
+
+    if (densityData.find(
+            DensityDescriptorDataAttributes::gradValuesSpinDown) !=
+        densityData.end())
+    {
+      std::vector<double> & gradRhoDown=densityData[DensityDescriptorDataAttributes::gradValuesSpinDown];
+      for (int iQuad = 0; iQuad < nQuad; iQuad++)
+        for (int i = 0; i < d_nBasis; i++)
+          for (int j = 0; j < d_nBasis; j++)  
+            for (int derIndex = 0; derIndex < 3; derIndex++)
+                gradRhoDown[3*iQuad+derIndex] +=
+                        d_DM[DMSpinOffset+i * d_nBasis + j] *
+                        (basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * i + derIndex] *
+                         basisValues[iQuad * d_nBasis + j] +
+                         basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * j + derIndex] *
+                         basisValues[iQuad * d_nBasis + i]);
+    }
+
+
+    if (densityData.find(
+            DensityDescriptorDataAttributes::laplacianSpinUp) !=
+        densityData.end())
+    {
+      std::vector<double> & laplacianRhoUp=densityData[DensityDescriptorDataAttributes::laplacianSpinUp];
+      for (int iQuad = 0; iQuad < nQuad; iQuad++)
+        for (int i = 0; i < d_nBasis; i++)
+          for (int j = 0; j < d_nBasis; j++)  
+                laplacianRhoUp[iQuad] +=
+                        d_DM[i * d_nBasis + j] *
+                        (basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * i + 0] *
+                         basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * j + 0] +
+                         basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * i + 1] *
+                         basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * j + 1] +
+                         basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * i + 2] *
+                         basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * j + 2] +
+                         basisValues[iQuad * d_nBasis +i] *
+                         basisLaplacianValues[iQuad * d_nBasis+j] +      
+                         basisLaplacianValues[iQuad * d_nBasis +i] *
+                         basisValues[iQuad * d_nBasis+j]);  
+    }
+
+    if (densityData.find(
+            DensityDescriptorDataAttributes::laplacianSpinDown) !=
+        densityData.end())
+    {
+      std::vector<double> & laplacianRhoDown=densityData[DensityDescriptorDataAttributes::laplacianSpinDown];
+      for (int iQuad = 0; iQuad < nQuad; iQuad++)
+        for (int i = 0; i < d_nBasis; i++)
+          for (int j = 0; j < d_nBasis; j++)  
+                laplacianRhoDown[iQuad] +=
+                        d_DM[DMSpinOffset+i * d_nBasis + j] *
+                        (basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * i + 0] *
+                         basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * j + 0] +
+                         basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * i + 1] *
+                         basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * j + 1] +
+                         basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * i + 2] *
+                         basisGradValues[iQuad * d_nBasis * 3 +
+                                                  3 * j + 2] +
+                         basisValues[iQuad * d_nBasis +i] *
+                         basisLaplacianValues[iQuad * d_nBasis+j] +      
+                         basisLaplacianValues[iQuad * d_nBasis +i] *
+                         basisValues[iQuad * d_nBasis+j]);  
+    }
+
+  }
 
   template <dftfe::utils::MemorySpace memorySpace>
   void

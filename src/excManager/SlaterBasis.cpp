@@ -667,11 +667,13 @@ namespace dftfe
       }
     }
 
+  /*
   const std::vector<SlaterBasisInfo> &
     SlaterBasis::getSlaterBasisInfo() const
     {
       return d_slaterBasisInfo;
     }
+  */
 
   int
     SlaterBasis::getNumBasis() const

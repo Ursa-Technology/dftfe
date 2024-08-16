@@ -46,7 +46,7 @@ withGPUAwareMPI=OFF #Please use this option with care
 #Option to link to DCCL library (Only for GPU compilation)
 withDCCL=OFF
 withMDI=OFF
-withTorch=ON
+withTorch=OFF
 withCustomizedDealii=OFF
 
 #Compiler options and flags

@@ -23,19 +23,68 @@
 //
 // source file for dft class initializations
 //
-#include <AuxDensityFE.h>
-#include <AuxDensityMatrixSlater.h>
 #include <dft.h>
 #include <dftUtils.h>
 #include <vectorUtilities.h>
 #ifdef USE_COMPLEX
 #  include "initkPointData.cc"
 #endif
+#include <AtomicBasis.h>
 #include <AuxDensityMatrixFE.h>
-#include <AuxDensityMatrixSlater.h>
+#include <AuxDensityMatrixAtomicBasis.h>
+#include <PeriodicTable.h>
+
 
 namespace dftfe
 {
+
+  namespace
+  {
+    std::unordered_map<std::string, std::string>
+    readAtomToAtomicBasisFileName(const std::string &fileName)
+    {
+      std::unordered_map<std::string, std::string> atomToAtomicBasisFileName;
+      std::ifstream                                file(fileName);
+      if (file.is_open())
+        {
+          std::string line;
+          int         lineNumber = 0;
+          while (std::getline(file, line))
+            {
+              lineNumber++;
+              std::istringstream iss(line);
+              std::string        atomSymbol;
+              std::string        atomicBasisFileName;
+
+              if (iss >> atomSymbol >> atomicBasisFileName)
+                {
+                  std::string extra;
+                  if (iss >> extra)
+                    {
+                      throw std::runtime_error(
+                        "Error: More than two entries in line " +
+                        std::to_string(lineNumber) + "in" + fileName);
+                    }
+                  atomToAtomicBasisFileName[atomSymbol] = atomicBasisFileName;
+                }
+              else
+                {
+                  throw std::runtime_error("Error: Invalid format in line " +
+                                           std::to_string(lineNumber) + "in" +
+                                           fileName);
+                }
+            }
+          file.close();
+        }
+      else
+        {
+          std::cout << "Unable to open the file." + fileName << std::endl;
+        }
+      return atomToAtomicBasisFileName;
+    }
+  }
+
+
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
@@ -323,76 +372,57 @@ namespace dftfe
       }
     else if (d_dftParamsPtr->auxBasisTypeXC == "SLATER")
       {
-#ifdef DFTFE_WITH_TORCH
+      	std::vector<std::pair<std::string, std::vector<double>>> atomCoords;
+      	dftfe::pseudoUtils::PeriodicTable pTable;
 
-        d_auxDensityMatrixXCInPtr =
-          std::make_shared<AuxDensityMatrixSlater<memorySpace>>();
-        // FIXME: extract atomCoords from "atomLocations" (this is a datamember
-        // of dftClass) of type std::vector<std::vector<double>> atomLocations
-        // with each row representing an atom and each column has the following
-        // data: atomic number, valence number,
-        // and x,y,z cartesian coordiantes with respect to origin at domain
-        // center
-        /*
-        d_auxDensityMatrixXCInPtr->reinitAuxDensityMatrix(
-          const std::vector<std::pair<std::string, std::vector<double>>>
-            &atomCoords,
-          d_dftParamsPtr->auxBasisTypeXC,
-          2,
-          5);
-        */
+      	for (const auto& atom : atomLocations) {
+        	int atomicNumber = static_cast<int>(atom[0]);
+        	std::string atomicSymbol = pTable.symbol(atomicNumber);
 
-        d_auxDensityMatrixXCOutPtr =
-          std::make_shared<AuxDensityMatrixSlater<memorySpace>>();
-        // FIXME: with same comments as above
-        /*
-        d_auxDensityMatrixXCOutPtr->reinitAuxDensityMatrix(
-          const std::vector<std::pair<std::string, std::vector<double>>>
-            &atomCoords,
-          d_dftParamsPtr->auxBasisTypeXC,
-          2,
-          5);
-        */
+        	// Assuming atom[2], atom[3], atom[4] are x, y, z coordinates
+        	std::vector<double> coords = {atom[2], atom[3], atom[4]};
 
-      // Map of atomic number to atomic symbol
-        std::unordered_map<int, std::string> atomicSymbols = {
-            {1, "H"}, {2, "He"}, {3, "Li"}, {4, "Be"},
-            {5, "B"}, {6, "C"}, {7, "N"}, {8, "O"},
-            {9, "F"}, {10, "Ne"},
-            // Add more elements as needed
-        };
+        	atomCoords.emplace_back(atomicSymbol, coords);
+      	}
 
-      std::vector<std::pair<std::string, std::vector<double>>> atomCoords;
+        const auto atomToAtomicBasisFileName = readAtomToAtomicBasisFileName(d_dftParamsPtr->auxBasisDataXC);
+      
+      	d_auxDensityMatrixXCInPtr = std::make_shared<AuxDensityMatrixAtomicBasis<memorySpace>>();
+      	auto derivedInPtr = std::dynamic_pointer_cast<AuxDensityMatrixAtomicBasis<memorySpace>>(d_auxDensityMatrixXCInPtr);
+      	if (derivedInPtr) 
+      	{
+    		    derivedInPtr->reinit(
+          		    AtomicBasis::BasisType::SLATER,
+                  atomCoords,
+                  atomToAtomicBasisFileName,
+                  2, 
+                  1);
+      	} 
+      	else
+      	{
+    		  throw std::runtime_error("Error: Failed to cast to AuxDensityMatrixAtomicBasis.");
+      	}
 
-      for (const auto& atom : atomLocations) {
-            int atomicNumber = static_cast<int>(atom[0]);
-            std::string symbol = atomicSymbols[atomicNumber]; // Lookup atomic symbol
-
-            // Assuming atom[2], atom[3], atom[4] are x, y, z coordinates
-            std::vector<double> coords = {atom[2], atom[3], atom[4]};
-
-            atomCoords.emplace_back(symbol, coords);
+	      d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityMatrixAtomicBasis<memorySpace>>();
+        auto derivedOutPtr = std::dynamic_pointer_cast<AuxDensityMatrixAtomicBasis<memorySpace>>(d_auxDensityMatrixXCOutPtr);
+        if (derivedOutPtr)
+        {
+            derivedOutPtr->reinit(
+              AtomicBasis::BasisType::SLATER,
+              atomCoords,
+              atomToAtomicBasisFileName,
+              2, 
+              1);
         }
+        else
+        {
+            throw std::runtime_error("Error: Failed to cast to AuxDensityMatrixAtomicBasis.");
+        }	
 
-      // std::shared_ptr<AuxDensityMatrixSlater> d_auxDensityMatrixXCInPtr;
-      // std::shared_ptr<AuxDensityMatrixSlater> d_auxDensityMatrixXCOutPtr;
-
-
-      d_auxDensityMatrixXCInPtr = std::make_shared<AuxDensityMatrixSlater>();
-      d_auxDensityMatrixXCInPtr->reinitAuxDensityMatrix(atomCoords,
-          d_dftParamsPtr->auxBasisDataXC,
-          2,
-          1);
-      d_auxDensityMatrixXCOutPtr = std::make_shared<AuxDensityMatrixSlater>();
-      d_auxDensityMatrixXCOutPtr->reinitAuxDensityMatrix(
-          atomCoords,
-          d_dftParamsPtr->auxBasisDataXC,
-          2,
-          1);
-#endif
       }
 
     computing_timer.leave_subsection("unmoved setup");
   }
 #include "dft.inst.cc"
+
 } // namespace dftfe

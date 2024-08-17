@@ -389,7 +389,7 @@ namespace dftfe
           for (int j = 0; j < d_nBasis; j++)  
                 laplacianRhoUp[iQuad] +=
                         d_DM[i * d_nBasis + j] *
-                        (basisGradValues[iQuad * d_nBasis * 3 +
+                        (2.0*(basisGradValues[iQuad * d_nBasis * 3 +
                                                   3 * i + 0] *
                          basisGradValues[iQuad * d_nBasis * 3 +
                                                   3 * j + 0] +
@@ -400,7 +400,7 @@ namespace dftfe
                          basisGradValues[iQuad * d_nBasis * 3 +
                                                   3 * i + 2] *
                          basisGradValues[iQuad * d_nBasis * 3 +
-                                                  3 * j + 2] +
+                                                  3 * j + 2]) +
                          basisValues[iQuad * d_nBasis +i] *
                          basisLaplacianValues[iQuad * d_nBasis+j] +      
                          basisLaplacianValues[iQuad * d_nBasis +i] *
@@ -421,7 +421,7 @@ namespace dftfe
           for (int j = 0; j < d_nBasis; j++)  
                 laplacianRhoDown[iQuad] +=
                         d_DM[DMSpinOffset+i * d_nBasis + j] *
-                        (basisGradValues[iQuad * d_nBasis * 3 +
+                        (2.0*(basisGradValues[iQuad * d_nBasis * 3 +
                                                   3 * i + 0] *
                          basisGradValues[iQuad * d_nBasis * 3 +
                                                   3 * j + 0] +
@@ -432,7 +432,7 @@ namespace dftfe
                          basisGradValues[iQuad * d_nBasis * 3 +
                                                   3 * i + 2] *
                          basisGradValues[iQuad * d_nBasis * 3 +
-                                                  3 * j + 2] +
+                                                  3 * j + 2]) +
                          basisValues[iQuad * d_nBasis +i] *
                          basisLaplacianValues[iQuad * d_nBasis+j] +      
                          basisLaplacianValues[iQuad * d_nBasis +i] *

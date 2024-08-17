@@ -335,7 +335,7 @@ namespace dftfe
         densityData.end())
     {
       const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();      
-      const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisLaplacianValues();
+      const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisGradValues();
 
       std::vector<double> & gradRhoUp=densityData[DensityDescriptorDataAttributes::gradValuesSpinUp];
       for (int iQuad = 0; iQuad < nQuad; iQuad++)
@@ -357,7 +357,7 @@ namespace dftfe
         densityData.end())
     {
       const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();      
-      const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisLaplacianValues();
+      const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisGradValues();
 
       std::vector<double> & gradRhoDown=densityData[DensityDescriptorDataAttributes::gradValuesSpinDown];
       for (int iQuad = 0; iQuad < nQuad; iQuad++)
@@ -380,7 +380,7 @@ namespace dftfe
         densityData.end())
     {
       const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();
-      const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisLaplacianValues();      
+      const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisGradValues();      
       const std::vector<double> & basisLaplacianValues=d_atomicBasisData.getBasisLaplacianValues();
 
       std::vector<double> & laplacianRhoUp=densityData[DensityDescriptorDataAttributes::laplacianSpinUp];
@@ -412,7 +412,7 @@ namespace dftfe
         densityData.end())
     {
       const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();
-      const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisLaplacianValues();      
+      const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisGradValues();      
       const std::vector<double> & basisLaplacianValues=d_atomicBasisData.getBasisLaplacianValues();
 
       std::vector<double> & laplacianRhoDown=densityData[DensityDescriptorDataAttributes::laplacianSpinDown];

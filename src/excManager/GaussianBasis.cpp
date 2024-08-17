@@ -536,7 +536,7 @@ namespace dftfe
       unsigned int nPoints = round(x.size()/3);
       std::vector<double> returnValue(nPoints,0.0);
       std::vector<double> dx(3);
-      for(unsigned int iPoint = 0; iPoint < 3; ++iPoint)
+      for(unsigned int iPoint = 0; iPoint < nPoints; ++iPoint)
       {
         for(unsigned int j = 0; j < 3; ++j)
           dx[j] = x[iPoint*3+j] - x0[j];
@@ -558,7 +558,7 @@ namespace dftfe
     unsigned int nPoints = round(x.size()/3);
     std::vector<double> returnValue(3*nPoints,0.0);
     std::vector<double> dx(3);
-    for(unsigned int iPoint = 0; iPoint < 3; ++iPoint)
+    for(unsigned int iPoint = 0; iPoint < nPoints; ++iPoint)
     {
       for(unsigned int j = 0; j < 3; ++j)
         dx[j] = x[iPoint*3+j] - x0[j];
@@ -580,7 +580,7 @@ namespace dftfe
     unsigned int nPoints = round(x.size()/3);
     std::vector<double> returnValue(nPoints,0.0);
     std::vector<double> dx(3);
-    for(unsigned int iPoint = 0; iPoint < 3; ++iPoint)
+    for(unsigned int iPoint = 0; iPoint < nPoints; ++iPoint)
     {
       for(unsigned int j = 0; j < 3; ++j)
         dx[j] = x[iPoint*3+j] - x0[j];

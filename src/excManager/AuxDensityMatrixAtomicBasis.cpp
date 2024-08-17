@@ -290,13 +290,11 @@ namespace dftfe
     const unsigned int  DMSpinOffset = d_nBasis * d_nBasis;
     const unsigned int nQuad=quadpts.size()/3;
     d_atomicBasisData.evalBasisData(quadpts, *d_atomicBasisPtr, d_maxDerOrder);  
-    const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();
-    const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisGradValues();
-    const std::vector<double> & basisLaplacianValues=d_atomicBasisData.getBasisLaplacianValues();    
 
     if (densityData.find(DensityDescriptorDataAttributes::valuesSpinUp) !=
         densityData.end())
     {
+      const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();      
       std::vector<double> & rhoUp=densityData[DensityDescriptorDataAttributes::valuesSpinUp];
       for (int iQuad = 0; iQuad < nQuad; iQuad++)
         for (int i = 0; i < d_nBasis; i++)
@@ -309,7 +307,8 @@ namespace dftfe
     if (densityData.find(DensityDescriptorDataAttributes::valuesSpinDown) !=
         densityData.end())
     {
-      std::vector<double> & rhoDown=densityData[DensityDescriptorDataAttributes::valuesSpinUp];
+      const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();      
+      std::vector<double> & rhoDown=densityData[DensityDescriptorDataAttributes::valuesSpinDown];
       for (int iQuad = 0; iQuad < nQuad; iQuad++)
         for (int i = 0; i < d_nBasis; i++)
           for (int j = 0; j < d_nBasis; j++)
@@ -321,6 +320,7 @@ namespace dftfe
     if (densityData.find(DensityDescriptorDataAttributes::valuesTotal) !=
         densityData.end())
     {
+      const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();      
       std::vector<double> & rho=densityData[DensityDescriptorDataAttributes::valuesTotal];
       for (int iQuad = 0; iQuad < nQuad; iQuad++)
         for (int i = 0; i < d_nBasis; i++)
@@ -334,6 +334,9 @@ namespace dftfe
             DensityDescriptorDataAttributes::gradValuesSpinUp) !=
         densityData.end())
     {
+      const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();      
+      const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisLaplacianValues();
+
       std::vector<double> & gradRhoUp=densityData[DensityDescriptorDataAttributes::gradValuesSpinUp];
       for (int iQuad = 0; iQuad < nQuad; iQuad++)
         for (int i = 0; i < d_nBasis; i++)
@@ -353,6 +356,9 @@ namespace dftfe
             DensityDescriptorDataAttributes::gradValuesSpinDown) !=
         densityData.end())
     {
+      const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();      
+      const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisLaplacianValues();
+
       std::vector<double> & gradRhoDown=densityData[DensityDescriptorDataAttributes::gradValuesSpinDown];
       for (int iQuad = 0; iQuad < nQuad; iQuad++)
         for (int i = 0; i < d_nBasis; i++)
@@ -373,6 +379,10 @@ namespace dftfe
             DensityDescriptorDataAttributes::laplacianSpinUp) !=
         densityData.end())
     {
+      const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();
+      const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisLaplacianValues();      
+      const std::vector<double> & basisLaplacianValues=d_atomicBasisData.getBasisLaplacianValues();
+
       std::vector<double> & laplacianRhoUp=densityData[DensityDescriptorDataAttributes::laplacianSpinUp];
       for (int iQuad = 0; iQuad < nQuad; iQuad++)
         for (int i = 0; i < d_nBasis; i++)
@@ -401,6 +411,10 @@ namespace dftfe
             DensityDescriptorDataAttributes::laplacianSpinDown) !=
         densityData.end())
     {
+      const std::vector<double> & basisValues=d_atomicBasisData.getBasisValues();
+      const std::vector<double> & basisGradValues=d_atomicBasisData.getBasisLaplacianValues();      
+      const std::vector<double> & basisLaplacianValues=d_atomicBasisData.getBasisLaplacianValues();
+
       std::vector<double> & laplacianRhoDown=densityData[DensityDescriptorDataAttributes::laplacianSpinDown];
       for (int iQuad = 0; iQuad < nQuad; iQuad++)
         for (int i = 0; i < d_nBasis; i++)

@@ -14,7 +14,7 @@
 //
 // ---------------------------------------------------------------------
 //
-// @author Bikash Kanungo 
+// @author Bikash Kanungo
 //
 
 #ifndef DFTFE_ATOMICBASIS_H
@@ -29,35 +29,38 @@ namespace dftfe
 {
   class AtomicBasis
   {
-
   public:
-  enum class BasisType 
-  {
-    SLATER,
-    GAUSSIAN,
-    BESSELORTHO
-  };
+    enum class BasisType
+    {
+      SLATER,
+      GAUSSIAN,
+      BESSELORTHO
+    };
 
     // Default destructor
-    ~AtomicBasis() = default; 
+    ~AtomicBasis() = default;
 
     virtual void
     constructBasisSet(
       const std::vector<std::pair<std::string, std::vector<double>>>
-        &                atomCoords,
-      const std::unordered_map<std::string, std::string> & atomBasisFileNames) = 0;
+        &atomCoords,
+      const std::unordered_map<std::string, std::string>
+        &atomBasisFileNames) = 0;
 
-    virtual int getNumBasis() const = 0;
-  
-    virtual std::vector<double> getBasisValue(const unsigned int basisId, 
-                        const std::vector<double> & x) const = 0;
-    
-    virtual std::vector<double> getBasisGradient(const unsigned int basisId, 
-                        const std::vector<double> & x) const = 0;
-    
-    virtual std::vector<double> 
-      getBasisLaplacian(const unsigned int basisId, 
-                        const std::vector<double> & x) const = 0;
+    virtual int
+    getNumBasis() const = 0;
+
+    virtual std::vector<double>
+    getBasisValue(const unsigned int         basisId,
+                  const std::vector<double> &x) const = 0;
+
+    virtual std::vector<double>
+    getBasisGradient(const unsigned int         basisId,
+                     const std::vector<double> &x) const = 0;
+
+    virtual std::vector<double>
+    getBasisLaplacian(const unsigned int         basisId,
+                      const std::vector<double> &x) const = 0;
   };
 } // namespace dftfe
 #endif // DFTFE_ATOMICBASIS_H

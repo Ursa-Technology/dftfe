@@ -5,30 +5,29 @@
 #ifndef DFTFE_AUXDM_AUXDENSITYMATRIXATOMICBASIS_H
 #define DFTFE_AUXDM_AUXDENSITYMATRIXATOMICBASIS_H
 
-#  include "AuxDensityMatrix.h"
-#  include "AtomicBasis.h"
-#  include "AtomicBasisData.h"
-#  include <vector>
-#  include <utility>
-#  include <map>
-#  include <algorithm>
+#include "AuxDensityMatrix.h"
+#include "AtomicBasis.h"
+#include "AtomicBasisData.h"
+#include <vector>
+#include <utility>
+#include <map>
+#include <algorithm>
 
 
 namespace dftfe
 {
-
   template <dftfe::utils::MemorySpace memorySpace>
   class AuxDensityMatrixAtomicBasis : public AuxDensityMatrix<memorySpace>
   {
   public:
-
     void
-    reinit(const AtomicBasis::BasisType basisType,
+    reinit(
+      const AtomicBasis::BasisType basisType,
       const std::vector<std::pair<std::string, std::vector<double>>>
-        &                atomCoords,
-      const std::unordered_map<std::string, std::string> & atomBasisFileNames,
-      const int          nSpin,
-      const int          maxDerOrder);
+        &                                                 atomCoords,
+      const std::unordered_map<std::string, std::string> &atomBasisFileNames,
+      const int                                           nSpin,
+      const int                                           maxDerOrder);
 
     void
     applyLocalOperations(
@@ -87,10 +86,10 @@ namespace dftfe
 
 
   private:
-    int             d_nQuad;
-    int             d_nSpin;
-    std::unique_ptr<AtomicBasis>  d_atomicBasisPtr;
-    AtomicBasisData d_atomicBasisData;
+    int                          d_nQuad;
+    int                          d_nSpin;
+    std::unique_ptr<AtomicBasis> d_atomicBasisPtr;
+    AtomicBasisData              d_atomicBasisData;
 
     int d_nBasis;
     int d_maxDerOrder;
@@ -109,7 +108,6 @@ namespace dftfe
     evalOverlapMatrixInv();
     std::vector<double> &
     getOverlapMatrixInv();
-
   };
 } // namespace dftfe
 #endif // DFTFE_AUXDM_AUXDENSITYMATRIXATOMICBASIS_H

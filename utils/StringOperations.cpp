@@ -73,33 +73,37 @@ namespace dftfe
         return boost::algorithm::trim_copy(s);
       }
 
-      std::vector<std::string> split(const std::string & inpStr, 
-          std::string delimiter /* = " " */,
-          bool skipAdjacentDelimiters /* = true */,
-          bool skipLeadTrailWhiteSpace /* = true */)
+      std::vector<std::string>
+      split(const std::string &inpStr,
+            std::string        delimiter /* = " " */,
+            bool               skipAdjacentDelimiters /* = true */,
+            bool               skipLeadTrailWhiteSpace /* = true */)
       {
         std::string inpStrCopy = inpStr;
-        if(skipLeadTrailWhiteSpace)
+        if (skipLeadTrailWhiteSpace)
           trim(inpStrCopy);
 
         std::vector<std::string> outStrs(0);
-        if(skipAdjacentDelimiters)
-        {
-          //NOTE: The thrid argument (token_compress_mode_type eCompress) is set
-          // to token_compress_on to treat consecutive delimiters to be one,
-          // otherwise boost assumes an empty string in between the adjacent delimiters
-          boost::algorithm::split(outStrs, inpStrCopy, 
-              boost::is_any_of(delimiter),
-              boost::token_compress_on); 
-        }
+        if (skipAdjacentDelimiters)
+          {
+            // NOTE: The thrid argument (token_compress_mode_type eCompress) is
+            // set
+            // to token_compress_on to treat consecutive delimiters to be one,
+            // otherwise boost assumes an empty string in between the adjacent
+            // delimiters
+            boost::algorithm::split(outStrs,
+                                    inpStrCopy,
+                                    boost::is_any_of(delimiter),
+                                    boost::token_compress_on);
+          }
         else
-        {
-          boost::algorithm::split(outStrs, inpStrCopy, 
-              boost::is_any_of(delimiter));
-        }
+          {
+            boost::algorithm::split(outStrs,
+                                    inpStrCopy,
+                                    boost::is_any_of(delimiter));
+          }
         return outStrs;
       }
     } // end of namespace stringOps
   }   // end of namespace utils
 } // end of namespace dftfe
-

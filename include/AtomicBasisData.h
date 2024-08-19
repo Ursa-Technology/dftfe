@@ -5,21 +5,20 @@
 #ifndef DFTFE_ATOMBASISDATA_H
 #define DFTFE_ATOMBASISDATA_H
 
-#  include <vector>
-#  include <memory>
-#  include "AtomicBasis.h"
+#include <vector>
+#include <memory>
+#include "AtomicBasis.h"
 
 namespace dftfe
 {
   class AtomicBasisData
   {
   public:
-
-    ///quadpoints in Cartesian coordinates
+    /// quadpoints in Cartesian coordinates
     void
     evalBasisData(const std::vector<double> &quadpts,
-                  const AtomicBasis &     atomicBasis,
-                  const unsigned int      maxDerOrder);
+                  const AtomicBasis &        atomicBasis,
+                  const unsigned int         maxDerOrder);
 
     const std::vector<double> &
     getBasisValues() const;

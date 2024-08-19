@@ -5610,7 +5610,7 @@ namespace dftfe
 
         auxDensityMatrixXCPtr->projectDensityEnd(mpi_communicator);
       }
-    else if (d_dftParamsPtr->auxBasisTypeXC == "SlaterAE")
+    else if (d_dftParamsPtr->auxBasisTypeXC == "SLATER")
       {
 #ifndef USE_COMPLEX
         auto basisOpMemSpace     = getBasisOperationsMemSpace();

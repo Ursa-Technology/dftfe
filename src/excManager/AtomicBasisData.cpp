@@ -26,6 +26,7 @@ namespace dftfe
                   d_basisValues[iQuad * nBasis + iBasis] = basisVals[iQuad];
                 }
             }
+          break;
 
         case 1:
           d_basisValues     = std::vector<double>(nQuad * nBasis, 0.0);
@@ -47,6 +48,7 @@ namespace dftfe
                     }
                 }
             }
+          break;
 
         case 2:
           d_basisValues          = std::vector<double>(nQuad * nBasis, 0.0);
@@ -73,6 +75,7 @@ namespace dftfe
                     basisLapVals[iQuad];
                 }
             }
+          break;
 
         default:
           throw std::runtime_error("\n\n maxDerOrder should be 0, 1 or 2 \n\n");

@@ -34,7 +34,7 @@ namespace dftfe
 
   enum class xcSSDOutputDataAttributes
   {
-    e, // energy density per unit volume
+    e, // energy density per unit volume of rho and tau dependent part
     pdeDensitySpinUp,
     pdeDensitySpinDown,
     pdeSigma,

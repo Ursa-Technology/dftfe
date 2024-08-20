@@ -693,12 +693,14 @@ namespace dftfe
                     else if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
                              XCPrimaryVariable::SSDETERMINANT)
                       {
+                        /*
                         dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
                           ->computeOutputXCData(
                             *(dftPtr->d_auxDensityMatrixXCOutPtr),
                             quadPointsInCell,
                             xDensityOutDataOut,
                             cDensityOutDataOut);
+                        */
                       }
 
                     std::vector<double> pdexDensityOutSigma;

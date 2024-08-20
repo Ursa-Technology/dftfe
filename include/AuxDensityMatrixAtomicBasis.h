@@ -42,15 +42,14 @@ namespace dftfe
     void
     evalOverlapMatrixEnd(const MPI_Comm &mpiComm) override;
 
-    // FIXME: to be extended for complex valued wavefunctions
     /**
      *
      * @param projectionInputs is a map from string to inputs needed
      *                          for projection.
-     *      eg - projectionInputs["quadpts"],
-     *          projectionInputs["quadWt"],
-     *          projectionInputs["psiFunc"],
-     *          projectionInputs["fValues"]
+     *      eg - projectionInputsReal["quadpts"],
+     *          projectionInputsReal["quadWt"],
+     *          projectionInputsDataType["psiFunc"],
+     *          projectionInputsReal["fValues"]
      *
      *      psiFunc The SCF wave function or eigen function in FE Basis.
      *                psiFunc(quad_index, wfc_index),
@@ -60,17 +59,21 @@ namespace dftfe
      * @param iSpin indicates up (iSpin = 0) or down (iSpin = 0) spin.
      *
      */
-    void
+    virtual void
     projectDensityMatrixStart(
-      std::unordered_map<std::string, std::vector<double>> &projectionInputs,
-      int                                                   iSpin) override;
+      const std::unordered_map<std::string, std::vector<dataTypes::number>>
+        &projectionInputsDataType,
+      const std::unordered_map<std::string, std::vector<double>>
+        &       projectionInputsReal,
+      const int iSpin) override;
 
     void
     projectDensityMatrixEnd(const MPI_Comm &mpiComm) override;
 
     void
-    projectDensityStart(std::unordered_map<std::string, std::vector<double>>
-                          &projectionInputs) override;
+    projectDensityStart(
+      const std::unordered_map<std::string, std::vector<double>>
+        &projectionInputs) override;
 
     void
     projectDensityEnd(const MPI_Comm &mpiComm) override;

@@ -176,16 +176,20 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   AuxDensityMatrixAtomicBasis<memorySpace>::projectDensityMatrixStart(
-    std::unordered_map<std::string, std::vector<double>> &projectionInputs,
-    int                                                   iSpin)
+    const std::unordered_map<std::string, std::vector<dataTypes::number>>
+      &projectionInputsDataType,
+    const std::unordered_map<std::string, std::vector<double>>
+      &       projectionInputsReal,
+    const int iSpin)
   {
+// FIXME: extend implementation to complex datatype
+#ifndef USE_COMPLEX
     // eval <AtomicBasis|WFC> matrix d_basisWFCInnerProducts
-
     d_iSpin       = iSpin;
-    auto &psiFunc = projectionInputs["psiFunc"];
-    auto &quadpts = projectionInputs["quadpts"];
-    auto &quadWt  = projectionInputs["quadWt"];
-    d_fValues     = projectionInputs["fValues"];
+    auto &psiFunc = projectionInputsDataType.find("psiFunc")->second;
+    auto &quadpts = projectionInputsReal.find("quadpts")->second;
+    auto &quadWt  = projectionInputsReal.find("quadWt")->second;
+    d_fValues     = projectionInputsReal.find("fValues")->second;
     d_atomicBasisData.evalBasisData(quadpts, *d_atomicBasisPtr, 0);
     std::vector<double> basisValsWeighted = d_atomicBasisData.getBasisValues();
 
@@ -217,6 +221,7 @@ namespace dftfe
                   &beta,
                   d_basisWFCInnerProducts.data(),
                   reinterpret_cast<const unsigned int *>(&d_nBasis));
+#endif
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -443,7 +448,8 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   AuxDensityMatrixAtomicBasis<memorySpace>::projectDensityStart(
-    std::unordered_map<std::string, std::vector<double>> &projectionInputs)
+    const std::unordered_map<std::string, std::vector<double>>
+      &projectionInputs)
   {
     // projectDensity implementation
     std::cout << "Error : No implementation yet" << std::endl;

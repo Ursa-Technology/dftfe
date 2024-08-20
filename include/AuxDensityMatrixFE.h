@@ -15,6 +15,13 @@ namespace dftfe
   class AuxDensityMatrixFE : public AuxDensityMatrix<memorySpace>
   {
   public:
+    // FIXME: to be implemented
+    /*
+    void
+    setDensityMatrixComponents();
+    */
+
+
     // CAUTION: points have to be a contiguous subset of d_quadPointsSet
     void
     applyLocalOperations(
@@ -29,10 +36,13 @@ namespace dftfe
     void
     evalOverlapMatrixEnd(const MPI_Comm &mpiComm) override;
 
-    void
+    virtual void
     projectDensityMatrixStart(
-      std::unordered_map<std::string, std::vector<double>> &projectionInputs,
-      int                                                   iSpin) override;
+      const std::unordered_map<std::string, std::vector<dataTypes::number>>
+        &projectionInputsDataType,
+      const std::unordered_map<std::string, std::vector<double>>
+        &       projectionInputsReal,
+      const int iSpin) override;
 
     void
     projectDensityMatrixEnd(const MPI_Comm &mpiComm) override;
@@ -59,8 +69,9 @@ namespace dftfe
      *
      */
     void
-    projectDensityStart(std::unordered_map<std::string, std::vector<double>>
-                          &projectionInputs) override;
+    projectDensityStart(
+      const std::unordered_map<std::string, std::vector<double>>
+        &projectionInputs) override;
 
     void
     projectDensityEnd(const MPI_Comm &mpiComm) override;

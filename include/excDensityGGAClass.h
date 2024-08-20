@@ -40,14 +40,14 @@ namespace dftfe
     computeExcVxcFxc(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
       const std::vector<double> &    quadPoints,
-      const std::vector<double> &    quadWeights,
-      std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
-      std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
-      const override;
+      std::unordered_map<xcDensityOutputDataAttributes, std::vector<double>>
+        &xDataOut,
+      std::unordered_map<xcDensityOutputDataAttributes, std::vector<double>>
+        &cDataout) const override;
 
     void
     checkInputOutputDataAttributesConsistency(
-      const std::vector<xcOutputDataAttributes> &outputDataAttributes)
+      const std::vector<xcDensityOutputDataAttributes> &outputDataAttributes)
       const override;
 
   private:

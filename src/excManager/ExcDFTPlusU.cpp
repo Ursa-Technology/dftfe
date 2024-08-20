@@ -69,13 +69,15 @@ namespace dftfe
   ExcDFTPlusU<memorySpace>::computeOutputXCData(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
     const std::vector<double> &    quadPoints,
-    const std::vector<double> &    quadWeights,
-    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
-    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataOut)
-    const
+    std::unordered_map<xcSSDOutputDataAttributes, std::vector<double>>
+      &xDataOut,
+    std::unordered_map<xcSSDOutputDataAttributes, std::vector<double>>
+      &cDataOut) const
   {
+    /*
     d_excDensityObjPtr->computeExcVxcFxc(
-      auxDensityMatrix, quadPoints, quadWeights, xDataOut, cDataOut);
+      auxDensityMatrix, quadPoints, xDataOut, cDataOut);
+    */
   }
 
   template <dftfe::utils::MemorySpace memorySpace>

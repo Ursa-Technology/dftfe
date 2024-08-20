@@ -262,23 +262,27 @@ namespace dftfe
       0.0);
 
 
-    std::unordered_map<xcOutputDataAttributes, std::vector<double>> xDataOut;
-    std::unordered_map<xcOutputDataAttributes, std::vector<double>> cDataOut;
+    std::unordered_map<xcDensityOutputDataAttributes, std::vector<double>>
+      xDataOut;
+    std::unordered_map<xcDensityOutputDataAttributes, std::vector<double>>
+      cDataOut;
 
 
     std::vector<double> &pdexDensitySpinUp =
-      xDataOut[xcOutputDataAttributes::pdeDensitySpinUp];
+      xDataOut[xcDensityOutputDataAttributes::pdeDensitySpinUp];
     std::vector<double> &pdexDensitySpinDown =
-      xDataOut[xcOutputDataAttributes::pdeDensitySpinDown];
+      xDataOut[xcDensityOutputDataAttributes::pdeDensitySpinDown];
     std::vector<double> &pdecDensitySpinUp =
-      cDataOut[xcOutputDataAttributes::pdeDensitySpinUp];
+      cDataOut[xcDensityOutputDataAttributes::pdeDensitySpinUp];
     std::vector<double> &pdecDensitySpinDown =
-      cDataOut[xcOutputDataAttributes::pdeDensitySpinDown];
+      cDataOut[xcDensityOutputDataAttributes::pdeDensitySpinDown];
 
     if (isGGA)
       {
-        xDataOut[xcOutputDataAttributes::pdeSigma] = std::vector<double>();
-        cDataOut[xcOutputDataAttributes::pdeSigma] = std::vector<double>();
+        xDataOut[xcDensityOutputDataAttributes::pdeSigma] =
+          std::vector<double>();
+        cDataOut[xcDensityOutputDataAttributes::pdeSigma] =
+          std::vector<double>();
       }
 
     auto quadPointsAll = d_basisOperationsPtrHost->quadPoints();
@@ -306,19 +310,19 @@ namespace dftfe
             d_excManagerPtr->getExcDensityObj()->computeExcVxcFxc(
               *auxDensityXCRepresentation,
               quadPointsInCell,
-              quadWeightsInCell,
               xDataOut,
               cDataOut);
           }
         else if (d_excManagerPtr->getXCPrimaryVariable() ==
                  XCPrimaryVariable::SSDETERMINANT)
           {
+            /*
             d_excManagerPtr->getExcSSDFunctionalObj()->computeOutputXCData(
               *auxDensityXCRepresentation,
               quadPointsInCell,
-              quadWeightsInCell,
               xDataOut,
               cDataOut);
+            */
           }
 
         const std::vector<double> &pdexDensitySpinIndex =
@@ -330,8 +334,8 @@ namespace dftfe
         std::vector<double> pdecSigma;
         if (isGGA)
           {
-            pdexSigma = xDataOut[xcOutputDataAttributes::pdeSigma];
-            pdecSigma = cDataOut[xcOutputDataAttributes::pdeSigma];
+            pdexSigma = xDataOut[xcDensityOutputDataAttributes::pdeSigma];
+            pdecSigma = cDataOut[xcDensityOutputDataAttributes::pdeSigma];
           }
 
         std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>

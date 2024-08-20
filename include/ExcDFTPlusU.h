@@ -48,10 +48,10 @@ namespace dftfe
     computeOutputXCData(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
       const std::vector<double> &    quadPoints,
-      const std::vector<double> &    quadWeights,
-      std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
-      std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
-      const override;
+      std::unordered_map<xcSSDOutputDataAttributes, std::vector<double>>
+        &xDataOut,
+      std::unordered_map<xcSSDOutputDataAttributes, std::vector<double>>
+        &cDataout) const override;
 
 
   public:

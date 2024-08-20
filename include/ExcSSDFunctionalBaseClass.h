@@ -32,6 +32,19 @@ namespace dftfe
     MGGA
   };
 
+  enum class xcSSDOutputDataAttributes
+  {
+    e, // energy density per unit volume
+    pdeDensitySpinUp,
+    pdeDensitySpinDown,
+    pdeSigma,
+    pdeLaplacianSpinUp,
+    pdeLaplacianSpinDown,
+    pdeTauSpinUp,
+    pdeTauSpinDown
+  };
+
+
   /**
    * @brief This class provides the structure for all
    * Exc functional dependent on Single Slater Determinant
@@ -69,10 +82,10 @@ namespace dftfe
     computeOutputXCData(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
       const std::vector<double> &    quadPoints,
-      const std::vector<double> &    quadWeights,
-      std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
-      std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataout)
-      const = 0;
+      std::unordered_map<xcSSDOutputDataAttributes, std::vector<double>>
+        &xDataOut,
+      std::unordered_map<xcSSDOutputDataAttributes, std::vector<double>>
+        &cDataout) const = 0;
 
     SSDFamilyType
     getSSDFamilyType() const;

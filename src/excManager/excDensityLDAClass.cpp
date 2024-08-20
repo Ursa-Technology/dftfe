@@ -68,12 +68,14 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   excDensityLDAClass<memorySpace>::checkInputOutputDataAttributesConsistency(
-    const std::vector<xcOutputDataAttributes> &outputDataAttributes) const
+    const std::vector<xcDensityOutputDataAttributes> &outputDataAttributes)
+    const
   {
-    const std::vector<xcOutputDataAttributes> allowedOutputDataAttributes = {
-      xcOutputDataAttributes::e,
-      xcOutputDataAttributes::pdeDensitySpinUp,
-      xcOutputDataAttributes::pdeDensitySpinDown};
+    const std::vector<xcDensityOutputDataAttributes>
+      allowedOutputDataAttributes = {
+        xcDensityOutputDataAttributes::e,
+        xcDensityOutputDataAttributes::pdeDensitySpinUp,
+        xcDensityOutputDataAttributes::pdeDensitySpinDown};
 
     for (unsigned int i = 0; i < outputDataAttributes.size(); i++)
       {
@@ -86,7 +88,7 @@ namespace dftfe
 
 
         std::string errMsg =
-          "xcOutputDataAttributes do not matched allowed choices for the family type.";
+          "xcDensityOutputDataAttributes do not matched allowed choices for the family type.";
         dftfe::utils::throwException(isFound, errMsg);
       }
   }
@@ -96,12 +98,13 @@ namespace dftfe
   excDensityLDAClass<memorySpace>::computeExcVxcFxc(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
     const std::vector<double> &    quadPoints,
-    const std::vector<double> &    quadWeights,
-    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
-    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataOut)
-    const
+    std::unordered_map<xcDensityOutputDataAttributes, std::vector<double>>
+      &xDataOut,
+    std::unordered_map<xcDensityOutputDataAttributes, std::vector<double>>
+      &cDataOut) const
   {
-    std::vector<xcOutputDataAttributes> outputDataAttributes;
+    const unsigned int                         nquad = quadPoints.size() / 3;
+    std::vector<xcDensityOutputDataAttributes> outputDataAttributes;
     for (const auto &element : xDataOut)
       outputDataAttributes.push_back(element.first);
 
@@ -115,7 +118,7 @@ namespace dftfe
          i++)
       {
         densityDescriptorData[this->d_densityDescriptorAttributesList[i]] =
-          std::vector<double>(quadWeights.size(), 0);
+          std::vector<double>(nquad, 0);
       }
 
     auxDensityMatrix.applyLocalOperations(quadPoints, densityDescriptorData);
@@ -131,35 +134,35 @@ namespace dftfe
 
 
 
-    std::vector<double> densityValues(2 * quadWeights.size(), 0);
+    std::vector<double> densityValues(2 * nquad, 0);
 
-    std::vector<double> exValues(quadWeights.size(), 0);
-    std::vector<double> ecValues(quadWeights.size(), 0);
-    std::vector<double> pdexDensityValuesNonNN(2 * quadWeights.size(), 0);
-    std::vector<double> pdecDensityValuesNonNN(2 * quadWeights.size(), 0);
-    std::vector<double> pdexDensitySpinUpValues(quadWeights.size(), 0);
-    std::vector<double> pdexDensitySpinDownValues(quadWeights.size(), 0);
-    std::vector<double> pdecDensitySpinUpValues(quadWeights.size(), 0);
-    std::vector<double> pdecDensitySpinDownValues(quadWeights.size(), 0);
+    std::vector<double> exValues(nquad, 0);
+    std::vector<double> ecValues(nquad, 0);
+    std::vector<double> pdexDensityValuesNonNN(2 * nquad, 0);
+    std::vector<double> pdecDensityValuesNonNN(2 * nquad, 0);
+    std::vector<double> pdexDensitySpinUpValues(nquad, 0);
+    std::vector<double> pdexDensitySpinDownValues(nquad, 0);
+    std::vector<double> pdecDensitySpinUpValues(nquad, 0);
+    std::vector<double> pdecDensitySpinDownValues(nquad, 0);
 
-    for (unsigned int i = 0; i < quadWeights.size(); i++)
+    for (unsigned int i = 0; i < nquad; i++)
       {
         densityValues[2 * i + 0] = densityValuesSpinUp[i];
         densityValues[2 * i + 1] = densityValuesSpinDown[i];
       }
 
     xc_lda_exc_vxc(d_funcXPtr,
-                   quadWeights.size(),
+                   nquad,
                    &densityValues[0],
                    &exValues[0],
                    &pdexDensityValuesNonNN[0]);
     xc_lda_exc_vxc(d_funcCPtr,
-                   quadWeights.size(),
+                   nquad,
                    &densityValues[0],
                    &ecValues[0],
                    &pdecDensityValuesNonNN[0]);
 
-    for (unsigned int i = 0; i < quadWeights.size(); i++)
+    for (unsigned int i = 0; i < nquad; i++)
       {
         exValues[i] =
           exValues[i] * (densityValues[2 * i + 0] + densityValues[2 * i + 1]);
@@ -174,17 +177,16 @@ namespace dftfe
 #ifdef DFTFE_WITH_TORCH
     if (d_NNLDAPtr != nullptr)
       {
-        std::vector<double> excValuesFromNN(quadWeights.size(), 0);
+        std::vector<double> excValuesFromNN(nquad, 0);
         const unsigned int  numDescriptors =
           this->d_densityDescriptorAttributesList.size();
-        std::vector<double> pdexcDescriptorValuesFromNN(numDescriptors *
-                                                          quadWeights.size(),
+        std::vector<double> pdexcDescriptorValuesFromNN(numDescriptors * nquad,
                                                         0);
         d_NNLDAPtr->evaluatevxc(&(densityValues[0]),
-                                quadWeights.size(),
+                                nquad,
                                 &excValuesFromNN[0],
                                 &pdexcDescriptorValuesFromNN[0]);
-        for (unsigned int i = 0; i < quadWeights.size(); i++)
+        for (unsigned int i = 0; i < nquad; i++)
           {
             exValues[i] += excValuesFromNN[i];
             pdexDensitySpinUpValues[i] +=
@@ -197,14 +199,14 @@ namespace dftfe
 
     for (unsigned int i = 0; i < outputDataAttributes.size(); i++)
       {
-        if (outputDataAttributes[i] == xcOutputDataAttributes::e)
+        if (outputDataAttributes[i] == xcDensityOutputDataAttributes::e)
           {
             xDataOut.find(outputDataAttributes[i])->second = exValues;
 
             cDataOut.find(outputDataAttributes[i])->second = ecValues;
           }
         else if (outputDataAttributes[i] ==
-                 xcOutputDataAttributes::pdeDensitySpinUp)
+                 xcDensityOutputDataAttributes::pdeDensitySpinUp)
           {
             xDataOut.find(outputDataAttributes[i])->second =
               pdexDensitySpinUpValues;
@@ -213,7 +215,7 @@ namespace dftfe
               pdecDensitySpinUpValues;
           }
         else if (outputDataAttributes[i] ==
-                 xcOutputDataAttributes::pdeDensitySpinDown)
+                 xcDensityOutputDataAttributes::pdeDensitySpinDown)
           {
             xDataOut.find(outputDataAttributes[i])->second =
               pdexDensitySpinDownValues;

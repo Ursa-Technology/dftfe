@@ -58,17 +58,19 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   excDensityLLMGGAClass<memorySpace>::checkInputOutputDataAttributesConsistency(
-    const std::vector<xcOutputDataAttributes> &outputDataAttributes) const
+    const std::vector<xcDensityOutputDataAttributes> &outputDataAttributes)
+    const
   {
-    const std::vector<xcOutputDataAttributes> allowedOutputDataAttributes = {
-      xcOutputDataAttributes::e,
-      xcOutputDataAttributes::vSpinUp,
-      xcOutputDataAttributes::vSpinDown,
-      xcOutputDataAttributes::pdeDensitySpinUp,
-      xcOutputDataAttributes::pdeDensitySpinDown,
-      xcOutputDataAttributes::pdeSigma,
-      xcOutputDataAttributes::pdeLaplacianSpinUp,
-      xcOutputDataAttributes::pdeLaplacianSpinDown};
+    const std::vector<xcDensityOutputDataAttributes>
+      allowedOutputDataAttributes = {
+        xcDensityOutputDataAttributes::e,
+        xcDensityOutputDataAttributes::vSpinUp,
+        xcDensityOutputDataAttributes::vSpinDown,
+        xcDensityOutputDataAttributes::pdeDensitySpinUp,
+        xcDensityOutputDataAttributes::pdeDensitySpinDown,
+        xcDensityOutputDataAttributes::pdeSigma,
+        xcDensityOutputDataAttributes::pdeLaplacianSpinUp,
+        xcDensityOutputDataAttributes::pdeLaplacianSpinDown};
 
     for (size_t i = 0; i < outputDataAttributes.size(); i++)
       {
@@ -80,7 +82,7 @@ namespace dftfe
           }
 
         std::string errMsg =
-          "xcOutputDataAttributes do not matched allowed choices for the family type.";
+          "xcDensityOutputDataAttributes do not matched allowed choices for the family type.";
         dftfe::utils::throwException(isFound, errMsg);
       }
   }
@@ -90,12 +92,13 @@ namespace dftfe
   excDensityLLMGGAClass<memorySpace>::computeExcVxcFxc(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
     const std::vector<double> &    quadPoints,
-    const std::vector<double> &    quadWeights,
-    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &xDataOut,
-    std::unordered_map<xcOutputDataAttributes, std::vector<double>> &cDataOut)
-    const
+    std::unordered_map<xcDensityOutputDataAttributes, std::vector<double>>
+      &xDataOut,
+    std::unordered_map<xcDensityOutputDataAttributes, std::vector<double>>
+      &cDataOut) const
   {
-    std::vector<xcOutputDataAttributes> outputDataAttributes;
+    const unsigned int                         nquad = quadPoints.size() / 3;
+    std::vector<xcDensityOutputDataAttributes> outputDataAttributes;
     for (const auto &element : xDataOut)
       outputDataAttributes.push_back(element.first);
 
@@ -112,23 +115,23 @@ namespace dftfe
             this->d_densityDescriptorAttributesList[i] ==
               DensityDescriptorDataAttributes::valuesSpinDown)
           densityDescriptorData[this->d_densityDescriptorAttributesList[i]] =
-            std::vector<double>(quadWeights.size(), 0);
+            std::vector<double>(nquad, 0);
         else if (this->d_densityDescriptorAttributesList[i] ==
                    DensityDescriptorDataAttributes::gradValuesSpinUp ||
                  this->d_densityDescriptorAttributesList[i] ==
                    DensityDescriptorDataAttributes::gradValuesSpinDown)
           densityDescriptorData[this->d_densityDescriptorAttributesList[i]] =
-            std::vector<double>(3 * quadWeights.size(), 0);
+            std::vector<double>(3 * nquad, 0);
       }
 
     bool isVxcBeingComputed = false;
     if (std::find(outputDataAttributes.begin(),
                   outputDataAttributes.end(),
-                  xcOutputDataAttributes::vSpinUp) !=
+                  xcDensityOutputDataAttributes::vSpinUp) !=
           outputDataAttributes.end() ||
         std::find(outputDataAttributes.begin(),
                   outputDataAttributes.end(),
-                  xcOutputDataAttributes::vSpinDown) !=
+                  xcDensityOutputDataAttributes::vSpinDown) !=
           outputDataAttributes.end())
       isVxcBeingComputed = true;
 
@@ -159,23 +162,23 @@ namespace dftfe
         ->second;
 
 
-    std::vector<double> densityValues(2 * quadWeights.size(), 0);
-    std::vector<double> sigmaValues(3 * quadWeights.size(), 0);
-    std::vector<double> laplacianValues(2 * quadWeights.size(), 0);
+    std::vector<double> densityValues(2 * nquad, 0);
+    std::vector<double> sigmaValues(3 * nquad, 0);
+    std::vector<double> laplacianValues(2 * nquad, 0);
 
-    std::vector<double> exValues(quadWeights.size(), 0);
-    std::vector<double> ecValues(quadWeights.size(), 0);
-    std::vector<double> pdexDensityValuesNonNN(2 * quadWeights.size(), 0);
-    std::vector<double> pdecDensityValuesNonNN(2 * quadWeights.size(), 0);
-    std::vector<double> pdexDensitySpinUpValues(quadWeights.size(), 0);
-    std::vector<double> pdexDensitySpinDownValues(quadWeights.size(), 0);
-    std::vector<double> pdecDensitySpinUpValues(quadWeights.size(), 0);
-    std::vector<double> pdecDensitySpinDownValues(quadWeights.size(), 0);
-    std::vector<double> pdexSigmaValues(3 * quadWeights.size(), 0);
-    std::vector<double> pdecSigmaValues(3 * quadWeights.size(), 0);
+    std::vector<double> exValues(nquad, 0);
+    std::vector<double> ecValues(nquad, 0);
+    std::vector<double> pdexDensityValuesNonNN(2 * nquad, 0);
+    std::vector<double> pdecDensityValuesNonNN(2 * nquad, 0);
+    std::vector<double> pdexDensitySpinUpValues(nquad, 0);
+    std::vector<double> pdexDensitySpinDownValues(nquad, 0);
+    std::vector<double> pdecDensitySpinUpValues(nquad, 0);
+    std::vector<double> pdecDensitySpinDownValues(nquad, 0);
+    std::vector<double> pdexSigmaValues(3 * nquad, 0);
+    std::vector<double> pdecSigmaValues(3 * nquad, 0);
 
 
-    for (size_t i = 0; i < quadWeights.size(); i++)
+    for (size_t i = 0; i < nquad; i++)
       {
         densityValues[2 * i + 0] = densityValuesSpinUp[i];
         densityValues[2 * i + 1] = densityValuesSpinDown[i];
@@ -195,21 +198,21 @@ namespace dftfe
       }
 
     xc_gga_exc_vxc(d_funcXPtr,
-                   quadWeights.size(),
+                   nquad,
                    &densityValues[0],
                    &sigmaValues[0],
                    &exValues[0],
                    &pdexDensityValuesNonNN[0],
                    &pdexSigmaValues[0]);
     xc_gga_exc_vxc(d_funcCPtr,
-                   quadWeights.size(),
+                   nquad,
                    &densityValues[0],
                    &sigmaValues[0],
                    &ecValues[0],
                    &pdecDensityValuesNonNN[0],
                    &pdecSigmaValues[0]);
 
-    for (size_t i = 0; i < quadWeights.size(); i++)
+    for (size_t i = 0; i < nquad; i++)
       {
         exValues[i] =
           exValues[i] * (densityValues[2 * i + 0] + densityValues[2 * i + 1]);
@@ -225,21 +228,20 @@ namespace dftfe
 #ifdef DFTFE_WITH_TORCH
     if (d_NNLLMGGAPtr != nullptr)
       {
-        std::vector<double> excValuesFromNN(quadWeights.size(), 0);
+        std::vector<double> excValuesFromNN(nquad, 0);
         const size_t        numDescriptors =
           this->d_densityDescriptorAttributesList.size();
-        std::vector<double> pdexcDescriptorValuesFromNN(numDescriptors *
-                                                          quadWeights.size(),
+        std::vector<double> pdexcDescriptorValuesFromNN(numDescriptors * nquad,
                                                         0);
 
         d_NNLLMGGAPtr->evaluatevxc(&(densityValues[0]),
                                    &sigmaValues[0],
                                    &laplacianValues[0],
-                                   quadWeights.size(),
+                                   nquad,
                                    &excValuesFromNN[0],
                                    &pdexcDescriptorValuesFromNN[0]);
 
-        for (size_t i = 0; i < quadWeights.size(); i++)
+        for (size_t i = 0; i < nquad; i++)
           {
             exValues[i] += excValuesFromNN[i];
             pdexDensitySpinUpValues[i] +=
@@ -250,68 +252,68 @@ namespace dftfe
       }
 #endif
 
-    std::vector<double> vxValuesSpinUp(quadWeights.size(), 0);
-    std::vector<double> vcValuesSpinUp(quadWeights.size(), 0);
-    std::vector<double> vxValuesSpinDown(quadWeights.size(), 0);
-    std::vector<double> vcValuesSpinDown(quadWeights.size(), 0);
+    std::vector<double> vxValuesSpinUp(nquad, 0);
+    std::vector<double> vcValuesSpinUp(nquad, 0);
+    std::vector<double> vxValuesSpinDown(nquad, 0);
+    std::vector<double> vcValuesSpinDown(nquad, 0);
 
     if (isVxcBeingComputed)
       {
         std::vector<double> pdexGradDensityidimSpinUpStencil(
-          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          nquad * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<double> pdecGradDensityidimSpinUpStencil(
-          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          nquad * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<std::vector<double>> divergenceTermsPdexGradDensitySpinUp(
-          3, std::vector<double>(quadWeights.size(), 0));
+          3, std::vector<double>(nquad, 0));
         std::vector<std::vector<double>> divergenceTermsPdecGradDensitySpinUp(
-          3, std::vector<double>(quadWeights.size(), 0));
+          3, std::vector<double>(nquad, 0));
         std::vector<double> pdexLapDensityidimSpinUpStencil(
-          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          nquad * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<double> pdecLapDensityidimSpinUpStencil(
-          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          nquad * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<std::vector<double>> laplacianTermsPdexLapDensitySpinUp(
-          3, std::vector<double>(quadWeights.size(), 0));
+          3, std::vector<double>(nquad, 0));
         std::vector<std::vector<double>> laplacianTermsPdecLapDensitySpinUp(
-          3, std::vector<double>(quadWeights.size(), 0));
+          3, std::vector<double>(nquad, 0));
 
         std::vector<double> pdexGradDensityidimSpinDownStencil(
-          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          nquad * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<double> pdecGradDensityidimSpinDownStencil(
-          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          nquad * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<std::vector<double>> divergenceTermsPdexGradDensitySpinDown(
-          3, std::vector<double>(quadWeights.size(), 0));
+          3, std::vector<double>(nquad, 0));
         std::vector<std::vector<double>> divergenceTermsPdecGradDensitySpinDown(
-          3, std::vector<double>(quadWeights.size(), 0));
+          3, std::vector<double>(nquad, 0));
         std::vector<double> pdexLapDensityidimSpinDownStencil(
-          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          nquad * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<double> pdecLapDensityidimSpinDownStencil(
-          quadWeights.size() * d_vxcDivergenceTermFDStencilSize, 0.0);
+          nquad * d_vxcDivergenceTermFDStencilSize, 0.0);
         std::vector<std::vector<double>> laplacianTermsPdexLapDensitySpinDown(
-          3, std::vector<double>(quadWeights.size(), 0));
+          3, std::vector<double>(nquad, 0));
         std::vector<std::vector<double>> laplacianTermsPdecLapDensitySpinDown(
-          3, std::vector<double>(quadWeights.size(), 0));
+          3, std::vector<double>(nquad, 0));
 
 
         std::unordered_map<DensityDescriptorDataAttributes, std::vector<double>>
           densityDescriptorDataForFD;
 
-        std::vector<double> densityValuesFD(2 * quadWeights.size(), 0);
-        std::vector<double> sigmaValuesFD(3 * quadWeights.size(), 0);
-        std::vector<double> laplacianValuesFD(2 * quadWeights.size(), 0);
+        std::vector<double> densityValuesFD(2 * nquad, 0);
+        std::vector<double> sigmaValuesFD(3 * nquad, 0);
+        std::vector<double> laplacianValuesFD(2 * nquad, 0);
 
-        std::vector<double> exValuesFD(quadWeights.size(), 0);
-        std::vector<double> ecValuesFD(quadWeights.size(), 0);
-        std::vector<double> pdexDensityValuesNonNNFD(2 * quadWeights.size(),
+        std::vector<double> exValuesFD(nquad, 0);
+        std::vector<double> ecValuesFD(nquad, 0);
+        std::vector<double> pdexDensityValuesNonNNFD(2 * nquad,
                                                      0); // not used
-        std::vector<double> pdecDensityValuesNonNNFD(2 * quadWeights.size(),
+        std::vector<double> pdecDensityValuesNonNNFD(2 * nquad,
                                                      0); // not used
-        std::vector<double> pdexSigmaValuesFD(3 * quadWeights.size(), 0);
-        std::vector<double> pdecSigmaValuesFD(3 * quadWeights.size(), 0);
-        std::vector<double> pdexLaplacianValuesFD(2 * quadWeights.size(), 0);
-        std::vector<double> pdecLaplacianValuesFD(2 * quadWeights.size(),
+        std::vector<double> pdexSigmaValuesFD(3 * nquad, 0);
+        std::vector<double> pdecSigmaValuesFD(3 * nquad, 0);
+        std::vector<double> pdexLaplacianValuesFD(2 * nquad, 0);
+        std::vector<double> pdecLaplacianValuesFD(2 * nquad,
                                                   0); // not used
 
-        std::vector<double> d_spacingFDStencil(quadWeights.size(), 1e-4);
+        std::vector<double> d_spacingFDStencil(nquad, 1e-4);
 
         for (size_t idim = 0; idim < 3; idim++)
           {
@@ -320,7 +322,7 @@ namespace dftfe
                  istencil++)
               {
                 std::vector<double> quadShiftedFD = quadPoints;
-                for (size_t igrid = 0; igrid < quadWeights.size(); igrid++)
+                for (size_t igrid = 0; igrid < nquad; igrid++)
                   {
                     // create FD grid
                     quadShiftedFD[3 * igrid + idim] =
@@ -358,7 +360,7 @@ namespace dftfe
                     .find(DensityDescriptorDataAttributes::laplacianSpinDown)
                     ->second;
 
-                for (size_t i = 0; i < quadWeights.size(); i++)
+                for (size_t i = 0; i < nquad; i++)
                   {
                     densityValuesFD[2 * i + 0] = densityValuesSpinUpFD[i];
                     densityValuesFD[2 * i + 1] = densityValuesSpinDownFD[i];
@@ -385,14 +387,14 @@ namespace dftfe
                   }
 
                 xc_gga_exc_vxc(d_funcXPtr,
-                               quadWeights.size(),
+                               nquad,
                                &densityValuesFD[0],
                                &sigmaValuesFD[0],
                                &exValuesFD[0],
                                &pdexDensityValuesNonNNFD[0],
                                &pdexSigmaValuesFD[0]);
                 xc_gga_exc_vxc(d_funcCPtr,
-                               quadWeights.size(),
+                               nquad,
                                &densityValuesFD[0],
                                &sigmaValuesFD[0],
                                &ecValuesFD[0],
@@ -402,23 +404,22 @@ namespace dftfe
 #ifdef DFTFE_WITH_TORCH
                 if (d_NNLLMGGAPtr != nullptr)
                   {
-                    std::vector<double> excValuesFromNNFD(quadWeights.size(),
-                                                          0);
+                    std::vector<double> excValuesFromNNFD(nquad, 0);
                     const size_t        numDescriptors =
                       this->d_densityDescriptorAttributesList.size();
                     std::vector<double> pdexcDescriptorValuesFromNNFD(
-                      numDescriptors * quadWeights.size(), 0);
+                      numDescriptors * nquad, 0);
 
 
                     d_NNLLMGGAPtr->evaluatevxc(
                       &(densityValuesFD[0]),
                       &sigmaValuesFD[0],
                       &laplacianValuesFD[0],
-                      quadWeights.size(),
+                      nquad,
                       &excValuesFromNNFD[0],
                       &pdexcDescriptorValuesFromNNFD[0]);
 
-                    for (size_t i = 0; i < quadWeights.size(); i++)
+                    for (size_t i = 0; i < nquad; i++)
                       {
                         pdexSigmaValuesFD[3 * i + 0] +=
                           pdexcDescriptorValuesFromNNFD[numDescriptors * i + 2];
@@ -434,7 +435,7 @@ namespace dftfe
                   }
 #endif
 
-                for (size_t igrid = 0; igrid < quadWeights.size(); igrid++)
+                for (size_t igrid = 0; igrid < nquad; igrid++)
                   {
                     pdexGradDensityidimSpinUpStencil
                       [igrid * d_vxcDivergenceTermFDStencilSize + istencil] =
@@ -493,28 +494,28 @@ namespace dftfe
             utils::FiniteDifference::firstOrderDerivativeOneVariableCentral(
               d_vxcDivergenceTermFDStencilSize,
               &(d_spacingFDStencil[0]),
-              quadWeights.size(),
+              nquad,
               &(pdexGradDensityidimSpinUpStencil[0]),
               &(divergenceTermsPdexGradDensitySpinUp[idim][0]));
 
             utils::FiniteDifference::firstOrderDerivativeOneVariableCentral(
               d_vxcDivergenceTermFDStencilSize,
               &(d_spacingFDStencil[0]),
-              quadWeights.size(),
+              nquad,
               &(pdecGradDensityidimSpinUpStencil[0]),
               &(divergenceTermsPdecGradDensitySpinUp[idim][0]));
 
             utils::FiniteDifference::firstOrderDerivativeOneVariableCentral(
               d_vxcDivergenceTermFDStencilSize,
               &(d_spacingFDStencil[0]),
-              quadWeights.size(),
+              nquad,
               &(pdexGradDensityidimSpinDownStencil[0]),
               &(divergenceTermsPdexGradDensitySpinDown[idim][0]));
 
             utils::FiniteDifference::firstOrderDerivativeOneVariableCentral(
               d_vxcDivergenceTermFDStencilSize,
               &(d_spacingFDStencil[0]),
-              quadWeights.size(),
+              nquad,
               &(pdecGradDensityidimSpinDownStencil[0]),
               &(divergenceTermsPdecGradDensitySpinDown[idim][0]));
 
@@ -522,7 +523,7 @@ namespace dftfe
             utils::FiniteDifference::secondOrderDerivativeOneVariableCentral(
               d_vxcDivergenceTermFDStencilSize,
               &(d_spacingFDStencil[0]),
-              quadWeights.size(),
+              nquad,
               &(pdexLapDensityidimSpinUpStencil[0]),
               &(laplacianTermsPdexLapDensitySpinUp[idim][0]));
 
@@ -530,7 +531,7 @@ namespace dftfe
             utils::FiniteDifference::secondOrderDerivativeOneVariableCentral(
                     d_vxcDivergenceTermFDStencilSize,
                     &(d_spacingFDStencil[0]),
-                    quadWeights.size(),
+                    nquad,
                     &(pdecLapDensityidimSpinUpStencil[0]),
                     &(laplacianTermsPdecLapDensitySpinUp[idim][0]));
             */
@@ -538,7 +539,7 @@ namespace dftfe
             utils::FiniteDifference::secondOrderDerivativeOneVariableCentral(
               d_vxcDivergenceTermFDStencilSize,
               &(d_spacingFDStencil[0]),
-              quadWeights.size(),
+              nquad,
               &(pdexLapDensityidimSpinDownStencil[0]),
               &(laplacianTermsPdexLapDensitySpinDown[idim][0]));
 
@@ -546,14 +547,14 @@ namespace dftfe
             utils::FiniteDifference::secondOrderDerivativeOneVariableCentral(
                     d_vxcDivergenceTermFDStencilSize,
                     &(d_spacingFDStencil[0]),
-                    quadWeights.size(),
+                    nquad,
                     &(pdecLapDensityidimSpinDownStencil[0]),
                     &(laplacianTermsPdecLapDensitySpinDown[idim][0]));
             */
 
           } // dim loop
 
-        for (size_t igrid = 0; igrid < quadWeights.size(); igrid++)
+        for (size_t igrid = 0; igrid < nquad; igrid++)
           {
             vxValuesSpinUp[igrid] =
               pdexDensitySpinUpValues[igrid] -

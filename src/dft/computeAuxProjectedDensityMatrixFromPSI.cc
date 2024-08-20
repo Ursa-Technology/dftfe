@@ -152,7 +152,7 @@ namespace dftfe
                     allQuadPointsHost[startingCellId * numQuadPoints * 3 +
                                       3 * iQuad + idim];
                 quadWeightsBatch[iQuad] =
-                  allQuadWeightsHost[startingCellId * numQuadPoints + iQuad];
+                  std::real(allQuadWeightsHost[startingCellId * numQuadPoints + iQuad]);
               }
 
             auxDensityMatrixRepresentation.evalOverlapMatrixStart(
@@ -288,9 +288,9 @@ namespace dftfe
                                                       numQuadPoints * 3 +
                                                     3 * iQuad + idim];
                               quadWeightsBatch[iQuad] =
-                                allQuadWeightsHost[startingCellId *
+                                std::real(allQuadWeightsHost[startingCellId *
                                                      numQuadPoints +
-                                                   iQuad];
+                                                   iQuad]);
                             }
 
                           basisOperationsPtr->interpolateKernel(

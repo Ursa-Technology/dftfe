@@ -278,8 +278,7 @@ namespace dftfe
             dftfe::basis::UpdateFlags updateFlagsAll =
               dftfe::basis::update_values | dftfe::basis::update_jxw |
               dftfe::basis::update_inversejacobians |
-              dftfe::basis::update_gradients | dftfe::basis::update_quadpoints |
-              dftfe::basis::update_transpose;
+              dftfe::basis::update_gradients | dftfe::basis::update_quadpoints;
             dftfe::basis::UpdateFlags updateFlagsGLL =
               dftfe::basis::update_values | dftfe::basis::update_jxw;
             if (d_dftParamsPtr->auxBasisTypeXC == "SlaterAE")
@@ -402,10 +401,9 @@ namespace dftfe
             dftfe::basis::UpdateFlags updateFlagsAll =
               dftfe::basis::update_values | dftfe::basis::update_jxw |
               dftfe::basis::update_inversejacobians |
-              dftfe::basis::update_gradients | dftfe::basis::update_transpose;
+              dftfe::basis::update_gradients;
             dftfe::basis::UpdateFlags updateFlagsValuesGradients =
-              dftfe::basis::update_values | dftfe::basis::update_gradients |
-              dftfe::basis::update_transpose;
+              dftfe::basis::update_values | dftfe::basis::update_gradients;
 
             std::vector<unsigned int> quadratureIndices{
               d_nlpspQuadratureId,

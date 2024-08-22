@@ -409,8 +409,10 @@ namespace dftfe
             dftfe::basis::UpdateFlags updateFlagsAll =
               dftfe::basis::update_values | dftfe::basis::update_jxw |
               dftfe::basis::update_inversejacobians |
-              dftfe::basis::update_gradients | dftfe::basis::update_quadpoints |
-              dftfe::basis::update_transpose;
+              dftfe::basis::update_gradients | dftfe::basis::update_quadpoints;
+
+            dftfe::basis::UpdateFlags updateFlagsDensity =
+              dftfe::basis::update_values | dftfe::basis::update_jxw;
 
             dftfe::basis::UpdateFlags updateFlagsLPSP =
               dftfe::basis::update_values | dftfe::basis::update_jxw;
@@ -426,10 +428,10 @@ namespace dftfe
               d_smearedChargeQuadratureIdElectro,
               d_phiTotAXQuadratureIdElectro};
             std::vector<dftfe::basis::UpdateFlags> updateFlags{
-              updateFlagsAll,
+              updateFlagsDensity,
               updateFlagsLPSP,
               dftfe::basis::update_quadpoints,
-              updateFlagsAll};
+              updateFlagsphiTotAX};
             d_basisOperationsPtrElectroHost->init(d_matrixFreeDataPRefined,
                                                   d_constraintsVectorElectro,
                                                   d_baseDofHandlerIndexElectro,

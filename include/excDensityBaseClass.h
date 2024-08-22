@@ -34,7 +34,7 @@ namespace dftfe
     LLMGGA,
   };
 
-  enum class xcDensityOutputDataAttributes
+  enum class xcRemainderOutputDataAttributes
   {
     e, // energy density per unit volume
     vSpinUp,
@@ -43,15 +43,17 @@ namespace dftfe
     pdeDensitySpinDown,
     pdeSigma,
     pdeLaplacianSpinUp,
-    pdeLaplacianSpinDown
+    pdeLaplacianSpinDown,
+    pdeTauSpinUp,
+    pdeTauSpinDown
   };
 
   template <dftfe::utils::MemorySpace memorySpace>
-  class excDensityBaseClass
+  class excRemainderBaseClass
   {
   public:
-    excDensityBaseClass(const densityFamilyType familyType,
-                        const std::vector<DensityDescriptorDataAttributes>
+    excRemainderBaseClass(const densityFamilyType familyType,
+                        const std::vector<xcRemainderOutputDataAttributes>
                           &densityDescriptorAttributesList);
     densityFamilyType
     getDensityBasedFamilyType() const;
@@ -66,15 +68,15 @@ namespace dftfe
     computeExcVxcFxc(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
       const std::vector<double> &    quadPoints,
-      std::unordered_map<xcDensityOutputDataAttributes, std::vector<double>>
+      std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
         &xDataOut,
-      std::unordered_map<xcDensityOutputDataAttributes, std::vector<double>>
+      std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
         &cDataout) const = 0;
 
   protected:
     virtual void
     checkInputOutputDataAttributesConsistency(
-      const std::vector<xcDensityOutputDataAttributes> &outputDataAttributes)
+      const std::vector<xcRemainderOutputDataAttributes> &outputDataAttributes)
       const = 0;
 
 

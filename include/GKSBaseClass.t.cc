@@ -17,32 +17,25 @@
 // @author Vishal Subramanian
 //
 
-#include <ExcSSDFunctionalBaseClass.h>
+#include <GKSBaseClass.h>
 
 namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
-  ExcSSDFunctionalBaseClass<memorySpace>::ExcSSDFunctionalBaseClass(
-    const densityFamilyType densityFamilyType)
-    : d_densityFamilyType(densityFamilyType)
+  GKSBaseClass<memorySpace>::GKSBaseClass(
+    const ExcFamilyType excFamType)
+    : d_ExcFamilyType(excFamType)
   {}
 
   template <dftfe::utils::MemorySpace memorySpace>
-  ExcSSDFunctionalBaseClass<memorySpace>::~ExcSSDFunctionalBaseClass()
+  GKSBaseClass<memorySpace>::~GKSBaseClass()
   {}
 
   template <dftfe::utils::MemorySpace memorySpace>
-  SSDFamilyType
-  ExcSSDFunctionalBaseClass<memorySpace>::getSSDFamilyType() const
+  ExcFamilyType
+  GKSBaseClass<memorySpace>::getExcFamilyType() const
   {
-    return d_SSDFamilyType;
-  }
-
-  template <dftfe::utils::MemorySpace memorySpace>
-  densityFamilyType
-  ExcSSDFunctionalBaseClass<memorySpace>::getDensityBasedFamilyType() const
-  {
-    return d_densityFamilyType;
+    return d_ExcFamilyType;
   }
 
 

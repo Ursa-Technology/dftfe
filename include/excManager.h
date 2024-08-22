@@ -20,14 +20,9 @@
 
 #include <xc.h>
 #include <excDensityBaseClass.h>
-#include <ExcSSDFunctionalBaseClass.h>
+#include <GKSBaseClass.h>
 namespace dftfe
 {
-  enum class XCPrimaryVariable
-  {
-    DENSITY,
-    SSDETERMINANT
-  };
 
   template <dftfe::utils::MemorySpace memorySpace>
   class excManager
@@ -80,10 +75,8 @@ namespace dftfe
     xc_func_type *d_funcXPtr;
     xc_func_type *d_funcCPtr;
 
-    excDensityBaseClass<memorySpace> *      d_excDensityObjPtr;
-    ExcSSDFunctionalBaseClass<memorySpace> *d_SSDObjPtr;
+    std::shared_ptr<GKSBaseClass> d_excObj;
 
-    XCPrimaryVariable d_xcPrimVariable;
   };
 } // namespace dftfe
 

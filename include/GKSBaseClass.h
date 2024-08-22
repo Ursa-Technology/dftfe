@@ -25,23 +25,12 @@
 #include "excDensityBaseClass.h"
 namespace dftfe
 {
-  enum class SSDFamilyType
+  enum class ExcFamilyType
   {
+    PURE_DENSITY,
     HYBRID,
     DFTPlusU,
     MGGA
-  };
-
-  enum class xcSSDOutputDataAttributes
-  {
-    e, // energy density per unit volume of rho and tau dependent part
-    pdeDensitySpinUp,
-    pdeDensitySpinDown,
-    pdeSigma,
-    pdeLaplacianSpinUp,
-    pdeLaplacianSpinDown,
-    pdeTauSpinUp,
-    pdeTauSpinDown
   };
 
 
@@ -51,20 +40,17 @@ namespace dftfe
    * such as DFT+U, Hybrid and Tau dependent MGGA.
    * This derived class of this class provides the
    * description to handle non-multiplicative potential
-   * arising for the above formualtions
+   * arising for the above formulations
    *
    * @author Vishal Subramanian, Sambit Das
    */
   template <dftfe::utils::MemorySpace memorySpace>
-  class ExcSSDFunctionalBaseClass
+  class GKSBaseClass
   {
   public:
-    ExcSSDFunctionalBaseClass(const densityFamilyType densityFamilyType);
+    GKSBaseClass(const ExcFamilyType excFamType);
 
-    densityFamilyType
-    getDensityBasedFamilyType() const;
-
-    virtual ~ExcSSDFunctionalBaseClass();
+    virtual ~GKSBaseClass();
 
     virtual void
     applyWaveFunctionDependentVxc() const = 0;
@@ -82,19 +68,22 @@ namespace dftfe
     computeOutputXCData(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
       const std::vector<double> &    quadPoints,
-      std::unordered_map<xcSSDOutputDataAttributes, std::vector<double>>
+      std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
         &xDataOut,
-      std::unordered_map<xcSSDOutputDataAttributes, std::vector<double>>
+      std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
         &cDataout) const = 0;
 
-    SSDFamilyType
-    getSSDFamilyType() const;
+    ExcFamilyType
+    getExcFamilyType() const;
+
+    densityFamilyType
+      getDensityFamilyType() const;
 
   protected:
+    ExcFamilyType     d_ExcFamilyType;
     densityFamilyType d_densityFamilyType;
-    SSDFamilyType     d_SSDFamilyType;
   };
 } // namespace dftfe
 
-#include "ExcSSDFunctionalBaseClass.t.cc"
+#include "GKSBaseClass.t.cc"
 #endif // DFTFE_EXCSSDFUNCTIONALBASECLASS_H

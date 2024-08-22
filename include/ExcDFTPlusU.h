@@ -20,7 +20,7 @@
 
 
 
-#include "ExcSSDFunctionalBaseClass.h"
+#include "GKSBaseClass.h"
 namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>

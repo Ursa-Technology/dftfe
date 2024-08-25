@@ -1279,21 +1279,8 @@ namespace dftfe
           d_densityInNodalValues[0].local_element(i) =
             d_rhoInNodalValuesRead.local_element(i);
 
-        bool isGradDensityDataDependent = false;
-        if (d_excManagerPtr->getXCPrimaryVariable() ==
-            XCPrimaryVariable::DENSITY)
-          {
-            isGradDensityDataDependent =
-              (d_excManagerPtr->getExcDensityObj()
-                 ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-          }
-        else if (d_excManagerPtr->getXCPrimaryVariable() ==
-                 XCPrimaryVariable::SSDETERMINANT)
-          {
-            isGradDensityDataDependent =
-              (d_excManagerPtr->getExcSSDFunctionalObj()
-                 ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-          }
+        bool isGradDensityDataDependent =
+          d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
 
         interpolateDensityNodalDataToQuadratureDataGeneral(
           d_basisOperationsPtrElectroHost,
@@ -1392,20 +1379,8 @@ namespace dftfe
     init_bc = MPI_Wtime();
 
 
-    bool isGradDensityDataDependent = false;
-    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
-           densityFamilyType::GGA);
-      }
-    else if (d_excManagerPtr->getXCPrimaryVariable() ==
-             XCPrimaryVariable::SSDETERMINANT)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcSSDFunctionalObj()
-             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-      }
+    bool isGradDensityDataDependent =
+      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
 
     // false option reinitializes vself bins from scratch wheras true option
     // only updates the boundary conditions
@@ -2305,20 +2280,8 @@ namespace dftfe
                            1e-3 :
                            d_dftParamsPtr->chebyshevTolerance;
 
-    bool isGradDensityDataDependent = false;
-    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
-           densityFamilyType::GGA);
-      }
-    else if (d_excManagerPtr->getXCPrimaryVariable() ==
-             XCPrimaryVariable::SSDETERMINANT)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcSSDFunctionalObj()
-             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-      }
+    bool isGradDensityDataDependent =
+      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
 
     // call the mixing scheme with the mixing variables
     // Have to be called once for each variable
@@ -5408,20 +5371,9 @@ namespace dftfe
     const double                            fermiEnergyDown_,
     std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityMatrixXCPtr)
   {
-    bool isGradDensityDataDependent = false;
-    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
-           densityFamilyType::GGA);
-      }
-    else if (d_excManagerPtr->getXCPrimaryVariable() ==
-             XCPrimaryVariable::SSDETERMINANT)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcSSDFunctionalObj()
-             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-      }
+    bool isGradDensityDataDependent =
+      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
+
     const bool isGGA = isGradDensityDataDependent;
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureId);
     const unsigned int totalLocallyOwnedCells =

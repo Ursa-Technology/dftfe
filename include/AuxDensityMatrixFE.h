@@ -16,10 +16,10 @@ namespace dftfe
   {
   public:
     // FIXME: to be implemented
-    /*
+
     void
     setDensityMatrixComponents();
-    */
+
 
 
     // CAUTION: points have to be a contiguous subset of d_quadPointsSet

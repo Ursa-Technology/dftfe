@@ -19,11 +19,9 @@
 #define DFTFE_EXCMANAGER_H
 
 #include <xc.h>
-#include <excDensityBaseClass.h>
-#include <GKSBaseClass.h>
+#include <ExcSSDFunctionalBaseClass.h>
 namespace dftfe
 {
-
   template <dftfe::utils::MemorySpace memorySpace>
   class excManager
   {
@@ -48,35 +46,21 @@ namespace dftfe
          bool        isSpinPolarized,
          std::string modelXCInputFile);
 
-    //    densityFamilyType
-    //    getDensityBasedFamilyType() const;
-
-
-
-    excDensityBaseClass<memorySpace> *
-    getExcDensityObj();
-
     ExcSSDFunctionalBaseClass<memorySpace> *
     getExcSSDFunctionalObj();
 
 
-    const excDensityBaseClass<memorySpace> *
-    getExcDensityObj() const;
-
     const ExcSSDFunctionalBaseClass<memorySpace> *
     getExcSSDFunctionalObj() const;
 
-    XCPrimaryVariable
-    getXCPrimaryVariable() const;
 
 
   private:
     /// objects for various exchange-correlations (from libxc package)
-    xc_func_type *d_funcXPtr;
-    xc_func_type *d_funcCPtr;
+    std::shared_ptr<xc_func_type> d_funcXPtr;
+    std::shared_ptr<xc_func_type> d_funcCPtr;
 
-    std::shared_ptr<GKSBaseClass> d_excObj;
-
+    std::shared_ptr<ExcSSDFunctionalBaseClass<memorySpace>> d_excObj;
   };
 } // namespace dftfe
 

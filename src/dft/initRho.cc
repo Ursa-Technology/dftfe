@@ -134,20 +134,8 @@ namespace dftfe
       d_densityInQuadValues[iComp].resize(n_q_points * nCells);
 
 
-    bool isGradDensityDataDependent = false;
-    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
-           densityFamilyType::GGA);
-      }
-    else if (d_excManagerPtr->getXCPrimaryVariable() ==
-             XCPrimaryVariable::SSDETERMINANT)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcSSDFunctionalObj()
-             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-      }
+    bool isGradDensityDataDependent =
+      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
 
     if (isGradDensityDataDependent)
       {
@@ -712,20 +700,8 @@ namespace dftfe
         d_densityInQuadValues[1].resize(numCells * num_quad_points);
       }
 
-    bool isGradDensityDataDependent = false;
-    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
-           densityFamilyType::GGA);
-      }
-    else if (d_excManagerPtr->getXCPrimaryVariable() ==
-             XCPrimaryVariable::SSDETERMINANT)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcSSDFunctionalObj()
-             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-      }
+    bool isGradDensityDataDependent =
+      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
 
     if (isGradDensityDataDependent)
       {
@@ -1195,20 +1171,8 @@ namespace dftfe
       totalCharge(d_dofHandlerRhoNodal, d_densityInQuadValues[0]);
     const double scaling = ((double)numElectrons) / charge;
 
-    bool isGradDensityDataDependent = false;
-    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
-           densityFamilyType::GGA);
-      }
-    else if (d_excManagerPtr->getXCPrimaryVariable() ==
-             XCPrimaryVariable::SSDETERMINANT)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcSSDFunctionalObj()
-             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-      }
+    bool isGradDensityDataDependent =
+      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
 
     if (d_dftParamsPtr->verbosity >= 2)
       pcout
@@ -1261,20 +1225,8 @@ namespace dftfe
       pcout << "Total charge out before normalizing to number of electrons: "
             << charge << std::endl;
 
-    bool isGradDensityDataDependent = false;
-    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
-           densityFamilyType::GGA);
-      }
-    else if (d_excManagerPtr->getXCPrimaryVariable() ==
-             XCPrimaryVariable::SSDETERMINANT)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcSSDFunctionalObj()
-             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-      }
+    bool isGradDensityDataDependent =
+      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
 
     // scaling rho
     for (unsigned int iCell = 0; iCell < nCells; ++iCell)

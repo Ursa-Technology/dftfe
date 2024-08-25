@@ -9,10 +9,14 @@ namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
   excDensityLLMGGAClass<memorySpace>::excDensityLLMGGAClass(
-    xc_func_type *funcXPtr,
-    xc_func_type *funcCPtr)
-    : excDensityBaseClass<memorySpace>(
+    std::shared_ptr<xc_func_type> funcXPtr,
+    std::shared_ptr<xc_func_type> funcCPtr)
+    : ExcSSDFunctionalBaseClass<memorySpace>(
+        ExcFamilyType::LLMGGA,
         densityFamilyType::LLMGGA,
+        false,
+        false,
+        false,
         std::vector<DensityDescriptorDataAttributes>{
           DensityDescriptorDataAttributes::valuesSpinUp,
           DensityDescriptorDataAttributes::valuesSpinDown,
@@ -28,11 +32,15 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   excDensityLLMGGAClass<memorySpace>::excDensityLLMGGAClass(
-    xc_func_type *funcXPtr,
-    xc_func_type *funcCPtr,
-    std::string   modelXCInputFile)
-    : excDensityBaseClass<memorySpace>(
+    std::shared_ptr<xc_func_type> funcXPtr,
+    std::shared_ptr<xc_func_type> funcCPtr,
+    std::string                   modelXCInputFile)
+    : ExcSSDFunctionalBaseClass<memorySpace>(
+        ExcFamilyType::LLMGGA,
         densityFamilyType::LLMGGA,
+        false,
+        false,
+        false,
         std::vector<DensityDescriptorDataAttributes>{
           DensityDescriptorDataAttributes::valuesSpinUp,
           DensityDescriptorDataAttributes::valuesSpinDown,
@@ -58,19 +66,19 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   excDensityLLMGGAClass<memorySpace>::checkInputOutputDataAttributesConsistency(
-    const std::vector<xcDensityOutputDataAttributes> &outputDataAttributes)
+    const std::vector<xcRemainderOutputDataAttributes> &outputDataAttributes)
     const
   {
-    const std::vector<xcDensityOutputDataAttributes>
+    const std::vector<xcRemainderOutputDataAttributes>
       allowedOutputDataAttributes = {
-        xcDensityOutputDataAttributes::e,
-        xcDensityOutputDataAttributes::vSpinUp,
-        xcDensityOutputDataAttributes::vSpinDown,
-        xcDensityOutputDataAttributes::pdeDensitySpinUp,
-        xcDensityOutputDataAttributes::pdeDensitySpinDown,
-        xcDensityOutputDataAttributes::pdeSigma,
-        xcDensityOutputDataAttributes::pdeLaplacianSpinUp,
-        xcDensityOutputDataAttributes::pdeLaplacianSpinDown};
+        xcRemainderOutputDataAttributes::e,
+        xcRemainderOutputDataAttributes::vSpinUp,
+        xcRemainderOutputDataAttributes::vSpinDown,
+        xcRemainderOutputDataAttributes::pdeDensitySpinUp,
+        xcRemainderOutputDataAttributes::pdeDensitySpinDown,
+        xcRemainderOutputDataAttributes::pdeSigma,
+        xcRemainderOutputDataAttributes::pdeLaplacianSpinUp,
+        xcRemainderOutputDataAttributes::pdeLaplacianSpinDown};
 
     for (size_t i = 0; i < outputDataAttributes.size(); i++)
       {
@@ -82,23 +90,23 @@ namespace dftfe
           }
 
         std::string errMsg =
-          "xcDensityOutputDataAttributes do not matched allowed choices for the family type.";
+          "xcRemainderOutputDataAttributes do not matched allowed choices for the family type.";
         dftfe::utils::throwException(isFound, errMsg);
       }
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityLLMGGAClass<memorySpace>::computeExcVxcFxc(
+  excDensityLLMGGAClass<memorySpace>::computeOutputXCData(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
     const std::vector<double> &    quadPoints,
-    std::unordered_map<xcDensityOutputDataAttributes, std::vector<double>>
+    std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
       &xDataOut,
-    std::unordered_map<xcDensityOutputDataAttributes, std::vector<double>>
+    std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
       &cDataOut) const
   {
-    const unsigned int                         nquad = quadPoints.size() / 3;
-    std::vector<xcDensityOutputDataAttributes> outputDataAttributes;
+    const unsigned int                           nquad = quadPoints.size() / 3;
+    std::vector<xcRemainderOutputDataAttributes> outputDataAttributes;
     for (const auto &element : xDataOut)
       outputDataAttributes.push_back(element.first);
 
@@ -127,11 +135,11 @@ namespace dftfe
     bool isVxcBeingComputed = false;
     if (std::find(outputDataAttributes.begin(),
                   outputDataAttributes.end(),
-                  xcDensityOutputDataAttributes::vSpinUp) !=
+                  xcRemainderOutputDataAttributes::vSpinUp) !=
           outputDataAttributes.end() ||
         std::find(outputDataAttributes.begin(),
                   outputDataAttributes.end(),
-                  xcDensityOutputDataAttributes::vSpinDown) !=
+                  xcRemainderOutputDataAttributes::vSpinDown) !=
           outputDataAttributes.end())
       isVxcBeingComputed = true;
 
@@ -197,14 +205,14 @@ namespace dftfe
         laplacianValues[2 * i + 1] = laplacianValuesSpinDown[i];
       }
 
-    xc_gga_exc_vxc(d_funcXPtr,
+    xc_gga_exc_vxc(d_funcXPtr.get(),
                    nquad,
                    &densityValues[0],
                    &sigmaValues[0],
                    &exValues[0],
                    &pdexDensityValuesNonNN[0],
                    &pdexSigmaValues[0]);
-    xc_gga_exc_vxc(d_funcCPtr,
+    xc_gga_exc_vxc(d_funcCPtr.get(),
                    nquad,
                    &densityValues[0],
                    &sigmaValues[0],
@@ -386,14 +394,14 @@ namespace dftfe
                     laplacianValuesFD[2 * i + 1] = laplacianValuesSpinDown[i];
                   }
 
-                xc_gga_exc_vxc(d_funcXPtr,
+                xc_gga_exc_vxc(d_funcXPtr.get(),
                                nquad,
                                &densityValuesFD[0],
                                &sigmaValuesFD[0],
                                &exValuesFD[0],
                                &pdexDensityValuesNonNNFD[0],
                                &pdexSigmaValuesFD[0]);
-                xc_gga_exc_vxc(d_funcCPtr,
+                xc_gga_exc_vxc(d_funcCPtr.get(),
                                nquad,
                                &densityValuesFD[0],
                                &sigmaValuesFD[0],
@@ -595,6 +603,32 @@ namespace dftfe
           }
       } // VxcCompute check
   }
+
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  void
+  excDensityLLMGGAClass<memorySpace>::applyWaveFunctionDependentVxc(
+    const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
+      &                                                                src,
+    dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
+    const unsigned int inputVecSize,
+    const double       factor,
+    const unsigned int kPointIndex,
+    const unsigned int spinIndex)
+  {}
+  template <dftfe::utils::MemorySpace memorySpace>
+  void
+  excDensityLLMGGAClass<memorySpace>::updateWaveFunctionDependentVxc(
+    AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+    const std::vector<double> &    kPointWeights)
+  {}
+  template <dftfe::utils::MemorySpace memorySpace>
+  double
+  excDensityLLMGGAClass<memorySpace>::computeWaveFunctionDependentExcEnergy(
+    AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+    const std::vector<double> &    kPointWeights)
+  {}
+
 
   template class excDensityLLMGGAClass<dftfe::utils::MemorySpace::HOST>;
 #ifdef DFTFE_WITH_DEVICE

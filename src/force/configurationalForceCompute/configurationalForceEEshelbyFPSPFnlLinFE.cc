@@ -517,21 +517,9 @@ namespace dftfe
           dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
           gradDensityOutValuesSpinPolarized;
 
-        bool isGradDensityDataRequired = false;
-        if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
-            XCPrimaryVariable::DENSITY)
-          {
-            isGradDensityDataRequired =
-              (dftPtr->d_excManagerPtr->getExcDensityObj()
-                 ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-          }
-        else if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
-                 XCPrimaryVariable::SSDETERMINANT)
-          {
-            isGradDensityDataRequired =
-              (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-                 ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-          }
+        bool isGradDensityDataRequired =
+          dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
+            ->isGradDensityRequired();
         if (isGradDensityDataRequired)
           {
             gradDensityOutValuesSpinPolarized = gradRhoOutValues;
@@ -578,30 +566,30 @@ namespace dftfe
         std::map<unsigned int, std::vector<double>>
           forceContributionNonlinearCoreCorrectionGammaAtoms;
 
-        std::unordered_map<xcDensityOutputDataAttributes, std::vector<double>>
+        std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
           xDensityOutDataOut;
-        std::unordered_map<xcDensityOutputDataAttributes, std::vector<double>>
+        std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
           cDensityOutDataOut;
 
         std::vector<double> &xEnergyDensityOut =
-          xDensityOutDataOut[xcDensityOutputDataAttributes::e];
+          xDensityOutDataOut[xcRemainderOutputDataAttributes::e];
         std::vector<double> &cEnergyDensityOut =
-          cDensityOutDataOut[xcDensityOutputDataAttributes::e];
+          cDensityOutDataOut[xcRemainderOutputDataAttributes::e];
 
         std::vector<double> &pdexDensityOutSpinUp =
-          xDensityOutDataOut[xcDensityOutputDataAttributes::pdeDensitySpinUp];
-        std::vector<double> &pdexDensityOutSpinDown =
-          xDensityOutDataOut[xcDensityOutputDataAttributes::pdeDensitySpinDown];
+          xDensityOutDataOut[xcRemainderOutputDataAttributes::pdeDensitySpinUp];
+        std::vector<double> &pdexDensityOutSpinDown = xDensityOutDataOut
+          [xcRemainderOutputDataAttributes::pdeDensitySpinDown];
         std::vector<double> &pdecDensityOutSpinUp =
-          cDensityOutDataOut[xcDensityOutputDataAttributes::pdeDensitySpinUp];
-        std::vector<double> &pdecDensityOutSpinDown =
-          cDensityOutDataOut[xcDensityOutputDataAttributes::pdeDensitySpinDown];
+          cDensityOutDataOut[xcRemainderOutputDataAttributes::pdeDensitySpinUp];
+        std::vector<double> &pdecDensityOutSpinDown = cDensityOutDataOut
+          [xcRemainderOutputDataAttributes::pdeDensitySpinDown];
 
         if (isGradDensityDataRequired)
           {
-            xDensityOutDataOut[xcDensityOutputDataAttributes::pdeSigma] =
+            xDensityOutDataOut[xcRemainderOutputDataAttributes::pdeSigma] =
               std::vector<double>();
-            cDensityOutDataOut[xcDensityOutputDataAttributes::pdeSigma] =
+            cDensityOutDataOut[xcRemainderOutputDataAttributes::pdeSigma] =
               std::vector<double>();
           }
 
@@ -679,29 +667,12 @@ namespace dftfe
                           quadWeightsAll[subCellIndex * numQuadPoints + iQuad]);
                       }
 
-
-                    if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
-                        XCPrimaryVariable::DENSITY)
-                      {
-                        dftPtr->d_excManagerPtr->getExcDensityObj()
-                          ->computeExcVxcFxc(
-                            *(dftPtr->d_auxDensityMatrixXCOutPtr),
-                            quadPointsInCell,
-                            xDensityOutDataOut,
-                            cDensityOutDataOut);
-                      }
-                    else if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
-                             XCPrimaryVariable::SSDETERMINANT)
-                      {
-                        /*
-                        dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-                          ->computeOutputXCData(
-                            *(dftPtr->d_auxDensityMatrixXCOutPtr),
-                            quadPointsInCell,
-                            xDensityOutDataOut,
-                            cDensityOutDataOut);
-                        */
-                      }
+                    dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
+                      ->computeOutputXCData(
+                        *(dftPtr->d_auxDensityMatrixXCOutPtr),
+                        quadPointsInCell,
+                        xDensityOutDataOut,
+                        cDensityOutDataOut);
 
                     std::vector<double> pdexDensityOutSigma;
                     std::vector<double> pdecDensityOutSigma;
@@ -709,9 +680,9 @@ namespace dftfe
                     if (isGradDensityDataRequired)
                       {
                         pdexDensityOutSigma = xDensityOutDataOut
-                          [xcDensityOutputDataAttributes::pdeSigma];
+                          [xcRemainderOutputDataAttributes::pdeSigma];
                         pdecDensityOutSigma = cDensityOutDataOut
-                          [xcDensityOutputDataAttributes::pdeSigma];
+                          [xcRemainderOutputDataAttributes::pdeSigma];
                       }
 
 

@@ -20,26 +20,36 @@
 
 
 
-#include "GKSBaseClass.h"
+#include "ExcSSDFunctionalBaseClass.h"
 namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
   class ExcDFTPlusU : public ExcSSDFunctionalBaseClass<memorySpace>
   {
   public:
-    ExcDFTPlusU(xc_func_type *          funcXPtr,
-                xc_func_type *          funcCPtr,
-                unsigned int            numSpins,
-                const densityFamilyType densityFamilyType);
+    ExcDFTPlusU(
+      std::shared_ptr<ExcSSDFunctionalBaseClass<memorySpace>> excSSDObjPtr,
+      unsigned int                                            numSpins);
 
     ~ExcDFTPlusU();
 
     void
-    applyWaveFunctionDependentVxc() const override;
+    applyWaveFunctionDependentVxc(
+      const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
+        &                                                                src,
+      dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
+      const unsigned int inputVecSize,
+      const double       factor,
+      const unsigned int kPointIndex,
+      const unsigned int spinIndex) override;
     void
-    updateWaveFunctionDependentVxc() const override;
+    updateWaveFunctionDependentVxc(
+      AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+      const std::vector<double> &    kPointWeights) override;
     double
-    computeWaveFunctionDependentExcEnergy() const override;
+    computeWaveFunctionDependentExcEnergy(
+      AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+      const std::vector<double> &    kPointWeights) override;
 
     /**
      * x and c denotes exchange and correlation respectively
@@ -48,14 +58,18 @@ namespace dftfe
     computeOutputXCData(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
       const std::vector<double> &    quadPoints,
-      std::unordered_map<xcSSDOutputDataAttributes, std::vector<double>>
+      std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
         &xDataOut,
-      std::unordered_map<xcSSDOutputDataAttributes, std::vector<double>>
+      std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
         &cDataout) const override;
 
+    void
+    checkInputOutputDataAttributesConsistency(
+      const std::vector<xcRemainderOutputDataAttributes> &outputDataAttributes)
+      const override;
 
   public:
-    excDensityBaseClass<memorySpace> *d_excDensityObjPtr;
+    std::shared_ptr<ExcSSDFunctionalBaseClass<memorySpace>> d_excSSDObjPtr;
   };
 } // namespace dftfe
 #endif // DFTFE_EXE_EXCDFTPLUSU_H

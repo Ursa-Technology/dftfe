@@ -49,7 +49,7 @@ namespace dftfe
 
   enum class xcRemainderOutputDataAttributes
   {
-    e, // energy density for the remainder functional
+    e, // energy density per unit volume for the remainder functional
     vSpinUp, // the local multiplicative potential for spin up arising from
     // remainder functional
     vSpinDown, // the local multiplicative potential for spin down arising from
@@ -68,7 +68,7 @@ namespace dftfe
   /**
    * @brief This class provides the structure for all
    * Exc functionals that can be written as a combination of
-   * functional of Single Slater determinants that results in a
+   * functional of Single Slater determinant that results in a
    * non-multiplicative potential plus a remainder functional
    * dependent on density and Tau.
    *

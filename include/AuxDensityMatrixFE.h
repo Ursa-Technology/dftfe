@@ -18,7 +18,12 @@ namespace dftfe
     // FIXME: to be implemented
 
     void
-    setDensityMatrixComponents();
+    setDensityMatrixComponents(const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+                                                                      &                                     eigenVectorsFlattenedMemSpace,
+                               const std::vector<std::vector<double>> &eigenValues_,
+                               const double                            fermiEnergy_,
+                               const double                            fermiEnergyUp_,
+                               const double                            fermiEnergyDown_);
 
 
 
@@ -80,12 +85,15 @@ namespace dftfe
     getDensityMatrixComponents_occupancies(
       const std::vector<double> &occupancies) const override;
 
-    void
-    getDensityMatrixComponents_wavefunctions(
-      const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
-        &eigenVectors) const override;
+    const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+      *
+    getDensityMatrixComponents_wavefunctions( ) const override;
 
   private:
+
+    const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+      * eigenVectorsFlattenedMemSpacePtr;
+
     std::vector<double> d_densityValsTotalAllQuads;
     std::vector<double> d_densityValsSpinUpAllQuads;
     std::vector<double> d_densityValsSpinDownAllQuads;

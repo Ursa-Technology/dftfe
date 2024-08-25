@@ -1280,7 +1280,7 @@ namespace dftfe
             d_rhoInNodalValuesRead.local_element(i);
 
         bool isGradDensityDataDependent =
-          d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
+          (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
         interpolateDensityNodalDataToQuadratureDataGeneral(
           d_basisOperationsPtrElectroHost,
@@ -1380,7 +1380,7 @@ namespace dftfe
 
 
     bool isGradDensityDataDependent =
-      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
+      ( d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
     // false option reinitializes vself bins from scratch wheras true option
     // only updates the boundary conditions
@@ -2281,7 +2281,7 @@ namespace dftfe
                            d_dftParamsPtr->chebyshevTolerance;
 
     bool isGradDensityDataDependent =
-      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
+      ( d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
     // call the mixing scheme with the mixing variables
     // Have to be called once for each variable
@@ -5372,7 +5372,7 @@ namespace dftfe
     std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityMatrixXCPtr)
   {
     bool isGradDensityDataDependent =
-      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
+      ( d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
     const bool isGGA = isGradDensityDataDependent;
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureId);

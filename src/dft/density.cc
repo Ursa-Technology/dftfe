@@ -33,7 +33,7 @@ namespace dftfe
     const bool isGroundState)
   {
     bool isGradDensityDataDependent =
-      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
     if (d_dftParamsPtr->mixingMethod == "ANDERSON_WITH_KERKER" ||
         d_dftParamsPtr->mixingMethod == "ANDERSON_WITH_RESTA" ||
@@ -219,7 +219,7 @@ namespace dftfe
   dftClass<FEOrder, FEOrderElectro, memorySpace>::noRemeshRhoDataInit()
   {
     bool isGradDensityDataDependent =
-      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
     // cleanup of existing rho Out and rho In data
     clearRhoData();

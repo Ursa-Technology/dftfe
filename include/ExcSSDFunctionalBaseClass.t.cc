@@ -25,16 +25,10 @@ namespace dftfe
   ExcSSDFunctionalBaseClass<memorySpace>::ExcSSDFunctionalBaseClass(
     const ExcFamilyType     excFamType,
     const densityFamilyType densityFamType,
-    const bool              isGradRequired,
-    const bool              isTauRequired,
-    const bool              isIntegrateByParts,
     const std::vector<DensityDescriptorDataAttributes>
       &densityDescriptorAttributesList)
     : d_ExcFamilyType(excFamType)
     , d_densityFamilyType(densityFamType)
-    , d_isGradDensityRequired(isGradRequired)
-    , d_isIntegrateByPartsRequired(isIntegrateByParts)
-    , d_isTauRequired(isTauRequired)
     , d_densityDescriptorAttributesList(densityDescriptorAttributesList)
   {}
 
@@ -62,27 +56,6 @@ namespace dftfe
     const
   {
     return d_densityDescriptorAttributesList;
-  }
-
-  template <dftfe::utils::MemorySpace memorySpace>
-  bool
-  ExcSSDFunctionalBaseClass<memorySpace>::isGradDensityRequired() const
-  {
-    return d_isGradDensityRequired;
-  }
-
-  template <dftfe::utils::MemorySpace memorySpace>
-  bool
-  ExcSSDFunctionalBaseClass<memorySpace>::isIntegrateByPartsRequired() const
-  {
-    return d_isIntegrateByPartsRequired;
-  }
-
-  template <dftfe::utils::MemorySpace memorySpace>
-  bool
-  ExcSSDFunctionalBaseClass<memorySpace>::isTauRequired() const
-  {
-    return d_isTauRequired;
   }
 
 

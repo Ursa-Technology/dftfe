@@ -69,8 +69,8 @@ namespace dftfe
 
 
     bool isGradDensityDataDependent =
-      dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-        ->isGradDensityRequired();
+      (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
+        ->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
 
     for (unsigned int iAtom = 0; iAtom < totalNumberAtoms; iAtom++)
@@ -247,8 +247,8 @@ namespace dftfe
       xMinusAtomLoc(numQuadPoints, zeroTensor1);
 
     bool isGradDensityDataDependent =
-      dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-        ->isGradDensityRequired();
+      (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
+        ->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
     for (unsigned int iAtom = 0; iAtom < totalNumberAtoms; iAtom++)
       {

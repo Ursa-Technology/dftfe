@@ -34,7 +34,7 @@ namespace dftfe
     ~ExcDFTPlusU();
 
     void
-    applyWaveFunctionDependentVxc(
+    applyWaveFunctionDependentFuncDer(
       const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
         &                                                                src,
       dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
@@ -43,7 +43,7 @@ namespace dftfe
       const unsigned int kPointIndex,
       const unsigned int spinIndex) override;
     void
-    updateWaveFunctionDependentVxc(
+    updateWaveFunctionDependentFuncDer(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
       const std::vector<double> &    kPointWeights) override;
     double

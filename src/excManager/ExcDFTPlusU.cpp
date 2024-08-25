@@ -69,7 +69,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<memorySpace>::applyWaveFunctionDependentVxc(
+  ExcDFTPlusU<memorySpace>::applyWaveFunctionDependentFuncDer(
     const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
       &                                                                src,
     dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
@@ -83,7 +83,7 @@ namespace dftfe
   }
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<memorySpace>::updateWaveFunctionDependentVxc(
+  ExcDFTPlusU<memorySpace>::updateWaveFunctionDependentFuncDer(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
     const std::vector<double> &    kPointWeights)
   {

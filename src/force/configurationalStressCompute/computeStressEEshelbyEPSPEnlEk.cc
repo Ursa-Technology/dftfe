@@ -433,8 +433,8 @@ namespace dftfe
     double enowfc_time = MPI_Wtime();
 
     bool isGradDensityDataRequired =
-      dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-        ->isGradDensityRequired();
+      (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
+        ->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
     /////////// Compute contribution independent of wavefunctions
     ////////////////////

@@ -36,7 +36,7 @@ namespace dftfe
     const unsigned int spinIndex)
   {
     bool isIntegrationByPartsGradDensityDependenceVxc =
-      d_excManagerPtr->getExcSSDFunctionalObj()->isIntegrateByPartsRequired();
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
     const bool isGGA = isIntegrationByPartsGradDensityDependenceVxc;
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureID);
     const unsigned int totalLocallyOwnedCells =

@@ -62,8 +62,8 @@ namespace dftfe
       dftPtr->getParametersObject().spinPolarized == 1 ? 2 : 1);
 
     bool isGradDensityDataRequired =
-      dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-        ->isGradDensityRequired();
+      (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
+        ->getDensityBasedFamilyType() == densityFamilyType::GGA);
     ;
 
     if (isGradDensityDataRequired)
@@ -287,8 +287,8 @@ namespace dftfe
       }
     //
     bool isGradDensityDataRequired =
-      dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-        ->isGradDensityRequired();
+      (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
+        ->getDensityBasedFamilyType() == densityFamilyType::GGA);
     ;
 
     if (isGradDensityDataRequired)

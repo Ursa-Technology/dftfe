@@ -170,7 +170,7 @@ namespace dftfe
       false);
 
     bool isGradDensityDataDependent =
-      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
     // interpolate nodal data to quadrature data
     std::vector<

@@ -41,11 +41,19 @@ namespace dftfe
     LLMGGA,
   };
 
+
+  /*
+   * XC attributes for the derivatives for the remainder functional
+   *
+   */
+
   enum class xcRemainderOutputDataAttributes
   {
-    e, // energy density per unit volume
-    vSpinUp,
-    vSpinDown,
+    e, // energy density for the remainder functional
+    vSpinUp, // the local multiplicative potential for spin up arising from
+    // remainder functional
+    vSpinDown, // the local multiplicative potential for spin down arising from
+               // remainder functional
     pdeDensitySpinUp,
     pdeDensitySpinDown,
     pdeSigma,
@@ -59,12 +67,12 @@ namespace dftfe
 
   /**
    * @brief This class provides the structure for all
-   * Exc functional dependent on Single Slater Determinant
-   * such as DFT+U, Hybrid and Tau dependent MGGA.
-   * This derived class of this class provides the
-   * description to handle non-multiplicative potential
-   * arising for the above formulations
+   * Exc functionals that can be written as a combination of
+   * functional of Single Slater determinants that results in a
+   * non-multiplicative potential plus a remainder functional
+   * dependent on density and Tau.
    *
+   * Exc = S{\phi} + R [\rho, \tau]
    * @author Vishal Subramanian, Sambit Das
    */
   template <dftfe::utils::MemorySpace memorySpace>
@@ -73,9 +81,6 @@ namespace dftfe
   public:
     ExcSSDFunctionalBaseClass(const ExcFamilyType     excFamType,
                               const densityFamilyType densityFamType,
-                              const bool              isGradRequired,
-                              const bool              isTauRequired,
-                              const bool              isIntegrateByParts,
                               const std::vector<DensityDescriptorDataAttributes>
                                 &densityDescriptorAttributesList);
 
@@ -86,8 +91,10 @@ namespace dftfe
 
     densityFamilyType
     getDensityBasedFamilyType() const;
+
+
     virtual void
-    applyWaveFunctionDependentVxc(
+    applyWaveFunctionDependentFuncDer(
       const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
         &                                                                src,
       dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
@@ -96,7 +103,7 @@ namespace dftfe
       const unsigned int kPointIndex,
       const unsigned int spinIndex) = 0;
     virtual void
-    updateWaveFunctionDependentVxc(
+    updateWaveFunctionDependentFuncDer(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
       const std::vector<double> &    kPointWeights) = 0;
     virtual double
@@ -121,15 +128,6 @@ namespace dftfe
     ExcFamilyType
     getExcFamilyType() const;
 
-    bool
-    isGradDensityRequired() const;
-
-    bool
-    isIntegrateByPartsRequired() const;
-
-    bool
-    isTauRequired() const;
-
     virtual void
     checkInputOutputDataAttributesConsistency(
       const std::vector<xcRemainderOutputDataAttributes> &outputDataAttributes)
@@ -141,8 +139,6 @@ namespace dftfe
 
     ExcFamilyType     d_ExcFamilyType;
     densityFamilyType d_densityFamilyType;
-
-    bool d_isGradDensityRequired, d_isIntegrateByPartsRequired, d_isTauRequired;
   };
 } // namespace dftfe
 

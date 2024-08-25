@@ -776,7 +776,7 @@ namespace dftfe
                                   kernelActionSpin1);
 
     bool isGradDensityDataDependent =
-      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
     for (unsigned int iComp = 0; iComp < d_densityInNodalValues.size(); ++iComp)
       interpolateDensityNodalDataToQuadratureDataGeneral(

@@ -31,9 +31,6 @@ namespace dftfe
     : ExcSSDFunctionalBaseClass<memorySpace>(
         ExcFamilyType::GGA,
         densityFamilyType::GGA,
-        true,
-        false,
-        true,
         std::vector<DensityDescriptorDataAttributes>{
           DensityDescriptorDataAttributes::valuesSpinUp,
           DensityDescriptorDataAttributes::valuesSpinDown,
@@ -53,9 +50,6 @@ namespace dftfe
     : ExcSSDFunctionalBaseClass<memorySpace>(
         ExcFamilyType::GGA,
         densityFamilyType::GGA,
-        true,
-        false,
-        true,
         std::vector<DensityDescriptorDataAttributes>{
           DensityDescriptorDataAttributes::valuesSpinUp,
           DensityDescriptorDataAttributes::valuesSpinDown,
@@ -287,7 +281,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityGGAClass<memorySpace>::applyWaveFunctionDependentVxc(
+  excDensityGGAClass<memorySpace>::applyWaveFunctionDependentFuncDer(
     const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
       &                                                                src,
     dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
@@ -298,7 +292,7 @@ namespace dftfe
   {}
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityGGAClass<memorySpace>::updateWaveFunctionDependentVxc(
+  excDensityGGAClass<memorySpace>::updateWaveFunctionDependentFuncDer(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
     const std::vector<double> &    kPointWeights)
   {}

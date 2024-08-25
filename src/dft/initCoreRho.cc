@@ -104,7 +104,7 @@ namespace dftfe
         zeroTensor2[i][j] = 0.0;
 
     bool isGradDensityDataDependent =
-      d_excManagerPtr->getExcSSDFunctionalObj()->isGradDensityRequired();
+      ( d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
     // loop over elements
     //

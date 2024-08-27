@@ -93,6 +93,15 @@ namespace dftfe
     getDensityBasedFamilyType() const;
 
 
+    /*
+     * @brief The apply function that will be called in HX()
+     * param[in] src The input vector
+     * param[out] dst The output vector
+     * param[in] inputVecSize The size of the input vector
+     * param[in] factor the factor with which the output is scaled in HX()
+     * param[in] kPointIndex the k point for which the HX() is called
+     * param[in] spinIndex the spin index for which the HX() is called
+     */
     virtual void
     applyWaveFunctionDependentFuncDer(
       const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>

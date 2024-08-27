@@ -78,15 +78,6 @@ namespace dftfe
     void
     projectDensityEnd(const MPI_Comm &mpiComm) override;
 
-    void
-    getDensityMatrixComponents_occupancies(
-      const std::vector<double> &occupancies) const override;
-
-    void
-    getDensityMatrixComponents_wavefunctions(
-      const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
-        &eigenVectors) const override;
-
 
   private:
     int                          d_nQuad;

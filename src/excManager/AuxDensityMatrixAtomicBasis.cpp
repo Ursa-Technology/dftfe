@@ -464,27 +464,6 @@ namespace dftfe
     std::cout << "Error : No implementation yet" << std::endl;
   }
 
-  template <dftfe::utils::MemorySpace memorySpace>
-  void
-  AuxDensityMatrixAtomicBasis<memorySpace>::
-    getDensityMatrixComponents_occupancies(
-      const std::vector<double> &occupancies) const
-  {
-    std::string errMsg = "Not implemented";
-    dftfe::utils::throwException(false, errMsg);
-  }
-
-  template <dftfe::utils::MemorySpace memorySpace>
-  void
-  AuxDensityMatrixAtomicBasis<memorySpace>::
-    getDensityMatrixComponents_wavefunctions(
-      const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
-        &eigenVectors) const
-  {
-    std::string errMsg = "Not implemented";
-    dftfe::utils::throwException(false, errMsg);
-  }
-
   template class AuxDensityMatrixAtomicBasis<dftfe::utils::MemorySpace::HOST>;
 #ifdef DFTFE_WITH_DEVICE
   template class AuxDensityMatrixAtomicBasis<dftfe::utils::MemorySpace::DEVICE>;

@@ -113,14 +113,11 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   AuxDensityMatrixFE<memorySpace>::setDensityMatrixComponents(const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
-                                                                    &                                     eigenVectorsFlattenedMemSpace,
-                             const std::vector<std::vector<double>> &eigenValues_,
-                             const double                            fermiEnergy_,
-                             const double                            fermiEnergyUp_,
-                             const double                            fermiEnergyDown_)
+                                                                    & eigenVectorsFlattenedMemSpace,
+                             const std::vector<std::vector<double>> &fractionalOccupancies)
   {
-    eigenVectorsFlattenedMemSpacePtr = &(eigenVectorsFlattenedMemSpace);
-
+    d_eigenVectorsFlattenedMemSpacePtr = &(eigenVectorsFlattenedMemSpace);
+    d_fractionalOccupancies =  &fractionalOccupancies;
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -209,19 +206,17 @@ namespace dftfe
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
-  void
-  AuxDensityMatrixFE<memorySpace>::getDensityMatrixComponents_occupancies(
-    const std::vector<double> &occupancies) const
+  const std::vector<std::vector<double>> *
+  AuxDensityMatrixFE<memorySpace>::getDensityMatrixComponents_occupancies() const
   {
-    std::string errMsg = "Not implemented";
-    dftfe::utils::throwException(false, errMsg);
+    return d_fractionalOccupancies;
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
   const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace> *
   AuxDensityMatrixFE<memorySpace>::getDensityMatrixComponents_wavefunctions() const
   {
-    return eigenVectorsFlattenedMemSpacePtr;
+    return d_eigenVectorsFlattenedMemSpacePtr;
   }
 
   template <dftfe::utils::MemorySpace memorySpace>

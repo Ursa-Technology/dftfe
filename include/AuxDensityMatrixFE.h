@@ -19,11 +19,8 @@ namespace dftfe
 
     void
     setDensityMatrixComponents(const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
-                                                                      &                                     eigenVectorsFlattenedMemSpace,
-                               const std::vector<std::vector<double>> &eigenValues_,
-                               const double                            fermiEnergy_,
-                               const double                            fermiEnergyUp_,
-                               const double                            fermiEnergyDown_);
+                                                                      & eigenVectorsFlattenedMemSpace,
+                               const std::vector<std::vector<double>> &fractionalOccupancies);
 
 
 
@@ -81,18 +78,18 @@ namespace dftfe
     void
     projectDensityEnd(const MPI_Comm &mpiComm) override;
 
-    void
-    getDensityMatrixComponents_occupancies(
-      const std::vector<double> &occupancies) const override;
+    const std::vector<std::vector<double>> *
+    getDensityMatrixComponents_occupancies() const;
 
-    const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
-      *
-    getDensityMatrixComponents_wavefunctions( ) const override;
+    const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>*
+    getDensityMatrixComponents_wavefunctions( ) const;
 
   private:
 
     const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
-      * eigenVectorsFlattenedMemSpacePtr;
+      * d_eigenVectorsFlattenedMemSpacePtr;
+
+    const std::vector<std::vector<double>> * d_fractionalOccupancies;
 
     std::vector<double> d_densityValsTotalAllQuads;
     std::vector<double> d_densityValsSpinUpAllQuads;

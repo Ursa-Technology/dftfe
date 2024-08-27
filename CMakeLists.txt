@@ -62,7 +62,7 @@ SET(TARGET_SRC
   ./src/excManager/AuxDensityMatrixAtomicBasis.cpp
   ./src/excManager/AuxDensityMatrixFE.cpp
   ./src/excManager/ExcDFTPlusU.cpp
-  ./src/excManager/AuxDensityMatrixSlater.cpp
+  ./src/excManager/AtomicBasisData.cpp
   ./src/excManager/NNGGA.cc
   ./src/excManager/NNLDA.cc
   ./src/excManager/NNLLMGGA.cpp

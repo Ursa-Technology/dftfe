@@ -78,8 +78,8 @@ namespace dftfe
     groupOffsets.clear();
 
     bool isGradDensityDataRequired =
-      ( dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-        ->getDensityBasedFamilyType() == densityFamilyType::GGA );
+      (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
+         ->getDensityBasedFamilyType() == densityFamilyType::GGA);
     ;
 
     if (isGradDensityDataRequired)
@@ -147,7 +147,7 @@ namespace dftfe
 
     bool isGradDensityDataRequired =
       (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-        ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+         ->getDensityBasedFamilyType() == densityFamilyType::GGA);
     ;
 
     if (isGradDensityDataRequired)

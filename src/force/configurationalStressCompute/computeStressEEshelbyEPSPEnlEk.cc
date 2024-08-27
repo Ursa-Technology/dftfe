@@ -434,7 +434,7 @@ namespace dftfe
 
     bool isGradDensityDataRequired =
       (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-        ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+         ->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
     /////////// Compute contribution independent of wavefunctions
     ////////////////////

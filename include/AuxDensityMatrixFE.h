@@ -18,9 +18,10 @@ namespace dftfe
     // FIXME: to be implemented
 
     void
-    setDensityMatrixComponents(const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
-                                                                      & eigenVectorsFlattenedMemSpace,
-                               const std::vector<std::vector<double>> &fractionalOccupancies);
+    setDensityMatrixComponents(
+      const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+        &                                     eigenVectorsFlattenedMemSpace,
+      const std::vector<std::vector<double>> &fractionalOccupancies);
 
 
 
@@ -81,15 +82,14 @@ namespace dftfe
     const std::vector<std::vector<double>> *
     getDensityMatrixComponents_occupancies() const;
 
-    const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>*
-    getDensityMatrixComponents_wavefunctions( ) const;
+    const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace> *
+    getDensityMatrixComponents_wavefunctions() const;
 
   private:
-
     const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
-      * d_eigenVectorsFlattenedMemSpacePtr;
+      *d_eigenVectorsFlattenedMemSpacePtr;
 
-    const std::vector<std::vector<double>> * d_fractionalOccupancies;
+    const std::vector<std::vector<double>> *d_fractionalOccupancies;
 
     std::vector<double> d_densityValsTotalAllQuads;
     std::vector<double> d_densityValsSpinUpAllQuads;

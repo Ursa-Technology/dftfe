@@ -40,7 +40,8 @@ namespace dftfe
     d_hessianRhoAtomsValuesSeparate.clear();
 
     bool isGradDensityDataDependent =
-      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() ==
+       densityFamilyType::GGA);
 
     // Reading single atom rho initial guess
     pcout << std::endl
@@ -465,7 +466,8 @@ namespace dftfe
         << charge << std::endl;
 
     bool isGradDensityDataDependent =
-      ( d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() ==
+       densityFamilyType::GGA);
 
     for (auto it1 = d_rhoAtomsValues.begin(); it1 != d_rhoAtomsValues.end();
          ++it1)

@@ -135,7 +135,8 @@ namespace dftfe
 
 
     bool isGradDensityDataDependent =
-      ( d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() ==
+       densityFamilyType::GGA);
 
     if (isGradDensityDataDependent)
       {
@@ -701,7 +702,8 @@ namespace dftfe
       }
 
     bool isGradDensityDataDependent =
-      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() ==
+       densityFamilyType::GGA);
 
     if (isGradDensityDataDependent)
       {
@@ -1172,7 +1174,8 @@ namespace dftfe
     const double scaling = ((double)numElectrons) / charge;
 
     bool isGradDensityDataDependent =
-      ( d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() ==
+       densityFamilyType::GGA);
 
     if (d_dftParamsPtr->verbosity >= 2)
       pcout
@@ -1226,7 +1229,8 @@ namespace dftfe
             << charge << std::endl;
 
     bool isGradDensityDataDependent =
-      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() ==
+       densityFamilyType::GGA);
 
     // scaling rho
     for (unsigned int iCell = 0; iCell < nCells; ++iCell)

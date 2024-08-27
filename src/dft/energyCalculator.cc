@@ -668,7 +668,8 @@ namespace dftfe
           densityOutValues[0].size(), 0.0));
 
     bool isIntegrationByPartsGradDensityDependenceVxc =
-      ( excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA );
+      (excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() ==
+       densityFamilyType::GGA);
 
     if (isIntegrationByPartsGradDensityDependenceVxc)
       {
@@ -854,7 +855,8 @@ namespace dftfe
       gradDensityOutQuadValuesSpinPolarized;
 
     bool isIntegrationByPartsGradDensityDependenceVxc =
-      (excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA );
+      (excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() ==
+       densityFamilyType::GGA);
 
     if (isIntegrationByPartsGradDensityDependenceVxc)
       {
@@ -987,7 +989,8 @@ namespace dftfe
       cDensityInDataOut[xcRemainderOutputDataAttributes::pdeDensitySpinDown];
 
     bool isIntegrationByPartsGradDensityDependenceVxc =
-      (excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() == densityFamilyType::GGA);
+      (excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() ==
+       densityFamilyType::GGA);
 
     if (isIntegrationByPartsGradDensityDependenceVxc)
       {

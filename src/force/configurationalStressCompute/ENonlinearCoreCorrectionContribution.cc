@@ -70,7 +70,7 @@ namespace dftfe
 
     bool isGradDensityDataDependent =
       (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-        ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+         ->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
 
     for (unsigned int iAtom = 0; iAtom < totalNumberAtoms; iAtom++)
@@ -248,7 +248,7 @@ namespace dftfe
 
     bool isGradDensityDataDependent =
       (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-        ->getDensityBasedFamilyType() == densityFamilyType::GGA);
+         ->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
     for (unsigned int iAtom = 0; iAtom < totalNumberAtoms; iAtom++)
       {

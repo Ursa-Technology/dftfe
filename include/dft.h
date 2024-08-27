@@ -716,7 +716,8 @@ namespace dftfe
     getbCellNonTrivialAtomIds() const;
 
 
-    void computeFractionalOccupancies();
+    void
+    computeFractionalOccupancies();
 
   private:
     /**

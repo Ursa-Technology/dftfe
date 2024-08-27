@@ -519,7 +519,7 @@ namespace dftfe
 
         bool isGradDensityDataRequired =
           (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-            ->getDensityBasedFamilyType() == densityFamilyType::GGA );
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
         if (isGradDensityDataRequired)
           {
             gradDensityOutValuesSpinPolarized = gradRhoOutValues;

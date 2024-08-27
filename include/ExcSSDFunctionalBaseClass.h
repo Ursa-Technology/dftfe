@@ -49,7 +49,7 @@ namespace dftfe
 
   enum class xcRemainderOutputDataAttributes
   {
-    e, // energy density per unit volume for the remainder functional
+    e,       // energy density per unit volume for the remainder functional
     vSpinUp, // the local multiplicative potential for spin up arising from
     // remainder functional
     vSpinDown, // the local multiplicative potential for spin down arising from

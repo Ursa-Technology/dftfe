@@ -1727,6 +1727,7 @@ namespace dftfe
                   }
               }
           }
+#if defined(DFTFE_WITH_DEVICE)
         else
           {
             copyDistributedVectorToPaddedMemoryStorageVectorDevice(
@@ -1743,6 +1744,7 @@ namespace dftfe
                 d_sphericalFnTimesVectorDevice.data());
             // storing in d_sphericalFnTimesWavefunctionMatrix
           }
+#endif
       }
   }
 
@@ -1757,6 +1759,7 @@ namespace dftfe
                                       ->getAtomIdsInCurrentProcess()[iAtom];
         return d_sphericalFnTimesWavefunMatrix[atomId].begin();
       }
+#if defined(DFTFE_WITH_DEVICE)
     else
       {
         // extract from d_sphericalFnTimesWavefunctionMatrix
@@ -1777,6 +1780,7 @@ namespace dftfe
                                  0);
         return d_tempConjtansX.data();
       }
+#endif
   }
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void

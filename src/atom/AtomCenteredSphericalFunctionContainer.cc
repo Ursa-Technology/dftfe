@@ -26,6 +26,16 @@ namespace dftfe
     return (d_AtomIdsInElement[iElem]);
   }
 
+  const unsigned int
+  AtomCenteredSphericalFunctionContainer::getOffsetLocation(
+    const unsigned int iAtom)
+  {
+    AssertThrow(iAtom < d_AtomIdsInCurrentProcess.size(),
+                dealii::ExcMessage(
+                  "DFT-FE Error: Inconsistent iAtom index used to get OffSet"));
+    return (d_offsetLocation[iAtom]);
+  }
+
   void
   AtomCenteredSphericalFunctionContainer::init(
     const std::vector<unsigned int> &atomicNumbers,
@@ -213,9 +223,16 @@ namespace dftfe
     numberCellsForEachAtom.clear();
     numberCellsForEachAtom.resize(totalAtomsInCurrentProcessor, 0);
     totalNonLocalElements = 0;
+    d_offsetLocation.clear();
+    d_offsetLocation.resize(totalAtomsInCurrentProcessor, 0);
+    unsigned int offset = 0;
     for (unsigned int iAtom = 0; iAtom < totalAtomsInCurrentProcessor; iAtom++)
       {
-        unsigned int       atomId = d_AtomIdsInCurrentProcess[iAtom];
+        unsigned int atomId = d_AtomIdsInCurrentProcess[iAtom];
+
+        d_offsetLocation[iAtom] = offset;
+        offset +=
+          getTotalNumberOfSphericalFunctionsPerAtom(d_atomicNumbers[atomId]);
         const unsigned int numberElementsInCompactSupport =
           d_elementIndexesInAtomCompactSupport[atomId].size();
         numberCellsAccumNonLocalAtoms[iAtom] = totalNonLocalElements;

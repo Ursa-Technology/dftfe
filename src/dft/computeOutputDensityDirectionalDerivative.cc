@@ -169,20 +169,9 @@ namespace dftfe
       dummy,
       false);
 
-    bool isGradDensityDataDependent = false;
-    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
-           densityFamilyType::GGA);
-      }
-    else if (d_excManagerPtr->getXCPrimaryVariable() ==
-             XCPrimaryVariable::SSDETERMINANT)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcSSDFunctionalObj()
-             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-      }
+    bool isGradDensityDataDependent =
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() ==
+       densityFamilyType::GGA);
 
     // interpolate nodal data to quadrature data
     std::vector<
@@ -514,7 +503,7 @@ namespace dftfe
       -totalCharge(d_matrixFreeDataPRefined, fvHam) /
       totalCharge(d_matrixFreeDataPRefined, fvFermiEnergy);
 
-    for (unsigned int i = 0; i < fv.local_size(); i++)
+    for (unsigned int i = 0; i < fv.locally_owned_size(); i++)
       fv.local_element(i) =
         fvHam.local_element(i) +
         firstOrderResponseFermiEnergy * fvFermiEnergy.local_element(i);
@@ -583,7 +572,7 @@ namespace dftfe
               iCell++;
             }
 
-        for (unsigned int i = 0; i < fvHamSpin0.local_size(); i++)
+        for (unsigned int i = 0; i < fvHamSpin0.locally_owned_size(); i++)
           {
             fvSpin0.local_element(i) = fvHamSpin0.local_element(i) +
                                        firstOrderResponseFermiEnergy *

@@ -69,7 +69,7 @@
 #endif
 
 #include <elpa/elpa.h>
-
+#include "AuxDensityMatrixFE.h"
 
 namespace dftfe
 {
@@ -357,9 +357,6 @@ namespace dftfe
   dftClass<FEOrder, FEOrderElectro, memorySpace>::set()
   {
     computingTimerStandard.enter_subsection("Atomic system initialization");
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator,
-                                        "Entered call to set");
 
     d_numEigenValues = d_dftParamsPtr->numberEigenValues;
 
@@ -517,7 +514,6 @@ namespace dftfe
 
     pcout << "number of atoms types: " << atomTypes.size() << "\n";
 
-
     //
     // determine number of electrons
     //
@@ -602,7 +598,6 @@ namespace dftfe
                   << d_dftParamsPtr->numCoreWfcRR << std::endl;
           }
       }
-
 
 #ifdef DFTFE_WITH_DEVICE
     if (d_dftParamsPtr->useDevice && d_dftParamsPtr->autoDeviceBlockSizes)
@@ -762,7 +757,6 @@ namespace dftfe
           }
       }
 #endif
-
     if (d_dftParamsPtr->constraintMagnetization)
       {
         numElectronsUp   = std::ceil(static_cast<double>(numElectrons) / 2.0);
@@ -819,7 +813,6 @@ namespace dftfe
         "DFT-FE Error: Incorrect input value used- SPECTRUM SPLIT CORE EIGENSTATES should be less than the total number of wavefunctions."));
     d_numEigenValuesRR = d_numEigenValues - d_dftParamsPtr->numCoreWfcRR;
 
-
 #ifdef USE_COMPLEX
     if (d_dftParamsPtr->solverMode == "NSCF")
       {
@@ -868,7 +861,6 @@ namespace dftfe
                                           d_numEigenValuesRR);
       }
 
-
     if (d_dftParamsPtr->isPseudopotential == true)
       {
         // pcout<<"dft.cc 827 ONCV Number of cells DEBUG:
@@ -885,7 +877,6 @@ namespace dftfe
             d_dftParamsPtr->verbosity,
             d_dftParamsPtr->useDevice);
       }
-
     if (d_dftParamsPtr->verbosity >= 1)
       if (d_dftParamsPtr->nonLinearCoreCorrection == true)
         pcout
@@ -895,7 +886,6 @@ namespace dftfe
     d_elpaScala->processGridELPASetup(d_numEigenValues,
                                       d_numEigenValuesRR,
                                       *d_dftParamsPtr);
-
     MPI_Barrier(d_mpiCommParent);
     computingTimerStandard.leave_subsection("Atomic system initialization");
   }
@@ -1091,9 +1081,6 @@ namespace dftfe
   {
     computingTimerStandard.enter_subsection("KSDFT problem initialization");
 
-    if (d_dftParamsPtr->verbosity >= 4)
-      dftUtils::printCurrentMemoryUsage(mpi_communicator, "Entering init");
-
     d_BLASWrapperPtrHost = std::make_shared<
       dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>();
     d_basisOperationsPtrHost = std::make_shared<
@@ -1274,26 +1261,15 @@ namespace dftfe
 
         // Note: d_rhoInNodalValuesRead is not compatible with
         // d_matrixFreeDataPRefined
-        for (unsigned int i = 0; i < d_densityInNodalValues[0].local_size();
+        for (unsigned int i = 0;
+             i < d_densityInNodalValues[0].locally_owned_size();
              i++)
           d_densityInNodalValues[0].local_element(i) =
             d_rhoInNodalValuesRead.local_element(i);
 
-        bool isGradDensityDataDependent = false;
-        if (d_excManagerPtr->getXCPrimaryVariable() ==
-            XCPrimaryVariable::DENSITY)
-          {
-            isGradDensityDataDependent =
-              (d_excManagerPtr->getExcDensityObj()
-                 ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-          }
-        else if (d_excManagerPtr->getXCPrimaryVariable() ==
-                 XCPrimaryVariable::SSDETERMINANT)
-          {
-            isGradDensityDataDependent =
-              (d_excManagerPtr->getExcSSDFunctionalObj()
-                 ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-          }
+        bool isGradDensityDataDependent =
+          (d_excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
 
         interpolateDensityNodalDataToQuadratureDataGeneral(
           d_basisOperationsPtrElectroHost,
@@ -1308,7 +1284,8 @@ namespace dftfe
         if (d_dftParamsPtr->spinPolarized == 1)
           {
             d_densityInNodalValues[1] = 0;
-            for (unsigned int i = 0; i < d_densityInNodalValues[1].local_size();
+            for (unsigned int i = 0;
+                 i < d_densityInNodalValues[1].locally_owned_size();
                  i++)
               {
                 d_densityInNodalValues[1].local_element(i) =
@@ -1392,20 +1369,9 @@ namespace dftfe
     init_bc = MPI_Wtime();
 
 
-    bool isGradDensityDataDependent = false;
-    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
-           densityFamilyType::GGA);
-      }
-    else if (d_excManagerPtr->getXCPrimaryVariable() ==
-             XCPrimaryVariable::SSDETERMINANT)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcSSDFunctionalObj()
-             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-      }
+    bool isGradDensityDataDependent =
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() ==
+       densityFamilyType::GGA);
 
     // false option reinitializes vself bins from scratch wheras true option
     // only updates the boundary conditions
@@ -2305,20 +2271,9 @@ namespace dftfe
                            1e-3 :
                            d_dftParamsPtr->chebyshevTolerance;
 
-    bool isGradDensityDataDependent = false;
-    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
-           densityFamilyType::GGA);
-      }
-    else if (d_excManagerPtr->getXCPrimaryVariable() ==
-             XCPrimaryVariable::SSDETERMINANT)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcSSDFunctionalObj()
-             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-      }
+    bool isGradDensityDataDependent =
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() ==
+       densityFamilyType::GGA);
 
     // call the mixing scheme with the mixing variables
     // Have to be called once for each variable
@@ -2445,33 +2400,18 @@ namespace dftfe
                       d_densityInNodalValues[iComp],
                       d_densityResidualNodalValues[iComp]);
                   }
-                applyKerkerPreconditionerToTotalDensityResidual(
-#ifdef DFTFE_WITH_DEVICE
-                  kerkerPreconditionedResidualSolverProblemDevice,
-                  CGSolverDevice,
-#endif
-                  kerkerPreconditionedResidualSolverProblem,
-                  CGSolver,
-                  d_densityResidualNodalValues[0],
-                  d_preCondTotalDensityResidualVector);
-                d_mixingScheme.addVariableToInHist(
-                  mixingVariable::rho,
-                  d_densityInNodalValues[0].begin(),
-                  d_densityInNodalValues[0].locally_owned_size());
-                d_mixingScheme.addVariableToResidualHist(
-                  mixingVariable::rho,
-                  d_preCondTotalDensityResidualVector.begin(),
-                  d_preCondTotalDensityResidualVector.locally_owned_size());
-                if (d_dftParamsPtr->spinPolarized == 1)
+                for (unsigned int iComp = 0;
+                     iComp < d_densityOutNodalValues.size();
+                     ++iComp)
                   {
                     d_mixingScheme.addVariableToInHist(
-                      mixingVariable::magZ,
-                      d_densityInNodalValues[1].begin(),
-                      d_densityInNodalValues[1].locally_owned_size());
+                      iComp == 0 ? mixingVariable::rho : mixingVariable::magZ,
+                      d_densityInNodalValues[iComp].begin(),
+                      d_densityInNodalValues[iComp].locally_owned_size());
                     d_mixingScheme.addVariableToResidualHist(
-                      mixingVariable::magZ,
-                      d_densityResidualNodalValues[1].begin(),
-                      d_densityResidualNodalValues[1].locally_owned_size());
+                      iComp == 0 ? mixingVariable::rho : mixingVariable::magZ,
+                      d_densityResidualNodalValues[iComp].begin(),
+                      d_densityResidualNodalValues[iComp].locally_owned_size());
                   }
                 // Delete old history if it exceeds a pre-described
                 // length
@@ -2483,7 +2423,25 @@ namespace dftfe
                     std::vector<mixingVariable>{mixingVariable::rho,
                                                 mixingVariable::magZ} :
                     std::vector<mixingVariable>{mixingVariable::rho});
-                for (unsigned int iComp = 0; iComp < norms.size(); ++iComp)
+                d_mixingScheme.getOptimizedResidual(
+                  mixingVariable::rho,
+                  d_densityResidualNodalValues[0].begin(),
+                  d_densityResidualNodalValues[0].locally_owned_size());
+                applyKerkerPreconditionerToTotalDensityResidual(
+#ifdef DFTFE_WITH_DEVICE
+                  kerkerPreconditionedResidualSolverProblemDevice,
+                  CGSolverDevice,
+#endif
+                  kerkerPreconditionedResidualSolverProblem,
+                  CGSolver,
+                  d_densityResidualNodalValues[0],
+                  d_preCondTotalDensityResidualVector);
+                d_mixingScheme.mixPreconditionedResidual(
+                  mixingVariable::rho,
+                  d_preCondTotalDensityResidualVector.begin(),
+                  d_densityInNodalValues[0].begin(),
+                  d_densityInNodalValues[0].locally_owned_size());
+                for (unsigned int iComp = 1; iComp < norms.size(); ++iComp)
                   d_mixingScheme.mixVariable(
                     iComp == 0 ? mixingVariable::rho : mixingVariable::magZ,
                     d_densityInNodalValues[iComp].begin(),
@@ -5032,6 +4990,54 @@ namespace dftfe
     return numElectrons;
   }
 
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  void
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::computeFractionalOccupancies()
+  {
+    double FE = d_dftParamsPtr->spinPolarized ?
+                  std::max(fermiEnergyDown, fermiEnergyUp) :
+                  fermiEnergy;
+
+    int numkPoints = d_kPointWeights.size();
+    d_fracOccupancy.resize(numkPoints,
+                           std::vector<double>((1 +
+                                                d_dftParamsPtr->spinPolarized) *
+                                                 d_numEigenValues,
+                                               0.0));
+
+    for (unsigned int kPoint = 0; kPoint < numkPoints; ++kPoint)
+      if (d_dftParamsPtr->constraintMagnetization)
+        {
+          for (unsigned int iWave = 0; iWave < d_numEigenValues; ++iWave)
+            {
+              if (eigenValues[kPoint][iWave] > fermiEnergyUp)
+                d_fracOccupancy[kPoint][iWave] = 0.0;
+              else
+                d_fracOccupancy[kPoint][iWave] = 1.0;
+
+              if (eigenValues[kPoint][iWave + d_numEigenValues] >
+                  fermiEnergyDown)
+                d_fracOccupancy[kPoint][iWave + d_numEigenValues] = 0.0;
+              else
+                d_fracOccupancy[kPoint][iWave + d_numEigenValues] = 1.0;
+            }
+        }
+      else
+        {
+          for (unsigned int iWave = 0;
+               iWave < d_numEigenValues * (1 + d_dftParamsPtr->spinPolarized);
+               ++iWave)
+            {
+              d_fracOccupancy[kPoint][iWave] = dftUtils::getPartialOccupancy(
+                eigenValues[kPoint][iWave], FE, C_kb, d_dftParamsPtr->TVal);
+            }
+        }
+  }
+
+
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
@@ -5405,20 +5411,10 @@ namespace dftfe
     const double                            fermiEnergyDown_,
     std::shared_ptr<AuxDensityMatrix<memorySpace>> auxDensityMatrixXCPtr)
   {
-    bool isGradDensityDataDependent = false;
-    if (d_excManagerPtr->getXCPrimaryVariable() == XCPrimaryVariable::DENSITY)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcDensityObj()->getDensityBasedFamilyType() ==
-           densityFamilyType::GGA);
-      }
-    else if (d_excManagerPtr->getXCPrimaryVariable() ==
-             XCPrimaryVariable::SSDETERMINANT)
-      {
-        isGradDensityDataDependent =
-          (d_excManagerPtr->getExcSSDFunctionalObj()
-             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-      }
+    bool isGradDensityDataDependent =
+      (d_excManagerPtr->getExcSSDFunctionalObj()->getDensityBasedFamilyType() ==
+       densityFamilyType::GGA);
+
     const bool isGGA = isGradDensityDataDependent;
     d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureId);
     const unsigned int totalLocallyOwnedCells =
@@ -5606,8 +5602,23 @@ namespace dftfe
         auxDensityMatrixXCPtr->projectDensityStart(densityProjectionInputs);
 
         auxDensityMatrixXCPtr->projectDensityEnd(mpi_communicator);
+
+        computeFractionalOccupancies();
+
+        std::shared_ptr<AuxDensityMatrixFE<memorySpace>>
+          auxDensityMatrixXCFEPtr =
+            std::dynamic_pointer_cast<AuxDensityMatrixFE<memorySpace>>(
+              auxDensityMatrixXCPtr);
+
+        Assert(
+          auxDensityMatrixXCFEPtr != nullptr,
+          dealii::ExcMessage(
+            "DFT-FE Error: unable to type cast the auxiliary matrix to FE."));
+
+        auxDensityMatrixXCFEPtr->setDensityMatrixComponents(
+          eigenVectorsFlattenedMemSpace, d_fracOccupancy);
       }
-    else if (d_dftParamsPtr->auxBasisTypeXC == "SlaterAE")
+    else if (d_dftParamsPtr->auxBasisTypeXC == "SLATER")
       {
 #ifndef USE_COMPLEX
         auto basisOpMemSpace     = getBasisOperationsMemSpace();

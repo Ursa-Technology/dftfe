@@ -394,7 +394,7 @@ namespace dftfe
                   forceEval.submit_gradient(spinPolarizedFactorVect * EQuad[q],
                                             q);
 
-                forceEval.integrate(false, true);
+                forceEval.integrate(dealii::EvaluationFlags::gradients);
 #ifdef USE_COMPLEX
                 forceEval.distribute_local_to_global(
                   d_configForceVectorLinFEKPoints);
@@ -446,7 +446,7 @@ namespace dftfe
                                                   FVectQuads[q],
                                                 q);
 
-                    forceEvalNLP.integrate(true, false);
+                    forceEvalNLP.integrate(dealii::EvaluationFlags::values);
 
 #ifdef USE_COMPLEX
                     forceEvalNLP.distribute_local_to_global(
@@ -517,21 +517,9 @@ namespace dftfe
           dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
           gradDensityOutValuesSpinPolarized;
 
-        bool isGradDensityDataRequired = false;
-        if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
-            XCPrimaryVariable::DENSITY)
-          {
-            isGradDensityDataRequired =
-              (dftPtr->d_excManagerPtr->getExcDensityObj()
-                 ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-          }
-        else if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
-                 XCPrimaryVariable::SSDETERMINANT)
-          {
-            isGradDensityDataRequired =
-              (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-                 ->getDensityBasedFamilyType() == densityFamilyType::GGA);
-          }
+        bool isGradDensityDataRequired =
+          (dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
+             ->getDensityBasedFamilyType() == densityFamilyType::GGA);
         if (isGradDensityDataRequired)
           {
             gradDensityOutValuesSpinPolarized = gradRhoOutValues;
@@ -578,30 +566,30 @@ namespace dftfe
         std::map<unsigned int, std::vector<double>>
           forceContributionNonlinearCoreCorrectionGammaAtoms;
 
-        std::unordered_map<xcOutputDataAttributes, std::vector<double>>
+        std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
           xDensityOutDataOut;
-        std::unordered_map<xcOutputDataAttributes, std::vector<double>>
+        std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
           cDensityOutDataOut;
 
         std::vector<double> &xEnergyDensityOut =
-          xDensityOutDataOut[xcOutputDataAttributes::e];
+          xDensityOutDataOut[xcRemainderOutputDataAttributes::e];
         std::vector<double> &cEnergyDensityOut =
-          cDensityOutDataOut[xcOutputDataAttributes::e];
+          cDensityOutDataOut[xcRemainderOutputDataAttributes::e];
 
         std::vector<double> &pdexDensityOutSpinUp =
-          xDensityOutDataOut[xcOutputDataAttributes::pdeDensitySpinUp];
-        std::vector<double> &pdexDensityOutSpinDown =
-          xDensityOutDataOut[xcOutputDataAttributes::pdeDensitySpinDown];
+          xDensityOutDataOut[xcRemainderOutputDataAttributes::pdeDensitySpinUp];
+        std::vector<double> &pdexDensityOutSpinDown = xDensityOutDataOut
+          [xcRemainderOutputDataAttributes::pdeDensitySpinDown];
         std::vector<double> &pdecDensityOutSpinUp =
-          cDensityOutDataOut[xcOutputDataAttributes::pdeDensitySpinUp];
-        std::vector<double> &pdecDensityOutSpinDown =
-          cDensityOutDataOut[xcOutputDataAttributes::pdeDensitySpinDown];
+          cDensityOutDataOut[xcRemainderOutputDataAttributes::pdeDensitySpinUp];
+        std::vector<double> &pdecDensityOutSpinDown = cDensityOutDataOut
+          [xcRemainderOutputDataAttributes::pdeDensitySpinDown];
 
         if (isGradDensityDataRequired)
           {
-            xDensityOutDataOut[xcOutputDataAttributes::pdeSigma] =
+            xDensityOutDataOut[xcRemainderOutputDataAttributes::pdeSigma] =
               std::vector<double>();
-            cDensityOutDataOut[xcOutputDataAttributes::pdeSigma] =
+            cDensityOutDataOut[xcRemainderOutputDataAttributes::pdeSigma] =
               std::vector<double>();
           }
 
@@ -679,39 +667,22 @@ namespace dftfe
                           quadWeightsAll[subCellIndex * numQuadPoints + iQuad]);
                       }
 
-
-                    if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
-                        XCPrimaryVariable::DENSITY)
-                      {
-                        dftPtr->d_excManagerPtr->getExcDensityObj()
-                          ->computeExcVxcFxc(
-                            *(dftPtr->d_auxDensityMatrixXCOutPtr),
-                            quadPointsInCell,
-                            quadWeightsInCell,
-                            xDensityOutDataOut,
-                            cDensityOutDataOut);
-                      }
-                    else if (dftPtr->d_excManagerPtr->getXCPrimaryVariable() ==
-                             XCPrimaryVariable::SSDETERMINANT)
-                      {
-                        dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-                          ->computeOutputXCData(
-                            *(dftPtr->d_auxDensityMatrixXCOutPtr),
-                            quadPointsInCell,
-                            quadWeightsInCell,
-                            xDensityOutDataOut,
-                            cDensityOutDataOut);
-                      }
+                    dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
+                      ->computeOutputXCData(
+                        *(dftPtr->d_auxDensityMatrixXCOutPtr),
+                        quadPointsInCell,
+                        xDensityOutDataOut,
+                        cDensityOutDataOut);
 
                     std::vector<double> pdexDensityOutSigma;
                     std::vector<double> pdecDensityOutSigma;
 
                     if (isGradDensityDataRequired)
                       {
-                        pdexDensityOutSigma =
-                          xDensityOutDataOut[xcOutputDataAttributes::pdeSigma];
-                        pdecDensityOutSigma =
-                          cDensityOutDataOut[xcOutputDataAttributes::pdeSigma];
+                        pdexDensityOutSigma = xDensityOutDataOut
+                          [xcRemainderOutputDataAttributes::pdeSigma];
+                        pdecDensityOutSigma = cDensityOutDataOut
+                          [xcRemainderOutputDataAttributes::pdeSigma];
                       }
 
 
@@ -891,7 +862,8 @@ namespace dftfe
                     forceEval.submit_gradient(E, q);
                   } // quad point loop
 
-                forceEval.integrate(true, true);
+                forceEval.integrate(dealii::EvaluationFlags::values |
+                                    dealii::EvaluationFlags::gradients);
                 forceEval.distribute_local_to_global(
                   d_configForceVectorLinFE); // also takes care of
                                              // constraints
@@ -1140,7 +1112,8 @@ namespace dftfe
 
             phiTotEvalElectro.reinit(cell);
             phiTotEvalElectro.read_dof_values_plain(phiTotRhoOutElectro);
-            phiTotEvalElectro.evaluate(true, true);
+            phiTotEvalElectro.evaluate(dealii::EvaluationFlags::values |
+                                       dealii::EvaluationFlags::gradients);
 
             if (d_dftParams.smearedNuclearCharges &&
                 nonTrivialSmearedChargeAtomIdsMacroCell.size() > 0)
@@ -1306,14 +1279,17 @@ namespace dftfe
                   forceEvalElectroLpsp.submit_gradient(E, q);
                 }
 
-            forceEvalElectro.integrate(true, true);
+            forceEvalElectro.integrate(dealii::EvaluationFlags::values |
+                                       dealii::EvaluationFlags::gradients);
             forceEvalElectro.distribute_local_to_global(
               d_configForceVectorLinFEElectro);
 
             if (d_dftParams.isPseudopotential ||
                 d_dftParams.smearedNuclearCharges)
               {
-                forceEvalElectroLpsp.integrate(true, true);
+                forceEvalElectroLpsp.integrate(
+                  dealii::EvaluationFlags::values |
+                  dealii::EvaluationFlags::gradients);
                 forceEvalElectroLpsp.distribute_local_to_global(
                   d_configForceVectorLinFEElectro);
               }
@@ -1323,7 +1299,8 @@ namespace dftfe
               {
                 phiTotEvalSmearedCharge.read_dof_values_plain(
                   phiTotRhoOutElectro);
-                phiTotEvalSmearedCharge.evaluate(false, true);
+                phiTotEvalSmearedCharge.evaluate(
+                  dealii::EvaluationFlags::gradients);
 
                 for (unsigned int q = 0; q < numQuadPointsSmearedb; ++q)
                   {
@@ -1338,7 +1315,8 @@ namespace dftfe
                   }
 
 
-                forceEvalSmearedCharge.integrate(true, false);
+                forceEvalSmearedCharge.integrate(
+                  dealii::EvaluationFlags::values);
                 forceEvalSmearedCharge.distribute_local_to_global(
                   d_configForceVectorLinFEElectro);
 

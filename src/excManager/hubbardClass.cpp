@@ -22,6 +22,11 @@
 #include "dftParameters.h"
 #include "DataTypeOverloads.h"
 #include "constants.h"
+#include "BLASWrapper.h"
+
+#if defined(DFTFE_WITH_DEVICE)
+#include "deviceKernelsGeneric.h"
+#endif
 
 namespace dftfe
 {
@@ -443,8 +448,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                                     currentBlockSize * sizeof(ValueType));
 #if defined(DFTFE_WITH_DEVICE)
                     else if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
-                      dftfe::utils::deviceKernelsGeneric::
-                        stridedCopyToBlockConstantStride(
+                      d_BLASWrapperMemPtr->stridedCopyToBlockConstantStride(
                           currentBlockSize,
                           d_numberWaveFunctions,
                           numLocalDofs,
@@ -683,7 +687,7 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
         {
           std::vector<ValueType> EntriesPadded;
           d_nonLocalOperator->paddingCouplingMatrix(
-            Entries, EntriesPadded, CouplingStructure::Dense);
+            Entries, EntriesPadded, CouplingStructure::dense);
           d_couplingMatrixEntries.resize(EntriesPadded.size());
           d_couplingMatrixEntries.copyFrom(EntriesPadded);
           d_HamiltonianCouplingMatrixEntriesUpdated = true;

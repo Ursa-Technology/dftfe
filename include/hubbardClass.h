@@ -19,16 +19,14 @@
 #define DFTFE_EXE_HUBBARDCLASS_H
 
 #include "headers.h"
+#include "FEBasisOperations.h"
+#include "AtomCenteredSphericalFunctionBase.h"
+#include "AtomicCenteredNonLocalOperator.h"
+#include "AuxDensityMatrix.h"
+#include "AtomPseudoWavefunctions.h"
 
 namespace dftfe
 {
-
-  struct atomProjectors
-  {
-  public :
-    unsigned int atomicNumber;
-    std::vector<
-  };
 
   struct hubbardSpecies
   {
@@ -42,7 +40,7 @@ namespace dftfe
     std::vector<unsigned int> lQuantumNum;
   };
 
-  template <dftfe::utils::MemorySpace memorySpace>
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   class hubbard
   {
 
@@ -53,42 +51,97 @@ namespace dftfe
 
     void init(std::shared_ptr<
            dftfe::basis::
+             FEBasisOperations<ValueType, double, memorySpace>>
+           basisOperationsMemPtr,
+         std::shared_ptr<
+           dftfe::basis::
              FEBasisOperations<ValueType, double, dftfe::utils::MemorySpace::HOST>>
            basisOperationsHostPtr,
-#if defined(DFTFE_WITH_DEVICE)
          std::shared_ptr<
-           dftfe::basis::FEBasisOperations<ValueType,
-                                           double,
-                                           dftfe::utils::MemorySpace::DEVICE>>
-           basisOperationsDevicePtr,
-#endif
+           dftfe::linearAlgebra::BLASWrapper<memorySpace>>
+           BLASWrapperMemPtr,
          std::shared_ptr<
            dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
-           BLASWrapperPtrHost,
-#if defined(DFTFE_WITH_DEVICE)
-         std::shared_ptr<
-           dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
-           BLASWrapperPtrDevice,
-#endif
-         unsigned int                             densityQuadratureId,
-         unsigned int                             localContributionQuadratureId,
-         unsigned int                             sparsityPatternQuadratureId,
-         unsigned int                             nlpspQuadratureId,
-         unsigned int                             densityQuadratureIdElectro,
-         std::shared_ptr<excManager<memorySpace>> excFunctionalPtr,
-         const std::vector<std::vector<double>> & atomLocations,
-         unsigned int                             numEigenValues,
-         const bool                               singlePrecNonLocalOperator);
+                                                 BLASWrapperHostPtr,
+         const unsigned int matrixFreeVectorComponent,
+         const unsigned int                       densityQuadratureId,
+         const unsigned int sparsityPatternQuadratureId,
+         const unsigned int densityQuadratureIdElectro,
+         const unsigned int numberWaveFunctions,
+         const unsigned int numSpins,
+         dftParameters *dftParam,
+         const std::string &                         scratchFolderName,
+         const bool                               singlePrecNonLocalOperator,
+         const bool updateNonlocalSparsity,
+         const std::vector<std::vector<double>> &atomLocations,
+         const std::vector<std::vector<double>> &atomLocationsFrac,
+         const std::vector<int>                 &imageIds,
+         const std::vector<std::vector<double>> &imagePositions,
+         const std::vector<double>              &kPointCoordinates,
+         const std::vector<double>  & kPointWeights,
+         const std::vector <std::vector<double>> &domainBoundaries);
 
     void createAtomCenteredSphericalFunctionsForProjectors();
+
+    double computeEnergyFromOccupationMatrix();
+    void computeOccupationMatrix(const dftfe::utils::MemoryStorage<ValueType, memorySpace> *X,
+                            const std::vector<std::vector<double>> &      orbitalOccupancy,
+                            const std::vector<double> &kPointWeights,
+                            const std::vector<std::vector<double>> & eigenValues,
+                            const double fermiEnergy,
+                            const double fermiEnergyUp,
+                            const double fermiEnergyDown);
+
+
+    void
+    computeHubbardOccNumberFromCTransOnX(
+      const bool         isOccOut,
+      const unsigned int vectorBlockSize,
+      const unsigned int spinIndex,
+      const unsigned int kpointIndex);
+
+    const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
+    getCouplingMatrix(unsigned int spinIndex);
+
   private:
 
+    void readHubbardInput( const std::vector<std::vector<double>> &atomLocations,
+                                                      const std::vector<int>                 &imageIds,
+                                                      const std::vector<std::vector<double>> &imagePositions);
 
 
+      std::shared_ptr<
+      dftfe::basis::
+        FEBasisOperations<ValueType, double, memorySpace>>
+      d_BasisOperatorMemPtr;
+      std::shared_ptr<
+        dftfe::basis::
+          FEBasisOperations<ValueType, double, dftfe::utils::MemorySpace::HOST>>
+        d_BasisOperatorHostPtr;
+
+      std::shared_ptr<AtomicCenteredNonLocalOperator<ValueType, memorySpace>>
+        d_nonLocalOperator;
+
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<memorySpace>>
+        d_BLASWrapperMemPtr;
+
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
+      d_BLASWrapperHostPtr;
     std::map<unsigned int, hubbardSpecies> d_hubbardSpeciesData;
     std::map<std::pair<unsigned int, unsigned int>,
              std::shared_ptr<AtomCenteredSphericalFunctionBase>>
       d_atomicProjectorFnsMap;
+
+    std::shared_ptr<AtomCenteredSphericalFunctionContainer> d_atomicProjectorFnsContainer;
+
+    std::vector<double>  d_kPointWeights;
+    std::vector <std::vector<double>> d_domainBoundaries;
+    dftParameters *d_dftParamsPtr;
+    const std::vector<double>  d_kPointCoordinates;
+
+    unsigned int d_numKPoints;
 
     bool d_occupationMatrixHasBeenComputed;
 
@@ -110,10 +163,18 @@ namespace dftfe
     std::vector<int> d_imageIds;
     std::vector<unsigned int> d_mapAtomToHubbardIds;
 
+    double     d_spinPolarizedFactor ;
+    unsigned int d_noOfSpin;
+    std::string                                       d_dftfeScratchFolderName;
+
     dftfe::utils::MemoryStorage<ValueType, memorySpace> d_couplingMatrixEntries;
 
-    std::vector<std::vector<std::vector<dataTypes::number>>> d_occupationMatrix;
+    std::vector<std::vector<std::vector<ValueType>>> d_occupationMatrix;
 
+    unsigned int d_noSpecies;
+
+    unsigned int d_densityQuadratureId, d_numberWaveFunctions;
+    bool d_HamiltonianCouplingMatrixEntriesUpdated;
   };
 }
 

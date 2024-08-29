@@ -737,6 +737,27 @@ namespace dftfe
             "[Advanced] Cutoff in a.u. for computing coordination number in D3 correction");
         }
         prm.leave_subsection();
+
+        prm.enter_subsection("Hubbard Parameters");
+        {
+          prm.declare_entry(
+            "HUBBARD PARAMETERS FILE",
+            "",
+            dealii::Patterns::Anything(),
+            "[Standard] Name of the file containing hubbard parameters.");
+          prm.declare_entry(
+            "MIXING OCCUPATION",
+            "0.5",
+            dealii::Patterns::Double(0.0,1.0),
+            "[Standard] The mixing parameter used to mix the occupation numbers.");
+          //          prm.declare_entry(
+          //            "ORTHOGONALISE ATOMIC WAVEFUNCTION",
+          //            "false",
+          //            Patterns::Bool(),
+          //            "[Standard] Boolean parameter specifying whether or not the atomic wavefunctions are orthogonalised wrt each other.");
+        }
+        prm.leave_subsection();
+
       }
       prm.leave_subsection();
 
@@ -1348,6 +1369,8 @@ namespace dftfe
     tempControllerTypeBOMD     = "";
     MDTrack                    = 0;
 
+    hubbardFileName = "";
+    hubbardOccupationMixing = 0.5;
 
     // New paramter for selecting mode and NEB parameters
     TotalImages = 1;
@@ -1601,6 +1624,15 @@ namespace dftfe
       start_magnetization   = prm.get_double("START MAGNETIZATION");
       pspCutoffImageCharges = prm.get_double("PSP CUTOFF IMAGE CHARGES");
       netCharge             = prm.get_double("NET CHARGE");
+
+      prm.enter_subsection("Hubbard Parameters");
+      {
+        hubbardFileName = prm.get("HUBBARD PARAMETERS FILE");
+        hubbardOccupationMixing = prm.get_double("MIXING OCCUPATION");
+        //        orthoAtomicData       = prm.get_bool("ORTHOGONALISE ATOMIC WAVEFUNCTIONS");
+      }
+      prm.leave_subsection();
+
     }
     prm.leave_subsection();
 

@@ -18,7 +18,10 @@
 //
 
 #include "hubbardClass.h"
-
+#include "AtomCenteredSphericalFunctionProjectorSpline.h"
+#include "dftParameters.h"
+#include "DataTypeOverloads.h"
+#include "constants.h"
 
 namespace dftfe
 {
@@ -35,6 +38,7 @@ namespace dftfe
   {
     d_occupationMatrixHasBeenComputed = false;
 
+    d_HamiltonianCouplingMatrixEntriesUpdated = false;
     d_atomOrbitalMaxLength  = 20.0;
   }
 
@@ -62,8 +66,8 @@ namespace dftfe
             char         waveFunctionFileName[256];
             strcpy(waveFunctionFileName,
                    (d_dftfeScratchFolderName + "/z" + std::to_string(Znum) +
-                    "/psi" + std::to_string(nQuantumNumber) +
-                    std::to_string(lQuantumNumber) + ".inp")
+                    "/psi" + std::to_string(nQuantumNo) +
+                    std::to_string(lQuantumNo) + ".inp")
                      .c_str());
 
             d_atomicProjectorFnsMap[std::make_pair(Znum, alpha)] =
@@ -87,8 +91,15 @@ namespace dftfe
                                             FEBasisOperations<ValueType, double, memorySpace>>
                                                                                 basisOperationsMemPtr,
                                         std::shared_ptr<
+                                          dftfe::basis::
+                                            FEBasisOperations<ValueType, double, dftfe::utils::MemorySpace::HOST>>
+                                          basisOperationsHostPtr,
+                                        std::shared_ptr<
                                           dftfe::linearAlgebra::BLASWrapper<memorySpace>>
                                           BLASWrapperMemPtr,
+                                        std::shared_ptr<
+                                          dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
+                                        BLASWrapperHostPtr,
                                         const unsigned int matrixFreeVectorComponent,
                                     const unsigned int                       densityQuadratureId,
                                     const unsigned int sparsityPatternQuadratureId,
@@ -96,18 +107,28 @@ namespace dftfe
                                     const unsigned int numberWaveFunctions,
                                         const unsigned int numSpins,
                                     dftParameters *dftParam,
+                                        const std::string &                         scratchFolderName,
                                     const bool                               singlePrecNonLocalOperator,
+                                        const bool updateNonlocalSparsity,
                                         const std::vector<std::vector<double>> &atomLocations,
                                         const std::vector<std::vector<double>> &atomLocationsFrac,
                                         const std::vector<int>                 &imageIds,
                                         const std::vector<std::vector<double>> &imagePositions,
                                         const std::vector<double>              &kPointCoordinates,
+                                        const std::vector<double>  & kPointWeights,
                                         const std::vector <std::vector<double>> &domainBoundaries)
   {
-    MPI_Barrier(d_mpiCommParent);
+    MPI_Barrier(d_mpi_comm_parent);
     d_BasisOperatorMemPtr = basisOperationsMemPtr;
-    d_BLASWrapperMemPtr   = BLASWrapperMemPtr;
+    d_BLASWrapperMemPtr = BLASWrapperMemPtr;
+    d_BasisOperatorHostPtr = basisOperationsHostPtr;
 
+    d_BLASWrapperHostPtr = BLASWrapperHostPtr;
+    d_densityQuadratureId = densityQuadratureId;
+    d_dftfeScratchFolderName = scratchFolderName;
+    d_kPointWeights = kPointWeights;
+
+    d_numberWaveFunctions = numberWaveFunctions;
     d_dftParamsPtr = dftParam;
 
     d_atomOrbitalMaxLength = d_dftParamsPtr->pspCutoffImageCharges;
@@ -132,7 +153,7 @@ namespace dftfe
       d_BLASWrapperMemPtr,
       d_BasisOperatorMemPtr,
       d_atomicProjectorFnsContainer,
-      d_mpiCommParent);
+      d_mpi_comm_parent);
 
 
     d_atomicProjectorFnsContainer->initaliseCoordinates(d_atomicCoords,
@@ -161,6 +182,10 @@ namespace dftfe
 
     unsigned int numLocalAtomsInProc = d_nonLocalOperator->getTotalAtomInCurrentProcessor();
 
+    const std::vector<unsigned int> atomIdsInProc =
+      d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
+    std::vector<unsigned int> atomicNumber =
+      d_atomicProjectorFnsContainer->getAtomicNumbers();
     d_occupationMatrix.resize(d_numSpins);
 
     for( unsigned int iSpin = 0; iSpin < d_numSpins ; iSpin++)
@@ -172,7 +197,7 @@ namespace dftfe
             const unsigned int Znum   = atomicNumber[atomId];
             const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
             d_occupationMatrix[iSpin][iAtom].resize(d_hubbardSpeciesData[hubbardIds].numberSphericalFuncSq);
-            std::fill(d_occupationMatrix[iSpin][iAtom].begin(),d_occupationMatrix[iSpin[iAtom].end(),0.0);
+            std::fill(d_occupationMatrix[iSpin][iAtom].begin(),d_occupationMatrix[iSpin][iAtom].end(),0.0);
           }
       }
 
@@ -209,8 +234,8 @@ namespace dftfe
               }
           }
 
-    pcout<<" init var = "<<endVarInit-startInit<<" shape func = "<<endShape-endVarInit<<" read atom = "<<endRead-endShape<<" compute atom = "<<endAtom-endRead<<" disc atom = "<<endInit-endAtom<<"\n";
-    pcout<<" Total time for init = "<<endInit-startInit<<"\n";
+//    pcout<<" init var = "<<endVarInit-startInit<<" shape func = "<<endShape-endVarInit<<" read atom = "<<endRead-endShape<<" compute atom = "<<endAtom-endRead<<" disc atom = "<<endInit-endAtom<<"\n";
+//    pcout<<" Total time for init = "<<endInit-startInit<<"\n";
 
   }
 
@@ -224,6 +249,10 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
     d_spinPolarizedFactor =
       (d_dftParamsPtr->spinPolarized == 1) ? 1.0 : 2.0;
     unsigned int numOwnedAtomsInProc = d_procLocalAtomId.size();
+    const std::vector<unsigned int> atomIdsInProc =
+      d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
+    std::vector<unsigned int> atomicNumber =
+      d_atomicProjectorFnsContainer->getAtomicNumbers();
     for ( unsigned int iAtom = 0; iAtom < numOwnedAtomsInProc; iAtom++)
       {
         const unsigned int atomId = atomIdsInProc[d_procLocalAtomId[iAtom]];
@@ -232,26 +261,30 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
 
         const unsigned int numSphericalFunc =  d_hubbardSpeciesData[hubbardIds].numberSphericalFunc;
 
-        for (unsigned int iOrb = 0; iOrb < numSphericalFunc ; iOrb++)
+        for (unsigned int spinIndex = 0; spinIndex < d_numSpins; spinIndex++)
           {
-            hubbardEnergy += 0.5*d_spinPolarizedFactor*d_hubbardSpeciesData[hubbardIds].hubbardValue*
-                             realPart(d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][iOrb * numSphericalFunc+ iOrb]);
-
-
-            double occMatrixSq = 0.0;
-
-            for (unsigned int jOrb = 0; jOrb < numSphericalFunc ; jOrb++)
+            for (unsigned int iOrb = 0; iOrb < numSphericalFunc ; iOrb++)
               {
-                unsigned int index1 = iOrb*numSphericalFunc + jOrb;
-                unsigned int index2 = jOrb*numSphericalFunc + iOrb;
+                hubbardEnergy += 0.5*d_spinPolarizedFactor*d_hubbardSpeciesData[hubbardIds].hubbardValue*
+                                 dftfe::utils::realPart(d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][iOrb * numSphericalFunc+ iOrb]);
 
-                occMatrixSq += d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][index1]*
-                               d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][index2]*;
 
+                double occMatrixSq = 0.0;
+
+                for (unsigned int jOrb = 0; jOrb < numSphericalFunc ; jOrb++)
+                  {
+                    unsigned int index1 = iOrb*numSphericalFunc + jOrb;
+                    unsigned int index2 = jOrb*numSphericalFunc + iOrb;
+
+                    occMatrixSq += d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][index1]*
+                                   d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][index2];
+
+                  }
+                hubbardEnergy -= 0.5*d_spinPolarizedFactor*d_hubbardSpeciesData[hubbardIds].hubbardValue*dftfe::utils::realPart(occMatrixSq);
+                hubbardEnergyCorrection -= 0.5*d_spinPolarizedFactor*d_hubbardSpeciesData[hubbardIds].hubbardValue*dftfe::utils::realPart(occMatrixSq);
               }
-            hubbardEnergy -= 0.5*d_spinPolarizedFactor*d_hubbardSpeciesData[hubbardIds].hubbardValue*realPart(occupationMatrixSq);
-            hubbardEnergyCorrection -= 0.5*d_spinPolarizedFactor*d_hubbardSpeciesData[hubbardIds].hubbardValue*realPart(occupationMatrixSq);
           }
+
 
       }
 
@@ -274,12 +307,22 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
-  void hubbard<ValueType, memorySpace>::computeOccupationMatrix(const dftfe::utils::MemoryStorage<NumberType, memorySpace> *X,
-                                                           const std::vector<std::vector<double>> &      orbitalOccupancy,
-                                                           const std::vector<double> &kPointWeights)
+  void hubbard<ValueType, memorySpace>::computeOccupationMatrix(const dftfe::utils::MemoryStorage<ValueType, memorySpace> *X,
+                                                                                        const std::vector<std::vector<double>> &      orbitalOccupancy,
+                                                           const std::vector<double> &kPointWeights,
+                                                           const std::vector<std::vector<double>> & eigenValues,
+                                                           const double fermiEnergy,
+                                                           const double fermiEnergyUp,
+                                                           const double fermiEnergyDown)
   {
 
+    d_HamiltonianCouplingMatrixEntriesUpdated = false;
     unsigned int numLocalAtomsInProc = d_nonLocalOperator->getTotalAtomInCurrentProcessor();
+
+    const std::vector<unsigned int> atomIdsInProc =
+      d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
+    std::vector<unsigned int> atomicNumber =
+      d_atomicProjectorFnsContainer->getAtomicNumbers();
 
     for (int iAtom = 0; iAtom < numLocalAtomsInProc; iAtom++)
       {
@@ -290,21 +333,25 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
       }
 
 
-    const NumberType zero                    = 0;
+    const ValueType zero                    = 0;
     const unsigned int cellsBlockSize =
       memorySpace == dftfe::utils::MemorySpace::DEVICE ? 50 : 1;
+    const unsigned int totalLocallyOwnedCells = d_BasisOperatorMemPtr->nCells();
     const unsigned int numCellBlocks = totalLocallyOwnedCells / cellsBlockSize;
     const unsigned int remCellBlockSize =
       totalLocallyOwnedCells - numCellBlocks * cellsBlockSize;
-    basisOperationsPtr->reinit(BVec, cellsBlockSize, quadratureIndex);
-    const unsigned int numQuadPoints = basisOperationsPtr->nQuadsPerCell();
 
-    dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
+    const unsigned int BVec = d_dftParamsPtr->chebyWfcBlockSize; // TODO extend to band parallelisation
+
+    d_BasisOperatorMemPtr->reinit(BVec, cellsBlockSize, d_densityQuadratureId);
+    const unsigned int numQuadPoints = d_BasisOperatorMemPtr->nQuadsPerCell();
+
+    dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
                                                          projectorKetTimesVector;
 
-    dftfe::linearAlgebra::MultiVector<NumberType, memorySpace>
+    dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
                                                         *flattenedArrayBlock;
-    dftfe::utils::MemoryStorage<NumberType, memorySpace> wfcQuadPointData;
+    dftfe::utils::MemoryStorage<ValueType, memorySpace> wfcQuadPointData;
 
     wfcQuadPointData.resize(cellsBlockSize * numQuadPoints * BVec, zero);
 
@@ -317,32 +364,36 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
     auto &partialOccupVec = partialOccupVecHost;
 #endif
 
-
+     unsigned int numLocalDofs = d_BasisOperatorHostPtr->nOwnedDofs();
+     unsigned int numNodesPerElement = d_BasisOperatorHostPtr->nDofsPerCell();
+    dftfe::utils::MemoryStorage<ValueType, memorySpace> tempCellNodalData;
+ unsigned int previousSize = 0;
     for (unsigned int kPoint = 0; kPoint < kPointWeights.size(); ++kPoint)
       {
-        for (unsigned int spinIndex = 0; spinIndex < numSpinComponents;
+        for (unsigned int spinIndex = 0; spinIndex < d_noOfSpin;
              ++spinIndex)
           {
             wfcQuadPointData.setValue(zero);
             d_nonLocalOperator->initialiseOperatorActionOnX(kPoint);
-            for (unsigned int jvec = 0; jvec < totalNumWaveFunctions;
+            for (unsigned int jvec = 0; jvec < d_numberWaveFunctions;
                  jvec += BVec)
               {
                 const unsigned int currentBlockSize =
-                  std::min(BVec, totalNumWaveFunctions - jvec);
+                  std::min(BVec, d_numberWaveFunctions - jvec);
                 flattenedArrayBlock =
-                  &(basisOperationsPtr->getMultiVector(currentBlockSize, 0));
+                  &(d_BasisOperatorMemPtr->getMultiVector(currentBlockSize, 0));
                 d_nonLocalOperator->initialiseFlattenedDataStructure(
                   currentBlockSize, projectorKetTimesVector);
 
 
-                if ((jvec + currentBlockSize) <=
-                      bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId + 1] &&
-                    (jvec + currentBlockSize) >
-                      bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId])
+//                if ((jvec + currentBlockSize) <=
+//                      bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId + 1] &&
+//                    (jvec + currentBlockSize) >
+//                      bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId])
+                if ( true) /// TODO extend to band parallelisation
                   {
 
-                    if (dftParams.constraintMagnetization)
+                    if (d_dftParamsPtr->constraintMagnetization)
                       {
                         const double fermiEnergyConstraintMag =
                           spinIndex == 0 ? fermiEnergyUp : fermiEnergyDown;
@@ -350,7 +401,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                              iEigenVec < currentBlockSize;
                              ++iEigenVec)
                           {
-                            if (eigenValues[kPoint][totalNumWaveFunctions *
+                            if (eigenValues[kPoint][d_numberWaveFunctions *
                                                       spinIndex +
                                                     jvec + iEigenVec] >
                                 fermiEnergyConstraintMag)
@@ -358,7 +409,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                                 0;
                             else
                               *(partialOccupVecHost.begin() + iEigenVec) =
-                                kPointWeights[kPoint] * spinPolarizedFactor;
+                                kPointWeights[kPoint] ;
                           }
                         }
                     else
@@ -369,13 +420,13 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                           {
                             *(partialOccupVecHost.begin() + iEigenVec) =
                               dftUtils::getPartialOccupancy(
-                                eigenValues[kPoint][totalNumWaveFunctions *
+                                eigenValues[kPoint][d_numberWaveFunctions *
                                                       spinIndex +
                                                     jvec + iEigenVec],
                                 fermiEnergy,
                                 C_kb,
-                                dftParams.TVal) *
-                              kPointWeights[kPoint] * spinPolarizedFactor;
+                                d_dftParamsPtr->TVal) *
+                              kPointWeights[kPoint] ; // TODO check if spin polarization should be here
                           }
                       }
 
@@ -385,32 +436,32 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                         std::memcpy(flattenedArrayBlock->data() +
                                       iNode * currentBlockSize,
                                     X->data() +
-                                      numLocalDofs * totalNumWaveFunctions *
-                                        (numSpinComponents * kPoint +
+                                      numLocalDofs * d_numberWaveFunctions *
+                                        (d_noOfSpin * kPoint +
                                          spinIndex) +
-                                      iNode * totalNumWaveFunctions + jvec,
-                                    currentBlockSize * sizeof(NumberType));
+                                      iNode * d_numberWaveFunctions + jvec,
+                                    currentBlockSize * sizeof(ValueType));
 #if defined(DFTFE_WITH_DEVICE)
                     else if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
                       dftfe::utils::deviceKernelsGeneric::
                         stridedCopyToBlockConstantStride(
                           currentBlockSize,
-                          totalNumWaveFunctions,
+                          d_numberWaveFunctions,
                           numLocalDofs,
                           jvec,
                           X->data() +
-                            numLocalDofs * totalNumWaveFunctions *
-                              (numSpinComponents * kPoint + spinIndex),
+                            numLocalDofs * d_numberWaveFunctions *
+                              (d_noOfSpin * kPoint + spinIndex),
                           flattenedArrayBlock->data());
 #endif
-                    basisOperationsPtr->reinit(currentBlockSize,
+                    d_BasisOperatorMemPtr->reinit(currentBlockSize,
                                                cellsBlockSize,
-                                               quadratureIndex,
+                                                  d_densityQuadratureId,
                                                false);
 
 
                     flattenedArrayBlock->updateGhostValues();
-                    basisOperationsPtr->distribute(*(flattenedArrayBlock));
+                    d_BasisOperatorMemPtr->distribute(*(flattenedArrayBlock));
 
                     for (int iblock = 0; iblock < (numCellBlocks + 1); iblock++)
                       {
@@ -430,7 +481,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                                 previousSize =
                                   currentCellsBlockSize * currentBlockSize;
                               }
-                            basisOperationsPtr->extractToCellNodalDataKernel(
+                            d_BasisOperatorMemPtr->extractToCellNodalDataKernel(
                               *(flattenedArrayBlock),
                               tempCellNodalData.data(),
                               std::pair<unsigned int, unsigned int>(
@@ -492,6 +543,8 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
         const unsigned int numberSphericalFunctionsSq =
           d_hubbardSpeciesData[hubbardIds].numberSphericalFuncSq;
 
+        const unsigned int numberSphericalFunctions =
+          d_hubbardSpeciesData[hubbardIds].numberSphericalFunc;
         d_occupationMatrix[spinIndex][iAtom].resize(d_hubbardSpeciesData[hubbardIds].numberSphericalFuncSq);
         std::fill(d_occupationMatrix[spinIndex][iAtom].begin(),d_occupationMatrix[spinIndex][iAtom].end(),0.0);
 
@@ -505,7 +558,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
 //                                    numberSphericalFunctions,
 //                                  0.0);
 //          }
-        std::vector<dataTypes::number> tempOccMat(numberSphericalFunctionsSq, 0.0);
+        std::vector<ValueType> tempOccMat(numberSphericalFunctionsSq, 0.0);
 
 //        if (d_verbosity >= 5)
 //          {
@@ -545,7 +598,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
 const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
-  hubbard<ValueType, memorySpace>::getCouplingMatrix()
+  hubbard<ValueType, memorySpace>::getCouplingMatrix(unsigned int spinIndex)
 {
   std::vector<ValueType> Entries;
   if (!d_HamiltonianCouplingMatrixEntriesUpdated)
@@ -576,13 +629,13 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
               for ( unsigned int jOrb = 0 ; jOrb < numberSphericalFunctions; jOrb++)
                 {
                   unsigned int index1 = iOrb*numberSphericalFunctions + jOrb;
-                  unsigned int index1 = jOrb*numberSphericalFunctions + iOrb;
-                  V[iOrb*numberSphericalFunctions + jOrb] -= 0.5*(d_hubbardSpeciesData[hubbardIds])*(d_occupationMatrix[spinIndex][iAtom][index1] +
+                  unsigned int index2 = jOrb*numberSphericalFunctions + iOrb;
+                  V[iOrb*numberSphericalFunctions + jOrb] -= 0.5*(d_hubbardSpeciesData[hubbardIds].hubbardValue)*(d_occupationMatrix[spinIndex][iAtom][index1] +
                                                                    d_occupationMatrix[spinIndex][iAtom][index2]);
                 }
             }
 
-          for(iOrb = 0 ; iOrb < numberSphericalFunctions*numberSphericalFunctions ; iOrb++)
+          for(unsigned int iOrb = 0 ; iOrb < numberSphericalFunctions*numberSphericalFunctions ; iOrb++)
             {
               Entries.push_back(V[iOrb]);
             }
@@ -631,6 +684,7 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
 
     unsigned int id, numberOfProjectors, atomicNumber;
     double hubbardValue;
+    unsigned int numOfOrbitals;
     hubbardInputFile >> id >> numOfOrbitals; // reading for 0
     int n,l;
 
@@ -643,14 +697,14 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
         hubbardSpeciesObj.hubbardValue = hubbardValue;
         hubbardSpeciesObj.numProj = numberOfProjectors;
         hubbardSpeciesObj.atomicNumber = atomicNumber;
-        hubbardParamsObj.nQuantumNum.resize(numberOfProjectors);
-        hubbardParamsObj.lQuantumNum.resize(numberOfProjectors);
+        hubbardSpeciesObj.nQuantumNum.resize(numberOfProjectors);
+        hubbardSpeciesObj.lQuantumNum.resize(numberOfProjectors);
         hubbardSpeciesObj.numberSphericalFunc = 0;
         for( unsigned int orbitalId = 0 ; orbitalId<numOfOrbitals;orbitalId++ )
           {
             hubbardInputFile >> n >> l;
-            hubbardParamsObj.nQuantumNum[orbitalId] = n;
-            hubbardParamsObj.lQuantumNum[orbitalId] = l;
+            hubbardSpeciesObj.nQuantumNum[orbitalId] = n;
+            hubbardSpeciesObj.lQuantumNum[orbitalId] = l;
 
             hubbardSpeciesObj.numberSphericalFunc += 2*l+1;
           }
@@ -680,6 +734,7 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
     d_imageIds.resize(0);
     d_mapAtomToHubbardIds.resize(0);
     unsigned int hubbardAtomId = 0 ;
+    unsigned int atomicNum;
     for ( unsigned int iAtom = 0; iAtom < atomLocations.size();iAtom++)
       {
         hubbardInputFile >> atomicNum >> id;
@@ -844,7 +899,7 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
 //  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
 //  void hubbard<ValueType, memorySpace>::computeAtomicData(const std::vector<std::vector<double>> &imagePositions)
 //  {
-//    std::vector<distributedCPUMultiVec<dataTypes::number>> atomicWaveNodalData;
+//    std::vector<distributedCPUMultiVec<ValueType>> atomicWaveNodalData;
 //    atomicWaveNodalData.resize(d_noSpecies);
 //
 //    //std::map< dealii::types::global_dof_index, dealii::Point<3,double>>dof_coord ;
@@ -1128,7 +1183,7 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
 //                  //
 //                  //  }
 //
-//                  std::vector<dataTypes::number> phaseFactorQuadPoint;
+//                  std::vector<ValueType> phaseFactorQuadPoint;
 //                  phaseFactorQuadPoint.resize(d_numKPoints);
 //                  for(unsigned int iKPoint = 0; iKPoint  <d_numKPoints; iKPoint++)
 //                    {
@@ -1413,8 +1468,8 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
 //  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
 //  void hubbard<ValueType, memorySpace>::preComputeDiscreteAtomicWavefunctions()
 //  {
-//    const dataTypes::number scalarCoeffAlpha = dataTypes::number(1.0);
-//    const dataTypes::number scalarCoeffBeta  = dataTypes::number(0.0);
+//    const ValueType scalarCoeffAlpha = ValueType(1.0);
+//    const ValueType scalarCoeffBeta  = ValueType(0.0);
 //    const char transA = 'N', transB = 'N';
 //    const unsigned int inc = 1;
 //    unsigned int iElem = 0 ;
@@ -1423,7 +1478,7 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
 //      cell    = d_dofHandler->begin_active(),
 //      endc    = d_dofHandler->end();
 //
-//    std::vector<dataTypes::number> cellLevelDiscreteAtomicWavefunc;
+//    std::vector<ValueType> cellLevelDiscreteAtomicWavefunc;
 //    atomicDiscreteData.resize(d_numKPoints);
 //#ifdef DFTFE_WITH_DEVICE
 //    if(d_dftParamsPtr->useDevice)
@@ -1455,19 +1510,19 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
 //            constraintsMatrixSpecies.precomputeMaps(
 //              atomicDiscreteData[iKPoint][iSpecies].getMPIPatternP2P(),
 //              totalAtomicWaveFunctions);
-//            std::vector<dataTypes::number> shapeFunctionValues;
+//            std::vector<ValueType> shapeFunctionValues;
 //            shapeFunctionValues.resize
-//              (d_numberDofsPerElement*d_numberQuadraturePoints, dataTypes::number(0.0));
+//              (d_numberDofsPerElement*d_numberQuadraturePoints, ValueType(0.0));
 //
 //            for (unsigned int iquad = 0; iquad < d_numberQuadraturePoints; ++iquad)
 //              for (unsigned int iNode = 0; iNode < d_numberDofsPerElement; ++iNode)
 //                shapeFunctionValues[iquad + iNode*d_numberQuadraturePoints] =
-//                  dataTypes::number(d_shapeFunctionValues[iquad * d_numberDofsPerElement + iNode]);
+//                  ValueType(d_shapeFunctionValues[iquad * d_numberDofsPerElement + iNode]);
 //
 //            //TODO see if this is necessary
 //            atomicDiscreteData[iKPoint][iSpecies].setValue(0.0);
 //            cell    = d_dofHandler->begin_active();
-//            std::vector<dataTypes::number>cellLevelAtomicWave;
+//            std::vector<ValueType>cellLevelAtomicWave;
 //            cellLevelAtomicWave.resize(d_numberDofsPerElement*totalAtomicWaveFunctions);
 //            cellLevelDiscreteAtomicWavefunc.resize(d_numberDofsPerElement*totalAtomicWaveFunctions);
 //            for(cell = d_dofHandler->begin_active() ; cell!= endc; ++cell)
@@ -1578,12 +1633,12 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
 //                    unsigned int totalAtomicWaveFunctions = d_atomicWavefunctionPerSpecies[iSpecies]*d_noAtoms[iSpecies];
 //                    d_dotProductAtomicWaveInputWaveApplyOptDevice[iSpecies].resize(d_noAtoms[iSpecies]*
 //                                                                                     d_atomicWavefunctionPerSpecies[iSpecies]*
-//                                                                                     BVec, dataTypes::number(0.0));
+//                                                                                     BVec, ValueType(0.0));
 //
 //                    d_dotProductAtomicWaveInputWaveOccMatOptDevice[iSpecies].resize(d_noAtoms[iSpecies]*
 //                                                                                      d_atomicWavefunctionPerSpecies[iSpecies]*
 //                                                                                      d_noOfSpin* d_numKPoints*// get number of k points.
-//                                                                                      d_numberWaveFunctions,dataTypes::number(0.0));
+//                                                                                      d_numberWaveFunctions,ValueType(0.0));
 //                    dftfe::linearAlgebra::createMultiVectorFromDealiiPartitioner(
 //                      d_matrixFreeDataPtr->get_vector_partitioner(d_matrixFreeVectorComponent),
 //                      totalAtomicWaveFunctions,
@@ -1592,15 +1647,15 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
 //                    dftfe::utils::deviceMemcpyH2D(d_atomicDiscreteDataDevice[iKPoint][iSpecies].data(),
 //                                                  atomicDiscreteData[iKPoint][iSpecies].data(),
 //                                                  totalAtomicWaveFunctions*d_localVectorSize
-//                                                    * sizeof(dataTypes::number));
-//                    coeffApplyDevice[iSpecies].resize(totalAtomicWaveFunctions*BVec,dataTypes::number(0.0));
+//                                                    * sizeof(ValueType));
+//                    coeffApplyDevice[iSpecies].resize(totalAtomicWaveFunctions*BVec,ValueType(0.0));
 //
 //                    d_constraintsInputSrcDevice.initialize(
 //                      d_matrixFreeDataPtr->get_vector_partitioner(
 //                        d_matrixFreeVectorComponent),
 //                      *d_constraintMatrixPtr);
 //
-//                    d_dotProdVecOccMat[iSpecies].resize(BVec*d_noAtoms[iSpecies]*d_atomicWavefunctionPerSpecies[iSpecies],dataTypes::number(0.0));
+//                    d_dotProdVecOccMat[iSpecies].resize(BVec*d_noAtoms[iSpecies]*d_atomicWavefunctionPerSpecies[iSpecies],ValueType(0.0));
 //                  }
 //              }
 //#endif

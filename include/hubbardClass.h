@@ -77,7 +77,7 @@ namespace dftfe
          const std::vector<std::vector<double>> &atomLocationsFrac,
          const std::vector<int>                 &imageIds,
          const std::vector<std::vector<double>> &imagePositions,
-         const std::vector<double>              &kPointCoordinates,
+         std::vector<double>              &kPointCoordinates,
          const std::vector<double>  & kPointWeights,
          const std::vector <std::vector<double>> &domainBoundaries);
 
@@ -139,7 +139,7 @@ namespace dftfe
     std::vector<double>  d_kPointWeights;
     std::vector <std::vector<double>> d_domainBoundaries;
     dftParameters *d_dftParamsPtr;
-    const std::vector<double>  d_kPointCoordinates;
+    std::vector<double>  d_kPointCoordinates;
 
     unsigned int d_numKPoints;
 

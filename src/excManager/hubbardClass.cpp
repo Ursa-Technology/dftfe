@@ -39,7 +39,6 @@ namespace dftfe
     d_occupationMatrixHasBeenComputed = false;
 
     d_HamiltonianCouplingMatrixEntriesUpdated = false;
-    d_atomOrbitalMaxLength  = 20.0;
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
@@ -47,21 +46,19 @@ namespace dftfe
   hubbard<ValueType,
             memorySpace>::createAtomCenteredSphericalFunctionsForProjectors()
   {
-    for (std::map<unsigned int, hubbardSpecies>::iterator it = d_hubbardSpeciesData.begin();
-         it != d_hubbardSpeciesData.end();
-         ++it)
+      for (auto const& [key, val] : d_hubbardSpeciesData)
       {
-        unsigned int  Znum = it->second().atomicNumber;
+        unsigned int  Znum = val.atomicNumber;
 
-        unsigned int  numberOfProjectors = it->second().numProj;
+        unsigned int  numberOfProjectors = val.numProj;
 
         unsigned int numProj;
         unsigned int alpha = 0;
         for (unsigned int i = 0 ; i < numberOfProjectors;  i++)
           {
             char         projRadialFunctionFileName[512];
-            unsigned int nQuantumNo = it->second().nQuantumNum[i];
-            unsigned int lQuantumNo = it->second().lQuantumNum[i];
+            unsigned int nQuantumNo = val.nQuantumNum[i];
+            unsigned int lQuantumNo = val.lQuantumNum[i];
 
             char         waveFunctionFileName[256];
             strcpy(waveFunctionFileName,
@@ -114,7 +111,7 @@ namespace dftfe
                                         const std::vector<std::vector<double>> &atomLocationsFrac,
                                         const std::vector<int>                 &imageIds,
                                         const std::vector<std::vector<double>> &imagePositions,
-                                        const std::vector<double>              &kPointCoordinates,
+                                        std::vector<double>              &kPointCoordinates,
                                         const std::vector<double>  & kPointWeights,
                                         const std::vector <std::vector<double>> &domainBoundaries)
   {
@@ -131,7 +128,6 @@ namespace dftfe
     d_numberWaveFunctions = numberWaveFunctions;
     d_dftParamsPtr = dftParam;
 
-    d_atomOrbitalMaxLength = d_dftParamsPtr->pspCutoffImageCharges;
 
     d_kPointCoordinates = kPointCoordinates;
     d_numKPoints = kPointCoordinates.size()/3;
@@ -276,8 +272,8 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                     unsigned int index1 = iOrb*numSphericalFunc + jOrb;
                     unsigned int index2 = jOrb*numSphericalFunc + iOrb;
 
-                    occMatrixSq += d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][index1]*
-                                   d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][index2];
+                    occMatrixSq += dftfe::utils::realPart(d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][index1]*
+                                   d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][index2]);
 
                   }
                 hubbardEnergy -= 0.5*d_spinPolarizedFactor*d_hubbardSpeciesData[hubbardIds].hubbardValue*dftfe::utils::realPart(occMatrixSq);
@@ -324,13 +320,17 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
     std::vector<unsigned int> atomicNumber =
       d_atomicProjectorFnsContainer->getAtomicNumbers();
 
-    for (int iAtom = 0; iAtom < numLocalAtomsInProc; iAtom++)
+    for(unsigned int iSpin = 0; iSpin < d_numSpins ; iSpin++)
       {
-        const unsigned int atomId = atomIdsInProc[iAtom];
-        const unsigned int Znum   = atomicNumber[atomId];
-        const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
-        std::fill(d_occupationMatrix[iAtom].begin(),d_occupationMatrix[iAtom].end(),0.0);
+        for (int iAtom = 0; iAtom < numLocalAtomsInProc; iAtom++)
+          {
+            const unsigned int atomId = atomIdsInProc[iAtom];
+            const unsigned int Znum   = atomicNumber[atomId];
+            const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
+            std::fill(d_occupationMatrix[iSpin][iAtom].begin(),d_occupationMatrix[iSpin][iAtom].end(),0.0);
+          }
       }
+
 
 
     const ValueType zero                    = 0;
@@ -509,6 +509,29 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                   }
               }
 
+          }
+      }
+
+    unsigned int numOwnedAtomsInProc = d_procLocalAtomId.size();
+    for ( unsigned int iAtom = 0; iAtom < numOwnedAtomsInProc; iAtom++)
+      {
+        const unsigned int atomId = atomIdsInProc[d_procLocalAtomId[iAtom]];
+        const unsigned int Znum   = atomicNumber[atomId];
+        const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
+
+        const unsigned int numSphericalFunc =  d_hubbardSpeciesData[hubbardIds].numberSphericalFunc;
+
+        for (unsigned int spinIndex = 0; spinIndex < d_numSpins; spinIndex++)
+          {
+            std::cout<<" occ number for atom = "<<atomId<<" spin = "<<spinIndex<<"\n";
+            for (unsigned int iOrb = 0; iOrb < numSphericalFunc; iOrb++)
+              {
+                for (unsigned int jOrb = 0; jOrb < numSphericalFunc; jOrb++)
+                  {
+                    std::cout<<" "<<d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][iOrb * numSphericalFunc+ jOrb];
+                  }
+
+              }
           }
       }
 
@@ -711,7 +734,7 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
 
         hubbardSpeciesObj.numberSphericalFuncSq = hubbardSpeciesObj.numberSphericalFunc*
                                                   hubbardSpeciesObj.numberSphericalFunc;
-        d_hubbardSpeciesData[id] = hubbardSpeciesObj;
+        d_hubbardSpeciesData[id-1] = hubbardSpeciesObj;
       }
 
     std::vector<std::vector<unsigned int>> mapAtomToImageAtom;
@@ -759,6 +782,11 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
     hubbardInputFile.close();
   }
 
+
+  template class hubbard<dataTypes::number,dftfe::utils::MemorySpace::HOST >;
+#if defined(DFTFE_WITH_DEVICE)
+  template class hubbard<dataTypes::number,dftfe::utils::MemorySpace::DEVICE >;
+#endif
 
   /*
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>

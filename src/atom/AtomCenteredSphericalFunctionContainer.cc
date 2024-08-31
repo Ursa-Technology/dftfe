@@ -329,6 +329,7 @@ namespace dftfe
     //
     int numberAtomsOfInterest = d_atomicNumbers.size(); //
 
+    std::cout<<" numberAtomsOfInterest = "<<numberAtomsOfInterest<<"\n";
 
     //     //
     //     // pre-allocate data structures that stores the sparsity of deltaVl
@@ -376,10 +377,12 @@ namespace dftfe
         //
         int numberSphericalFunctions = d_numRadialSphericalFunctions[Znum];
 
+        std::cout<<" iAtom = "<<iAtom <<" numberSphericalFunctions = "<<numberSphericalFunctions<<"\n";
         //
         // get the global charge Id of the current nonlocal atom
         //
 
+        std::cout<<" totalLocallyOwnedCells = "<<totalLocallyOwnedCells<<" numberQuadraturePoints = "<<numberQuadraturePoints<<"\n";
 
         unsigned int imageIdsSize = d_periodicImageCoord[iAtom].size() / 3;
 
@@ -429,10 +432,8 @@ namespace dftfe
                     chargePoint[2] =
                       d_periodicImageCoord[iAtom][3 * iImageAtomCount + 2];
                   }
-                // if(iCell == 0)
-                //   std::cout<<"DEBUG coordinates: "<<iAtom<<"
-                //   "<<chargePoint[0]<<" "<<chargePoint[1]<<"
-                //   "<<chargePoint[2]<<std::endl;
+                 if(iCell == 0)
+                   std::cout<<"DEBUG coordinates: "<<iAtom<<" "<<chargePoint[0]<<" "<<chargePoint[1]<<" "<<chargePoint[2]<<std::endl;
 
                 for (unsigned int iPsp = 0; iPsp < numberSphericalFunctions;
                      ++iPsp)
@@ -457,17 +458,18 @@ namespace dftfe
                             double RadVal =
                               SphericalFunction->getRadialValue(r);
 
+//                            std::cout
+//                              << "DEBUG: iAtom RadVal projIndex Cell: "
+//                              << iAtom << " " << r << " "
+//                              << std::fabs(RadVal) << " " << iPsp << " "
+//                              << iCell << std::endl;
 
                             if (std::fabs(RadVal) >= cutOffVal)
                               {
                                 sparseFlag = 1;
                                 if (r > maxR)
                                   maxR = r;
-                                // std::cout
-                                //   << "DEBUG: iAtom RadVal projIndex Cell: "
-                                //   << iAtom << " " << r << " "
-                                //   << std::fabs(RadVal) << " " << iPsp << " "
-                                //   << iCell << std::endl;
+
                                 break;
                               }
                           }
@@ -503,12 +505,12 @@ namespace dftfe
           } // iCell
 
 
-#ifdef DEBUG
+//#ifdef DEBUG
         std::cout << "No.of non zero elements in the compact support of atom "
                   << iAtom << " is "
                   << d_elementIndexesInAtomCompactSupport[iAtom].size()
                   << std::endl;
-#endif
+//#endif
 
         if (isAtomIdInProcessor)
           {

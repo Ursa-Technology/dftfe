@@ -43,6 +43,7 @@ namespace dftfe
     std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>>
                                              oncvClassPtr,
     std::shared_ptr<excManager<memorySpace>> excManagerPtr,
+    std::shared_ptr<hubbard<dataTypes::number, memorySpace>> hubbardClassPtr,
     dftParameters *                          dftParamsPtr,
     const unsigned int                       densityQuadratureID,
     const unsigned int                       lpspQuadratureID,
@@ -57,6 +58,7 @@ namespace dftfe
     , d_basisOperationsPtrHost(basisOperationsPtrHost)
     , d_oncvClassPtr(oncvClassPtr)
     , d_excManagerPtr(excManagerPtr)
+    , d_hubbardClassPtr(hubbardClassPtr)
     , d_dftParamsPtr(dftParamsPtr)
     , d_densityQuadratureID(densityQuadratureID)
     , d_lpspQuadratureID(lpspQuadratureID)
@@ -103,6 +105,8 @@ namespace dftfe
       memorySpace == dftfe::utils::MemorySpace::DEVICE ? 1 : d_nOMPThreads;
     if (d_dftParamsPtr->isPseudopotential)
       d_ONCVnonLocalOperator = oncvClassPtr->getNonLocalOperator();
+
+    d_HubbnonLocalOperator = d_hubbardClassPtr->getNonLocalOperator();
     if (d_dftParamsPtr->isPseudopotential && d_dftParamsPtr->useSinglePrecCheby)
       d_ONCVnonLocalOperatorSinglePrec =
         oncvClassPtr->getNonLocalOperatorSinglePrec();
@@ -584,6 +588,8 @@ namespace dftfe
     if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
       if (d_dftParamsPtr->isPseudopotential)
         d_ONCVnonLocalOperator->initialiseOperatorActionOnX(d_kPointIndex);
+
+    d_HubbnonLocalOperator->initialiseOperatorActionOnX(d_kPointIndex);
     if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
       if (d_dftParamsPtr->isPseudopotential &&
           d_dftParamsPtr->useSinglePrecCheby)
@@ -626,10 +632,22 @@ namespace dftfe
               numWaveFunctions, d_ONCVNonLocalProjectorTimesVectorBlock);
             d_ONCVnonLocalOperator->initialiseCellWaveFunctionPointers(
               d_cellWaveFunctionMatrixSrc);
+
+            d_HubbnonLocalOperator->initialiseFlattenedDataStructure(
+              numWaveFunctions, d_hubbNonLocalProjectorTimesVectorBlock);
+
+            d_HubbnonLocalOperator->initialiseCellWaveFunctionPointers(
+              d_cellWaveFunctionMatrixSrc);
           }
         else
-          d_ONCVnonLocalOperator->initialiseFlattenedDataStructure(
-            numWaveFunctions, d_ONCVNonLocalProjectorTimesVectorBlock);
+          {
+            d_HubbnonLocalOperator->initialiseFlattenedDataStructure(
+              numWaveFunctions, d_hubbNonLocalProjectorTimesVectorBlock);
+
+            d_ONCVnonLocalOperator->initialiseFlattenedDataStructure(
+              numWaveFunctions, d_ONCVNonLocalProjectorTimesVectorBlock);
+          }
+
       }
     if (d_dftParamsPtr->isPseudopotential && d_dftParamsPtr->useSinglePrecCheby)
       {
@@ -882,6 +900,8 @@ namespace dftfe
     if constexpr (memorySpace == dftfe::utils::MemorySpace::HOST)
       if (d_dftParamsPtr->isPseudopotential)
         d_ONCVnonLocalOperator->initialiseOperatorActionOnX(d_kPointIndex);
+
+    d_HubbnonLocalOperator->initialiseOperatorActionOnX(d_kPointIndex);
     const bool hasNonlocalComponents =
       d_dftParamsPtr->isPseudopotential &&
       (d_ONCVnonLocalOperator->getTotalNonLocalElementsInCurrentProcessor() >
@@ -907,10 +927,17 @@ namespace dftfe
             cellRange.first * numDoFsPerCell);
 #pragma omp critical(hx_Cconj)
         if (hasNonlocalComponents)
-          d_ONCVnonLocalOperator->applyCconjtransOnX(
-            d_cellWaveFunctionMatrixSrc.data() +
-              cellRange.first * numDoFsPerCell * numberWavefunctions,
-            cellRange);
+          {
+            d_ONCVnonLocalOperator->applyCconjtransOnX(
+              d_cellWaveFunctionMatrixSrc.data() +
+                cellRange.first * numDoFsPerCell * numberWavefunctions,
+              cellRange);
+            d_HubbnonLocalOperator->applyCconjtransOnX(
+              d_cellWaveFunctionMatrixSrc.data() +
+                cellRange.first * numDoFsPerCell * numberWavefunctions,
+              cellRange);
+          }
+
       }
     if (d_dftParamsPtr->isPseudopotential &&
         !onlyHPrimePartForFirstOrderDensityMatResponse)
@@ -923,7 +950,19 @@ namespace dftfe
           d_oncvClassPtr->getCouplingMatrix(),
           d_ONCVNonLocalProjectorTimesVectorBlock,
           true);
+
+        d_hubbNonLocalProjectorTimesVectorBlock.setValue(0);
+
+        d_HubbnonLocalOperator->applyAllReduceOnCconjtransX(
+          d_hubbNonLocalProjectorTimesVectorBlock);
+        d_HubbnonLocalOperator->applyVOnCconjtransX(
+          CouplingStructure::dense,
+          d_hubbardClassPtr->getCouplingMatrix(d_spinIndex),
+          d_hubbNonLocalProjectorTimesVectorBlock,
+          true);
       }
+
+
 
 #pragma omp parallel for num_threads(d_nOMPThreads)
     for (unsigned int iCell = 0; iCell < numCells; iCell += d_cellsBlockSizeHX)
@@ -954,11 +993,20 @@ namespace dftfe
           numDoFsPerCell * numberWavefunctions,
           cellRange.second - cellRange.first);
         if (hasNonlocalComponents)
-          d_ONCVnonLocalOperator->applyCOnVCconjtransX(
-            d_cellWaveFunctionMatrixDst.data() +
-              omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
-                numberWavefunctions,
-            cellRange);
+          {
+            d_ONCVnonLocalOperator->applyCOnVCconjtransX(
+              d_cellWaveFunctionMatrixDst.data() +
+                omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
+                  numberWavefunctions,
+              cellRange);
+
+            d_HubbnonLocalOperator->applyCOnVCconjtransX(
+              d_cellWaveFunctionMatrixDst.data() +
+                omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
+                  numberWavefunctions,
+              cellRange);
+          }
+
 #pragma omp critical(hx_assembly)
         d_BLASWrapperPtr->axpyStridedBlockAtomicAdd(
           numberWavefunctions,

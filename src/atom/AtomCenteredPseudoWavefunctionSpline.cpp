@@ -15,46 +15,43 @@
 // ---------------------------------------------------------------------
 //
 
-#include "AtomCenteredSphericalFunctionProjectorSpline.h"
+#include "AtomCenteredPseudoWavefunctionSpline.h"
 #include "vector"
 namespace dftfe
 {
-  AtomCenteredSphericalFunctionProjectorSpline::
-    AtomCenteredSphericalFunctionProjectorSpline(std::string  filename,
+  AtomCenteredPseudoWavefunctionSpline::
+    AtomCenteredPseudoWavefunctionSpline(std::string  filename,
                                                  unsigned int l,
-                                                 int          radialPower,
-                                                 int          colIndex,
-                                                 int          totalColSize,
-                                                 double       truncationTol,
-                                                 bool         consider0thEntry)
+                                                 double       truncationTol)
   {
     d_lQuantumNumber = l;
     std::vector<std::vector<double>> radialFunctionData(0);
-    dftUtils::readFile(totalColSize, radialFunctionData, filename);
+    dftUtils::readFile(2, radialFunctionData, filename);
     d_DataPresent = true;
     d_cutOff      = 0.0;
     d_rMin        = 0.0;
 
 
     unsigned int        numRows = radialFunctionData.size() - 1;
+
+    std::cout<<" numRows = "<<numRows<<"\n";
+    std::cout<<"numCols = "<<radialFunctionData[0].size()<<"\n";
     std::vector<double> xData(numRows), yData(numRows);
 
     unsigned int maxRowId = 0;
     for (unsigned int irow = 0; irow < numRows; ++irow)
       {
         xData[irow] = radialFunctionData[irow][0];
-        if (radialPower == 0)
-          yData[irow] = radialFunctionData[irow][colIndex];
-        else
           yData[irow] =
-            radialFunctionData[irow][colIndex] * pow(xData[irow], radialPower);
+            radialFunctionData[irow][1] / xData[irow];
         if (std::abs(yData[irow]) > truncationTol)
           maxRowId = irow;
       }
 
-    if (!consider0thEntry)
+   // if (!consider0thEntry) // TODO commented this out for
       yData[0] = yData[1];
 
+      std::cout<<"Value of the Datas at : "<<xData[0]<<" is "<<yData[0]<<std::endl;
     alglib::real_1d_array x;
     x.setcontent(numRows, &xData[0]);
     alglib::real_1d_array y;
@@ -69,8 +66,11 @@ namespace dftfe
                        natural_bound_type_R,
                        0.0,
                        d_radialSplineObject);
-    d_cutOff = xData[maxRowId + 10]; // TODO will lead to a seg fault
+
+    unsigned int maxRowIndex = std::min(maxRowId + 10, numRows-1);
+    d_cutOff = xData[maxRowIndex];
     d_rMin   = xData[0];
+    std::cout<<" cutoff = "<<d_cutOff<<" d_rMin = "<<d_rMin<<"\n";
   }
 
 

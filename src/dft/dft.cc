@@ -71,6 +71,8 @@
 #include <elpa/elpa.h>
 #include "AuxDensityMatrixFE.h"
 
+
+#include "hubbardClass.h"
 namespace dftfe
 {
   //
@@ -161,6 +163,10 @@ namespace dftfe
     , d_phiPrimeSolverProblem(mpi_comm_domain)
     , d_mixingScheme(mpi_comm_parent, mpi_comm_domain, dftParams.verbosity)
   {
+
+    hubbardPtr = std::make_shared<hubbard<dataTypes::number,memorySpace>> (mpi_comm_parent,
+                                                                           mpi_comm_domain,
+                                                                           _interpoolcomm);
     d_nOMPThreads = 1;
     if (const char *penv = std::getenv("DFTFE_NUM_THREADS"))
       {
@@ -1940,12 +1946,34 @@ namespace dftfe
         mpi_communicator);
     else
 #endif
+      hubbardPtr->init(getBasisOperationsMemSpace(),
+                       getBasisOperationsHost(),
+                       getBLASWrapperMemSpace(),
+                       getBLASWrapperHost(),
+                       d_densityDofHandlerIndex ,
+                       d_densityQuadratureId,
+                       d_sparsityPatternQuadratureId,
+                       d_numEigenValues, // The total number of waveFunctions that are passed to the operator
+                       d_dftParamsPtr->spinPolarized == 1 ? 2: 1,
+                       d_dftParamsPtr,
+                       d_dftfeScratchFolderName,
+                       false , // singlePrecNonLocalOperator
+                       true, // updateNonlocalSparsity
+                       atomLocations,
+                       atomLocationsFractional,
+                       d_imageIds,
+                       d_imagePositions,
+                       d_kPointCoordinates,
+                       d_kPointWeights,
+                       d_domainBoundingVectors);
+
       d_kohnShamDFTOperatorPtr = new KohnShamHamiltonianOperator<memorySpace>(
         d_BLASWrapperPtrHost,
         d_basisOperationsPtrHost,
         d_basisOperationsPtrHost,
         d_oncvClassPtr,
         d_excManagerPtr,
+        hubbardPtr,
         d_dftParamsPtr,
         d_densityQuadratureId,
         d_lpspQuadratureId,
@@ -2075,9 +2103,16 @@ namespace dftfe
   {
     KohnShamHamiltonianOperator<memorySpace> &kohnShamDFTEigenOperator =
       *d_kohnShamDFTOperatorPtr;
+//
+//    hubbardPtr->computeOccupationMatrix(&(getEigenVectors()),
+//                                         d_fracOccupancy,
+//                                         d_kPointWeights,
+//                                         eigenValues,
+//                                         fermiEnergy,
+//                                         fermiEnergyUp,
+//                                         fermiEnergyDown);
+//    hubbardPtr->computeEnergyFromOccupationMatrix();
 
-    const dealii::Quadrature<3> &quadrature =
-      matrix_free_data.get_quadrature(d_densityQuadratureId);
 
     // computingTimerStandard.enter_subsection("Total scf solve");
     energyCalculator<memorySpace> energyCalc(d_mpiCommParent,
@@ -3568,6 +3603,17 @@ namespace dftfe
                 << "if SPECTRUM SPLIT CORE EIGENSTATES is set to a non-zero value."
                 << std::endl;
           }
+
+        computeFractionalOccupancies();
+
+        hubbardPtr->computeOccupationMatrix(&(getEigenVectors()),
+                                           d_fracOccupancy,
+                                           d_kPointWeights,
+         eigenValues,
+                                           fermiEnergy,
+         fermiEnergyUp,
+         fermiEnergyDown);
+        hubbardPtr->computeEnergyFromOccupationMatrix();
 
         if (d_dftParamsPtr->verbosity >= 1)
           pcout << "***********************Self-Consistent-Field Iteration: "

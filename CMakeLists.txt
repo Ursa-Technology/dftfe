@@ -191,6 +191,7 @@ SET(TARGET_SRC
   ./src/atom/AtomCenteredSphericalFunctionCoreDensitySpline.cc
   ./src/atom/AtomCenteredSphericalFunctionLocalPotentialSpline.cc
   ./src/atom/AtomCenteredSphericalFunctionProjectorSpline.cc
+        ./src/atom/AtomCenteredPseudoWavefunctionSpline.cpp
   ./src/TransferBetweenMeshes/InterpolateFromCellToLocalPoints.cpp
   ./src/TransferBetweenMeshes/TransferBetweenMeshesIncompatiblePartitioning.cpp
   ./src/TransferBetweenMeshes/InterpolateCellWiseDataToPoints.cpp

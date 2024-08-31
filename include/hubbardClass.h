@@ -66,7 +66,6 @@ namespace dftfe
          const unsigned int matrixFreeVectorComponent,
          const unsigned int                       densityQuadratureId,
          const unsigned int sparsityPatternQuadratureId,
-         const unsigned int densityQuadratureIdElectro,
          const unsigned int numberWaveFunctions,
          const unsigned int numSpins,
          dftParameters *dftParam,
@@ -102,6 +101,9 @@ namespace dftfe
 
     const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
     getCouplingMatrix(unsigned int spinIndex);
+
+    const std::shared_ptr<AtomicCenteredNonLocalOperator<ValueType, memorySpace>>
+    getNonLocalOperator();
 
   private:
 
@@ -162,6 +164,7 @@ namespace dftfe
     std::vector<std::vector<double>> d_periodicImagesCoords;
     std::vector<int> d_imageIds;
     std::vector<unsigned int> d_mapAtomToHubbardIds;
+    std::vector<unsigned int> d_mapAtomToAtomicNumber;
 
     double     d_spinPolarizedFactor ;
     unsigned int d_noOfSpin;

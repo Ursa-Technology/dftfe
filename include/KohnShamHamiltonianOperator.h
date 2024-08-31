@@ -27,6 +27,9 @@
 #include <oncvClass.h>
 #include <AuxDensityMatrix.h>
 
+//  ************* For debugging purposes only. Remove afterwards
+#include "hubbardClass.h"
+
 namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
@@ -47,6 +50,7 @@ namespace dftfe
       std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>>
                                                oncvClassPtr,
       std::shared_ptr<excManager<memorySpace>> excManagerPtr,
+      std::shared_ptr<hubbard<dataTypes::number, memorySpace>> hubbardClassPtr,
       dftParameters *                          dftParamsPtr,
       const unsigned int                       densityQuadratureID,
       const unsigned int                       lpspQuadratureID,
@@ -201,6 +205,17 @@ namespace dftfe
       AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
       d_ONCVnonLocalOperator;
 
+
+    /*
+     * TODO  ------------------------------
+     * TODO For debugging Purposes:  remove afterwards
+     * TODO --------------------------------
+     */
+
+    std::shared_ptr<
+      AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
+      d_HubbnonLocalOperator;
+
     std::shared_ptr<
       AtomicCenteredNonLocalOperator<dataTypes::numberFP32, memorySpace>>
       d_ONCVnonLocalOperatorSinglePrec;
@@ -281,6 +296,13 @@ namespace dftfe
 
     // compute-time logger
     dealii::TimerOutput computing_timer;
+
+    std::shared_ptr<hubbard<dataTypes::number, memorySpace>> d_hubbardClassPtr;
+    dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
+      d_hubbNonLocalProjectorTimesVectorBlock;
+
+    dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+      d_cellWaveFunctionMatrixSrcHubb;
   };
 } // namespace dftfe
 #endif

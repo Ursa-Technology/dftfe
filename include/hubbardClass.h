@@ -91,6 +91,7 @@ namespace dftfe
                             const double fermiEnergyUp,
                             const double fermiEnergyDown);
 
+    void setInitialOccMatrx();
 
     void
     computeHubbardOccNumberFromCTransOnX(

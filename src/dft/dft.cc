@@ -194,6 +194,8 @@ namespace dftfe
       }
     if (d_dftParamsPtr->verbosity > 0)
       pcout << "Threads per MPI task: " << d_nOMPThreads << std::endl;
+    
+    AssertThrow( d_nOMPThreads == 1, dealii::ExcMessage("open mp is not compatible with hubbard "));
     d_elpaScala = new dftfe::elpaScalaManager(mpi_comm_domain);
 
     forcePtr = new forceClass<FEOrder, FEOrderElectro, memorySpace>(
@@ -866,6 +868,11 @@ namespace dftfe
         eigenValuesRRSplit[kPoint].resize((d_dftParamsPtr->spinPolarized + 1) *
                                           d_numEigenValuesRR);
       }
+
+
+    AssertThrow(d_dftParamsPtr->isPseudopotential == true,
+                    dealii::ExcMessage(
+                      " All electron case not supported in hubbard \n."));
 
     if (d_dftParamsPtr->isPseudopotential == true)
       {
@@ -1930,22 +1937,6 @@ namespace dftfe
     if (d_kohnShamDFTOperatorsInitialized)
       finalizeKohnShamDFTOperator();
 
-#ifdef DFTFE_WITH_DEVICE
-    if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
-      d_kohnShamDFTOperatorPtr = new KohnShamHamiltonianOperator<memorySpace>(
-        d_BLASWrapperPtr,
-        d_basisOperationsPtrDevice,
-        d_basisOperationsPtrHost,
-        d_oncvClassPtr,
-        d_excManagerPtr,
-        d_dftParamsPtr,
-        d_densityQuadratureId,
-        d_lpspQuadratureId,
-        d_feOrderPlusOneQuadratureId,
-        d_mpiCommParent,
-        mpi_communicator);
-    else
-#endif
       hubbardPtr->init(getBasisOperationsMemSpace(),
                        getBasisOperationsHost(),
                        getBLASWrapperMemSpace(),
@@ -1967,6 +1958,23 @@ namespace dftfe
                        d_kPointWeights,
                        d_domainBoundingVectors);
 
+#ifdef DFTFE_WITH_DEVICE
+    if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
+      d_kohnShamDFTOperatorPtr = new KohnShamHamiltonianOperator<memorySpace>(
+        d_BLASWrapperPtr,
+        d_basisOperationsPtrDevice,
+        d_basisOperationsPtrHost,
+        d_oncvClassPtr,
+        d_excManagerPtr,
+        hubbardPtr,
+	d_dftParamsPtr,
+        d_densityQuadratureId,
+        d_lpspQuadratureId,
+        d_feOrderPlusOneQuadratureId,
+        d_mpiCommParent,
+        mpi_communicator);
+    else
+#endif
       d_kohnShamDFTOperatorPtr = new KohnShamHamiltonianOperator<memorySpace>(
         d_BLASWrapperPtrHost,
         d_basisOperationsPtrHost,
@@ -3606,6 +3614,11 @@ namespace dftfe
 
         computeFractionalOccupancies();
 
+	for( unsigned int kPoint = 0; kPoint< d_kPointWeights.size(); kPoint++)
+	{
+		pcout<<" kPoint = "<<kPoint<<" weight in dft = "<<d_kPointWeights[kPoint]<<"\n";
+	}
+
         hubbardPtr->computeOccupationMatrix(&(getEigenVectors()),
                                            d_fracOccupancy,
                                            d_kPointWeights,
@@ -5047,6 +5060,7 @@ namespace dftfe
                   std::max(fermiEnergyDown, fermiEnergyUp) :
                   fermiEnergy;
 
+    pcout<<" Fermi energy = "<<FE<<"\n";
     int numkPoints = d_kPointWeights.size();
     d_fracOccupancy.resize(numkPoints,
                            std::vector<double>((1 +
@@ -5079,7 +5093,8 @@ namespace dftfe
             {
               d_fracOccupancy[kPoint][iWave] = dftUtils::getPartialOccupancy(
                 eigenValues[kPoint][iWave], FE, C_kb, d_dftParamsPtr->TVal);
-            }
+              pcout<<" iWave = "<<iWave<<" fracOcc = "<<d_fracOccupancy[kPoint][iWave]<<"\n";
+	    }
         }
   }
 

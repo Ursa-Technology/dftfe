@@ -203,6 +203,7 @@ namespace dftfe
           }
       }
 
+    setInitialOccMatrx();
 
 // TODO commented for now. Uncomment if necessary
 //    computeSymmetricTransforms(atomLocationsFrac,domainBoundaries);
@@ -252,6 +253,32 @@ namespace dftfe
 //    pcout<<" init var = "<<endVarInit-startInit<<" shape func = "<<endShape-endVarInit<<" read atom = "<<endRead-endShape<<" compute atom = "<<endAtom-endRead<<" disc atom = "<<endInit-endAtom<<"\n";
 //    pcout<<" Total time for init = "<<endInit-startInit<<"\n";
 
+  }
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+	  void hubbard<ValueType, memorySpace>::setInitialOccMatrx()
+  {
+	  d_occupationMatrixHasBeenComputed = true;
+
+	  unsigned int numLocalAtomsInProc = d_nonLocalOperator->getTotalAtomInCurrentProcessor();
+	   const std::vector<unsigned int> atomIdsInProc =
+      d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
+    std::vector<unsigned int> atomicNumber =
+      d_atomicProjectorFnsContainer->getAtomicNumbers();
+
+    for( unsigned int iSpin = 0; iSpin < d_numSpins ; iSpin++)
+      {
+        for (int iAtom = 0; iAtom < numLocalAtomsInProc; iAtom++)
+          {
+            const unsigned int atomId = atomIdsInProc[iAtom];
+            const unsigned int Znum   = atomicNumber[atomId];
+            const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
+            for( unsigned int iOrb = 0; iOrb < d_hubbardSpeciesData[hubbardIds].numberSphericalFunc; iOrb++)
+	    {
+		    d_occupationMatrix[iSpin][iAtom][iOrb* d_hubbardSpeciesData[hubbardIds].numberSphericalFunc + iOrb] = 9.821120319622089756e-01;
+	    }
+          }
+      }
   }
 
 
@@ -338,7 +365,9 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                                                            const double fermiEnergyDown)
   {
 
+	  d_occupationMatrixHasBeenComputed = true;
     d_HamiltonianCouplingMatrixEntriesUpdated = false;
+  /*
     unsigned int numLocalAtomsInProc = d_nonLocalOperator->getTotalAtomInCurrentProcessor();
 
     const std::vector<unsigned int> atomIdsInProc =
@@ -393,6 +422,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
  unsigned int previousSize = 0;
     for (unsigned int kPoint = 0; kPoint < kPointWeights.size(); ++kPoint)
       {
+	      pcout<<" kPoint = "<<kPoint<<" weight = "<<kPointWeights[kPoint]<<"\n";
         for (unsigned int spinIndex = 0; spinIndex < d_noOfSpin;
              ++spinIndex)
           {
@@ -419,43 +449,18 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
 //                      bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId])
                 if ( true) /// TODO extend to band parallelisation
                   {
-
-                    if (d_dftParamsPtr->constraintMagnetization)
-                      {
-                        const double fermiEnergyConstraintMag =
-                          spinIndex == 0 ? fermiEnergyUp : fermiEnergyDown;
                         for (unsigned int iEigenVec = 0;
                              iEigenVec < currentBlockSize;
                              ++iEigenVec)
                           {
-                            if (eigenValues[kPoint][d_numberWaveFunctions *
+                            partialOccupVecHost.data()[iEigenVec] =
+				    orbitalOccupancy[kPoint][d_numberWaveFunctions *
                                                       spinIndex +
-                                                    jvec + iEigenVec] >
-                                fermiEnergyConstraintMag)
-                              *(partialOccupVecHost.begin() + iEigenVec) =
-                                0;
-                            else
-                              *(partialOccupVecHost.begin() + iEigenVec) =
-                                kPointWeights[kPoint] ;
-                          }
-                        }
-                    else
-                      {
-                        for (unsigned int iEigenVec = 0;
-                             iEigenVec < currentBlockSize;
-                             ++iEigenVec)
-                          {
-                            *(partialOccupVecHost.begin() + iEigenVec) =
-                              dftUtils::getPartialOccupancy(
-                                eigenValues[kPoint][d_numberWaveFunctions *
+                                                    jvec + iEigenVec] * kPointWeights[kPoint];
+                           pcout<<" iWave = "<<iEigenVec<<" orb occ in hubb = "<<orbitalOccupancy[kPoint][d_numberWaveFunctions *
                                                       spinIndex +
-                                                    jvec + iEigenVec],
-                                fermiEnergy,
-                                C_kb,
-                                d_dftParamsPtr->TVal) *
-                              kPointWeights[kPoint] ; // TODO check if spin polarization should be here
-                          }
-                      }
+                                                    jvec + iEigenVec]<<"\n";
+			  }
 
                     if (memorySpace == dftfe::utils::MemorySpace::HOST)
                       for (unsigned int iNode = 0; iNode < numLocalDofs;
@@ -536,6 +541,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                 d_nonLocalOperator
                   ->applyAllReduceOnCconjtransX(
                     projectorKetTimesVector);
+		partialOccupVec.copyFrom(partialOccupVecHost);
                 d_nonLocalOperator
                   ->copyBackFromDistributedVectorToLocalDataStructure(
                     projectorKetTimesVector, partialOccupVec);
@@ -571,7 +577,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
           }
       }
 
-
+*/
      // TODO --- Add a MPI_Allreduce across k points as well
 
      /* **************************
@@ -653,11 +659,11 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
           &tempOccMat[0],
           numberSphericalFunc);
 
-//        std::cout<<" tempOccMat\n";
-//        for( unsigned int iWave = 0; iWave < numberSphericalFunc*numberSphericalFunc; iWave++)
-//          {
-//            std::cout<<" iWave = "<<iWave<<" tempOccMat = "<<tempOccMat[iWave] <<"\n";
-//          }
+        std::cout<<" tempOccMat\n";
+        for( unsigned int iWave = 0; iWave < numberSphericalFunc*numberSphericalFunc; iWave++)
+          {
+            std::cout<<" iWave = "<<iWave<<" tempOccMat = "<<tempOccMat[iWave] <<"\n";
+          }
 
         std::transform(
           d_occupationMatrix[spinIndex][iAtom].data(),
@@ -720,12 +726,20 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
     }
   if constexpr (memorySpace == dftfe::utils::MemorySpace::HOST)
     {
-      if (!d_HamiltonianCouplingMatrixEntriesUpdated)
-        {
-          d_couplingMatrixEntries.resize(Entries.size());
-          d_couplingMatrixEntries.copyFrom(Entries);
-          d_HamiltonianCouplingMatrixEntriesUpdated = true;
-        }
+	    if (!d_HamiltonianCouplingMatrixEntriesUpdated)
+	    {
+		    d_couplingMatrixEntries.resize(Entries.size());
+
+		    if (d_occupationMatrixHasBeenComputed)
+		    {
+			    d_couplingMatrixEntries.copyFrom(Entries);
+		    }
+		    else
+		    {
+			    d_couplingMatrixEntries.setValue(0.0);
+		    }
+		    d_HamiltonianCouplingMatrixEntriesUpdated = true;
+	    }
 
       return (d_couplingMatrixEntries);
     }
@@ -738,7 +752,14 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
           d_nonLocalOperator->paddingCouplingMatrix(
             Entries, EntriesPadded, CouplingStructure::dense);
           d_couplingMatrixEntries.resize(EntriesPadded.size());
-          d_couplingMatrixEntries.copyFrom(EntriesPadded);
+	  if (d_occupationMatrixHasBeenComputed)
+                    {
+                            d_couplingMatrixEntries.copyFrom(EntriesPadded);
+                    }
+                    else
+                    {
+                            d_couplingMatrixEntries.setValue(0.0);
+                    }
           d_HamiltonianCouplingMatrixEntriesUpdated = true;
         }
       return (d_couplingMatrixEntries);

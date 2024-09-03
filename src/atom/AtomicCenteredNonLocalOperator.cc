@@ -1719,10 +1719,10 @@ namespace dftfe
           dealii::ExcMessage(
             "DFT-FE Error: Inconsistent size of scaling vector. Not same as number of WaveFunctions"));
 
-//        for( unsigned int iWave = 0; iWave < d_numberWaveFunctions; iWave++)
-//          {
-//            std::cout<<" iWave = "<<iWave<<" fraction occ = "<<scalingVector.data()[iWave]<<"\n";
-//          }
+        for( unsigned int iWave = 0; iWave < d_numberWaveFunctions; iWave++)
+         {
+            std::cout<<" iWave = "<<iWave<<" fraction occ = "<<scalingVector.data()[iWave]<<"\n";
+         }
 
         if constexpr (dftfe::utils::MemorySpace::HOST == memorySpace)
           {

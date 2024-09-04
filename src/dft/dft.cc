@@ -2590,6 +2590,20 @@ namespace dftfe
                       }
                   }
 
+                dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+                  hubbOccIn = hubbardPtr->getOccMatIn();
+
+                dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+                  hubbOccRes = hubbardPtr->getOccMatRes();
+                d_mixingScheme.addVariableToInHist(
+                  mixingVariable::hubbardOccupation,
+                  hubbOccIn.data(),
+                  hubbOccIn.size());
+                d_mixingScheme.addVariableToResidualHist(
+                  mixingVariable::hubbardOccupation,
+                  hubbOccRes.data(),
+                  hubbOccRes.size());
+
                 // Delete old history if it exceeds a pre-described
                 // length
                 d_mixingScheme.popOldHistory(d_dftParamsPtr->mixingHistory);
@@ -2620,6 +2634,21 @@ namespace dftfe
                         d_gradDensityInQuadValues[iComp].data(),
                         d_gradDensityInQuadValues[iComp].size());
                   }
+
+               if (scfIter == 1)
+                 {
+                   d_hubbOccMatAfterMixing.resize(hubbOccIn.size())
+                 }
+
+               std::fill(d_hubbOccMatAfterMixing.begin(),d_hubbOccMatAfterMixing.end(),0.0);
+
+                d_mixingScheme.mixVariable(
+                  mixingVariable::hubbardOccupation,
+                 d_hubbOccMatAfterMixing.data(),
+                 d_hubbOccMatAfterMixing.size());
+
+                hubbardPtr->setInOccMatrix(d_hubbOccMatAfterMixing);
+
                 if (d_dftParamsPtr->verbosity >= 1)
                   for (unsigned int iComp = 0; iComp < norms.size(); ++iComp)
                     pcout << d_dftParamsPtr->mixingMethod
@@ -3625,10 +3654,10 @@ namespace dftfe
 
         computeFractionalOccupancies();
 
-	for( unsigned int kPoint = 0; kPoint< d_kPointWeights.size(); kPoint++)
-	{
-		pcout<<" kPoint = "<<kPoint<<" weight in dft = "<<d_kPointWeights[kPoint]<<"\n";
-	}
+//	for( unsigned int kPoint = 0; kPoint< d_kPointWeights.size(); kPoint++)
+//	{
+//		pcout<<" kPoint = "<<kPoint<<" weight in dft = "<<d_kPointWeights[kPoint]<<"\n";
+//	}
 
         hubbardPtr->computeOccupationMatrix(&(getEigenVectors()),
                                            d_fracOccupancy,

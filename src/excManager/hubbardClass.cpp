@@ -188,20 +188,31 @@ namespace dftfe
       d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
     std::vector<unsigned int> atomicNumber =
       d_atomicProjectorFnsContainer->getAtomicNumbers();
-    d_occupationMatrix.resize(d_numSpins);
 
-    for( unsigned int iSpin = 0; iSpin < d_numSpins ; iSpin++)
+    d_numTotalOccMatrixEntriesPerSpin = 0;
+    d_OccMatrixEntryStartForAtom.resize(0);
+
+    for (int iAtom = 0; iAtom < numLocalAtomsInProc; iAtom++)
       {
-        d_occupationMatrix[iSpin].resize(numLocalAtomsInProc);
-        for (int iAtom = 0; iAtom < numLocalAtomsInProc; iAtom++)
-          {
-            const unsigned int atomId = atomIdsInProc[iAtom];
-            const unsigned int Znum   = atomicNumber[atomId];
-            const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
-            d_occupationMatrix[iSpin][iAtom].resize(d_hubbardSpeciesData[hubbardIds].numberSphericalFuncSq);
-            std::fill(d_occupationMatrix[iSpin][iAtom].begin(),d_occupationMatrix[iSpin][iAtom].end(),0.0);
-          }
+        const unsigned int atomId = atomIdsInProc[iAtom];
+        const unsigned int Znum   = atomicNumber[atomId];
+        const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
+
+        d_OccMatrixEntryStartForAtom.push_back(d_numTotalOccMatrixEntriesPerSpin);
+        d_numTotalOccMatrixEntriesPerSpin += d_hubbardSpeciesData[hubbardIds].numberSphericalFuncSq;
       }
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> occIn, occOut, occResidual;
+    occIn.resize(d_numSpins*d_numTotalOccMatrixEntriesPerSpin);
+    std::fill(occIn.begin(),occIn.end(),0.0);
+    d_occupationMatrix[HubbardOccFieldType::In] = occIn;
+
+    occOut.resize(d_numSpins*d_numTotalOccMatrixEntriesPerSpin);
+    std::fill(occOut.begin(),occOut.end(),0.0);
+    d_occupationMatrix[HubbardOccFieldType::Out] = occOut;
+
+    occResidual.resize(d_numSpins*d_numTotalOccMatrixEntriesPerSpin);
+    std::fill(occResidual.begin(),occResidual.end(),0.0);
+    d_occupationMatrix[HubbardOccFieldType::Residual] = occResidual;
 
     setInitialOccMatrx();
 
@@ -274,9 +285,12 @@ namespace dftfe
             const unsigned int Znum   = atomicNumber[atomId];
             const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
             for( unsigned int iOrb = 0; iOrb < d_hubbardSpeciesData[hubbardIds].numberSphericalFunc; iOrb++)
-	    {
-		    d_occupationMatrix[iSpin][iAtom][iOrb* d_hubbardSpeciesData[hubbardIds].numberSphericalFunc + iOrb]= d_hubbardSpeciesData[hubbardIds].initialOccupation;
-	    }
+                {
+                  d_occupationMatrix[HubbardOccFieldType::In][iSpin*d_numTotalOccMatrixEntriesPerSpin +
+                                     d_OccMatrixEntryStartForAtom[iAtom] +
+                                     iOrb* d_hubbardSpeciesData[hubbardIds].numberSphericalFunc + iOrb] =
+                    d_hubbardSpeciesData[hubbardIds].initialOccupation;
+                }
           }
       }
   }
@@ -315,7 +329,9 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
             for (unsigned int iOrb = 0; iOrb < numSphericalFunc ; iOrb++)
               {
                 hubbardEnergy += 0.5*d_spinPolarizedFactor*d_hubbardSpeciesData[hubbardIds].hubbardValue*
-                                 dftfe::utils::realPart(d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][iOrb * numSphericalFunc+ iOrb]);
+                                 dftfe::utils::realPart(d_occupationMatrix[HubbardOccFieldType::Out][spinIndex*d_numTotalOccMatrixEntriesPerSpin +
+                                                                           d_OccMatrixEntryStartForAtom[d_procLocalAtomId[iAtom]] +
+                                                                           iOrb * numSphericalFunc+ iOrb]);
 
 
                 double occMatrixSq = 0.0;
@@ -325,8 +341,12 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                     unsigned int index1 = iOrb*numSphericalFunc + jOrb;
                     unsigned int index2 = jOrb*numSphericalFunc + iOrb;
 
-                    occMatrixSq += dftfe::utils::realPart(d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][index1]*
-                                   d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][index2]);
+                    occMatrixSq += dftfe::utils::realPart(d_occupationMatrix[HubbardOccFieldType::Out][spinIndex*d_numTotalOccMatrixEntriesPerSpin +
+                                                                             d_OccMatrixEntryStartForAtom[d_procLocalAtomId[iAtom]] +
+                                                                             index1] *
+                                   d_occupationMatrix[HubbardOccFieldType::Out][spinIndex*d_numTotalOccMatrixEntriesPerSpin +
+                                                                             d_OccMatrixEntryStartForAtom[d_procLocalAtomId[iAtom]] +
+                                                                             index2]);
 
                   }
                 hubbardEnergy -= 0.5*d_spinPolarizedFactor*d_hubbardSpeciesData[hubbardIds].hubbardValue*dftfe::utils::realPart(occMatrixSq);
@@ -375,16 +395,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
     std::vector<unsigned int> atomicNumber =
       d_atomicProjectorFnsContainer->getAtomicNumbers();
 
-    for(unsigned int iSpin = 0; iSpin < d_numSpins ; iSpin++)
-      {
-        for (int iAtom = 0; iAtom < numLocalAtomsInProc; iAtom++)
-          {
-            const unsigned int atomId = atomIdsInProc[iAtom];
-            const unsigned int Znum   = atomicNumber[atomId];
-            const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
-            std::fill(d_occupationMatrix[iSpin][iAtom].begin(),d_occupationMatrix[iSpin][iAtom].end(),0.0);
-          }
-      }
+    std::fill(d_occupationMatrix[HubbardOccFieldType::Out].begin(),d_occupationMatrix[HubbardOccFieldType::Out].end(),0.0);
 
 
 
@@ -570,23 +581,28 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
               {
                 for (unsigned int jOrb = 0; jOrb < numSphericalFunc; jOrb++)
                   {
-                    std::cout<<" "<<d_occupationMatrix[spinIndex][d_procLocalAtomId[iAtom]][iOrb * numSphericalFunc+ jOrb];
+                    std::cout<<" "<<d_occupationMatrix[HubbardOccFieldType::Out][spinIndex*d_numTotalOccMatrixEntriesPerSpin +
+                                                           d_OccMatrixEntryStartForAtom[d_procLocalAtomId[iAtom]] +
+                                                           iOrb * numSphericalFunc+ jOrb];
                   }
                 std::cout<<"\n";
               }
           }
       }
 
+    if (dealii::Utilities::MPI::n_mpi_processes(d_mpi_comm_interPool) > 1)
+      {
+            MPI_Allreduce(MPI_IN_PLACE,
+                          d_occupationMatrix[HubbardOccFieldType::Out].data(),
+                      d_numSpins*d_numTotalOccMatrixEntriesPerSpin,
+                          MPI_DOUBLE,
+                          MPI_SUM,
+                      d_mpi_comm_interPool);
 
-     // TODO --- Add a MPI_Allreduce across k points as well
+      }
 
-     /* **************************
-      *
-      *
-      *
-      *
-      *
-      */////////////////////////////
+    computeResidualOccMat();
+
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
@@ -620,9 +636,6 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
 
         const unsigned int numberSphericalFunctions =
           d_hubbardSpeciesData[hubbardIds].numberSphericalFunc;
-//        d_occupationMatrix[spinIndex][iAtom].resize(d_hubbardSpeciesData[hubbardIds].numberSphericalFuncSq);
-//        std::fill(d_occupationMatrix[spinIndex][iAtom].begin(),d_occupationMatrix[spinIndex][iAtom].end(),0.0);
-
 
         const unsigned int numberSphericalFunc =
           d_hubbardSpeciesData[hubbardIds].numberSphericalFunc;
@@ -666,15 +679,57 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
           }
 */
         std::transform(
-          d_occupationMatrix[spinIndex][iAtom].data(),
-          d_occupationMatrix[spinIndex][iAtom].data() +
+          d_occupationMatrix[HubbardOccFieldType::Out].data() + spinIndex*d_numTotalOccMatrixEntriesPerSpin
+          + d_OccMatrixEntryStartForAtom[iAtom],
+          d_occupationMatrix[HubbardOccFieldType::Out].data() + spinIndex*d_numTotalOccMatrixEntriesPerSpin
+            + d_OccMatrixEntryStartForAtom[iAtom] +
             numberSphericalFunctions * numberSphericalFunctions,
           tempOccMat.data(),
-          d_occupationMatrix[spinIndex][iAtom].data(),
+          d_occupationMatrix[HubbardOccFieldType::Out].data() + spinIndex*d_numTotalOccMatrixEntriesPerSpin
+            + d_OccMatrixEntryStartForAtom[iAtom] ,
           [](auto &p, auto &q) { return p + dftfe::utils::realPart(q); });
         // pcout << "DEBUG: PAW Dij size: "
         //       << D_ij[isDijOut ? TypeOfField::Out : TypeOfField::In].size()
         //       << std::endl;
+      }
+  }
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  void hubbard<ValueType, memorySpace>::computeResidualOccMat()
+  {
+    for( unsigned int iElem = 0; iElem < d_numSpins*d_numTotalOccMatrixEntriesPerSpin; iElem++)
+      {
+        d_occupationMatrix[HubbardOccFieldType::Residual][iElem] = d_occupationMatrix[HubbardOccFieldType::Out][iElem] -
+                                                                   d_occupationMatrix[HubbardOccFieldType::In][iElem];
+      }
+
+  }
+
+  dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+  hubbard<ValueType, memorySpace>::getOccMatIn()
+  {
+    return d_occupationMatrix[HubbardOccFieldType::In];
+  }
+
+  dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+  hubbard<ValueType, memorySpace>::getOccMatRes()
+  {
+    return d_occupationMatrix[HubbardOccFieldType::Residual];
+  }
+
+  dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+  hubbard<ValueType, memorySpace>::getOccMatOut()
+  {
+    return d_occupationMatrix[HubbardOccFieldType::Out];
+  }
+
+  void hubbard<ValueType, memorySpace>::
+    setInOccMatrix(const dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> & inputOccMatrix)
+  {
+    d_HamiltonianCouplingMatrixEntriesUpdated = false;
+    for( unsigned int iElem = 0; iElem < d_numSpins*d_numTotalOccMatrixEntriesPerSpin; iElem++)
+      {
+        d_occupationMatrix[HubbardOccFieldType::In][iElem] = inputOccMatrix[iElem];
       }
   }
 
@@ -712,8 +767,9 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
                 {
                   unsigned int index1 = iOrb*numberSphericalFunctions + jOrb;
                   unsigned int index2 = jOrb*numberSphericalFunctions + iOrb;
-                  V[iOrb*numberSphericalFunctions + jOrb] -= 0.5*(d_hubbardSpeciesData[hubbardIds].hubbardValue)*(d_occupationMatrix[spinIndex][iAtom][index1] +
-                                                                   d_occupationMatrix[spinIndex][iAtom][index2]);
+                  V[iOrb*numberSphericalFunctions + jOrb] -= 0.5*(d_hubbardSpeciesData[hubbardIds].hubbardValue)*(d_occupationMatrix[HubbardOccFieldType::In][spinIndex*d_numTotalOccMatrixEntriesPerSpin +
+                                                                                                                                           d_OccMatrixEntryStartForAtom[iAtom] + index1] +
+                                                                   d_occupationMatrix[HubbardOccFieldType::In][spinIndex*d_numTotalOccMatrixEntriesPerSpin + d_OccMatrixEntryStartForAtom[iAtom] + index2]);
                 }
             }
 

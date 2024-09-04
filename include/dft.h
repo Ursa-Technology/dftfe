@@ -1847,6 +1847,7 @@ namespace dftfe
 
     bool d_isRestartGroundStateCalcFromChk;
 
+    dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> d_hubbOccMatAfterMixing;
     /**
      * @ nscf variables
      */

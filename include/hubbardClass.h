@@ -41,6 +41,13 @@ namespace dftfe
     std::vector<unsigned int> lQuantumNum;
   };
 
+  enum class HubbardOccFieldType
+  {
+    In,
+    Out,
+    Residual
+  };
+
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   class hubbard
   {
@@ -104,11 +111,25 @@ namespace dftfe
     const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
     getCouplingMatrix(unsigned int spinIndex);
 
+    dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+    getOccMatIn();
+
+    dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+    getOccMatRes();
+
+    dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+    getOccMatOut();
+
+    void setInOccMatrix(const dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> & inputOccMatrix);
+
+
+
     const std::shared_ptr<AtomicCenteredNonLocalOperator<ValueType, memorySpace>>
     getNonLocalOperator();
 
   private:
 
+    void computeResidualOccMat();
     void readHubbardInput( const std::vector<std::vector<double>> &atomLocations,
                                                       const std::vector<int>                 &imageIds,
                                                       const std::vector<std::vector<double>> &imagePositions);
@@ -174,12 +195,14 @@ namespace dftfe
 
     dftfe::utils::MemoryStorage<ValueType, memorySpace> d_couplingMatrixEntries;
 
-    std::vector<std::vector<std::vector<ValueType>>> d_occupationMatrix;
-
+    std::map<HubbardOccFieldType, dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>> d_occupationMatrix;
     unsigned int d_noSpecies;
 
     unsigned int d_densityQuadratureId, d_numberWaveFunctions;
     bool d_HamiltonianCouplingMatrixEntriesUpdated;
+
+    unsigned int d_numTotalOccMatrixEntriesPerSpin;
+    std::vector<unsigned int> d_OccMatrixEntryStartForAtom;
   };
 }
 

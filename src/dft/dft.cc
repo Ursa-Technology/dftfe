@@ -1942,7 +1942,7 @@ namespace dftfe
                        getBLASWrapperMemSpace(),
                        getBLASWrapperHost(),
                        d_densityDofHandlerIndex ,
-                       d_densityQuadratureId,
+                       d_nlpspQuadratureId, //d_densityQuadratureId, TODO check if this is correct 
                        d_sparsityPatternQuadratureId,
                        d_numEigenValues, // The total number of waveFunctions that are passed to the operator
                        d_dftParamsPtr->spinPolarized == 1 ? 2: 1,
@@ -2383,6 +2383,17 @@ namespace dftfe
                   d_dftParamsPtr->spinMixingEnhancementFactor,
                 d_dftParamsPtr->adaptAndersonMixingParameter);
           }
+
+	dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+              hubbOccJxW;
+            hubbOccJxW.resize(0);
+	    d_mixingScheme.addMixingVariable(
+			    mixingVariable::hubbardOccupation,
+			    hubbOccJxW,
+			    false,
+			    d_dftParamsPtr->mixingParameter,
+			    d_dftParamsPtr->adaptAndersonMixingParameter);
+
       }
     //
     // Begin SCF iteration

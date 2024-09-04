@@ -903,11 +903,15 @@ namespace dftfe
 	    {
 		    d_ONCVnonLocalOperator->initialiseOperatorActionOnX(d_kPointIndex);
 	    }
-	    d_HubbnonLocalOperator->initialiseOperatorActionOnX(d_kPointIndex);
+	     d_HubbnonLocalOperator->initialiseOperatorActionOnX(d_kPointIndex);
     }
     const bool hasNonlocalComponents =
       d_dftParamsPtr->isPseudopotential &&
       (d_ONCVnonLocalOperator->getTotalNonLocalElementsInCurrentProcessor() >
+       0) &&
+      !onlyHPrimePartForFirstOrderDensityMatResponse;
+
+    const bool hasHubbardComponents = (d_HubbnonLocalOperator->getTotalNonLocalElementsInCurrentProcessor() >
        0) &&
       !onlyHPrimePartForFirstOrderDensityMatResponse;
 
@@ -935,6 +939,10 @@ namespace dftfe
               d_cellWaveFunctionMatrixSrc.data() +
                 cellRange.first * numDoFsPerCell * numberWavefunctions,
               cellRange);
+
+	   }
+	if(hasHubbardComponents)
+	{
             d_HubbnonLocalOperator->applyCconjtransOnX(
               d_cellWaveFunctionMatrixSrc.data() +
                 cellRange.first * numDoFsPerCell * numberWavefunctions,
@@ -953,7 +961,9 @@ namespace dftfe
           d_oncvClassPtr->getCouplingMatrix(),
           d_ONCVNonLocalProjectorTimesVectorBlock,
           true);
-
+      }
+    if (hasHubbardComponents)
+    {
         d_hubbNonLocalProjectorTimesVectorBlock.setValue(0);
 
         d_HubbnonLocalOperator->applyAllReduceOnCconjtransX(
@@ -1002,7 +1012,9 @@ namespace dftfe
                 omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
                   numberWavefunctions,
               cellRange);
-
+	  }
+	if(hasHubbardComponents)
+	{
             d_HubbnonLocalOperator->applyCOnVCconjtransX(
               d_cellWaveFunctionMatrixDst.data() +
                 omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
@@ -1025,6 +1037,15 @@ namespace dftfe
               .data() +
             cellRange.first * numDoFsPerCell);
       }
+
+//    if ( !onlyHPrimePartForFirstOrderDensityMatResponse)
+//    {
+//	    d_HubbnonLocalOperator->applyCVCconjtransOnX(src, d_kPointIndex,
+//                    CouplingStructure::dense,// TODO make it dense
+//                    d_hubbardClassPtr->getCouplingMatrix(d_spinIndex),
+//		    d_hubbNonLocalProjectorTimesVectorBlock,
+//                   dst );
+//    }
 
     inverseSqrtMassVectorScaledConstraintsNoneDataInfoPtr
       ->distribute_slave_to_master(dst);
@@ -1065,6 +1086,11 @@ namespace dftfe
       (d_ONCVnonLocalOperator->getTotalNonLocalElementsInCurrentProcessor() >
        0) &&
       !onlyHPrimePartForFirstOrderDensityMatResponse;
+
+    const bool hasHubbardComponents = (d_HubbnonLocalOperator->getTotalNonLocalElementsInCurrentProcessor() >
+       0) &&
+      !onlyHPrimePartForFirstOrderDensityMatResponse;
+
     const dataTypes::number scalarCoeffAlpha = dataTypes::number(1.0),
                             scalarCoeffBeta  = dataTypes::number(0.0);
 
@@ -1103,7 +1129,9 @@ namespace dftfe
                 d_cellWaveFunctionMatrixSrc.data() +
                   cellRange.first * numDoFsPerCell * numberWavefunctions,
                 cellRange);
-
+ }
+	    if (hasHubbardComponents)
+	    {
 		    // TODO hubbard not implemented for all-electron cases 
 		    d_HubbnonLocalOperator->applyCconjtransOnX(
               d_cellWaveFunctionMatrixSrc.data() +
@@ -1161,7 +1189,7 @@ namespace dftfe
 	    // TODO hubbard not implemented for all-electron cases
 	    d_hubbNonLocalProjectorTimesVectorBlock.updateGhostValuesEnd();
 	    d_HubbnonLocalOperator->applyVOnCconjtransX(
-          CouplingStructure::dense,
+          CouplingStructure::dense, 
           d_hubbardClassPtr->getCouplingMatrix(d_spinIndex),
           d_hubbNonLocalProjectorTimesVectorBlock,
           true);
@@ -1205,7 +1233,9 @@ namespace dftfe
                   omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *
                     numberWavefunctions,
                 cellRange);
-
+	    }
+	    if(hasHubbardComponents)
+	    {
 		    d_HubbnonLocalOperator->applyCOnVCconjtransX(
               d_cellWaveFunctionMatrixDst.data() +
                 omp_get_thread_num() * d_cellsBlockSizeHX * numDoFsPerCell *

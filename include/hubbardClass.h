@@ -36,6 +36,7 @@ namespace dftfe
     unsigned int numProj;
     unsigned int numberSphericalFunc;
     unsigned int numberSphericalFuncSq;
+    double initialOccupation;
     std::vector<unsigned int> nQuantumNum;
     std::vector<unsigned int> lQuantumNum;
   };

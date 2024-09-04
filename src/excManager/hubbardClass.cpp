@@ -275,7 +275,7 @@ namespace dftfe
             const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
             for( unsigned int iOrb = 0; iOrb < d_hubbardSpeciesData[hubbardIds].numberSphericalFunc; iOrb++)
 	    {
-		    d_occupationMatrix[iSpin][iAtom][iOrb* d_hubbardSpeciesData[hubbardIds].numberSphericalFunc + iOrb] = 9.821120319622089756e-01;
+		    d_occupationMatrix[iSpin][iAtom][iOrb* d_hubbardSpeciesData[hubbardIds].numberSphericalFunc + iOrb]= d_hubbardSpeciesData[hubbardIds].initialOccupation;
 	    }
           }
       }
@@ -367,7 +367,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
 
 	  d_occupationMatrixHasBeenComputed = true;
     d_HamiltonianCouplingMatrixEntriesUpdated = false;
-  /*
+  
     unsigned int numLocalAtomsInProc = d_nonLocalOperator->getTotalAtomInCurrentProcessor();
 
     const std::vector<unsigned int> atomIdsInProc =
@@ -422,7 +422,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
  unsigned int previousSize = 0;
     for (unsigned int kPoint = 0; kPoint < kPointWeights.size(); ++kPoint)
       {
-	      pcout<<" kPoint = "<<kPoint<<" weight = "<<kPointWeights[kPoint]<<"\n";
+	      //pcout<<" kPoint = "<<kPoint<<" weight = "<<kPointWeights[kPoint]<<"\n";
         for (unsigned int spinIndex = 0; spinIndex < d_noOfSpin;
              ++spinIndex)
           {
@@ -457,9 +457,9 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
 				    orbitalOccupancy[kPoint][d_numberWaveFunctions *
                                                       spinIndex +
                                                     jvec + iEigenVec] * kPointWeights[kPoint];
-                           pcout<<" iWave = "<<iEigenVec<<" orb occ in hubb = "<<orbitalOccupancy[kPoint][d_numberWaveFunctions *
-                                                      spinIndex +
-                                                    jvec + iEigenVec]<<"\n";
+                           //pcout<<" iWave = "<<iEigenVec<<" orb occ in hubb = "<<orbitalOccupancy[kPoint][d_numberWaveFunctions *
+                             //                         spinIndex +
+                               //                     jvec + iEigenVec]<<"\n";
 			  }
 
                     if (memorySpace == dftfe::utils::MemorySpace::HOST)
@@ -577,7 +577,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
           }
       }
 
-*/
+
      // TODO --- Add a MPI_Allreduce across k points as well
 
      /* **************************
@@ -658,13 +658,13 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
           &beta,
           &tempOccMat[0],
           numberSphericalFunc);
-
+/*
         std::cout<<" tempOccMat\n";
         for( unsigned int iWave = 0; iWave < numberSphericalFunc*numberSphericalFunc; iWave++)
           {
             std::cout<<" iWave = "<<iWave<<" tempOccMat = "<<tempOccMat[iWave] <<"\n";
           }
-
+*/
         std::transform(
           d_occupationMatrix[spinIndex][iAtom].data(),
           d_occupationMatrix[spinIndex][iAtom].data() +
@@ -721,6 +721,23 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
             {
               Entries.push_back(V[iOrb]);
             }
+
+	    /*
+	  // TODO change back to dense V 
+	  std::vector<ValueType> V(numberSphericalFunctions);
+	  std::fill(V.begin(),V.end(),0.0);
+	  for ( unsigned int iOrb = 0 ; iOrb < numberSphericalFunctions; iOrb++)
+	  {
+		  unsigned int index1 = iOrb*numberSphericalFunctions + iOrb;
+		  V[iOrb] = 0.5*d_hubbardSpeciesData[hubbardIds].hubbardValue - d_hubbardSpeciesData[hubbardIds].hubbardValue*
+			  d_occupationMatrix[spinIndex][iAtom][index1];
+	  }
+
+	   for(unsigned int iOrb = 0 ; iOrb < numberSphericalFunctions ; iOrb++)
+            {
+              Entries.push_back(V[iOrb]);
+            }
+	    */
 
         }
     }
@@ -784,16 +801,18 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
     unsigned int numOfOrbitals;
     hubbardInputFile >> id >> numOfOrbitals; // reading for 0
     int n,l;
+    double initialOccupation;
 
     for (unsigned int i = 1 ; i< numberOfSpecies; i++)
       {
-        hubbardInputFile >> id >>atomicNumber >> hubbardValue>> numberOfProjectors;
+        hubbardInputFile >> id >>atomicNumber >> hubbardValue>> numberOfProjectorsi >> initialOccupation;
 
         pcout<<" id = "<<id<<"\n";
 
         pcout<<" atomicNumber = "<<atomicNumber<<"\n";
         pcout<<" hubbardValue = "<<hubbardValue<<"\n";
         pcout<<" numberOfProjectors = "<<numberOfProjectors<<"\n";
+	pcout<<" initialOccupation = "<<initialOccupation<<"\n";
         hubbardSpecies hubbardSpeciesObj;
 
         hubbardSpeciesObj.hubbardValue = hubbardValue;
@@ -801,6 +820,7 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
         hubbardSpeciesObj.atomicNumber = atomicNumber;
         hubbardSpeciesObj.nQuantumNum.resize(numberOfProjectors);
         hubbardSpeciesObj.lQuantumNum.resize(numberOfProjectors);
+	hubbardSpeciesObj.initialOccupation = initialOccupation;
         hubbardSpeciesObj.numberSphericalFunc = 0;
         for( unsigned int orbitalId = 0 ; orbitalId<numberOfProjectors;orbitalId++ )
           {

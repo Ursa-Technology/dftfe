@@ -2590,10 +2590,10 @@ namespace dftfe
                       }
                   }
 
-                dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+                dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
                   hubbOccIn = hubbardPtr->getOccMatIn();
 
-                dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+                dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
                   hubbOccRes = hubbardPtr->getOccMatRes();
                 d_mixingScheme.addVariableToInHist(
                   mixingVariable::hubbardOccupation,
@@ -2637,7 +2637,7 @@ namespace dftfe
 
                if (scfIter == 1)
                  {
-                   d_hubbOccMatAfterMixing.resize(hubbOccIn.size())
+                   d_hubbOccMatAfterMixing.resize(hubbOccIn.size());
                  }
 
                std::fill(d_hubbOccMatAfterMixing.begin(),d_hubbOccMatAfterMixing.end(),0.0);

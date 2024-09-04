@@ -284,12 +284,42 @@ namespace dftfe
             const unsigned int atomId = atomIdsInProc[iAtom];
             const unsigned int Znum   = atomicNumber[atomId];
             const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
-            for( unsigned int iOrb = 0; iOrb < d_hubbardSpeciesData[hubbardIds].numberSphericalFunc; iOrb++)
+            double initOccValue = 0.0;
+	    if ( d_numSpins ==1)
+	    {
+		    initOccValue = d_hubbardSpeciesData[hubbardIds].initialOccupation/(2.0* d_hubbardSpeciesData[hubbardIds].numberSphericalFunc);
+	    }
+	    else if (d_numSpins == 2)
+	    {
+		    if ( iSpin == 0)
+		    {
+			    if ( d_hubbardSpeciesData[hubbardIds].numberSphericalFunc < d_hubbardSpeciesData[hubbardIds].initialOccupation)
+			    {
+				    initOccValue = 1.0;
+			    }
+			    else
+			    {
+				    initOccValue = d_hubbardSpeciesData[hubbardIds].initialOccupation/(d_hubbardSpeciesData[hubbardIds].numberSphericalFunc);
+			    }
+		    }
+		    else if (iSpin == 1)
+		    {
+			    if ( d_hubbardSpeciesData[hubbardIds].numberSphericalFunc < d_hubbardSpeciesData[hubbardIds].initialOccupation)
+			    {
+				    initOccValue = (d_hubbardSpeciesData[hubbardIds].initialOccupation - d_hubbardSpeciesData[hubbardIds].numberSphericalFunc) / (d_hubbardSpeciesData[hubbardIds].numberSphericalFunc) ; 
+			    }
+			    else
+			    {
+				    initOccValue = 0.0; 
+			    }
+
+		    }
+	    }
+	    for( unsigned int iOrb = 0; iOrb < d_hubbardSpeciesData[hubbardIds].numberSphericalFunc; iOrb++)
                 {
                   d_occupationMatrix[HubbardOccFieldType::In][iSpin*d_numTotalOccMatrixEntriesPerSpin +
                                      d_OccMatrixEntryStartForAtom[iAtom] +
-                                     iOrb* d_hubbardSpeciesData[hubbardIds].numberSphericalFunc + iOrb] =
-                    d_hubbardSpeciesData[hubbardIds].initialOccupation;
+                                     iOrb* d_hubbardSpeciesData[hubbardIds].numberSphericalFunc + iOrb] = initOccValue;
                 }
           }
       }
@@ -705,26 +735,30 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
 
   }
 
-  dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
   hubbard<ValueType, memorySpace>::getOccMatIn()
   {
     return d_occupationMatrix[HubbardOccFieldType::In];
   }
 
-  dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
   hubbard<ValueType, memorySpace>::getOccMatRes()
   {
     return d_occupationMatrix[HubbardOccFieldType::Residual];
   }
 
-  dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
   hubbard<ValueType, memorySpace>::getOccMatOut()
   {
     return d_occupationMatrix[HubbardOccFieldType::Out];
   }
 
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void hubbard<ValueType, memorySpace>::
-    setInOccMatrix(const dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> & inputOccMatrix)
+    setInOccMatrix(const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> & inputOccMatrix)
   {
     d_HamiltonianCouplingMatrixEntriesUpdated = false;
     for( unsigned int iElem = 0; iElem < d_numSpins*d_numTotalOccMatrixEntriesPerSpin; iElem++)
@@ -861,7 +895,7 @@ const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
 
     for (unsigned int i = 1 ; i< numberOfSpecies; i++)
       {
-        hubbardInputFile >> id >>atomicNumber >> hubbardValue>> numberOfProjectorsi >> initialOccupation;
+        hubbardInputFile >> id >>atomicNumber >> hubbardValue>> numberOfProjectors >> initialOccupation;
 
         pcout<<" id = "<<id<<"\n";
 

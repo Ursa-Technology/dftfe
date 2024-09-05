@@ -42,9 +42,6 @@ namespace dftfe
     pcout(std::cout,
           (dealii::Utilities::MPI::this_mpi_process(d_mpi_comm_parent) == 0))
   {
-    d_occupationMatrixHasBeenComputed = false;
-
-    d_HamiltonianCouplingMatrixEntriesUpdated = false;
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
@@ -269,7 +266,6 @@ namespace dftfe
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
 	  void hubbard<ValueType, memorySpace>::setInitialOccMatrx()
   {
-	  d_occupationMatrixHasBeenComputed = true;
 
 	  unsigned int numLocalAtomsInProc = d_nonLocalOperator->getTotalAtomInCurrentProcessor();
 	   const std::vector<unsigned int> atomIdsInProc =
@@ -323,6 +319,9 @@ namespace dftfe
                 }
           }
       }
+
+
+    computeCouplingMatrix();
   }
 
 
@@ -414,9 +413,6 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                                                            const double fermiEnergyUp,
                                                            const double fermiEnergyDown)
   {
-
-	  d_occupationMatrixHasBeenComputed = true;
-    d_HamiltonianCouplingMatrixEntriesUpdated = false;
   
     unsigned int numLocalAtomsInProc = d_nonLocalOperator->getTotalAtomInCurrentProcessor();
 
@@ -637,7 +633,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  hubbard<ValueType, memorySpace>::computeHubbardOccNumberFromCTransOnX(
+  hubbard<ValueType, memorySpace>::compuseteHubbardOccNumberFromCTransOnX(
     const bool         isOccOut,
     const unsigned int vectorBlockSize,
     const unsigned int spinIndex,
@@ -760,119 +756,103 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
   void hubbard<ValueType, memorySpace>::
     setInOccMatrix(const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> & inputOccMatrix)
   {
-    d_HamiltonianCouplingMatrixEntriesUpdated = false;
     for( unsigned int iElem = 0; iElem < d_numSpins*d_numTotalOccMatrixEntriesPerSpin; iElem++)
       {
         d_occupationMatrix[HubbardOccFieldType::In][iElem] = inputOccMatrix[iElem];
       }
+
+    computeCouplingMatrix();
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
-const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
+  const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
   hubbard<ValueType, memorySpace>::getCouplingMatrix(unsigned int spinIndex)
-{
-  std::vector<ValueType> Entries;
-  if (!d_HamiltonianCouplingMatrixEntriesUpdated)
-    {
-      const std::vector<unsigned int> atomIdsInProcessor =
-        d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
-      std::vector<unsigned int> atomicNumber =
-        d_atomicProjectorFnsContainer->getAtomicNumbers();
-      d_couplingMatrixEntries.clear();
+  {
+    return d_couplingMatrixEntries[spinIndex];
+  }
 
-      for (int iAtom = 0; iAtom < atomIdsInProcessor.size(); iAtom++)
-        {
-          const unsigned int atomId = atomIdsInProcessor[iAtom];
-          const unsigned int Znum   = atomicNumber[atomId];
-          const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
-          const unsigned int numberSphericalFunctions =
-            d_hubbardSpeciesData[hubbardIds].numberSphericalFunc;
-          const unsigned int numberSphericalFunctionsSq =
-            d_hubbardSpeciesData[hubbardIds].numberSphericalFuncSq;
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+void
+  hubbard<ValueType, memorySpace>::computeCouplingMatrix()
+  {
+    d_couplingMatrixEntries.resize(d_numSpins);
+    for (unsigned int spinIndex = 0; spinIndex < d_numSpins; spinIndex++)
+      {
+        std::vector<ValueType>          Entries;
+        const std::vector<unsigned int> atomIdsInProcessor =
+          d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
+        std::vector<unsigned int> atomicNumber =
+          d_atomicProjectorFnsContainer->getAtomicNumbers();
+        d_couplingMatrixEntries[spinIndex].clear();
 
-          std::vector<ValueType> V(numberSphericalFunctions*numberSphericalFunctions);
-          std::fill(V.begin(),V.end(),0.0);
+        for (int iAtom = 0; iAtom < atomIdsInProcessor.size(); iAtom++)
+          {
+            const unsigned int atomId     = atomIdsInProcessor[iAtom];
+            const unsigned int Znum       = atomicNumber[atomId];
+            const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
+            const unsigned int numberSphericalFunctions =
+              d_hubbardSpeciesData[hubbardIds].numberSphericalFunc;
+            const unsigned int numberSphericalFunctionsSq =
+              d_hubbardSpeciesData[hubbardIds].numberSphericalFuncSq;
 
-          for ( unsigned int iOrb = 0 ; iOrb < numberSphericalFunctions; iOrb++)
-            {
-              V[iOrb*numberSphericalFunctions + iOrb] = 0.5*d_hubbardSpeciesData[hubbardIds].hubbardValue;
+            std::vector<ValueType> V(numberSphericalFunctions *
+                                     numberSphericalFunctions);
+            std::fill(V.begin(), V.end(), 0.0);
 
-              for ( unsigned int jOrb = 0 ; jOrb < numberSphericalFunctions; jOrb++)
-                {
-                  unsigned int index1 = iOrb*numberSphericalFunctions + jOrb;
-                  unsigned int index2 = jOrb*numberSphericalFunctions + iOrb;
-                  V[iOrb*numberSphericalFunctions + jOrb] -= 0.5*(d_hubbardSpeciesData[hubbardIds].hubbardValue)*(d_occupationMatrix[HubbardOccFieldType::In][spinIndex*d_numTotalOccMatrixEntriesPerSpin +
-                                                                                                                                           d_OccMatrixEntryStartForAtom[iAtom] + index1] +
-                                                                   d_occupationMatrix[HubbardOccFieldType::In][spinIndex*d_numTotalOccMatrixEntriesPerSpin + d_OccMatrixEntryStartForAtom[iAtom] + index2]);
-                }
-            }
+            for (unsigned int iOrb = 0; iOrb < numberSphericalFunctions; iOrb++)
+              {
+                V[iOrb * numberSphericalFunctions + iOrb] =
+                  0.5 * d_hubbardSpeciesData[hubbardIds].hubbardValue;
 
-          for(unsigned int iOrb = 0 ; iOrb < numberSphericalFunctions*numberSphericalFunctions ; iOrb++)
-            {
-              Entries.push_back(V[iOrb]);
-            }
+                for (unsigned int jOrb = 0; jOrb < numberSphericalFunctions;
+                     jOrb++)
+                  {
+                    unsigned int index1 =
+                      iOrb * numberSphericalFunctions + jOrb;
+                    unsigned int index2 =
+                      jOrb * numberSphericalFunctions + iOrb;
+                    V[iOrb * numberSphericalFunctions + jOrb] -=
+                      0.5 * (d_hubbardSpeciesData[hubbardIds].hubbardValue) *
+                      (d_occupationMatrix[HubbardOccFieldType::In]
+                                         [spinIndex *
+                                            d_numTotalOccMatrixEntriesPerSpin +
+                                          d_OccMatrixEntryStartForAtom[iAtom] +
+                                          index1] +
+                       d_occupationMatrix[HubbardOccFieldType::In]
+                                         [spinIndex *
+                                            d_numTotalOccMatrixEntriesPerSpin +
+                                          d_OccMatrixEntryStartForAtom[iAtom] +
+                                          index2]);
+                  }
+              }
 
-	    /*
-	  // TODO change back to dense V 
-	  std::vector<ValueType> V(numberSphericalFunctions);
-	  std::fill(V.begin(),V.end(),0.0);
-	  for ( unsigned int iOrb = 0 ; iOrb < numberSphericalFunctions; iOrb++)
-	  {
-		  unsigned int index1 = iOrb*numberSphericalFunctions + iOrb;
-		  V[iOrb] = 0.5*d_hubbardSpeciesData[hubbardIds].hubbardValue - d_hubbardSpeciesData[hubbardIds].hubbardValue*
-			  d_occupationMatrix[spinIndex][iAtom][index1];
-	  }
+            for (unsigned int iOrb = 0;
+                 iOrb < numberSphericalFunctions * numberSphericalFunctions;
+                 iOrb++)
+              {
+                Entries.push_back(V[iOrb]);
+              }
+          }
 
-	   for(unsigned int iOrb = 0 ; iOrb < numberSphericalFunctions ; iOrb++)
-            {
-              Entries.push_back(V[iOrb]);
-            }
-	    */
-
-        }
-    }
-  if constexpr (memorySpace == dftfe::utils::MemorySpace::HOST)
-    {
-	    if (!d_HamiltonianCouplingMatrixEntriesUpdated)
-	    {
-		    d_couplingMatrixEntries.resize(Entries.size());
-
-		    if (d_occupationMatrixHasBeenComputed)
-		    {
-			    d_couplingMatrixEntries.copyFrom(Entries);
-		    }
-		    else
-		    {
-			    d_couplingMatrixEntries.setValue(0.0);
-		    }
-		    d_HamiltonianCouplingMatrixEntriesUpdated = true;
-	    }
-
-      return (d_couplingMatrixEntries);
-    }
+        if constexpr (memorySpace == dftfe::utils::MemorySpace::HOST)
+          {
+            d_couplingMatrixEntries.resize(Entries.size());
+            d_couplingMatrixEntries.copyFrom(Entries);
+          }
 #if defined(DFTFE_WITH_DEVICE)
-  else
-    {
-      if (!d_HamiltonianCouplingMatrixEntriesUpdated)
-        {
-          std::vector<ValueType> EntriesPadded;
-          d_nonLocalOperator->paddingCouplingMatrix(
-            Entries, EntriesPadded, CouplingStructure::dense);
-          d_couplingMatrixEntries.resize(EntriesPadded.size());
-	  if (d_occupationMatrixHasBeenComputed)
-                    {
-                            d_couplingMatrixEntries.copyFrom(EntriesPadded);
-                    }
-                    else
-                    {
-                            d_couplingMatrixEntries.setValue(0.0);
-                    }
-          d_HamiltonianCouplingMatrixEntriesUpdated = true;
-        }
-      return (d_couplingMatrixEntries);
-    }
+        else
+          {
+            std::vector<ValueType> EntriesPadded;
+            d_nonLocalOperator->paddingCouplingMatrix(Entries,
+                                                      EntriesPadded,
+                                                      CouplingStructure::dense);
+            d_couplingMatrixEntries[spinIndex].resize(EntriesPadded.size());
+            d_couplingMatrixEntries[spinIndex].copyFrom(EntriesPadded);
+          }
 #endif
-}
+      }
+  }
+
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void hubbard<ValueType, memorySpace>::readHubbardInput( const std::vector<std::vector<double>> &atomLocations,

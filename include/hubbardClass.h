@@ -108,8 +108,11 @@ namespace dftfe
       const unsigned int spinIndex,
       const unsigned int kpointIndex);
 
+    void
+    computeCouplingMatrix();
+
     const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
-    getCouplingMatrix(unsigned int spinIndex);
+      getCouplingMatrix(unsigned int spinIndex);
 
     dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
     getOccMatIn();
@@ -168,8 +171,6 @@ namespace dftfe
 
     unsigned int d_numKPoints;
 
-    bool d_occupationMatrixHasBeenComputed;
-
     double d_atomOrbitalMaxLength;
 
     const MPI_Comm d_mpi_comm_parent;
@@ -193,13 +194,12 @@ namespace dftfe
     unsigned int d_noOfSpin;
     std::string                                       d_dftfeScratchFolderName;
 
-    dftfe::utils::MemoryStorage<ValueType, memorySpace> d_couplingMatrixEntries;
+    std::vector<dftfe::utils::MemoryStorage<ValueType, memorySpace>> d_couplingMatrixEntries;
 
     std::map<HubbardOccFieldType, dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>> d_occupationMatrix;
     unsigned int d_noSpecies;
 
     unsigned int d_densityQuadratureId, d_numberWaveFunctions;
-    bool d_HamiltonianCouplingMatrixEntriesUpdated;
 
     unsigned int d_numTotalOccMatrixEntriesPerSpin;
     std::vector<unsigned int> d_OccMatrixEntryStartForAtom;

@@ -1830,7 +1830,7 @@ namespace dftfe
         // extract from d_sphericalFnTimesWavefunctionMatrix
         const std::vector<unsigned int> &atomicNumber =
           d_atomCenteredSphericalFunctionContainer->getAtomicNumbers();
-        const unsigned int Znum = atomicNumber[atomicNumber[iAtom]];
+        const unsigned int Znum = atomicNumber[iAtom];
         const unsigned int numberOfSphericalFunctions =
           d_atomCenteredSphericalFunctionContainer
             ->getTotalNumberOfSphericalFunctionsPerAtom(Znum);

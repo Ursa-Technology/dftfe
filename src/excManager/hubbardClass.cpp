@@ -252,12 +252,13 @@ namespace dftfe
                 d_procLocalAtomId.push_back(iAtom);
               }
           }
-
+/*
         std::cout<<" rank = "<<thisRank<<"numTotalAtom = "<<numLocalAtomsInProc<<" numAtoms = "<<d_procLocalAtomId.size()<<"\n";
         for (unsigned int iAtom  = 0; iAtom < d_procLocalAtomId.size(); iAtom++)
           {
             std::cout<<" iAtom = "<<iAtom<<" procLocal = "<<d_procLocalAtomId[iAtom]<<"\n";
           }
+	  */
 //    pcout<<" init var = "<<endVarInit-startInit<<" shape func = "<<endShape-endVarInit<<" read atom = "<<endRead-endShape<<" compute atom = "<<endAtom-endRead<<" disc atom = "<<endInit-endAtom<<"\n";
 //    pcout<<" Total time for init = "<<endInit-startInit<<"\n";
 
@@ -426,8 +427,8 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
 
 
     const ValueType zero                    = 0;
-    const unsigned int cellsBlockSize = d_BasisOperatorMemPtr->nCells();
-     // memorySpace == dftfe::utils::MemorySpace::DEVICE ? 50 : 1;
+    const unsigned int cellsBlockSize =
+     memorySpace == dftfe::utils::MemorySpace::DEVICE ? d_BasisOperatorMemPtr->nCells() : 1;
     const unsigned int totalLocallyOwnedCells = d_BasisOperatorMemPtr->nCells();
     const unsigned int numCellBlocks = totalLocallyOwnedCells / cellsBlockSize;
     const unsigned int remCellBlockSize =
@@ -474,11 +475,16 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                 d_nonLocalOperator->initialiseFlattenedDataStructure(
                   currentBlockSize, projectorKetTimesVector);
 
-//                if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
-//                  {
-//                    d_nonLocalOperator->initialiseCellWaveFunctionPointers(
-//                      d_cellWaveFunctionMatrixSrc);
-//                  }
+		tempCellNodalData.resize(cellsBlockSize *
+                                                         currentBlockSize *
+                                                         numNodesPerElement);
+
+		previousSize = cellsBlockSize * currentBlockSize;
+                if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
+                  {
+                    d_nonLocalOperator->initialiseCellWaveFunctionPointers(
+                      tempCellNodalData);
+                  }
 
 //                if ((jvec + currentBlockSize) <=
 //                      bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId + 1] &&
@@ -494,9 +500,9 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
 				    orbitalOccupancy[kPoint][d_numberWaveFunctions *
                                                       spinIndex +
                                                     jvec + iEigenVec] * kPointWeights[kPoint];
-                           //pcout<<" iWave = "<<iEigenVec<<" orb occ in hubb = "<<orbitalOccupancy[kPoint][d_numberWaveFunctions *
-                             //                         spinIndex +
-                               //                     jvec + iEigenVec]<<"\n";
+                           pcout<<" iWave = "<<iEigenVec<<" orb occ in hubb = "<<orbitalOccupancy[kPoint][d_numberWaveFunctions *
+                                                      spinIndex +
+                                                   jvec + iEigenVec]<<"\n";
 			  }
 
                     if (memorySpace == dftfe::utils::MemorySpace::HOST)
@@ -633,7 +639,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  hubbard<ValueType, memorySpace>::compuseteHubbardOccNumberFromCTransOnX(
+  hubbard<ValueType, memorySpace>::computeHubbardOccNumberFromCTransOnX(
     const bool         isOccOut,
     const unsigned int vectorBlockSize,
     const unsigned int spinIndex,
@@ -674,15 +680,17 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
 //          }
         std::vector<ValueType> tempOccMat(numberSphericalFunctionsSq, 0.0);
 
-//        if (d_verbosity >= 5)
-//          {
-//            std::cout << "U Matrix Entries" << std::endl;
-//            for (int i = 0; i < numberSphericalFunctions * vectorBlockSize; i++)
-//              std::cout << *(d_nonLocalOperator
-//                               ->getCconjtansXLocalDataStructure(atomId) +
-//                             i)
-//                        << std::endl;
-//          }
+        //if (d_verbosity >= 4)
+        //  {
+            std::cout << "U Matrix Entries" << std::endl;
+            for (int i = 0; i < numberSphericalFunctions * vectorBlockSize; i++)
+              std::cout << *(d_nonLocalOperator
+                               ->getCconjtansXLocalDataStructure(iAtom) +
+                             i)
+                        << std::endl;
+          //}
+
+        auto valuesOfCconjTimesX = d_nonLocalOperator->getCconjtansXLocalDataStructure(iAtom);
         d_BLASWrapperHostPtr->xgemm(
           transA,
           transB,
@@ -690,9 +698,9 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
           numberSphericalFunc,
           vectorBlockSize,
           &alpha,
-          d_nonLocalOperator->getCconjtansXLocalDataStructure(iAtom),
+          valuesOfCconjTimesX,
           vectorBlockSize,
-          d_nonLocalOperator->getCconjtansXLocalDataStructure(iAtom),
+          valuesOfCconjTimesX,
           vectorBlockSize,
           &beta,
           &tempOccMat[0],
@@ -836,8 +844,8 @@ void
 
         if constexpr (memorySpace == dftfe::utils::MemorySpace::HOST)
           {
-            d_couplingMatrixEntries.resize(Entries.size());
-            d_couplingMatrixEntries.copyFrom(Entries);
+            d_couplingMatrixEntries[spinIndex].resize(Entries.size());
+            d_couplingMatrixEntries[spinIndex].copyFrom(Entries);
           }
 #if defined(DFTFE_WITH_DEVICE)
         else

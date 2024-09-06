@@ -5096,10 +5096,12 @@ namespace dftfe
   void
   dftClass<FEOrder, FEOrderElectro, memorySpace>::computeFractionalOccupancies()
   {
+	  /*
     double FE = d_dftParamsPtr->spinPolarized ?
                   std::max(fermiEnergyDown, fermiEnergyUp) :
                   fermiEnergy;
-
+*/
+	   double FE = fermiEnergy;
     pcout<<" Fermi energy = "<<FE<<"\n";
     int numkPoints = d_kPointWeights.size();
     d_fracOccupancy.resize(numkPoints,
@@ -5133,7 +5135,7 @@ namespace dftfe
             {
               d_fracOccupancy[kPoint][iWave] = dftUtils::getPartialOccupancy(
                 eigenValues[kPoint][iWave], FE, C_kb, d_dftParamsPtr->TVal);
-              pcout<<" iWave = "<<iWave<<" fracOcc = "<<d_fracOccupancy[kPoint][iWave]<<"\n";
+              //pcout<<" iWave = "<<iWave<<" fracOcc = "<<d_fracOccupancy[kPoint][iWave]<<"\n";
 	    }
         }
   }

@@ -114,16 +114,16 @@ namespace dftfe
     const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
       getCouplingMatrix(unsigned int spinIndex);
 
-    dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
     getOccMatIn();
 
-    dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
     getOccMatRes();
 
-    dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> &
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
     getOccMatOut();
 
-    void setInOccMatrix(const dftfe::utils::MemoryStorage<ValueType, dftfe::utils::MemorySpace::HOST> & inputOccMatrix);
+    void setInOccMatrix(const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> & inputOccMatrix);
 
 
 

@@ -497,12 +497,12 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                              ++iEigenVec)
                           {
                             partialOccupVecHost.data()[iEigenVec] =
-				    orbitalOccupancy[kPoint][d_numberWaveFunctions *
+				    std::sqrt(orbitalOccupancy[kPoint][d_numberWaveFunctions *
                                                       spinIndex +
-                                                    jvec + iEigenVec] * kPointWeights[kPoint];
-                           pcout<<" iWave = "<<iEigenVec<<" orb occ in hubb = "<<orbitalOccupancy[kPoint][d_numberWaveFunctions *
-                                                      spinIndex +
-                                                   jvec + iEigenVec]<<"\n";
+                                                    jvec + iEigenVec] * kPointWeights[kPoint]);
+                           //pcout<<" iWave = "<<iEigenVec<<" orb occ in hubb = "<<orbitalOccupancy[kPoint][d_numberWaveFunctions *
+                             //                         spinIndex +
+                              //                     jvec + iEigenVec]<<"\n";
 			  }
 
                     if (memorySpace == dftfe::utils::MemorySpace::HOST)
@@ -682,12 +682,12 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
 
         //if (d_verbosity >= 4)
         //  {
-            std::cout << "U Matrix Entries" << std::endl;
-            for (int i = 0; i < numberSphericalFunctions * vectorBlockSize; i++)
-              std::cout << *(d_nonLocalOperator
-                               ->getCconjtansXLocalDataStructure(iAtom) +
-                             i)
-                        << std::endl;
+            //std::cout << "U Matrix Entries" << std::endl;
+            //for (int i = 0; i < numberSphericalFunctions * vectorBlockSize; i++)
+            //  std::cout << *(d_nonLocalOperator
+            //                   ->getCconjtansXLocalDataStructure(iAtom) +
+            //                 i)
+            //            << std::endl;
           //}
 
         auto valuesOfCconjTimesX = d_nonLocalOperator->getCconjtansXLocalDataStructure(iAtom);

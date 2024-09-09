@@ -43,9 +43,10 @@ namespace dftfe
       for (unsigned int index = globalThreadId; index < numberEntries;
            index += blockDim.x * gridDim.x)
         {
-          const unsigned int wfcIndex =
-            index / totalAtomsInCurrentProcessor / maxSingleAtomPseudoWfc;
-          const double alpha = std::sqrt(scalingVector[wfcIndex]);
+		const unsigned int iAtom = index/(maxSingleAtomPseudoWfc*numWfcs);
+		const unsigned int iOrb = (index - iAtom*maxSingleAtomPseudoWfc*numWfcs)/numWfcs;
+		const unsigned int wfcIndex = (index - iAtom*maxSingleAtomPseudoWfc*numWfcs)%numWfcs;
+          const double alpha = scalingVector[wfcIndex];
           dftfe::utils::copyValue(
             sphericalFnTimesWfcPadded + index,
             dftfe::utils::mult(alpha, sphericalFnTimesWfcPadded[index]));

@@ -22,6 +22,7 @@ namespace dftfe
   AtomCenteredPseudoWavefunctionSpline::
     AtomCenteredPseudoWavefunctionSpline(std::string  filename,
                                                  unsigned int l,
+						 double cutoff,
                                                  double       truncationTol)
   {
     d_lQuantumNumber = l;
@@ -68,7 +69,14 @@ namespace dftfe
                        d_radialSplineObject);
 
     unsigned int maxRowIndex = std::min(maxRowId + 10, numRows-1);
-    d_cutOff = xData[maxRowIndex];
+    if ( cutoff <1e-3)
+    {
+	    d_cutOff = xData[maxRowIndex];
+    }
+    else
+    {
+	    d_cutOff = cutoff;
+    }
     d_rMin   = xData[0];
     std::cout<<" cutoff = "<<d_cutOff<<" d_rMin = "<<d_rMin<<"\n";
   }

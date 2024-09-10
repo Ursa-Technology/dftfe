@@ -675,17 +675,16 @@ namespace dftfe
 
           } // element loop
 
-
-//        std::cout<<" Printing integ atom wave functions \n";
-//        for (unsigned int iOrb = 0; iOrb < NumTotalSphericalFunctions; iOrb++)
-//          {
-//            for (unsigned int jOrb = 0; jOrb < NumTotalSphericalFunctions; jOrb++)
-//              {
-//                std::cout<< integAtomWavefunctions[ (iOrb )*(NumTotalSphericalFunctions)+ jOrb ]
-//                  <<" "<<"\n";
-//              }
-//            std::cout<<"\n";
-//          }
+        std::cout<<" Printing integ atom wave functions \n";
+        for (unsigned int iOrb = 0; iOrb < NumTotalSphericalFunctions; iOrb++)
+          {
+            for (unsigned int jOrb = 0; jOrb < NumTotalSphericalFunctions; jOrb++)
+              {
+                std::cout<< integAtomWavefunctions[ (iOrb )*(NumTotalSphericalFunctions)+ jOrb ]
+                  <<" "<<"\n";
+              }
+            std::cout<<"\n";
+          }
 
         const char         transA = 'N', transB = 'N';
         const double       scalarCoeffAlpha = 1.0, scalarCoeffBeta = 0.0;

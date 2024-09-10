@@ -54,6 +54,7 @@ namespace dftfe
      */
     AtomCenteredPseudoWavefunctionSpline(std::string  filename,
                                                  unsigned int l,
+						 double cutoff,
                                                  double truncationTol  = 1E-10);
   };
 

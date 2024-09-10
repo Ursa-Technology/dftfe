@@ -78,6 +78,7 @@ namespace dftfe
                 AtomCenteredPseudoWavefunctionSpline>(
                 waveFunctionFileName,
                 lQuantumNo,
+		10.0,
                 1E-12);
             alpha++;
           } // i loop

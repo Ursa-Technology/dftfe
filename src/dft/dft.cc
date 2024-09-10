@@ -1942,7 +1942,8 @@ namespace dftfe
                        getBLASWrapperMemSpace(),
                        getBLASWrapperHost(),
                        d_densityDofHandlerIndex ,
-                       d_nlpspQuadratureId, //d_densityQuadratureId, TODO check if this is correct 
+                       d_nlpspQuadratureId,
+		       //d_densityQuadratureId,// TODO check if this is correct 
                        d_sparsityPatternQuadratureId,
                        d_numEigenValues, // The total number of waveFunctions that are passed to the operator
                        d_dftParamsPtr->spinPolarized == 1 ? 2: 1,
@@ -1952,7 +1953,9 @@ namespace dftfe
                        true, // updateNonlocalSparsity
                        atomLocations,
                        atomLocationsFractional,
-                       d_imageIds,
+                       //d_imageIdsTrunc,
+              	  	//d_imagePositionsTrunc, 
+	               d_imageIds, //TODO commented out the full image list for debugging purposes 
                        d_imagePositions,
                        d_kPointCoordinates,
                        d_kPointWeights,

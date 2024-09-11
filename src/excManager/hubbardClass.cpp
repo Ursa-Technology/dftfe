@@ -152,7 +152,7 @@ namespace dftfe
       d_BLASWrapperMemPtr,
       d_BasisOperatorMemPtr,
       d_atomicProjectorFnsContainer,
-      d_mpi_comm_parent);
+      d_mpi_comm_domain);
 
 
     d_atomicProjectorFnsContainer->initaliseCoordinates(d_atomicCoords,
@@ -860,6 +860,13 @@ void
           }
 #endif
       }
+
+    //std::cout<<" Priniting d_couplingMatrixEntries \n";
+    //for( unsigned int iOrb = 0; iOrb < d_couplingMatrixEntries[0].size();iOrb++)
+    //{
+//	    std::cout<<" iOrb = "<<iOrb <<" couple Val = "<<d_couplingMatrixEntries[0].data()[iOrb]<<"\n";
+    //}
+
   }
 
 

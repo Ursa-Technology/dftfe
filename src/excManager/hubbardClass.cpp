@@ -78,7 +78,7 @@ namespace dftfe
                 AtomCenteredPseudoWavefunctionSpline>(
                 waveFunctionFileName,
                 lQuantumNo,
-		10.0,
+		10.0, // the cut off is manually set to 10.0 to emulate QE's behaviour. Removie it if better accuracy is required
                 1E-12);
             alpha++;
           } // i loop

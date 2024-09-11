@@ -589,7 +589,11 @@ namespace dftfe
       if (d_dftParamsPtr->isPseudopotential)
         d_ONCVnonLocalOperator->initialiseOperatorActionOnX(d_kPointIndex);
 
-    d_HubbnonLocalOperator->initialiseOperatorActionOnX(d_kPointIndex);
+    if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
+    {
+	    d_HubbnonLocalOperator->initialiseOperatorActionOnX(d_kPointIndex);
+    }
+    
     if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
       if (d_dftParamsPtr->isPseudopotential &&
           d_dftParamsPtr->useSinglePrecCheby)

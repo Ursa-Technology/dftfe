@@ -76,7 +76,7 @@ namespace dftfe
          const unsigned int sparsityPatternQuadratureId,
          const unsigned int numberWaveFunctions,
          const unsigned int numSpins,
-         dftParameters *dftParam,
+         const dftParameters *dftParam,
          const std::string &                         scratchFolderName,
          const bool                               singlePrecNonLocalOperator,
          const bool updateNonlocalSparsity,
@@ -84,22 +84,29 @@ namespace dftfe
          const std::vector<std::vector<double>> &atomLocationsFrac,
          const std::vector<int>                 &imageIds,
          const std::vector<std::vector<double>> &imagePositions,
-         std::vector<double>              &kPointCoordinates,
+         const std::vector<double>              &kPointCoordinates,
          const std::vector<double>  & kPointWeights,
          const std::vector <std::vector<double>> &domainBoundaries);
 
     void createAtomCenteredSphericalFunctionsForProjectors();
 
-    double computeEnergyFromOccupationMatrix();
+    double computeEnergyFromOccupationMatrix(double & hubbardEnergy,
+                                           double & hubbardEnergyCorrection);
     void computeOccupationMatrix(const dftfe::utils::MemoryStorage<ValueType, memorySpace> *X,
-                            const std::vector<std::vector<double>> &      orbitalOccupancy,
-                            const std::vector<double> &kPointWeights,
-                            const std::vector<std::vector<double>> & eigenValues,
-                            const double fermiEnergy,
-                            const double fermiEnergyUp,
-                            const double fermiEnergyDown);
+                            const std::vector<std::vector<double>> &      orbitalOccupancy);
 
-    void setInitialOccMatrx();
+    void applyPotentialDueToHubbardCorrection(const dftfe::linearAlgebra::MultiVector<ValueType, memorySpace> &src,
+                                         dftfe::linearAlgebra::MultiVector<ValueType, memorySpace> &dst,
+                                         const unsigned int inputVecSize,
+                                         const double factor,
+                                         const unsigned int                                         kPointIndex,
+                                         const unsigned int                                         spinIndex);
+
+    void initialiseOperatorActionOnX(unsigned int kPointIndex);
+    void setInitialOccMatrix();
+
+
+    void initialiseFlattenedDataStructure(unsigned int numVectors)
 
     void
     computeHubbardOccNumberFromCTransOnX(
@@ -203,6 +210,13 @@ namespace dftfe
 
     unsigned int d_numTotalOccMatrixEntriesPerSpin;
     std::vector<unsigned int> d_OccMatrixEntryStartForAtom;
+
+    dftfe::linearAlgebra::MultiVector<ValueType, memorySpace> d_hubbNonLocalProjectorTimesVectorBlock;
+    dftfe::utils::MemoryStorage<ValueType, memorySpace>
+        d_cellWaveFunctionMatrixSrc, d_cellWaveFunctionMatrixDst;
+
+    unsigned int d_cellsBlockSizeApply;
+    unsigned int d_verbosity;
   };
 }
 

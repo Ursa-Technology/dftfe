@@ -1917,6 +1917,7 @@ namespace dftfe
       unsigned int                                    ipass);
 
     std::shared_ptr<hubbard<dataTypes::number,memorySpace>>    hubbardPtr;
+    bool d_useHubbard;
   };
 
 } // namespace dftfe

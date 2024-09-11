@@ -26,23 +26,24 @@
 
 namespace dftfe
 {
-  template <dftfe::utils::MemorySpace memorySpace>
-  ExcDFTPlusU<memorySpace>::ExcDFTPlusU(
+  template <typename ValueType,, dftfe::utils::MemorySpace memorySpace>
+  ExcDFTPlusU<ValueType,memorySpace>::ExcDFTPlusU(
     std::shared_ptr<ExcSSDFunctionalBaseClass<memorySpace>> excSSDObjPtr,
     unsigned int                                            numSpins)
     : ExcSSDFunctionalBaseClass<memorySpace>(*(excSSDObjPtr.get()))
   {
+    this->d_ExcFamilyType =  ExcFamilyType::DFTPlusU;
     d_excSSDObjPtr = excSSDObjPtr;
   }
 
-  template <dftfe::utils::MemorySpace memorySpace>
-  ExcDFTPlusU<memorySpace>::~ExcDFTPlusU()
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  ExcDFTPlusU<ValueType,memorySpace>::~ExcDFTPlusU()
   {}
 
 
-  template <dftfe::utils::MemorySpace memorySpace>
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<memorySpace>::computeOutputXCData(
+  ExcDFTPlusU<ValueType,memorySpace>::computeOutputXCData(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
     const std::vector<double> &    quadPoints,
     std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
@@ -57,9 +58,9 @@ namespace dftfe
   }
 
 
-  template <dftfe::utils::MemorySpace memorySpace>
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<memorySpace>::checkInputOutputDataAttributesConsistency(
+  ExcDFTPlusU<ValueType,memorySpace>::checkInputOutputDataAttributesConsistency(
     const std::vector<xcRemainderOutputDataAttributes> &outputDataAttributes)
     const
   {
@@ -67,7 +68,7 @@ namespace dftfe
       outputDataAttributes);
   }
 
-  template <dftfe::utils::MemorySpace memorySpace>
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
   ExcDFTPlusU<memorySpace>::applyWaveFunctionDependentFuncDer(
     const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
@@ -78,26 +79,106 @@ namespace dftfe
     const unsigned int kPointIndex,
     const unsigned int spinIndex)
   {
-    std::string errMsg = "Not implemented";
-    dftfe::utils::throwException(false, errMsg);
+    d_hubbardClassPtr->applyPotentialDueToHubbardCorrection(src,
+                                                            dst,
+                                                            inputVecSize,
+                                                            factor,
+                                         kPointIndex,
+                                         spinIndex)
   }
-  template <dftfe::utils::MemorySpace memorySpace>
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<memorySpace>::updateWaveFunctionDependentFuncDer(
-    AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+  ExcDFTPlusU<ValueType,memorySpace>::updateWaveFunctionDependentFuncDer(
+    std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrixPtr,
     const std::vector<double> &    kPointWeights)
   {
-    std::string errMsg = "Not implemented";
-    dftfe::utils::throwException(false, errMsg);
+    std::shared_ptr<AuxDensityMatrixFE<memorySpace>>
+      auxDensityMatrixFEPtr =
+        std::dynamic_pointer_cast<AuxDensityMatrixFE<memorySpace>>(
+          auxDensityMatrixPtr);
+
+    d_hubbardClassPtr->computeOccupationMatrix(auxDensityMatrixFEPtr->getDensityMatrixComponents_wavefunctions(),
+                                               *(auxDensityMatrixFEPtr->getDensityMatrixComponents_occupancies()));
   }
-  template <dftfe::utils::MemorySpace memorySpace>
-  double
-  ExcDFTPlusU<memorySpace>::computeWaveFunctionDependentExcEnergy(
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  void
+  ExcDFTPlusU<ValueType,memorySpace>::computeWaveFunctionDependentExcEnergy(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
-    const std::vector<double> &    kPointWeights)
+    const std::vector<double> &    kPointWeights,
+    double &energyVal,
+    double &energyCorrection)
   {
-    std::string errMsg = "Not implemented";
-    dftfe::utils::throwException(false, errMsg);
+    d_hubbardClassPtr->computeEnergyFromOccupationMatrix(energyVal, energyCorrection);
+  }
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  void ExcDFTPlusU<ValueType,memorySpace>::initialiseHubbardClass(const MPI_Comm &mpi_comm_parent,
+                         const MPI_Comm &mpi_comm_domain,
+                         const MPI_Comm &mpi_comm_interPool,
+                         std::shared_ptr<
+                           dftfe::basis::
+                             FEBasisOperations<ValueType, double, memorySpace>>
+                           basisOperationsMemPtr,
+                         std::shared_ptr<
+                           dftfe::basis::
+                             FEBasisOperations<ValueType, double, dftfe::utils::MemorySpace::HOST>>
+                           basisOperationsHostPtr,
+                         std::shared_ptr<
+                           dftfe::linearAlgebra::BLASWrapper<memorySpace>>
+                           BLASWrapperMemPtr,
+                         std::shared_ptr<
+                           dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::HOST>>
+                                                                 BLASWrapperHostPtr,
+                         const unsigned int matrixFreeVectorComponent,
+                         const unsigned int                       densityQuadratureId,
+                         const unsigned int sparsityPatternQuadratureId,
+                         const unsigned int numberWaveFunctions,
+                         const unsigned int numSpins,
+                         dftParameters *dftParam,
+                         const std::string &                         scratchFolderName,
+                         const bool                               singlePrecNonLocalOperator,
+                         const bool updateNonlocalSparsity,
+                         const std::vector<std::vector<double>> &atomLocations,
+                         const std::vector<std::vector<double>> &atomLocationsFrac,
+                         const std::vector<int>                 &imageIds,
+                         const std::vector<std::vector<double>> &imagePositions,
+                         std::vector<double>              &kPointCoordinates,
+                         const std::vector<double>  & kPointWeights,
+                         const std::vector <std::vector<double>> &domainBoundaries)
+  {
+
+    d_hubbardClassPtr = std::make_shared<hubbard<ValueType, memorySpace>>(mpi_comm_parent,
+                                                                          mpi_comm_domain,
+                                                                          mpi_comm_interPool);
+
+    d_hubbardClassPtr->init(basisOperationsMemPtr,
+                            basisOperationsHostPtr,
+                            BLASWrapperMemPtr,
+                            BLASWrapperHostPtr,
+                            matrixFreeVectorComponent,
+                            densityQuadratureId,
+                            sparsityPatternQuadratureId,
+                            numberWaveFunctions,
+                            numSpins,
+                            dftParam,
+                            scratchFolderName,
+                            singlePrecNonLocalOperator,
+                            updateNonlocalSparsity,
+                            atomLocations,
+                            atomLocationsFrac,
+                            imageIds,
+                            imagePositions,
+                            kPointCoordinates,
+                            kPointWeights,
+                            domainBoundaries);
+  }
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  std::shared_ptr<hubbard<ValueType, memorySpace>>& ExcDFTPlusU<ValueType,memorySpace>::getHubbardClass()
+  {
+    return d_hubbardClassPtr;
   }
 
   template class ExcDFTPlusU<dftfe::utils::MemorySpace::HOST>;

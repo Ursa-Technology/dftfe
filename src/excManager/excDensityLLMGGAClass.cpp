@@ -620,7 +620,9 @@ namespace dftfe
   double
   excDensityLLMGGAClass<memorySpace>::computeWaveFunctionDependentExcEnergy(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
-    const std::vector<double> &    kPointWeights)
+    const std::vector<double> &    kPointWeights,
+    double &energyVal,
+    double &energyCorrection)
   {}
 
 

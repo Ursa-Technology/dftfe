@@ -163,10 +163,6 @@ namespace dftfe
     , d_phiPrimeSolverProblem(mpi_comm_domain)
     , d_mixingScheme(mpi_comm_parent, mpi_comm_domain, dftParams.verbosity)
   {
-
-    hubbardPtr = std::make_shared<hubbard<dataTypes::number,memorySpace>> (mpi_comm_parent,
-                                                                           mpi_comm_domain,
-                                                                           _interpoolcomm);
     d_nOMPThreads = 1;
     if (const char *penv = std::getenv("DFTFE_NUM_THREADS"))
       {
@@ -1937,29 +1933,44 @@ namespace dftfe
     if (d_kohnShamDFTOperatorsInitialized)
       finalizeKohnShamDFTOperator();
 
-      hubbardPtr->init(getBasisOperationsMemSpace(),
-                       getBasisOperationsHost(),
-                       getBLASWrapperMemSpace(),
-                       getBLASWrapperHost(),
-                       d_densityDofHandlerIndex ,
-                       d_nlpspQuadratureId,
-		       //d_densityQuadratureId,// TODO check if this is correct 
-                       d_sparsityPatternQuadratureId,
-                       d_numEigenValues, // The total number of waveFunctions that are passed to the operator
-                       d_dftParamsPtr->spinPolarized == 1 ? 2: 1,
-                       d_dftParamsPtr,
-                       d_dftfeScratchFolderName,
-                       false , // singlePrecNonLocalOperator
-                       true, // updateNonlocalSparsity
-                       atomLocations,
-                       atomLocationsFractional,
-                       //d_imageIdsTrunc,
-              	  	//d_imagePositionsTrunc, 
-	               d_imageIds, //TODO commented out the full image list for debugging purposes 
-                       d_imagePositions,
-                       d_kPointCoordinates,
-                       d_kPointWeights,
-                       d_domainBoundingVectors);
+    d_useHubbard = false;
+    if ( d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+        ExcFamilyType::DFTPlusU)
+      {
+
+        std::shared_ptr<ExcDFTPlusU<dataTypes::number, memorySpace>> excHubbPtr =
+          std::dynamic_pointer_cast<ExcDFTPlusU<dataTypes::number, memorySpace>>(
+            d_excManagerPtr->getExcSSDFunctionalObj());
+
+        excHubbPtr->init(d_mpiCommParent,
+                          mpi_communicator,
+                          interpoolcomm,
+                         getBasisOperationsMemSpace(),
+                         getBasisOperationsHost(),
+                         getBLASWrapperMemSpace(),
+                         getBLASWrapperHost(),
+                         d_densityDofHandlerIndex ,
+                         d_nlpspQuadratureId,
+                         d_sparsityPatternQuadratureId,
+                         d_numEigenValues, // The total number of waveFunctions that are passed to the operator
+                         d_dftParamsPtr->spinPolarized == 1 ? 2: 1,
+                         d_dftParamsPtr,
+                         d_dftfeScratchFolderName,
+                         false , // singlePrecNonLocalOperator
+                         true, // updateNonlocalSparsity
+                         atomLocations,
+                         atomLocationsFractional,
+                         d_imageIds,
+                          d_imagePositions,
+                         d_kPointCoordinates,
+                         d_kPointWeights,
+                         d_domainBoundingVectors);
+
+        hubbardPtr =  excHubbPtr->getHubbardClass();
+
+        d_useHubbard = true;
+      }
+
 
 #ifdef DFTFE_WITH_DEVICE
     if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
@@ -1969,7 +1980,6 @@ namespace dftfe
         d_basisOperationsPtrHost,
         d_oncvClassPtr,
         d_excManagerPtr,
-        hubbardPtr,
 	d_dftParamsPtr,
         d_densityQuadratureId,
         d_lpspQuadratureId,
@@ -1984,7 +1994,6 @@ namespace dftfe
         d_basisOperationsPtrHost,
         d_oncvClassPtr,
         d_excManagerPtr,
-        hubbardPtr,
         d_dftParamsPtr,
         d_densityQuadratureId,
         d_lpspQuadratureId,
@@ -2114,15 +2123,6 @@ namespace dftfe
   {
     KohnShamHamiltonianOperator<memorySpace> &kohnShamDFTEigenOperator =
       *d_kohnShamDFTOperatorPtr;
-//
-//    hubbardPtr->computeOccupationMatrix(&(getEigenVectors()),
-//                                         d_fracOccupancy,
-//                                         d_kPointWeights,
-//                                         eigenValues,
-//                                         fermiEnergy,
-//                                         fermiEnergyUp,
-//                                         fermiEnergyDown);
-//    hubbardPtr->computeEnergyFromOccupationMatrix();
 
 
     // computingTimerStandard.enter_subsection("Total scf solve");
@@ -2593,19 +2593,25 @@ namespace dftfe
                       }
                   }
 
-                dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
-                  hubbOccIn = hubbardPtr->getOccMatIn();
+                if (d_useHubbard == true)
+                  {
+                    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
+                      hubbOccIn = hubbardPtr->getOccMatIn();
 
-                dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
-                  hubbOccRes = hubbardPtr->getOccMatRes();
-                d_mixingScheme.addVariableToInHist(
-                  mixingVariable::hubbardOccupation,
-                  hubbOccIn.data(),
-                  hubbOccIn.size());
-                d_mixingScheme.addVariableToResidualHist(
-                  mixingVariable::hubbardOccupation,
-                  hubbOccRes.data(),
-                  hubbOccRes.size());
+                    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
+                      hubbOccRes = hubbardPtr->getOccMatRes();
+                    d_mixingScheme.addVariableToInHist(
+                      mixingVariable::hubbardOccupation,
+                      hubbOccIn.data(),
+                      hubbOccIn.size());
+
+                    d_mixingScheme.addVariableToResidualHist(
+                      mixingVariable::hubbardOccupation,
+                      hubbOccRes.data(),
+                      hubbOccRes.size());
+                  }
+
+
 
                 // Delete old history if it exceeds a pre-described
                 // length
@@ -2638,19 +2644,25 @@ namespace dftfe
                         d_gradDensityInQuadValues[iComp].size());
                   }
 
-               if (scfIter == 1)
-                 {
-                   d_hubbOccMatAfterMixing.resize(hubbOccIn.size());
-                 }
 
-               std::fill(d_hubbOccMatAfterMixing.begin(),d_hubbOccMatAfterMixing.end(),0.0);
 
-                d_mixingScheme.mixVariable(
-                  mixingVariable::hubbardOccupation,
-                 d_hubbOccMatAfterMixing.data(),
-                 d_hubbOccMatAfterMixing.size());
+                if (d_useHubbard == true)
+                  {
+                    if (scfIter == 1)
+                      {
+                        d_hubbOccMatAfterMixing.resize(hubbOccIn.size());
+                      }
 
-                hubbardPtr->setInOccMatrix(d_hubbOccMatAfterMixing);
+                    std::fill(d_hubbOccMatAfterMixing.begin(),d_hubbOccMatAfterMixing.end(),0.0);
+
+                    d_mixingScheme.mixVariable(
+                      mixingVariable::hubbardOccupation,
+                      d_hubbOccMatAfterMixing.data(),
+                      d_hubbOccMatAfterMixing.size());
+
+                    hubbardPtr->setInOccMatrix(d_hubbOccMatAfterMixing);
+                  }
+
 
                 if (d_dftParamsPtr->verbosity >= 1)
                   for (unsigned int iComp = 0; iComp < norms.size(); ++iComp)
@@ -3662,14 +3674,14 @@ namespace dftfe
 //		pcout<<" kPoint = "<<kPoint<<" weight in dft = "<<d_kPointWeights[kPoint]<<"\n";
 //	}
 
-        hubbardPtr->computeOccupationMatrix(&(getEigenVectors()),
+        d_excManagerPtr->computeOccupationMatrix(&(getEigenVectors()),
                                            d_fracOccupancy,
                                            d_kPointWeights,
          eigenValues,
                                            fermiEnergy,
          fermiEnergyUp,
          fermiEnergyDown);
-        hubbardPtr->computeEnergyFromOccupationMatrix();
+        d_excManagerPtr->computeEnergyFromOccupationMatrix();
 
         if (d_dftParamsPtr->verbosity >= 1)
           pcout << "***********************Self-Consistent-Field Iteration: "

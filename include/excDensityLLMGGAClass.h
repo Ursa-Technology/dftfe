@@ -53,7 +53,9 @@ namespace dftfe
     double
     computeWaveFunctionDependentExcEnergy(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
-      const std::vector<double> &    kPointWeights) override;
+      const std::vector<double> &    kPointWeights,
+      double &energyVal,
+      double &energyCorrection) override;
 
 
   private:

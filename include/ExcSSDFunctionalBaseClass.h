@@ -118,7 +118,9 @@ namespace dftfe
     virtual double
     computeWaveFunctionDependentExcEnergy(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
-      const std::vector<double> &    kPointWeights) = 0;
+      const std::vector<double> &    kPointWeights,
+      double &energyVal,
+      double &energyCorrection) = 0;
 
     /**
      * x and c denotes exchange and correlation respectively.

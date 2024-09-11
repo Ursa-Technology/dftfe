@@ -2391,6 +2391,13 @@ namespace dftfe
 #if defined(DFTFE_WITH_DEVICE)
     else
       {
+
+        Assert(
+          d_basisOperatorPtr->nVectors() == d_numberWaveFunctions,
+          dealii::ExcMessage(
+            "DFT-FE Error: d_BasisOperatorMemPtr in Atomic non local operator is not set with correct input size."));
+
+
         d_BLASWrapperPtr->stridedCopyFromBlock(
           d_numberWaveFunctions,
           d_locallyOwnedCells * d_numberNodesPerElement,
@@ -2485,6 +2492,12 @@ namespace dftfe
         initialiseCellWaveFunctionPointers(cellWaveFunctionMatrix);
         if (d_totalNonlocalElems > 0)
           {
+            Assert(
+              d_basisOperatorPtr->nVectors() == d_numberWaveFunctions,
+              dealii::ExcMessage(
+                "DFT-FE Error: d_BasisOperatorMemPtr in Atomic non local operator is not set with correct input size."));
+
+
             d_BLASWrapperPtr->stridedCopyToBlock(
               d_numberWaveFunctions,
               d_locallyOwnedCells * d_numberNodesPerElement,

@@ -106,7 +106,7 @@ namespace dftfe
                                     const unsigned int sparsityPatternQuadratureId,
                                     const unsigned int numberWaveFunctions,
                                         const unsigned int numSpins,
-                                    dftParameters *dftParam,
+                                    const dftParameters *dftParam,
                                         const std::string &                         scratchFolderName,
                                     const bool                               singlePrecNonLocalOperator,
                                         const bool updateNonlocalSparsity,
@@ -114,7 +114,7 @@ namespace dftfe
                                         const std::vector<std::vector<double>> &atomLocationsFrac,
                                         const std::vector<int>                 &imageIds,
                                         const std::vector<std::vector<double>> &imagePositions,
-                                        std::vector<double>              &kPointCoordinates,
+                                        const std::vector<double>              &kPointCoordinates,
                                         const std::vector<double>  & kPointWeights,
                                         const std::vector <std::vector<double>> &domainBoundaries)
   {
@@ -131,12 +131,16 @@ namespace dftfe
     d_numberWaveFunctions = numberWaveFunctions;
     d_dftParamsPtr = dftParam;
 
+    d_verbosity = d_dftParamsPtr->verbosity;
 
     d_kPointCoordinates = kPointCoordinates;
     d_numKPoints = kPointCoordinates.size()/3;
     d_domainBoundaries = domainBoundaries;
 
 
+    d_cellsBlockSizeApply = memorySpace == dftfe::utils::MemorySpace::HOST ?
+                           1 :
+                              d_BasisOperatorMemPtr->nCells();
     d_numSpins = numSpins;
     readHubbardInput(atomLocations, imageIds, imagePositions);
 
@@ -168,7 +172,7 @@ namespace dftfe
       kPointWeights,
       kPointCoordinates,
       d_BasisOperatorHostPtr,
-      densityQuadratureId); // TODO check if this is correct
+      densityQuadratureId);
 
     MPI_Barrier(d_mpi_comm_domain);
     double endRead = MPI_Wtime();
@@ -212,7 +216,7 @@ namespace dftfe
     std::fill(occResidual.begin(),occResidual.end(),0.0);
     d_occupationMatrix[HubbardOccFieldType::Residual] = occResidual;
 
-    setInitialOccMatrx();
+    setInitialOccMatrix();
 
 // TODO commented for now. Uncomment if necessary
 //    computeSymmetricTransforms(atomLocationsFrac,domainBoundaries);
@@ -266,7 +270,7 @@ namespace dftfe
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
-	  void hubbard<ValueType, memorySpace>::setInitialOccMatrx()
+	  void hubbard<ValueType, memorySpace>::setInitialOccMatrix()
   {
 
 	  unsigned int numLocalAtomsInProc = d_nonLocalOperator->getTotalAtomInCurrentProcessor();
@@ -335,10 +339,12 @@ namespace dftfe
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
-double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
+void hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix(double & hubbardEnergy,
+                                                                          double & hubbardEnergyCorrection)
   {
 
-    double hubbardEnergy = 0.0, hubbardEnergyCorrection = 0.0;
+    hubbardEnergy = 0.0;
+    hubbardEnergyCorrection = 0.0;
 
     d_spinPolarizedFactor =
       (d_dftParamsPtr->spinPolarized == 1) ? 1.0 : 2.0;
@@ -401,19 +407,17 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                   MPI_DOUBLE,
                   MPI_SUM,
                   d_mpi_comm_domain);
-    pcout<<" Hubbard energy = "<<hubbardEnergy<<"\n";
-    pcout<<" Hubbard energy correction = "<<hubbardEnergyCorrection<<"\n";
-    return hubbardEnergy;
+    if( d_verbosity >= 2)
+      {
+        pcout<<" Hubbard energy = "<<hubbardEnergy<<"\n";
+        pcout<<" Hubbard energy correction = "<<hubbardEnergyCorrection<<"\n";
+      }
+
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void hubbard<ValueType, memorySpace>::computeOccupationMatrix(const dftfe::utils::MemoryStorage<ValueType, memorySpace> *X,
-                                                                                        const std::vector<std::vector<double>> &      orbitalOccupancy,
-                                                           const std::vector<double> &kPointWeights,
-                                                           const std::vector<std::vector<double>> & eigenValues,
-                                                           const double fermiEnergy,
-                                                           const double fermiEnergyUp,
-                                                           const double fermiEnergyDown)
+                                                                                        const std::vector<std::vector<double>> &      orbitalOccupancy)
   {
   
     unsigned int numLocalAtomsInProc = d_nonLocalOperator->getTotalAtomInCurrentProcessor();
@@ -459,7 +463,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
      unsigned int numNodesPerElement = d_BasisOperatorHostPtr->nDofsPerCell();
     dftfe::utils::MemoryStorage<ValueType, memorySpace> tempCellNodalData;
  unsigned int previousSize = 0;
-    for (unsigned int kPoint = 0; kPoint < kPointWeights.size(); ++kPoint)
+    for (unsigned int kPoint = 0; kPoint < d_kPointWeights.size(); ++kPoint)
       {
 	      //pcout<<" kPoint = "<<kPoint<<" weight = "<<kPointWeights[kPoint]<<"\n";
         for (unsigned int spinIndex = 0; spinIndex < d_noOfSpin;
@@ -500,7 +504,7 @@ double hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
                             partialOccupVecHost.data()[iEigenVec] =
 				    std::sqrt(orbitalOccupancy[kPoint][d_numberWaveFunctions *
                                                       spinIndex +
-                                                    jvec + iEigenVec] * kPointWeights[kPoint]);
+                                                    jvec + iEigenVec] * d_kPointWeights[kPoint]);
                            //pcout<<" iWave = "<<iEigenVec<<" orb occ in hubb = "<<orbitalOccupancy[kPoint][d_numberWaveFunctions *
                              //                         spinIndex +
                               //                     jvec + iEigenVec]<<"\n";
@@ -972,6 +976,135 @@ void
     hubbardInputFile.close();
   }
 
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  void hubbard<ValueType, memorySpace>::initialiseOperatorActionOnX(unsigned int kPointIndex)
+  {
+    d_nonLocalOperator->initialiseOperatorActionOnX(kPointIndex);
+  }
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  void hubbard<ValueType, memorySpace>::initialiseFlattenedDataStructure(unsigned int numVectors)
+  {
+    d_nonLocalOperator->initialiseFlattenedDataStructure(numVectors, d_hubbNonLocalProjectorTimesVectorBlock);
+  }
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  void hubbard<ValueType, memorySpace>::applyPotentialDueToHubbardCorrection(const dftfe::linearAlgebra::MultiVector<ValueType, memorySpace> &src,
+                                                                        dftfe::linearAlgebra::MultiVector<ValueType, memorySpace> &dst,
+                                                                        const unsigned int inputVecSize,
+                                                                        const double factor,
+                                                                        const unsigned int                                         kPointIndex,
+                                       const unsigned int                                         spinIndex)
+  {
+    if (d_nonLocalOperator->getTotalNonLocalElementsInCurrentProcessor() > 0 )
+      {
+        const unsigned int nCells       = d_BasisOperatorMemPtr->nCells();
+        const unsigned int nDofsPerCell = d_BasisOperatorMemPtr->nDofsPerCell();
+
+        const ValueType scalarCoeffAlpha = ValueType(1.0),
+                        scalarCoeffBeta  = ValueType(0.0);
+        Assert(
+          d_cellWaveFunctionMatrixSrc.size ()< nCells*nDofsPerCell*inputVecSize,
+          dealii::ExcMessage(
+            "DFT-FE Error: d_cellWaveFunctionMatrixSrc in Hubbard is not set properly. Call initialiseCellWaveFunctionPointers()."));
+
+        Assert(
+          d_cellWaveFunctionMatrixDst.size ()< d_cellsBlockSizeApply*nDofsPerCell*inputVecSize,
+          dealii::ExcMessage(
+            "DFT-FE Error: d_cellWaveFunctionMatrixSrc in Hubbard is not set properly. Call initialiseCellWaveFunctionPointers()."));
+
+        Assert(
+          d_BasisOperatorMemPtr->nVectors() == inputVecSize,
+          dealii::ExcMessage(
+            "DFT-FE Error: d_BasisOperatorMemPtr in Hubbard is not set with correct input size."));
+
+
+        unsigned int hamiltonianIndex =
+          d_dftParamsPtr->memOptMode ?
+            0 :
+            kPointIndex * (d_dftParamsPtr->spinPolarized + 1) + spinIndex;
+        for (unsigned int iCell = 0; iCell < numCells; iCell += d_cellsBlockSizeApply)
+          {
+            std::pair<unsigned int, unsigned int> cellRange(
+              iCell, std::min(iCell + d_cellsBlockSizeApply, numCells));
+            d_BLASWrapperMemPtr->stridedBlockScaleCopy(
+              inputVecSize,
+              nDofsPerCell * (cellRange.second - cellRange.first),
+              1.0,
+              d_BasisOperatorMemPtr->cellInverseSqrtMassVectorBasisData().data() +
+                cellRange.first * nDofsPerCell,
+              src.data(),
+              d_cellWaveFunctionMatrixSrc.data() +
+                cellRange.first * nDofsPerCell * inputVecSize,
+              d_BasisOperatorMemPtr->d_flattenedCellDofIndexToProcessDofIndexMap
+                  .data() +
+                cellRange.first * nDofsPerCell);
+
+            d_nonLocalOperator->applyCconjtransOnX(
+              d_cellWaveFunctionMatrixSrc.data() +
+                cellRange.first * nDofsPerCell * inputVecSize,
+              cellRange);
+
+          }
+
+        d_hubbNonLocalProjectorTimesVectorBlock.setValue(0);
+        d_nonLocalOperator->applyAllReduceOnCconjtransX(
+          d_hubbNonLocalProjectorTimesVectorBlock);
+        d_nonLocalOperator->applyVOnCconjtransX(
+          CouplingStructure::dense,
+          d_couplingMatrixEntries[spinIndex],
+          d_hubbNonLocalProjectorTimesVectorBlock,
+          true);
+
+        for (unsigned int iCell = 0; iCell < numCells; iCell += d_cellsBlockSizeApply)
+          {
+            std::pair<unsigned int, unsigned int> cellRange(
+              iCell, std::min(iCell + d_cellsBlockSizeApply, numCells));
+            d_nonLocalOperator->applyCOnVCconjtransX(
+              d_cellWaveFunctionMatrixDst.data() +
+                d_cellsBlockSizeApply * nDofsPerCell *
+                  inputVecSize,
+              cellRange);
+
+
+            d_BLASWrapperMemPtr->axpyStridedBlockAtomicAdd(
+              inputVecSize,
+              nDofsPerCell * (cellRange.second - cellRange.first),
+              factor,
+              d_BasisOperatorMemPtr->cellInverseSqrtMassVectorBasisData().data() +
+                cellRange.first * nDofsPerCell,
+              d_cellWaveFunctionMatrixDst.data() +
+                d_cellsBlockSizeApply * nDofsPerCell *
+                  inputVecSize,
+              dst.data(),
+              d_BasisOperatorMemPtr->d_flattenedCellDofIndexToProcessDofIndexMap
+                  .data() +
+                cellRange.first * nDofsPerCell);
+          }
+
+      }
+  }
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  void hubbard<ValueType, memorySpace>::initialiseCellWaveFunctionPointers(unsigned int numVectors)
+  {
+    const unsigned int nCells       = d_BasisOperatorMemPtr->nCells();
+    const unsigned int nDofsPerCell = d_BasisOperatorMemPtr->nDofsPerCell();
+    unsigned int cellWaveFuncSizeSrc =  nCells*nDofsPerCell*numVectors;
+    if (d_cellWaveFunctionMatrixSrc.size() < cellWaveFuncSize)
+      {
+        d_cellWaveFunctionMatrixSrc.resize(cellWaveFuncSize);
+      }
+    if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
+      {
+        d_nonLocalOperator->initialiseCellWaveFunctionPointers(d_cellWaveFunctionMatrixSrc);
+      }
+
+    if (d_cellWaveFunctionMatrixDst.size() < d_cellsBlockSizeApply*nDofsPerCell*numVectors)
+      {
+        d_cellWaveFunctionMatrixDst.resize(d_cellsBlockSizeApply*nDofsPerCell*numVectors);
+      }
+  }
 
   template class hubbard<dataTypes::number,dftfe::utils::MemorySpace::HOST >;
 #if defined(DFTFE_WITH_DEVICE)

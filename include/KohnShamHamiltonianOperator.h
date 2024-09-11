@@ -298,11 +298,8 @@ namespace dftfe
     dealii::TimerOutput computing_timer;
 
     std::shared_ptr<hubbard<dataTypes::number, memorySpace>> d_hubbardClassPtr;
-    dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
-      d_hubbNonLocalProjectorTimesVectorBlock;
+    bool d_useHubbard;
 
-    dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
-      d_cellWaveFunctionMatrixSrcHubb;
   };
 } // namespace dftfe
 #endif

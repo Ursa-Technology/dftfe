@@ -300,7 +300,9 @@ namespace dftfe
   double
   excDensityGGAClass<memorySpace>::computeWaveFunctionDependentExcEnergy(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
-    const std::vector<double> &    kPointWeights)
+    const std::vector<double> &    kPointWeights,
+    double &energyVal,
+    double &energyCorrection)
   {}
 
   template class excDensityGGAClass<dftfe::utils::MemorySpace::HOST>;

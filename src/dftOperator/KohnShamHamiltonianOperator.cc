@@ -18,6 +18,7 @@
 //
 
 #include <KohnShamHamiltonianOperator.h>
+#include <ExcDFTPlusU.h>
 #ifdef _OPENMP
 #  include <omp.h>
 #else
@@ -121,7 +122,7 @@ namespace dftfe
         d_useHubbard = true;
         std::shared_ptr<ExcDFTPlusU<dataTypes::number, memorySpace>> excHubbPtr =
           std::dynamic_pointer_cast<ExcDFTPlusU<dataTypes::number, memorySpace>>(
-            d_excManagerPtr->getExcSSDFunctionalObj());
+            d_excManagerPtr->getSSDSharedObj());
 
         d_hubbardClassPtr =  excHubbPtr->getHubbardClass();
       }
@@ -1033,13 +1034,13 @@ namespace dftfe
 
     if ( !onlyHPrimePartForFirstOrderDensityMatResponse)
     {
-      d_excManagerPtr->applyWaveFunctionDependentFuncDer(
+      d_excManagerPtr->getExcSSDFunctionalObj()->applyWaveFunctionDependentFuncDer(
                        src,
                         dst,
         numberWavefunctions,
                        scalarHX,
                        d_kPointIndex,
-                       d_spinIndex)
+                       d_spinIndex);
     }
 
     inverseSqrtMassVectorScaledConstraintsNoneDataInfoPtr
@@ -1170,13 +1171,13 @@ namespace dftfe
 
     if ( !onlyHPrimePartForFirstOrderDensityMatResponse)
       {
-        d_excManagerPtr->applyWaveFunctionDependentFuncDer(
+        d_excManagerPtr->getExcSSDFunctionalObj()->applyWaveFunctionDependentFuncDer(
           src,
           dst,
           numberWavefunctions,
           scalarHX,
           d_kPointIndex,
-          d_spinIndex)
+          d_spinIndex);
       }
 
     if (!skip3)

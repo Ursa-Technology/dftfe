@@ -50,7 +50,6 @@ namespace dftfe
       std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>>
                                                oncvClassPtr,
       std::shared_ptr<excManager<memorySpace>> excManagerPtr,
-      std::shared_ptr<hubbard<dataTypes::number, memorySpace>> hubbardClassPtr,
       dftParameters *                          dftParamsPtr,
       const unsigned int                       densityQuadratureID,
       const unsigned int                       lpspQuadratureID,

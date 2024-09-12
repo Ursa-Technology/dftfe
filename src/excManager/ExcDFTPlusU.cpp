@@ -22,11 +22,12 @@
 #include "excDensityLLMGGAClass.h"
 #include "ExcDFTPlusU.h"
 #include "Exceptions.h"
+#include "AuxDensityMatrixFE.h"
 #include <dftfeDataTypes.h>
 
 namespace dftfe
 {
-  template <typename ValueType,, dftfe::utils::MemorySpace memorySpace>
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   ExcDFTPlusU<ValueType,memorySpace>::ExcDFTPlusU(
     std::shared_ptr<ExcSSDFunctionalBaseClass<memorySpace>> excSSDObjPtr,
     unsigned int                                            numSpins)
@@ -70,7 +71,7 @@ namespace dftfe
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<memorySpace>::applyWaveFunctionDependentFuncDer(
+  ExcDFTPlusU<ValueType, memorySpace>::applyWaveFunctionDependentFuncDer(
     const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
       &                                                                src,
     dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
@@ -84,13 +85,13 @@ namespace dftfe
                                                             inputVecSize,
                                                             factor,
                                          kPointIndex,
-                                         spinIndex)
+                                         spinIndex);
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
   ExcDFTPlusU<ValueType,memorySpace>::updateWaveFunctionDependentFuncDer(
-    std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrixPtr,
+    const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrixPtr,
     const std::vector<double> &    kPointWeights)
   {
     std::shared_ptr<AuxDensityMatrixFE<memorySpace>>
@@ -105,7 +106,7 @@ namespace dftfe
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
   ExcDFTPlusU<ValueType,memorySpace>::computeWaveFunctionDependentExcEnergy(
-    AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+    const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrix,
     const std::vector<double> &    kPointWeights,
     double &energyVal,
     double &energyCorrection)
@@ -136,7 +137,7 @@ namespace dftfe
                          const unsigned int sparsityPatternQuadratureId,
                          const unsigned int numberWaveFunctions,
                          const unsigned int numSpins,
-                         dftParameters *dftParam,
+                         const dftParameters& dftParam,
                          const std::string &                         scratchFolderName,
                          const bool                               singlePrecNonLocalOperator,
                          const bool updateNonlocalSparsity,
@@ -181,8 +182,8 @@ namespace dftfe
     return d_hubbardClassPtr;
   }
 
-  template class ExcDFTPlusU<dftfe::utils::MemorySpace::HOST>;
+  template class ExcDFTPlusU<dataTypes::number, dftfe::utils::MemorySpace::HOST>;
 #ifdef DFTFE_WITH_DEVICE
-  template class ExcDFTPlusU<dftfe::utils::MemorySpace::DEVICE>;
+  template class ExcDFTPlusU<dataTypes::number,dftfe::utils::MemorySpace::DEVICE>;
 #endif
 } // namespace dftfe

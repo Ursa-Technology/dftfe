@@ -76,7 +76,7 @@ namespace dftfe
          const unsigned int sparsityPatternQuadratureId,
          const unsigned int numberWaveFunctions,
          const unsigned int numSpins,
-         const dftParameters *dftParam,
+         const dftParameters &dftParam,
          const std::string &                         scratchFolderName,
          const bool                               singlePrecNonLocalOperator,
          const bool updateNonlocalSparsity,
@@ -90,7 +90,7 @@ namespace dftfe
 
     void createAtomCenteredSphericalFunctionsForProjectors();
 
-    double computeEnergyFromOccupationMatrix(double & hubbardEnergy,
+    void computeEnergyFromOccupationMatrix(double & hubbardEnergy,
                                            double & hubbardEnergyCorrection);
     void computeOccupationMatrix(const dftfe::utils::MemoryStorage<ValueType, memorySpace> *X,
                             const std::vector<std::vector<double>> &      orbitalOccupancy);
@@ -106,8 +106,9 @@ namespace dftfe
     void setInitialOccMatrix();
 
 
-    void initialiseFlattenedDataStructure(unsigned int numVectors)
+    void initialiseFlattenedDataStructure(unsigned int numVectors);
 
+    void initialiseCellWaveFunctionPointers(unsigned int numVectors);
     void
     computeHubbardOccNumberFromCTransOnX(
       const bool         isOccOut,
@@ -173,7 +174,7 @@ namespace dftfe
 
     std::vector<double>  d_kPointWeights;
     std::vector <std::vector<double>> d_domainBoundaries;
-    dftParameters *d_dftParamsPtr;
+    const dftParameters *d_dftParamsPtr;
     std::vector<double>  d_kPointCoordinates;
 
     unsigned int d_numKPoints;

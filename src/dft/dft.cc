@@ -73,6 +73,7 @@
 
 
 #include "hubbardClass.h"
+#include "ExcDFTPlusU.h"
 namespace dftfe
 {
   //
@@ -1940,9 +1941,9 @@ namespace dftfe
 
         std::shared_ptr<ExcDFTPlusU<dataTypes::number, memorySpace>> excHubbPtr =
           std::dynamic_pointer_cast<ExcDFTPlusU<dataTypes::number, memorySpace>>(
-            d_excManagerPtr->getExcSSDFunctionalObj());
+            d_excManagerPtr->getSSDSharedObj());
 
-        excHubbPtr->init(d_mpiCommParent,
+        excHubbPtr->initialiseHubbardClass(d_mpiCommParent,
                           mpi_communicator,
                           interpoolcomm,
                          getBasisOperationsMemSpace(),
@@ -1954,7 +1955,7 @@ namespace dftfe
                          d_sparsityPatternQuadratureId,
                          d_numEigenValues, // The total number of waveFunctions that are passed to the operator
                          d_dftParamsPtr->spinPolarized == 1 ? 2: 1,
-                         d_dftParamsPtr,
+                         *d_dftParamsPtr,
                          d_dftfeScratchFolderName,
                          false , // singlePrecNonLocalOperator
                          true, // updateNonlocalSparsity
@@ -2650,6 +2651,8 @@ namespace dftfe
                   {
                     if (scfIter == 1)
                       {
+			      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
+                      hubbOccIn = hubbardPtr->getOccMatIn();
                         d_hubbOccMatAfterMixing.resize(hubbOccIn.size());
                       }
 
@@ -3674,14 +3677,14 @@ namespace dftfe
 //		pcout<<" kPoint = "<<kPoint<<" weight in dft = "<<d_kPointWeights[kPoint]<<"\n";
 //	}
 
-        d_excManagerPtr->computeOccupationMatrix(&(getEigenVectors()),
-                                           d_fracOccupancy,
-                                           d_kPointWeights,
-         eigenValues,
-                                           fermiEnergy,
-         fermiEnergyUp,
-         fermiEnergyDown);
-        d_excManagerPtr->computeEnergyFromOccupationMatrix();
+        d_excManagerPtr->getExcSSDFunctionalObj()->updateWaveFunctionDependentFuncDer(d_auxDensityMatrixXCOutPtr, d_kPointWeights);
+	
+
+double hubbardEnergy = 0.0, hubbardEnergyCorrection = 0.0;	
+        d_excManagerPtr->getExcSSDFunctionalObj()->computeWaveFunctionDependentExcEnergy( d_auxDensityMatrixXCOutPtr, 
+			d_kPointWeights,
+			hubbardEnergy, 
+			hubbardEnergyCorrection);
 
         if (d_dftParamsPtr->verbosity >= 1)
           pcout << "***********************Self-Consistent-Field Iteration: "

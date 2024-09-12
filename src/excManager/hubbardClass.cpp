@@ -24,6 +24,7 @@
 #include "constants.h"
 #include "BLASWrapper.h"
 #include "AtomCenteredPseudoWavefunctionSpline.h"
+#include "AuxDensityMatrixFE.h"
 
 #if defined(DFTFE_WITH_DEVICE)
 #include "deviceKernelsGeneric.h"
@@ -106,7 +107,7 @@ namespace dftfe
                                     const unsigned int sparsityPatternQuadratureId,
                                     const unsigned int numberWaveFunctions,
                                         const unsigned int numSpins,
-                                    const dftParameters *dftParam,
+                                    const dftParameters & dftParam,
                                         const std::string &                         scratchFolderName,
                                     const bool                               singlePrecNonLocalOperator,
                                         const bool updateNonlocalSparsity,
@@ -129,7 +130,7 @@ namespace dftfe
     d_kPointWeights = kPointWeights;
 
     d_numberWaveFunctions = numberWaveFunctions;
-    d_dftParamsPtr = dftParam;
+    d_dftParamsPtr = &dftParam;
 
     d_verbosity = d_dftParamsPtr->verbosity;
 
@@ -1023,10 +1024,10 @@ void
           d_dftParamsPtr->memOptMode ?
             0 :
             kPointIndex * (d_dftParamsPtr->spinPolarized + 1) + spinIndex;
-        for (unsigned int iCell = 0; iCell < numCells; iCell += d_cellsBlockSizeApply)
+        for (unsigned int iCell = 0; iCell < nCells; iCell += d_cellsBlockSizeApply)
           {
             std::pair<unsigned int, unsigned int> cellRange(
-              iCell, std::min(iCell + d_cellsBlockSizeApply, numCells));
+              iCell, std::min(iCell + d_cellsBlockSizeApply, nCells));
             d_BLASWrapperMemPtr->stridedBlockScaleCopy(
               inputVecSize,
               nDofsPerCell * (cellRange.second - cellRange.first),
@@ -1056,10 +1057,10 @@ void
           d_hubbNonLocalProjectorTimesVectorBlock,
           true);
 
-        for (unsigned int iCell = 0; iCell < numCells; iCell += d_cellsBlockSizeApply)
+        for (unsigned int iCell = 0; iCell < nCells; iCell += d_cellsBlockSizeApply)
           {
             std::pair<unsigned int, unsigned int> cellRange(
-              iCell, std::min(iCell + d_cellsBlockSizeApply, numCells));
+              iCell, std::min(iCell + d_cellsBlockSizeApply, nCells));
             d_nonLocalOperator->applyCOnVCconjtransX(
               d_cellWaveFunctionMatrixDst.data() +
                 d_cellsBlockSizeApply * nDofsPerCell *
@@ -1091,9 +1092,9 @@ void
     const unsigned int nCells       = d_BasisOperatorMemPtr->nCells();
     const unsigned int nDofsPerCell = d_BasisOperatorMemPtr->nDofsPerCell();
     unsigned int cellWaveFuncSizeSrc =  nCells*nDofsPerCell*numVectors;
-    if (d_cellWaveFunctionMatrixSrc.size() < cellWaveFuncSize)
+    if (d_cellWaveFunctionMatrixSrc.size() < cellWaveFuncSizeSrc)
       {
-        d_cellWaveFunctionMatrixSrc.resize(cellWaveFuncSize);
+        d_cellWaveFunctionMatrixSrc.resize(cellWaveFuncSizeSrc);
       }
     if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
       {

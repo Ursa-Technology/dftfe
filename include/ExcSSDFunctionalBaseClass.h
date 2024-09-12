@@ -113,11 +113,11 @@ namespace dftfe
       const unsigned int spinIndex) = 0;
     virtual void
     updateWaveFunctionDependentFuncDer(
-      AuxDensityMatrix<memorySpace> &auxDensityMatrix,
-      const std::vector<double> &    kPointWeights) = 0;
-    virtual double
+      const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrixPtr,
+    const std::vector<double> &    kPointWeights) = 0;
+    virtual void
     computeWaveFunctionDependentExcEnergy(
-      AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+      const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrix,
       const std::vector<double> &    kPointWeights,
       double &energyVal,
       double &energyCorrection) = 0;

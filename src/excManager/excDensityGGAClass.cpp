@@ -293,13 +293,13 @@ namespace dftfe
   template <dftfe::utils::MemorySpace memorySpace>
   void
   excDensityGGAClass<memorySpace>::updateWaveFunctionDependentFuncDer(
-    AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+    const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrixPtr,
     const std::vector<double> &    kPointWeights)
   {}
   template <dftfe::utils::MemorySpace memorySpace>
-  double
+  void
   excDensityGGAClass<memorySpace>::computeWaveFunctionDependentExcEnergy(
-    AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+    const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrix,
     const std::vector<double> &    kPointWeights,
     double &energyVal,
     double &energyCorrection)

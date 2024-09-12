@@ -45,11 +45,12 @@ namespace dftfe
       const unsigned int spinIndex) override;
     void
     updateWaveFunctionDependentFuncDer(
-      AuxDensityMatrix<memorySpace> &auxDensityMatrix,
-      const std::vector<double> &    kPointWeights) override;
-    double
+      const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrixPtr,
+    const std::vector<double> &    kPointWeights) override;
+    
+    void
     computeWaveFunctionDependentExcEnergy(
-      AuxDensityMatrix<memorySpace> &auxDensityMatrix,
+      const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrix,
       const std::vector<double> &    kPointWeights,
       double &energyVal,
       double &energyCorrection) override;
@@ -93,7 +94,7 @@ namespace dftfe
                            const unsigned int sparsityPatternQuadratureId,
                            const unsigned int numberWaveFunctions,
                            const unsigned int numSpins,
-                           dftParameters *dftParam,
+                           const dftParameters &dftParam,
                            const std::string &                         scratchFolderName,
                            const bool                               singlePrecNonLocalOperator,
                            const bool updateNonlocalSparsity,

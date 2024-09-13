@@ -68,7 +68,7 @@ SET(TARGET_SRC
   ./src/excManager/NNLLMGGA.cpp
   ./src/excManager/AtomicBasisData.cpp
   ./src/excManager/SlaterBasis.cpp
-  ./src/excManager/GaussianBasis.cpp  
+  ./src/excManager/GaussianBasis.cpp
   ./src/poisson/poissonSolverProblem.cc
   ./src/poisson/MultiVectorPoissonLinearSolverProblem.cpp
   ./src/helmholtz/kerkerSolverProblem.cc
@@ -224,7 +224,6 @@ SET(DEVICE_SRC
   ./src/helmholtz/kerkerSolverProblemDevice.cc
   ./utils/FEBasisOperationsKernelsInternalDevice.cc
   ./src/atom/AtomicCenteredNonLocalOperatorKernelsDevice.cc
-  ./src/matrixFree/MatrixFree.cc
   )
 
 ELSEIF ("${GPU_LANG}" STREQUAL "hip")
@@ -253,7 +252,6 @@ SET(DEVICE_SRC
   ./src/helmholtz/kerkerSolverProblemDevice.cc
   ./utils/FEBasisOperationsKernelsInternalDevice.cc
   ./src/atom/AtomicCenteredNonLocalOperatorKernelsDevice.cc
-  ./src/matrixFree/MatrixFree.cc
   )
 
 ENDIF()

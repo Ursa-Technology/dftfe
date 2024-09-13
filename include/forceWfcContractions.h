@@ -24,6 +24,7 @@
 #include "oncvClass.h"
 #include <memory>
 #include <BLASWrapper.h>
+#include "hubbardClass.h"
 
 namespace dftfe
 {
@@ -41,6 +42,8 @@ namespace dftfe
         &BLASWrapperPtr,
       std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>>
                                               oncvClassPtr,
+      std::shared_ptr<hubbard<dataTypes::number,memorySpace>> hubbardClassPtr,
+      const bool useHubbard,
       const dataTypes::number *               X,
       const unsigned int                      spinPolarizedFlag,
       const unsigned int                      spinIndex,

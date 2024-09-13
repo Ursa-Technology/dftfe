@@ -138,8 +138,13 @@ namespace dftfe
     const std::shared_ptr<AtomicCenteredNonLocalOperator<ValueType, memorySpace>>
     getNonLocalOperator();
 
+    unsigned int getTotalNumberOfSphericalFunctionsForAtomId(unsigned int iAtom);
+
+    unsigned int getGlobalAtomId(unsigned int iAtom);
+
   private:
 
+    std::map<unsigned int , unsigned int> d_mapHubbardAtomToGlobalAtomId;
     void computeResidualOccMat();
     void readHubbardInput( const std::vector<std::vector<double>> &atomLocations,
                                                       const std::vector<int>                 &imageIds,

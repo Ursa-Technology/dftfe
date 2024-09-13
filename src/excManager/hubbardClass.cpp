@@ -971,10 +971,33 @@ void
               d_periodicImagesCoords.push_back(atomCoord);
               d_imageIds.push_back(hubbardAtomId);
             }
+
+          d_mapHubbardAtomToGlobalAtomId[hubbardAtomId] = iAtom;
           hubbardAtomId++;
         }
       }
     hubbardInputFile.close();
+  }
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  unsigned int hubbard<ValueType, memorySpace>::getTotalNumberOfSphericalFunctionsForAtomId(unsigned int iAtom)
+  {
+    const std::vector<unsigned int> atomIdsInProc =
+      d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
+
+    const unsigned int atomId = atomIdsInProc[iAtom];
+    const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
+    return d_hubbardSpeciesData[hubbardIds].numberSphericalFunc;
+  }
+
+  emplate <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  unsigned int hubbard<ValueType, memorySpace>::getGlobalAtomId(unsigned int iAtom)
+  {
+    const std::vector<unsigned int> atomIdsInProc =
+      d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
+
+    const unsigned int atomId = atomIdsInProc[iAtom];
+    return d_mapHubbardAtomToGlobalAtomId.find(atomId)->second;
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>

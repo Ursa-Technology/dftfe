@@ -76,6 +76,7 @@ namespace dftfe
 
     const unsigned int numberGlobalAtoms = dftPtr->atomLocations.size();
     std::map<unsigned int, std::vector<double>> forceContributionFnlGammaAtoms;
+    std::map<unsigned int, std::vector<double>> forceContributionFnlGammaAtomsHubbard;
 
     const bool isPseudopotential = d_dftParams.isPseudopotential;
 
@@ -215,9 +216,15 @@ namespace dftfe
         std::vector<dataTypes::number>
           projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattened;
 
+        std::vector<dataTypes::number>
+          projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard;
+
 #ifdef USE_COMPLEX
         std::vector<dataTypes::number>
           projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened;
+
+        std::vector<dataTypes::number>
+          projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard;
 #endif
 
         if (isPseudopotential)
@@ -239,6 +246,25 @@ namespace dftfe
 #endif
           }
 
+        if (dftPtr->d_useHubbard)
+          {
+            projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard
+              .resize(numKPoints *
+                        dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                          ->getTotalNonTrivialSphericalFnsOverAllCells() *
+                        numQuadPointsNLP * 3,
+                      dataTypes::number(0.0));
+
+#ifdef USE_COMPLEX
+            projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard
+              .resize(numKPoints *
+                        dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                          ->getTotalNonTrivialSphericalFnsOverAllCells() *
+                        numQuadPointsNLP,
+                      dataTypes::number(0.0));
+#endif
+          }
+
 
 
 #if defined(DFTFE_WITH_DEVICE)
@@ -252,6 +278,8 @@ namespace dftfe
               dftPtr->d_nlpspQuadratureId,
               dftPtr->d_BLASWrapperPtr,
               dftPtr->d_oncvClassPtr,
+              dftPtr->d_hubbardClassPtr,
+              dftPtr->useHubbard,
               dftPtr->d_eigenVectorsFlattenedDevice.begin(),
               d_dftParams.spinPolarized,
               spinIndex,
@@ -266,8 +294,12 @@ namespace dftfe
               elocWfcEshelbyTensorQuadValuesH.data(),
               projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattened
                 .data(),
+              projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard
+                .data(),
 #  ifdef USE_COMPLEX
               projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened
+                .data(),
+              projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard
                 .data(),
 #  endif
               d_mpiCommParent,
@@ -295,6 +327,8 @@ namespace dftfe
               dftPtr->d_nlpspQuadratureId,
               dftPtr->d_BLASWrapperPtrHost,
               dftPtr->d_oncvClassPtr,
+              dftPtr->d_hubbardClassPtr,
+              dftPtr->useHubbard,
               dftPtr->d_eigenVectorsFlattenedHost.begin(),
               d_dftParams.spinPolarized,
               spinIndex,
@@ -309,8 +343,12 @@ namespace dftfe
               elocWfcEshelbyTensorQuadValuesH.data(),
               projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattened
                 .data(),
+              projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard
+                .data(),
 #ifdef USE_COMPLEX
               projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened
+                .data(),
+              projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard
                 .data(),
 #endif
               d_mpiCommParent,
@@ -409,6 +447,31 @@ namespace dftfe
             dealii::AlignedVector<
               dealii::Tensor<1, 3, dealii::VectorizedArray<double>>>
               FVectQuads(numQuadPointsNLP, zeroTensor3);
+
+            const unsigned int numNonLocalAtomsCurrentProcessPsP =
+              (dftPtr->d_oncvClassPtr->getNonLocalOperator()
+                 ->getTotalAtomInCurrentProcessor());
+
+            std::vector<int> nonLocalAtomIdPsP , globalChargeIdNonLocalAtomPsP;
+            nonLocalAtomIdPsP.resize(numNonLocalAtomsCurrentProcessPsP);
+            globalChargeIdNonLocalAtomPsP.resize(numNonLocalAtomsCurrentProcessPsP);
+
+            std::vector<unsigned int> numberPseudoWaveFunctionsPerAtomPsP;
+            numberPseudoWaveFunctionsPerAtomPsP.resize(numNonLocalAtomsCurrentProcessPsP);
+            for(unsigned int iAtom = 0 ; iAtom < numNonLocalAtomsCurrentProcessPsP;
+                 iAtom++)
+              {
+                nonLocalAtomIdPsP[iAtom] = dftPtr->d_oncvClassPtr->getAtomIdInCurrentProcessor(iAtom);
+                globalChargeIdNonLocalAtomPsP[iAtom] = dftPtr->d_atomIdPseudopotentialInterestToGlobalId
+                                                         .find(nonLocalAtomIdPsP[iAtom])
+                                                         ->second;
+                numberPseudoWaveFunctionsPerAtomPsP[iAtom] = dftPtr->d_oncvClassPtr
+                                                            ->getTotalNumberOfSphericalFunctionsForAtomId(
+                                                              nonLocalAtomIdPsP[iAtom]);
+              }
+
+            const std::shared_ptr<AtomicCenteredNonLocalOperator<ValueType, memorySpace>>
+              oncvNonLocalOp = dftPtr->d_oncvClassPtr->getNonLocalOperator();
             for (unsigned int cell = 0; cell < matrixFreeData.n_cell_batches();
                  ++cell)
               {
@@ -419,6 +482,10 @@ namespace dftfe
                   forceContributionFnlGammaAtoms,
                   matrixFreeData,
                   forceEvalNLP,
+                  oncvNonLocalOp,
+                  numNonLocalAtomsCurrentProcessPsP,
+                  globalChargeIdNonLocalAtomPsP,
+                  numberPseudoWaveFunctionsPerAtomPsP,
                   cell,
                   cellIdToCellNumberMap,
 #ifdef USE_COMPLEX
@@ -435,6 +502,10 @@ namespace dftfe
                       FVectQuads,
                       matrixFreeData,
                       numQuadPointsNLP,
+                      oncvNonLocalOp,
+                      numNonLocalAtomsCurrentProcessPsP,
+                      globalChargeIdNonLocalAtomPsP,
+                      numberPseudoWaveFunctionsPerAtomPsP,
                       cell,
                       cellIdToCellNumberMap,
                       dftPtr->d_oncvClassPtr->getNonLocalOperator()
@@ -458,6 +529,95 @@ namespace dftfe
                   } // no floating charges check
               }     // macro cell loop
           }         // pseudopotential check
+
+        if (dftPtr->d_useHubbard)
+          {
+            dealii::AlignedVector<
+              dealii::Tensor<1, 3, dealii::VectorizedArray<double>>>
+              FVectHubbardQuads(numQuadPointsNLP, zeroTensor3);
+
+            const unsigned int numNonLocalAtomsCurrentProcessHubbard =
+              (dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                 ->getTotalAtomInCurrentProcessor());
+
+            std::vector<int> nonLocalAtomIdHubbard , globalChargeIdNonLocalAtomHubbard;
+            nonLocalAtomIdHubbard.resize(numNonLocalAtomsCurrentProcessHubbard);
+            globalChargeIdNonLocalAtomHubbard.resize(numNonLocalAtomsCurrentProcessHubbard);
+
+            std::vector<unsigned int> numberPseudoWaveFunctionsPerAtomHubbard;
+            numberPseudoWaveFunctionsPerAtomHubbard.resize(numNonLocalAtomsCurrentProcessHubbard);
+            for(unsigned int iAtom = 0 ; iAtom < numNonLocalAtomsCurrentProcessHubbard;
+                 iAtom++)
+              {
+                // TODO initialise this properly
+                globalChargeIdNonLocalAtomHubbard[iAtom] = dftPtr->d_hubbardClassPtr
+                                                        ->getGlobalAtomId(iAtom);
+                numberPseudoWaveFunctionsPerAtomHubbard[iAtom] = dftPtr->d_hubbardClassPtr
+                                                               ->getTotalNumberOfSphericalFunctionsForAtomId(iAtom);
+              }
+
+            const std::shared_ptr<AtomicCenteredNonLocalOperator<ValueType, memorySpace>>
+              hubbardNonLocalOp = dftPtr->d_hubbardClassPtr->getNonLocalOperator();
+
+            for (unsigned int cell = 0; cell < matrixFreeData.n_cell_batches();
+                 ++cell)
+              {
+                forceEvalNLP.reinit(cell);
+
+                // compute FnlGammaAtoms  (contibution due to Gamma(Rj))
+                FnlGammaAtomsElementalContribution(
+                  forceContributionFnlGammaAtomsHubbard,
+                  matrixFreeData,
+                  forceEvalNLP,
+                  hubbardNonLocalOp,
+                  numNonLocalAtomsCurrentProcessHubbard,
+                  globalChargeIdNonLocalAtomHubbard,
+                  numberPseudoWaveFunctionsPerAtomHubbard,
+                  cell,
+                  cellIdToCellNumberMap,
+#ifdef USE_COMPLEX
+                  projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard,
+#endif
+                  dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                    ->getAtomCenteredKpointIndexedSphericalFnQuadValues(),
+                  projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard);
+
+
+                if (!d_dftParams.floatingNuclearCharges)
+                  {
+                    FnlGammaxElementalContribution(
+                      FVectHubbardQuads,
+                      matrixFreeData,
+                      numQuadPointsNLP,
+                      hubbardNonLocalOp,
+                      numNonLocalAtomsCurrentProcessHubbard,
+                      globalChargeIdNonLocalAtomHubbard,
+                      numberPseudoWaveFunctionsPerAtomHubbard,
+                      cell,
+                      cellIdToCellNumberMap,
+                      dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                        ->getAtomCenteredKpointIndexedSphericalFnQuadValues(),
+                      projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard);
+
+                    for (unsigned int q = 0; q < numQuadPointsNLP; ++q)
+                      forceEvalNLP.submit_value(spinPolarizedFactorVect *
+                                                  FVectHubbardQuads[q],
+                                                q);
+
+                    forceEvalNLP.integrate(dealii::EvaluationFlags::values);
+
+#ifdef USE_COMPLEX
+                    //TODO check if this can be re used
+                    forceEvalNLP.distribute_local_to_global(
+                      d_configForceVectorLinFEKPoints);
+#else
+                    //TODO check if this can be re used
+                    forceEvalNLP.distribute_local_to_global(
+                      d_configForceVectorLinFE);
+#endif
+                  } // no floating charges check
+              }     // macro cell loop
+          }         // d_useHubbard check
       }             // spin index
 
     // add global Fnl contribution due to Gamma(Rj) to the configurational force
@@ -485,6 +645,33 @@ namespace dftfe
         else
           distributeForceContributionFnlGammaAtoms(
             forceContributionFnlGammaAtoms);
+      }
+
+    if (dftPtr->d_useHubbard)
+      {
+        if (d_dftParams.spinPolarized == 1)
+          for (auto &iter : forceContributionFnlGammaAtomsHubbard)
+            {
+              std::vector<double> &fnlvec = iter.second;
+              for (unsigned int i = 0; i < fnlvec.size(); i++)
+                fnlvec[i] *= spinPolarizedFactor;
+            }
+
+        if (d_dftParams.floatingNuclearCharges)
+          {
+#ifdef USE_COMPLEX
+            // TODO this will also throw an error for hubbard
+            accumulateForceContributionGammaAtomsFloating(
+              forceContributionFnlGammaAtomsHubbard, d_forceAtomsFloatingKPoints);
+#else
+            // TODO this will also throw an error for hubbard
+            accumulateForceContributionGammaAtomsFloating(
+              forceContributionFnlGammaAtomsHubbard, d_forceAtomsFloating);
+#endif
+          }
+        else
+          distributeForceContributionFnlGammaAtoms(
+            forceContributionFnlGammaAtomsHubbard); // TODO this will throw an error for hubbard
       }
 
 

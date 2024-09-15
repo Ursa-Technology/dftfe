@@ -810,10 +810,10 @@ namespace dftfe
     }
 
     template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
-    const dftfe::utils::MemoryStorage<ValueType, memorySpace> & 
+    const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
     MultiVector<ValueType, memorySpace>::getData() const
     {
-	    return *(d_storage.get());
+      return *(d_storage.get());
     }
 
     template <typename ValueType, utils::MemorySpace memorySpace>

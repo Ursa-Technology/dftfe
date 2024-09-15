@@ -191,8 +191,9 @@ namespace dftfe
       }
     if (d_dftParamsPtr->verbosity > 0)
       pcout << "Threads per MPI task: " << d_nOMPThreads << std::endl;
-    
-    AssertThrow( d_nOMPThreads == 1, dealii::ExcMessage("open mp is not compatible with hubbard "));
+
+    AssertThrow(d_nOMPThreads == 1,
+                dealii::ExcMessage("open mp is not compatible with hubbard "));
     d_elpaScala = new dftfe::elpaScalaManager(mpi_comm_domain);
 
     forcePtr = new forceClass<FEOrder, FEOrderElectro, memorySpace>(
@@ -868,8 +869,8 @@ namespace dftfe
 
 
     AssertThrow(d_dftParamsPtr->isPseudopotential == true,
-                    dealii::ExcMessage(
-                      " All electron case not supported in hubbard \n."));
+                dealii::ExcMessage(
+                  " All electron case not supported in hubbard \n."));
 
     if (d_dftParamsPtr->isPseudopotential == true)
       {
@@ -1935,39 +1936,41 @@ namespace dftfe
       finalizeKohnShamDFTOperator();
 
     d_useHubbard = false;
-    if ( d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+    if (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
         ExcFamilyType::DFTPlusU)
       {
-
-        std::shared_ptr<ExcDFTPlusU<dataTypes::number, memorySpace>> excHubbPtr =
-          std::dynamic_pointer_cast<ExcDFTPlusU<dataTypes::number, memorySpace>>(
+        std::shared_ptr<ExcDFTPlusU<dataTypes::number, memorySpace>>
+          excHubbPtr = std::dynamic_pointer_cast<
+            ExcDFTPlusU<dataTypes::number, memorySpace>>(
             d_excManagerPtr->getSSDSharedObj());
 
-        excHubbPtr->initialiseHubbardClass(d_mpiCommParent,
-                          mpi_communicator,
-                          interpoolcomm,
-                         getBasisOperationsMemSpace(),
-                         getBasisOperationsHost(),
-                         getBLASWrapperMemSpace(),
-                         getBLASWrapperHost(),
-                         d_densityDofHandlerIndex ,
-                         d_nlpspQuadratureId,
-                         d_sparsityPatternQuadratureId,
-                         d_numEigenValues, // The total number of waveFunctions that are passed to the operator
-                         d_dftParamsPtr->spinPolarized == 1 ? 2: 1,
-                         *d_dftParamsPtr,
-                         d_dftfeScratchFolderName,
-                         false , // singlePrecNonLocalOperator
-                         true, // updateNonlocalSparsity
-                         atomLocations,
-                         atomLocationsFractional,
-                         d_imageIds,
-                          d_imagePositions,
-                         d_kPointCoordinates,
-                         d_kPointWeights,
-                         d_domainBoundingVectors);
+        excHubbPtr->initialiseHubbardClass(
+          d_mpiCommParent,
+          mpi_communicator,
+          interpoolcomm,
+          getBasisOperationsMemSpace(),
+          getBasisOperationsHost(),
+          getBLASWrapperMemSpace(),
+          getBLASWrapperHost(),
+          d_densityDofHandlerIndex,
+          d_nlpspQuadratureId,
+          d_sparsityPatternQuadratureId,
+          d_numEigenValues, // The total number of waveFunctions that are passed
+                            // to the operator
+          d_dftParamsPtr->spinPolarized == 1 ? 2 : 1,
+          *d_dftParamsPtr,
+          d_dftfeScratchFolderName,
+          false, // singlePrecNonLocalOperator
+          true,  // updateNonlocalSparsity
+          atomLocations,
+          atomLocationsFractional,
+          d_imageIds,
+          d_imagePositions,
+          d_kPointCoordinates,
+          d_kPointWeights,
+          d_domainBoundingVectors);
 
-        hubbardPtr =  excHubbPtr->getHubbardClass();
+        hubbardPtr = excHubbPtr->getHubbardClass();
 
         d_useHubbard = true;
       }
@@ -1981,7 +1984,7 @@ namespace dftfe
         d_basisOperationsPtrHost,
         d_oncvClassPtr,
         d_excManagerPtr,
-	d_dftParamsPtr,
+        d_dftParamsPtr,
         d_densityQuadratureId,
         d_lpspQuadratureId,
         d_feOrderPlusOneQuadratureId,
@@ -2388,16 +2391,19 @@ namespace dftfe
                 d_dftParamsPtr->adaptAndersonMixingParameter);
           }
 
-	dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+
+        if (d_useHubbard)
+          {
+            dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
               hubbOccJxW;
             hubbOccJxW.resize(0);
-	    d_mixingScheme.addMixingVariable(
-			    mixingVariable::hubbardOccupation,
-			    hubbOccJxW,
-			    false,
-			    d_dftParamsPtr->mixingParameter,
-			    d_dftParamsPtr->adaptAndersonMixingParameter);
-
+            d_mixingScheme.addMixingVariable(
+              mixingVariable::hubbardOccupation,
+              hubbOccJxW,
+              false,
+              d_dftParamsPtr->mixingParameter,
+              d_dftParamsPtr->adaptAndersonMixingParameter);
+          }
       }
     //
     // Begin SCF iteration
@@ -2596,11 +2602,13 @@ namespace dftfe
 
                 if (d_useHubbard == true)
                   {
-                    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
-                      hubbOccIn = hubbardPtr->getOccMatIn();
+                    dftfe::utils::MemoryStorage<double,
+                                                dftfe::utils::MemorySpace::HOST>
+                      &hubbOccIn = hubbardPtr->getOccMatIn();
 
-                    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
-                      hubbOccRes = hubbardPtr->getOccMatRes();
+                    dftfe::utils::MemoryStorage<double,
+                                                dftfe::utils::MemorySpace::HOST>
+                      &hubbOccRes = hubbardPtr->getOccMatRes();
                     d_mixingScheme.addVariableToInHist(
                       mixingVariable::hubbardOccupation,
                       hubbOccIn.data(),
@@ -2651,12 +2659,16 @@ namespace dftfe
                   {
                     if (scfIter == 1)
                       {
-			      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
-                      hubbOccIn = hubbardPtr->getOccMatIn();
+                        dftfe::utils::MemoryStorage<
+                          double,
+                          dftfe::utils::MemorySpace::HOST> &hubbOccIn =
+                          hubbardPtr->getOccMatIn();
                         d_hubbOccMatAfterMixing.resize(hubbOccIn.size());
                       }
 
-                    std::fill(d_hubbOccMatAfterMixing.begin(),d_hubbOccMatAfterMixing.end(),0.0);
+                    std::fill(d_hubbOccMatAfterMixing.begin(),
+                              d_hubbOccMatAfterMixing.end(),
+                              0.0);
 
                     d_mixingScheme.mixVariable(
                       mixingVariable::hubbardOccupation,
@@ -3672,19 +3684,24 @@ namespace dftfe
 
         computeFractionalOccupancies();
 
-//	for( unsigned int kPoint = 0; kPoint< d_kPointWeights.size(); kPoint++)
-//	{
-//		pcout<<" kPoint = "<<kPoint<<" weight in dft = "<<d_kPointWeights[kPoint]<<"\n";
-//	}
+        //	for( unsigned int kPoint = 0; kPoint< d_kPointWeights.size();
+        //kPoint++)
+        //	{
+        //		pcout<<" kPoint = "<<kPoint<<" weight in dft =
+        //"<<d_kPointWeights[kPoint]<<"\n";
+        //	}
 
-        d_excManagerPtr->getExcSSDFunctionalObj()->updateWaveFunctionDependentFuncDer(d_auxDensityMatrixXCOutPtr, d_kPointWeights);
-	
+        d_excManagerPtr->getExcSSDFunctionalObj()
+          ->updateWaveFunctionDependentFuncDer(d_auxDensityMatrixXCOutPtr,
+                                               d_kPointWeights);
 
-double hubbardEnergy = 0.0, hubbardEnergyCorrection = 0.0;	
-        d_excManagerPtr->getExcSSDFunctionalObj()->computeWaveFunctionDependentExcEnergy( d_auxDensityMatrixXCOutPtr, 
-			d_kPointWeights,
-			hubbardEnergy, 
-			hubbardEnergyCorrection);
+
+        double hubbardEnergy = 0.0, hubbardEnergyCorrection = 0.0;
+        d_excManagerPtr->getExcSSDFunctionalObj()
+          ->computeWaveFunctionDependentExcEnergy(d_auxDensityMatrixXCOutPtr,
+                                                  d_kPointWeights,
+                                                  hubbardEnergy,
+                                                  hubbardEnergyCorrection);
 
         if (d_dftParamsPtr->verbosity >= 1)
           pcout << "***********************Self-Consistent-Field Iteration: "
@@ -5114,13 +5131,13 @@ double hubbardEnergy = 0.0, hubbardEnergyCorrection = 0.0;
   void
   dftClass<FEOrder, FEOrderElectro, memorySpace>::computeFractionalOccupancies()
   {
-	  /*
+    /*
     double FE = d_dftParamsPtr->spinPolarized ?
                   std::max(fermiEnergyDown, fermiEnergyUp) :
                   fermiEnergy;
 */
-	   double FE = fermiEnergy;
-    pcout<<" Fermi energy = "<<FE<<"\n";
+    double FE = fermiEnergy;
+    // pcout<<" Fermi energy = "<<FE<<"\n";
     int numkPoints = d_kPointWeights.size();
     d_fracOccupancy.resize(numkPoints,
                            std::vector<double>((1 +
@@ -5153,8 +5170,9 @@ double hubbardEnergy = 0.0, hubbardEnergyCorrection = 0.0;
             {
               d_fracOccupancy[kPoint][iWave] = dftUtils::getPartialOccupancy(
                 eigenValues[kPoint][iWave], FE, C_kb, d_dftParamsPtr->TVal);
-              //pcout<<" iWave = "<<iWave<<" fracOcc = "<<d_fracOccupancy[kPoint][iWave]<<"\n";
-	    }
+              // pcout<<" iWave = "<<iWave<<" fracOcc =
+              // "<<d_fracOccupancy[kPoint][iWave]<<"\n";
+            }
         }
   }
 

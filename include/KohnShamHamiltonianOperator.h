@@ -297,8 +297,7 @@ namespace dftfe
     dealii::TimerOutput computing_timer;
 
     std::shared_ptr<hubbard<dataTypes::number, memorySpace>> d_hubbardClassPtr;
-    bool d_useHubbard;
-
+    bool                                                     d_useHubbard;
   };
 } // namespace dftfe
 #endif

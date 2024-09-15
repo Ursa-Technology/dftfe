@@ -19,11 +19,11 @@
 #include "vector"
 namespace dftfe
 {
-  AtomCenteredPseudoWavefunctionSpline::
-    AtomCenteredPseudoWavefunctionSpline(std::string  filename,
-                                                 unsigned int l,
-						 double cutoff,
-                                                 double       truncationTol)
+  AtomCenteredPseudoWavefunctionSpline::AtomCenteredPseudoWavefunctionSpline(
+    std::string  filename,
+    unsigned int l,
+    double       cutoff,
+    double       truncationTol)
   {
     d_lQuantumNumber = l;
     std::vector<std::vector<double>> radialFunctionData(0);
@@ -33,26 +33,26 @@ namespace dftfe
     d_rMin        = 0.0;
 
 
-    unsigned int        numRows = radialFunctionData.size() - 1;
+    unsigned int numRows = radialFunctionData.size() - 1;
 
-    std::cout<<" numRows = "<<numRows<<"\n";
-    std::cout<<"numCols = "<<radialFunctionData[0].size()<<"\n";
+    std::cout << " numRows = " << numRows << "\n";
+    std::cout << "numCols = " << radialFunctionData[0].size() << "\n";
     std::vector<double> xData(numRows), yData(numRows);
 
     unsigned int maxRowId = 0;
     for (unsigned int irow = 0; irow < numRows; ++irow)
       {
         xData[irow] = radialFunctionData[irow][0];
-          yData[irow] =
-            radialFunctionData[irow][1] / xData[irow];
+        yData[irow] = radialFunctionData[irow][1] / xData[irow];
         if (std::abs(yData[irow]) > truncationTol)
           maxRowId = irow;
       }
 
-   // if (!consider0thEntry) // TODO commented this out for
-      yData[0] = yData[1];
+    // if (!consider0thEntry) // TODO commented this out for
+    yData[0] = yData[1];
 
-      std::cout<<"Value of the Datas at : "<<xData[0]<<" is "<<yData[0]<<std::endl;
+    std::cout << "Value of the Datas at : " << xData[0] << " is " << yData[0]
+              << std::endl;
     alglib::real_1d_array x;
     x.setcontent(numRows, &xData[0]);
     alglib::real_1d_array y;
@@ -68,17 +68,17 @@ namespace dftfe
                        0.0,
                        d_radialSplineObject);
 
-    unsigned int maxRowIndex = std::min(maxRowId + 10, numRows-1);
-    if ( cutoff <1e-3)
-    {
-	    d_cutOff = xData[maxRowIndex];
-    }
+    unsigned int maxRowIndex = std::min(maxRowId + 10, numRows - 1);
+    if (cutoff < 1e-3)
+      {
+        d_cutOff = xData[maxRowIndex];
+      }
     else
-    {
-	    d_cutOff = cutoff;
-    }
-    d_rMin   = xData[0];
-    std::cout<<" cutoff = "<<d_cutOff<<" d_rMin = "<<d_rMin<<"\n";
+      {
+        d_cutOff = cutoff;
+      }
+    d_rMin = xData[0];
+    std::cout << " cutoff = " << d_cutOff << " d_rMin = " << d_rMin << "\n";
   }
 
 

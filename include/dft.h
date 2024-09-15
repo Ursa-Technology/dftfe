@@ -1847,7 +1847,8 @@ namespace dftfe
 
     bool d_isRestartGroundStateCalcFromChk;
 
-    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> d_hubbOccMatAfterMixing;
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      d_hubbOccMatAfterMixing;
     /**
      * @ nscf variables
      */
@@ -1916,8 +1917,8 @@ namespace dftfe
       std::vector<double> &                           residualNormWaveFunctions,
       unsigned int                                    ipass);
 
-    std::shared_ptr<hubbard<dataTypes::number,memorySpace>>    hubbardPtr;
-    bool d_useHubbard;
+    std::shared_ptr<hubbard<dataTypes::number, memorySpace>> hubbardPtr;
+    bool                                                     d_useHubbard;
   };
 
 } // namespace dftfe

@@ -54,10 +54,10 @@ namespace dftfe
     getExcSSDFunctionalObj() const;
 
     const std::shared_ptr<ExcSSDFunctionalBaseClass<memorySpace>> &
-	    getSSDSharedObj() const;
+    getSSDSharedObj() const;
 
     std::shared_ptr<ExcSSDFunctionalBaseClass<memorySpace>> &
-            getSSDSharedObj() ;
+    getSSDSharedObj();
 
 
   private:

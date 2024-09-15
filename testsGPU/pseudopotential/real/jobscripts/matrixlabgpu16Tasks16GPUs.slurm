@@ -22,5 +22,4 @@ export DFTFE_NUM_THREADS=1
 export DEAL_II_NUM_THREADS=1
 export ELPA_DEFAULT_omp_threads=1
 srun -n $SLURM_NTASKS --mpi=pmi2 $DFTFE_PATH/dftfe parameterFile_ReS2.prm > outputReS2
-srun -n $SLURM_NTASKS --mpi=pmi2 $DFTFE_PATH/dftfe parameterFile_ReS2_1.prm > outputReS2_1
 

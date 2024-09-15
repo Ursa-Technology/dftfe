@@ -26,6 +26,7 @@ srun -n $SLURM_NTASKS --mpi=pmi2 $DFTFE_PATH/dftfe Input_MD_1.prm > output_MD_1
 srun -n $SLURM_NTASKS --mpi=pmi2 $DFTFE_PATH/dftfe Input_MD_2.prm > output_MD_2
 srun -n $SLURM_NTASKS --mpi=pmi2 $DFTFE_PATH/dftfe parameterFileMg2x_1.prm > outputMg2x_1
 srun -n $SLURM_NTASKS --mpi=pmi2 $DFTFE_PATH/dftfe parameterFileMg2x_1_spingpu.prm > outputMg2x_1_spin_gpu
+srun -n $SLURM_NTASKS --mpi=pmi2 $DFTFE_PATH/dftfe parameterFileMg2x_2_spingpu.prm > outputMg2x_2_spin_gpu
 srun -n $SLURM_NTASKS --mpi=pmi2 $DFTFE_PATH/dftfe parameterFileMg2x_2.prm > outputMg2x_2
 srun -n $SLURM_NTASKS --mpi=pmi2 $DFTFE_PATH/dftfe parameterFileMg2x_3.prm > outputMg2x_3
 srun -n $SLURM_NTASKS --mpi=pmi2 $DFTFE_PATH/dftfe parameterFileMg2x_4.prm > outputMg2x_4

@@ -875,7 +875,8 @@ namespace dftfe
             d_atomTypeAtributes,
             d_dftParamsPtr->reproducible_output,
             d_dftParamsPtr->verbosity,
-            d_dftParamsPtr->useDevice);
+            d_dftParamsPtr->useDevice,
+            d_dftParamsPtr->memOptMode);
       }
     if (d_dftParamsPtr->verbosity >= 1)
       if (d_dftParamsPtr->nonLinearCoreCorrection == true)

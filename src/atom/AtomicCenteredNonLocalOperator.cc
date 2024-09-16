@@ -36,7 +36,8 @@ namespace dftfe
         basisOperatorPtr,
       std::shared_ptr<AtomCenteredSphericalFunctionContainer>
                       atomCenteredSphericalFunctionContainer,
-      const MPI_Comm &mpi_comm_parent)
+      const MPI_Comm &mpi_comm_parent,
+      const bool      memOptMode)
     : d_mpi_communicator(mpi_comm_parent)
     , d_this_mpi_process(
         dealii::Utilities::MPI::this_mpi_process(mpi_comm_parent))
@@ -52,6 +53,7 @@ namespace dftfe
       atomCenteredSphericalFunctionContainer;
     d_maxSingleAtomContribution = d_atomCenteredSphericalFunctionContainer
                                     ->getMaximumNumberOfSphericalFunctions();
+    d_memoryOptMode = memOptMode;
   }
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
@@ -98,19 +100,40 @@ namespace dftfe
       {
         d_kPointIndex = kPointIndex;
 
-        for (unsigned int i = 0; i < d_totalNonlocalElems; i++)
+        if (!d_memoryOptMode)
           {
-            hostPointerCDagger[i] =
-              d_cellHamiltonianMatrixNonLocalFlattenedConjugateDevice.begin() +
-              d_kPointIndex * d_totalNonlocalElems * d_numberNodesPerElement *
-                d_maxSingleAtomContribution +
-              i * d_numberNodesPerElement * d_maxSingleAtomContribution;
-          }
+            for (unsigned int i = 0; i < d_totalNonlocalElems; i++)
+              {
+                hostPointerCDagger[i] =
+                  d_cellHamiltonianMatrixNonLocalFlattenedConjugateDevice
+                    .begin() +
+                  d_kPointIndex * d_totalNonlocalElems *
+                    d_numberNodesPerElement * d_maxSingleAtomContribution +
+                  i * d_numberNodesPerElement * d_maxSingleAtomContribution;
+              }
 
-        dftfe::utils::deviceMemcpyH2D(devicePointerCDagger,
-                                      hostPointerCDagger,
-                                      d_totalNonlocalElems *
-                                        sizeof(ValueType *));
+            dftfe::utils::deviceMemcpyH2D(devicePointerCDagger,
+                                          hostPointerCDagger,
+                                          d_totalNonlocalElems *
+                                            sizeof(ValueType *));
+          }
+        else
+          {
+            d_cellHamiltonianMatrixNonLocalFlattenedConjugateDevice.copyFrom(
+              d_cellHamiltonianMatrixNonLocalFlattenedConjugate,
+              d_totalNonlocalElems * d_numberNodesPerElement *
+                d_maxSingleAtomContribution,
+              d_kPointIndex * d_totalNonlocalElems * d_numberNodesPerElement *
+                d_maxSingleAtomContribution,
+              0);
+            d_cellHamiltonianMatrixNonLocalFlattenedTransposeDevice.copyFrom(
+              d_cellHamiltonianMatrixNonLocalFlattenedTranspose,
+              d_totalNonlocalElems * d_numberNodesPerElement *
+                d_maxSingleAtomContribution,
+              d_kPointIndex * d_totalNonlocalElems * d_numberNodesPerElement *
+                d_maxSingleAtomContribution,
+              0);
+          }
       }
 #endif
   }
@@ -1002,15 +1025,40 @@ namespace dftfe
             numShapeFnsAccum += numberSphericalFunctions;
           }
 
-        d_cellHamiltonianMatrixNonLocalFlattenedConjugateDevice.resize(
-          d_cellHamiltonianMatrixNonLocalFlattenedConjugate.size());
-        d_cellHamiltonianMatrixNonLocalFlattenedConjugateDevice.copyFrom(
-          d_cellHamiltonianMatrixNonLocalFlattenedConjugate);
+        if (!d_memoryOptMode)
+          {
+            d_cellHamiltonianMatrixNonLocalFlattenedConjugateDevice.resize(
+              d_cellHamiltonianMatrixNonLocalFlattenedConjugate.size());
+            d_cellHamiltonianMatrixNonLocalFlattenedConjugateDevice.copyFrom(
+              d_cellHamiltonianMatrixNonLocalFlattenedConjugate);
 
-        d_cellHamiltonianMatrixNonLocalFlattenedTransposeDevice.resize(
-          d_cellHamiltonianMatrixNonLocalFlattenedTranspose.size());
-        d_cellHamiltonianMatrixNonLocalFlattenedTransposeDevice.copyFrom(
-          d_cellHamiltonianMatrixNonLocalFlattenedTranspose);
+            d_cellHamiltonianMatrixNonLocalFlattenedTransposeDevice.resize(
+              d_cellHamiltonianMatrixNonLocalFlattenedTranspose.size());
+            d_cellHamiltonianMatrixNonLocalFlattenedTransposeDevice.copyFrom(
+              d_cellHamiltonianMatrixNonLocalFlattenedTranspose);
+          }
+        else
+          {
+            d_cellHamiltonianMatrixNonLocalFlattenedConjugateDevice.resize(
+              d_cellHamiltonianMatrixNonLocalFlattenedConjugate.size() /
+              d_kPointWeights.size());
+            d_cellHamiltonianMatrixNonLocalFlattenedTransposeDevice.resize(
+              d_cellHamiltonianMatrixNonLocalFlattenedTranspose.size() /
+              d_kPointWeights.size());
+
+            for (unsigned int i = 0; i < d_totalNonlocalElems; i++)
+              {
+                hostPointerCDagger[i] =
+                  d_cellHamiltonianMatrixNonLocalFlattenedConjugateDevice
+                    .begin() +
+                  i * d_numberNodesPerElement * d_maxSingleAtomContribution;
+              }
+
+            dftfe::utils::deviceMemcpyH2D(devicePointerCDagger,
+                                          hostPointerCDagger,
+                                          d_totalNonlocalElems *
+                                            sizeof(ValueType *));
+          }
 
 
         d_sphericalFnIdsParallelNumberingMapDevice.clear();
@@ -2251,9 +2299,11 @@ namespace dftfe
           d_sphericalFnTimesVectorAllCellsDevice.begin(),
           d_numberWaveFunctions,
           strideA,
-          d_cellHamiltonianMatrixNonLocalFlattenedTransposeDevice.begin() +
-            d_kPointIndex * d_totalNonlocalElems * d_maxSingleAtomContribution *
-              d_numberNodesPerElement,
+          d_memoryOptMode ?
+            d_cellHamiltonianMatrixNonLocalFlattenedTransposeDevice.begin() :
+            d_cellHamiltonianMatrixNonLocalFlattenedTransposeDevice.begin() +
+              d_kPointIndex * d_totalNonlocalElems *
+                d_maxSingleAtomContribution * d_numberNodesPerElement,
           d_maxSingleAtomContribution,
           strideB,
           &scalarCoeffBeta,

@@ -1045,19 +1045,6 @@ namespace dftfe
             d_cellHamiltonianMatrixNonLocalFlattenedTransposeDevice.resize(
               d_cellHamiltonianMatrixNonLocalFlattenedTranspose.size() /
               d_kPointWeights.size());
-
-            for (unsigned int i = 0; i < d_totalNonlocalElems; i++)
-              {
-                hostPointerCDagger[i] =
-                  d_cellHamiltonianMatrixNonLocalFlattenedConjugateDevice
-                    .begin() +
-                  i * d_numberNodesPerElement * d_maxSingleAtomContribution;
-              }
-
-            dftfe::utils::deviceMemcpyH2D(devicePointerCDagger,
-                                          hostPointerCDagger,
-                                          d_totalNonlocalElems *
-                                            sizeof(ValueType *));
           }
 
 
@@ -1124,6 +1111,21 @@ namespace dftfe
                                    d_totalNonlocalElems * sizeof(ValueType *));
 
         d_isMallocCalled = true;
+        if (d_memoryOptMode)
+          {
+            for (unsigned int i = 0; i < d_totalNonlocalElems; i++)
+              {
+                hostPointerCDagger[i] =
+                  d_cellHamiltonianMatrixNonLocalFlattenedConjugateDevice
+                    .begin() +
+                  i * d_numberNodesPerElement * d_maxSingleAtomContribution;
+              }
+
+            dftfe::utils::deviceMemcpyH2D(devicePointerCDagger,
+                                          hostPointerCDagger,
+                                          d_totalNonlocalElems *
+                                            sizeof(ValueType *));
+          }
       }
 
 

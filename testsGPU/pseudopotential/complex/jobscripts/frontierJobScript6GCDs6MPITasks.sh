@@ -8,20 +8,18 @@
 #SBATCH --ntasks-per-gpu 1
 #SBATCH --gpu-bind closest
 
-export OMP_NUM_THREADS = 1
+export OMP_NUM_THREADS=1
 export MPICH_VERSION_DISPLAY=1
 export MPICH_ENV_DISPLAY=1
-export MPICH_OFI_NIC_POLICY = NUMA
+export MPICH_OFI_NIC_POLICY=NUMA
 export MPICH_GPU_SUPPORT_ENABLED=1
 export MPICH_SMP_SINGLE_COPY_MODE=NONE
-
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INST/lib
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INST/lib/lib64
 export LD_LIBRARY_PATH=$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH
 
 export BASE=$WD/src/dftfeDebug/build/release/complex
-n=`{echo $SLURM_JOB_NUM_NODES '*' 8 | bc}
 
 srun -n 6 -c 7 --gpu-bind closest $BASE/dftfe parameterFileMg2x_1.prm > outputMg2x_1
 srun -n 6 -c 7 --gpu-bind closest $BASE/dftfe parameterFileMg2x_2.prm > outputMg2x_2

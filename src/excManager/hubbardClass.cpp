@@ -647,6 +647,16 @@ namespace dftfe
           }
       }
 
+    if (dealii::Utilities::MPI::n_mpi_processes(d_mpi_comm_interPool) > 1)
+      {
+        MPI_Allreduce(MPI_IN_PLACE,
+                      d_occupationMatrix[HubbardOccFieldType::Out].data(),
+                      d_numSpins * d_numTotalOccMatrixEntriesPerSpin,
+                      MPI_DOUBLE,
+                      MPI_SUM,
+                      d_mpi_comm_interPool);
+      }
+
     unsigned int numOwnedAtomsInProc = d_procLocalAtomId.size();
     for (unsigned int iAtom = 0; iAtom < numOwnedAtomsInProc; iAtom++)
       {
@@ -677,16 +687,6 @@ namespace dftfe
                 std::cout << "\n";
               }
           }
-      }
-
-    if (dealii::Utilities::MPI::n_mpi_processes(d_mpi_comm_interPool) > 1)
-      {
-        MPI_Allreduce(MPI_IN_PLACE,
-                      d_occupationMatrix[HubbardOccFieldType::Out].data(),
-                      d_numSpins * d_numTotalOccMatrixEntriesPerSpin,
-                      MPI_DOUBLE,
-                      MPI_SUM,
-                      d_mpi_comm_interPool);
       }
 
     computeResidualOccMat();
@@ -1080,6 +1080,7 @@ namespace dftfe
     const unsigned int kPointIndex,
     const unsigned int spinIndex)
   {
+    // std::cout<<" Inside applyPotentialDueToHubbardCorrection \n";
     if (d_nonLocalOperator->getTotalNonLocalElementsInCurrentProcessor() > 0)
       {
         const unsigned int nCells       = d_BasisOperatorMemPtr->nCells();
@@ -1087,6 +1088,19 @@ namespace dftfe
 
         const ValueType scalarCoeffAlpha = ValueType(1.0),
                         scalarCoeffBeta  = ValueType(0.0);
+
+        /*
+        std::vector<double> srcNorm;
+          srcNorm.resize(src.numVectors(), 0.0);
+          src.l2Norm(&srcNorm[0]);
+
+          for (unsigned int iVec = 0; iVec < src.numVectors(); iVec++)
+            {
+              std::cout << "norm of src[" << iVec << "] = " << srcNorm[iVec] <<
+        "\n";
+            }
+
+            */
 
         // TODO check if this will lead to performance degradation
         d_cellWaveFunctionMatrixDst.setValue(0.0);
@@ -1148,25 +1162,30 @@ namespace dftfe
           true);
 
 
-        std::vector<double> normVec;
-        normVec.resize(d_hubbNonLocalProjectorTimesVectorBlock.numVectors(),
-                       0.0);
+        /*
+              std::vector<double> normVec;
+              normVec.resize(d_hubbNonLocalProjectorTimesVectorBlock.numVectors(),
+                             0.0);
 
-        d_hubbNonLocalProjectorTimesVectorBlock.l2Norm(&normVec[0]);
+              d_hubbNonLocalProjectorTimesVectorBlock.l2Norm(&normVec[0]);
 
-        for (unsigned int iVec = 0;
-             iVec < d_hubbNonLocalProjectorTimesVectorBlock.numVectors();
-             iVec++)
-          {
-            std::cout << "Norm of d_hubbNonLocalProjectorTimesVectorBlock["
-                      << iVec << "] = " << normVec[iVec] << "\n";
-          }
+              for (unsigned int iVec = 0;
+                   iVec < d_hubbNonLocalProjectorTimesVectorBlock.numVectors();
+                   iVec++)
+                {
+                  std::cout << "Norm of
+           d_hubbNonLocalProjectorTimesVectorBlock["
+                            << iVec << "] = " << normVec[iVec] << "\n";
+                }
 
+          */
         for (unsigned int iCell = 0; iCell < nCells;
              iCell += d_cellsBlockSizeApply)
           {
             std::pair<unsigned int, unsigned int> cellRange(
               iCell, std::min(iCell + d_cellsBlockSizeApply, nCells));
+            d_cellWaveFunctionMatrixDst.setValue(0.0);
+
             d_nonLocalOperator->applyCOnVCconjtransX(
               d_cellWaveFunctionMatrixDst.data(), cellRange);
 
@@ -1262,26 +1281,32 @@ namespace dftfe
           d_hubbNonLocalProjectorTimesVectorBlock,
           true);
 
-        std::vector<double> normVec;
-        normVec.resize(d_hubbNonLocalProjectorTimesVectorBlock.numVectors(),
-                       0.0);
+        /*
+              std::vector<double> normVec;
+              normVec.resize(d_hubbNonLocalProjectorTimesVectorBlock.numVectors(),
+                             0.0);
 
-        d_hubbNonLocalProjectorTimesVectorBlock.l2Norm(&normVec[0]);
+              d_hubbNonLocalProjectorTimesVectorBlock.l2Norm(&normVec[0]);
 
 
-        for (unsigned int iVec = 0;
-             iVec < d_hubbNonLocalProjectorTimesVectorBlock.numVectors();
-             iVec++)
-          {
-            std::cout << "Norm of d_hubbNonLocalProjectorTimesVectorBlock["
-                      << iVec << "] = " << normVec[iVec] << "\n";
-          }
+              for (unsigned int iVec = 0;
+                   iVec < d_hubbNonLocalProjectorTimesVectorBlock.numVectors();
+                   iVec++)
+                {
+                  std::cout << "Norm of
+           d_hubbNonLocalProjectorTimesVectorBlock["
+                            << iVec << "] = " << normVec[iVec] << "\n";
+                }
 
+          */
         for (unsigned int iCell = 0; iCell < nCells;
              iCell += d_cellsBlockSizeApply)
           {
             std::pair<unsigned int, unsigned int> cellRange(
               iCell, std::min(iCell + d_cellsBlockSizeApply, nCells));
+
+            d_cellWaveFunctionMatrixDst.setValue(0.0);
+
             d_nonLocalOperator->applyCOnVCconjtransX(
               d_cellWaveFunctionMatrixDst.data(), cellRange);
 
@@ -1289,8 +1314,7 @@ namespace dftfe
               inputVecSize,
               nDofsPerCell * (cellRange.second - cellRange.first),
               factor,
-              d_BasisOperatorMemPtr->cellInverseSqrtMassVectorBasisData()
-                  .data() +
+              d_BasisOperatorMemPtr->cellInverseMassVectorBasisData().data() +
                 cellRange.first * nDofsPerCell,
               d_cellWaveFunctionMatrixDst.data(),
               dst.data(),

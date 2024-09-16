@@ -192,8 +192,6 @@ namespace dftfe
     if (d_dftParamsPtr->verbosity > 0)
       pcout << "Threads per MPI task: " << d_nOMPThreads << std::endl;
 
-    AssertThrow(d_nOMPThreads == 1,
-                dealii::ExcMessage("open mp is not compatible with hubbard "));
     d_elpaScala = new dftfe::elpaScalaManager(mpi_comm_domain);
 
     forcePtr = new forceClass<FEOrder, FEOrderElectro, memorySpace>(
@@ -868,9 +866,6 @@ namespace dftfe
       }
 
 
-    AssertThrow(d_dftParamsPtr->isPseudopotential == true,
-                dealii::ExcMessage(
-                  " All electron case not supported in hubbard \n."));
 
     if (d_dftParamsPtr->isPseudopotential == true)
       {
@@ -1973,6 +1968,19 @@ namespace dftfe
         hubbardPtr = excHubbPtr->getHubbardClass();
 
         d_useHubbard = true;
+
+        AssertThrow(d_nOMPThreads == 1,
+                    dealii::ExcMessage(
+                      "open mp is not compatible with hubbard "));
+
+
+        AssertThrow(
+          d_dftParamsPtr->overlapComputeCommunCheby == false,
+          dealii::ExcMessage(
+            "overlap compute communication in cheby is not compatible with hubbard "));
+        AssertThrow(d_dftParamsPtr->useSinglePrecCheby == false,
+                    dealii::ExcMessage(
+                      "single prec in cheby is not compatible with hubbard "));
       }
 
 
@@ -3584,18 +3592,19 @@ namespace dftfe
               d_phiOutQuadValues,
               dummy);
             computing_timer.leave_subsection("phiTot solve");
-
-            updateAuxDensityXCMatrix(d_densityOutQuadValues,
-                                     d_gradDensityOutQuadValues,
-                                     d_rhoCore,
-                                     d_gradRhoCore,
-                                     getEigenVectors(),
-                                     eigenValues,
-                                     fermiEnergy,
-                                     fermiEnergyUp,
-                                     fermiEnergyDown,
-                                     d_auxDensityMatrixXCOutPtr);
           }
+
+        updateAuxDensityXCMatrix(d_densityOutQuadValues,
+                                 d_gradDensityOutQuadValues,
+                                 d_rhoCore,
+                                 d_gradRhoCore,
+                                 getEigenVectors(),
+                                 eigenValues,
+                                 fermiEnergy,
+                                 fermiEnergyUp,
+                                 fermiEnergyDown,
+                                 d_auxDensityMatrixXCOutPtr);
+
         if (d_dftParamsPtr->useEnergyResidualTolerance)
           {
             computing_timer.enter_subsection("Energy residual computation");
@@ -3685,7 +3694,7 @@ namespace dftfe
         computeFractionalOccupancies();
 
         //	for( unsigned int kPoint = 0; kPoint< d_kPointWeights.size();
-        //kPoint++)
+        // kPoint++)
         //	{
         //		pcout<<" kPoint = "<<kPoint<<" weight in dft =
         //"<<d_kPointWeights[kPoint]<<"\n";

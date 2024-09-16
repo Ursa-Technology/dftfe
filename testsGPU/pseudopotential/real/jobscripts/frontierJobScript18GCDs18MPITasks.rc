@@ -1,5 +1,5 @@
 #!/ccs/home/dsambit/frontier/bin/rc
-#SBATCH -A mat239
+#SBATCH -A nti115
 #SBATCH -J gputests
 #SBATCH -t 1:00:00
 #SBATCH -p batch

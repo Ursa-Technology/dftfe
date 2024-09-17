@@ -130,9 +130,13 @@ namespace dftfe
     virtual void
     computeWaveFunctionDependentExcEnergy(
       const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrix,
-      const std::vector<double> &                           kPointWeights,
-      double &                                              energyVal,
-      double &energyCorrection) = 0;
+      const std::vector<double> &                           kPointWeights) = 0;
+
+    virtual double
+    getWaveFunctionDependentExcEnergy() = 0;
+
+    virtual double
+    getExpectationOfWaveFunctionDependentExcFuncDer() = 0;
 
     /**
      * x and c denotes exchange and correlation respectively.

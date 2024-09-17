@@ -90,8 +90,7 @@ namespace dftfe
     createAtomCenteredSphericalFunctionsForProjectors();
 
     void
-    computeEnergyFromOccupationMatrix(double &hubbardEnergy,
-                                      double &hubbardEnergyCorrection);
+    computeEnergyFromOccupationMatrix();
     void
     computeOccupationMatrix(
       const dftfe::utils::MemoryStorage<ValueType, memorySpace> *X,
@@ -147,11 +146,17 @@ namespace dftfe
     dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
     getOccMatOut();
 
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &
+    getHubbMatrixForMixing();
+
     void
     setInOccMatrix(
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
         &inputOccMatrix);
 
+ double getHubbardEnergy();
+
+ double getExpectationOfHubbardPotential();
 
 
     const std::shared_ptr<
@@ -243,6 +248,12 @@ namespace dftfe
 
     unsigned int d_cellsBlockSizeApply;
     unsigned int d_verbosity;
+
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      d_hubbOccMatAfterMixing;
+
+    double d_hubbardEnergy;
+    double d_expectationOfHubbardPotential;
   };
 } // namespace dftfe
 

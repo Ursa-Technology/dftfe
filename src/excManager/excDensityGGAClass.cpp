@@ -313,10 +313,22 @@ namespace dftfe
   void
   excDensityGGAClass<memorySpace>::computeWaveFunctionDependentExcEnergy(
     const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrix,
-    const std::vector<double> &                           kPointWeights,
-    double &                                              energyVal,
-    double &                                              energyCorrection)
+    const std::vector<double> &                           kPointWeights)
   {}
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  double
+  excDensityGGAClass<memorySpace>::getWaveFunctionDependentExcEnergy()
+  {
+    return 0.0;
+  }
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  double
+  excDensityGGAClass<memorySpace>::getExpectationOfWaveFunctionDependentExcFuncDer()
+  {
+    return 0.0;
+  }
 
   template class excDensityGGAClass<dftfe::utils::MemorySpace::HOST>;
 #ifdef DFTFE_WITH_DEVICE

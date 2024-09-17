@@ -120,12 +120,23 @@ namespace dftfe
   void
   ExcDFTPlusU<ValueType, memorySpace>::computeWaveFunctionDependentExcEnergy(
     const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrix,
-    const std::vector<double> &                           kPointWeights,
-    double &                                              energyVal,
-    double &                                              energyCorrection)
+    const std::vector<double> &                           kPointWeights)
   {
-    d_hubbardClassPtr->computeEnergyFromOccupationMatrix(energyVal,
-                                                         energyCorrection);
+    d_hubbardClassPtr->computeEnergyFromOccupationMatrix();
+  }
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  double
+  ExcDFTPlusU<ValueType, memorySpace>::getWaveFunctionDependentExcEnergy()
+  {
+    return d_hubbardClassPtr->getHubbardEnergy();
+  }
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  double
+  ExcDFTPlusU<ValueType, memorySpace>::getExpectationOfWaveFunctionDependentExcFuncDer()
+  {
+    return d_hubbardClassPtr->getExpectationOfHubbardPotential();
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>

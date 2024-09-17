@@ -77,10 +77,13 @@ namespace dftfe
     void
     computeWaveFunctionDependentExcEnergy(
       const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrix,
-      const std::vector<double> &                           kPointWeights,
-      double &                                              energyVal,
-      double &energyCorrection) override;
+      const std::vector<double> &                           kPointWeights) override;
 
+    double
+    getWaveFunctionDependentExcEnergy() override;
+
+    double
+    getExpectationOfWaveFunctionDependentExcFuncDer() override;
 
   private:
     NNLDA *                       d_NNLDAPtr;

@@ -1981,6 +1981,9 @@ namespace dftfe
         AssertThrow(d_dftParamsPtr->useSinglePrecCheby == false,
                     dealii::ExcMessage(
                       "single prec in cheby is not compatible with hubbard "));
+
+        AssertThrow( d_dftParamsPtr->solverMode != "NSCF",  dealii::ExcMessage(
+        "Hubbard correction is not implemented for NSCF mode"));
       }
 
 
@@ -2665,25 +2668,21 @@ namespace dftfe
 
                 if (d_useHubbard == true)
                   {
-                    if (scfIter == 1)
-                      {
-                        dftfe::utils::MemoryStorage<
-                          double,
-                          dftfe::utils::MemorySpace::HOST> &hubbOccIn =
-                          hubbardPtr->getOccMatIn();
-                        d_hubbOccMatAfterMixing.resize(hubbOccIn.size());
-                      }
 
-                    std::fill(d_hubbOccMatAfterMixing.begin(),
-                              d_hubbOccMatAfterMixing.end(),
+                    dftfe::utils::MemoryStorage<double,
+                                                dftfe::utils::MemorySpace::HOST>
+                      &hubbOccMatAfterMixing = hubbardPtr->getHubbMatrixForMixing();
+
+                    std::fill(hubbOccMatAfterMixing.begin(),
+                              hubbOccMatAfterMixing.end(),
                               0.0);
 
                     d_mixingScheme.mixVariable(
                       mixingVariable::hubbardOccupation,
-                      d_hubbOccMatAfterMixing.data(),
-                      d_hubbOccMatAfterMixing.size());
+                      hubbOccMatAfterMixing.data(),
+                      hubbOccMatAfterMixing.size());
 
-                    hubbardPtr->setInOccMatrix(d_hubbOccMatAfterMixing);
+                    hubbardPtr->setInOccMatrix(hubbOccMatAfterMixing);
                   }
 
 

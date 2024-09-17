@@ -211,9 +211,9 @@ namespace dftfe
      * TODO --------------------------------
      */
 
-    std::shared_ptr<
-      AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
-      d_HubbnonLocalOperator;
+    // std::shared_ptr<
+    //  AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
+    //  d_HubbnonLocalOperator;
 
     std::shared_ptr<
       AtomicCenteredNonLocalOperator<dataTypes::numberFP32, memorySpace>>
@@ -297,8 +297,13 @@ namespace dftfe
     dealii::TimerOutput computing_timer;
 
     std::shared_ptr<hubbard<dataTypes::number, memorySpace>> d_hubbardClassPtr;
-    bool d_useHubbard;
+    bool                                                     d_useHubbard;
 
+    // dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
+    //  d_hubbNonLocalProjectorTimesVectorBlock;
+
+    // dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
+    //  d_cellWaveFunctionMatrixSrcHubb;
   };
 } // namespace dftfe
 #endif

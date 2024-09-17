@@ -647,7 +647,7 @@ namespace dftfe
           "EXCHANGE CORRELATION TYPE",
           "GGA-PBE",
           dealii::Patterns::Selection(
-            "LDA-PZ|LDA-PW|LDA-VWN|GGA-PBE|GGA-RPBE|GGA-LBxPBEc|PBE+U|MLXC-NNLDA|MLXC-NNGGA|MLXC-NNLLMGGA"),
+            "LDA-PZ|LDA-PW|LDA-VWN|GGA-PBE|GGA-RPBE|GGA-LBxPBEc|GGA-PBE+U|MLXC-NNLDA|MLXC-NNGGA|MLXC-NNLLMGGA"),
           R"([Standard] Parameter specifying the type of exchange-correlation to be used: LDA-PZ (Perdew Zunger Ceperley Alder correlation with Slater Exchange[PRB. 23, 5048 (1981)]), LDA-PW (Perdew-Wang 92 functional with Slater Exchange [PRB. 45, 13244 (1992)]), LDA-VWN (Vosko, Wilk \& Nusair with Slater Exchange[Can. J. Phys. 58, 1200 (1980)]), GGA-PBE (Perdew-Burke-Ernzerhof functional [PRL. 77, 3865 (1996)]), GGA-RPBE (RPBE: B. Hammer, L. B. Hansen, and J. K. Nørskov, Phys. Rev. B 59, 7413 (1999)), GGA-LBxPBEc van Leeuwen & Baerends exchange [Phys. Rev. A 49, 2421 (1994)] with  PBE correlation [Phys. Rev. Lett. 77, 3865 (1996)], MLXC-NNLDA (LDA-PW + NN-LDA), MLXC-NNGGA (GGA-PBE + NN-GGA), MLXC-NNLLMGGA (GGA-PBE + NN Laplacian level MGGA). Caution: MLXC options are experimental.)");
 
         prm.declare_entry(
@@ -748,16 +748,17 @@ namespace dftfe
           prm.declare_entry(
             "MIXING OCCUPATION",
             "0.5",
-            dealii::Patterns::Double(0.0,1.0),
+            dealii::Patterns::Double(0.0, 1.0),
             "[Standard] The mixing parameter used to mix the occupation numbers.");
           //          prm.declare_entry(
           //            "ORTHOGONALISE ATOMIC WAVEFUNCTION",
           //            "false",
           //            Patterns::Bool(),
-          //            "[Standard] Boolean parameter specifying whether or not the atomic wavefunctions are orthogonalised wrt each other.");
+          //            "[Standard] Boolean parameter specifying whether or not
+          //            the atomic wavefunctions are orthogonalised wrt each
+          //            other.");
         }
         prm.leave_subsection();
-
       }
       prm.leave_subsection();
 
@@ -1369,7 +1370,7 @@ namespace dftfe
     tempControllerTypeBOMD     = "";
     MDTrack                    = 0;
 
-    hubbardFileName = "";
+    hubbardFileName         = "";
     hubbardOccupationMixing = 0.5;
 
     // New paramter for selecting mode and NEB parameters
@@ -1627,12 +1628,12 @@ namespace dftfe
 
       prm.enter_subsection("Hubbard Parameters");
       {
-        hubbardFileName = prm.get("HUBBARD PARAMETERS FILE");
+        hubbardFileName         = prm.get("HUBBARD PARAMETERS FILE");
         hubbardOccupationMixing = prm.get_double("MIXING OCCUPATION");
-        //        orthoAtomicData       = prm.get_bool("ORTHOGONALISE ATOMIC WAVEFUNCTIONS");
+        //        orthoAtomicData       = prm.get_bool("ORTHOGONALISE ATOMIC
+        //        WAVEFUNCTIONS");
       }
       prm.leave_subsection();
-
     }
     prm.leave_subsection();
 

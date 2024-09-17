@@ -201,10 +201,11 @@ namespace dftfe
         if (XCType.size() > 2)
           XCInput = XCType.substr(0, XCType.size() - 2);
 
-        d_excObj = std::make_shared<ExcDFTPlusU<dataTypes::number, memorySpace>>(
-          initializeSSDPtr<memorySpace>(
-            XCInput, d_funcXPtr, d_funcCPtr, modelXCInputFile),
-          numSpin);
+        d_excObj =
+          std::make_shared<ExcDFTPlusU<dataTypes::number, memorySpace>>(
+            initializeSSDPtr<memorySpace>(
+              XCInput, d_funcXPtr, d_funcCPtr, modelXCInputFile),
+            numSpin);
       }
     else
       {
@@ -233,17 +234,17 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   const std::shared_ptr<ExcSSDFunctionalBaseClass<memorySpace>> &
-            excManager<memorySpace>::getSSDSharedObj() const
-	    {
-		    return d_excObj;
-	    }
+  excManager<memorySpace>::getSSDSharedObj() const
+  {
+    return d_excObj;
+  }
 
   template <dftfe::utils::MemorySpace memorySpace>
-    std::shared_ptr<ExcSSDFunctionalBaseClass<memorySpace>> &
-            excManager<memorySpace>::getSSDSharedObj() 
-	    {
-		    return d_excObj;
-	    }
+  std::shared_ptr<ExcSSDFunctionalBaseClass<memorySpace>> &
+  excManager<memorySpace>::getSSDSharedObj()
+  {
+    return d_excObj;
+  }
 
 
   template class excManager<dftfe::utils::MemorySpace::HOST>;

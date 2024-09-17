@@ -281,7 +281,7 @@ namespace dftfe
        * @brief Number of vectors set in reinit.
        */
       unsigned int
-        nVectors() const;
+      nVectors() const;
       /**
        * @brief Number of DoFs per cell for the dofHandlerID set in init.
        */

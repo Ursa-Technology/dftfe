@@ -610,19 +610,32 @@ namespace dftfe
     const unsigned int kPointIndex,
     const unsigned int spinIndex)
   {}
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  void
+  excDensityLLMGGAClass<memorySpace>::applyWaveFunctionDependentFuncDerCheby(
+    const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
+      &                                                                src,
+    dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
+    const unsigned int inputVecSize,
+    const double       factor,
+    const unsigned int kPointIndex,
+    const unsigned int spinIndex)
+  {}
+
   template <dftfe::utils::MemorySpace memorySpace>
   void
   excDensityLLMGGAClass<memorySpace>::updateWaveFunctionDependentFuncDer(
     const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrixPtr,
-    const std::vector<double> &    kPointWeights)
+    const std::vector<double> &                           kPointWeights)
   {}
   template <dftfe::utils::MemorySpace memorySpace>
   void
   excDensityLLMGGAClass<memorySpace>::computeWaveFunctionDependentExcEnergy(
     const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrix,
-    const std::vector<double> &    kPointWeights,
-    double &energyVal,
-    double &energyCorrection)
+    const std::vector<double> &                           kPointWeights,
+    double &                                              energyVal,
+    double &                                              energyCorrection)
   {}
 
 

@@ -60,15 +60,26 @@ namespace dftfe
       const double       factor,
       const unsigned int kPointIndex,
       const unsigned int spinIndex) override;
+
+    void
+    applyWaveFunctionDependentFuncDerCheby(
+      const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
+        &                                                                src,
+      dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
+      const unsigned int inputVecSize,
+      const double       factor,
+      const unsigned int kPointIndex,
+      const unsigned int spinIndex) override;
+
     void
     updateWaveFunctionDependentFuncDer(
       const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrixPtr,
-    const std::vector<double> &    kPointWeights) override;
+      const std::vector<double> &kPointWeights) override;
     void
     computeWaveFunctionDependentExcEnergy(
       const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrix,
-      const std::vector<double> &    kPointWeights,
-      double &energyVal,
+      const std::vector<double> &                           kPointWeights,
+      double &                                              energyVal,
       double &energyCorrection) override;
 
   private:

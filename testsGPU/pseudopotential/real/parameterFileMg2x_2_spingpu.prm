@@ -1,5 +1,6 @@
 set VERBOSITY = 0
 set REPRODUCIBLE OUTPUT=true
+set MEM OPT MODE = true
 set USE GPU=true
 subsection GPU
   set AUTO GPU BLOCK SIZES=false
@@ -14,7 +15,7 @@ subsection Boundary conditions
   set PERIODIC2                       = true
   set PERIODIC3                       = true
   set SELF POTENTIAL RADIUS           = 3.0
-  set POINT WISE DIRICHLET CONSTRAINT  =true
+  set POINT WISE DIRICHLET CONSTRAINT =true
 end
 
 
@@ -22,6 +23,8 @@ subsection DFT functional parameters
   set EXCHANGE CORRELATION TYPE = GGA-PBE
   set PSEUDOPOTENTIAL CALCULATION = true
   set PSEUDOPOTENTIAL FILE NAMES LIST = pseudoMg.inp
+  set SPIN POLARIZATION=1
+  set START MAGNETIZATION=0.1
 end
 
 
@@ -42,7 +45,8 @@ subsection Geometry
   set ATOMIC COORDINATES FILE      = coordinatesMg2x.inp
   set DOMAIN VECTORS FILE = domainVectorsMg2x.inp
   subsection Optimization
-    set ION FORCE                 = false
+    set ION FORCE                 = true
+    set CELL STRESS               = true
   end
 end
 
@@ -55,19 +59,16 @@ subsection SCF parameters
   set MAXIMUM ITERATIONS               = 100
   set TEMPERATURE                      = 500
   set TOLERANCE                        = 1e-6
-  set STARTING WFC=RANDOM
+  set STARTING WFC=ATOMIC
   subsection Eigen-solver parameters
-       set CHEBYSHEV POLYNOMIAL DEGREE       = 10
-       set NUMBER OF KOHN-SHAM WAVEFUNCTIONS = 172
-       set SPECTRUM SPLIT CORE EIGENSTATES=86
-       set CHEBY WFC BLOCK SIZE=43
-       set WFC BLOCK SIZE=43
+       set CHEBYSHEV POLYNOMIAL DEGREE       = 20
+       set NUMBER OF KOHN-SHAM WAVEFUNCTIONS = 180
+       set CHEBY WFC BLOCK SIZE=45
+       set WFC BLOCK SIZE=45
        set CHEBYSHEV FILTER TOLERANCE=1e-5
-       set USE MIXED PREC CGS SR=true
-       set OVERLAP COMPUTE COMMUN ORTHO RR=false
-       set OVERLAP COMPUTE COMMUN CHEBY=false
   end
 end
+
 subsection Poisson problem parameters
   set GPU MODE           = true
   set MAXIMUM ITERATIONS = 20000

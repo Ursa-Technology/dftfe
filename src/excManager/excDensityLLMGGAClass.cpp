@@ -91,7 +91,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityLLMGGAClass<memorySpace>::computeOutputXCData(
+  excDensityLLMGGAClass<memorySpace>::computeRhoTauDependentXCData(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
     const std::vector<double> &    quadPoints,
     std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
@@ -601,7 +601,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityLLMGGAClass<memorySpace>::applyWaveFunctionDependentFuncDer(
+  excDensityLLMGGAClass<memorySpace>::applyWaveFunctionDependentFuncDerWrtPsi(
     const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
       &                                                                src,
     dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
@@ -613,7 +613,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityLLMGGAClass<memorySpace>::applyWaveFunctionDependentFuncDerCheby(
+  excDensityLLMGGAClass<memorySpace>::applyWaveFunctionDependentFuncDerWrtPsiCheby(
     const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
       &                                                                src,
     dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
@@ -625,7 +625,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityLLMGGAClass<memorySpace>::updateWaveFunctionDependentFuncDer(
+  excDensityLLMGGAClass<memorySpace>::updateWaveFunctionDependentFuncDerWrtPsi(
     const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrixPtr,
     const std::vector<double> &                           kPointWeights)
   {}
@@ -645,7 +645,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   double
-  excDensityLLMGGAClass<memorySpace>::getExpectationOfWaveFunctionDependentExcFuncDer()
+  excDensityLLMGGAClass<memorySpace>::getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi()
   {
     return 0.0;
   }

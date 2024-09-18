@@ -37,7 +37,7 @@ namespace dftfe
     ~excDensityLDAClass();
 
     void
-    computeOutputXCData(
+    computeRhoTauDependentXCData(
       AuxDensityMatrix<memorySpace> &auxDensityMatrix,
       const std::vector<double> &    quadPoints,
       std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
@@ -51,7 +51,7 @@ namespace dftfe
       const override;
 
     void
-    applyWaveFunctionDependentFuncDer(
+    applyWaveFunctionDependentFuncDerWrtPsi(
       const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
         &                                                                src,
       dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
@@ -61,7 +61,7 @@ namespace dftfe
       const unsigned int spinIndex) override;
 
     void
-    applyWaveFunctionDependentFuncDerCheby(
+    applyWaveFunctionDependentFuncDerWrtPsiCheby(
       const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
         &                                                                src,
       dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
@@ -71,7 +71,7 @@ namespace dftfe
       const unsigned int spinIndex) override;
 
     void
-    updateWaveFunctionDependentFuncDer(
+    updateWaveFunctionDependentFuncDerWrtPsi(
       const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrixPtr,
       const std::vector<double> &kPointWeights) override;
     void
@@ -83,7 +83,7 @@ namespace dftfe
     getWaveFunctionDependentExcEnergy() override;
 
     double
-    getExpectationOfWaveFunctionDependentExcFuncDer() override;
+    getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi() override;
 
   private:
     NNLDA *                       d_NNLDAPtr;

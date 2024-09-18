@@ -53,7 +53,6 @@ namespace dftfe
   {
     for (auto const &[key, val] : d_hubbardSpeciesData)
       {
-        pcout << " key = " << key << "\n";
         unsigned int Znum = val.atomicNumber;
 
         unsigned int numberOfProjectors = val.numProj;
@@ -66,8 +65,6 @@ namespace dftfe
             unsigned int nQuantumNo = val.nQuantumNum[i];
             unsigned int lQuantumNo = val.lQuantumNum[i];
 
-            pcout << " nQuantumNo = " << nQuantumNo << "\n";
-            pcout << " lQuantumNo = " << lQuantumNo << "\n";
             char waveFunctionFileName[256];
             strcpy(waveFunctionFileName,
                    (d_dftfeScratchFolderName + "/z" + std::to_string(Znum) +
@@ -79,8 +76,8 @@ namespace dftfe
               std::make_shared<AtomCenteredPseudoWavefunctionSpline>(
                 waveFunctionFileName,
                 lQuantumNo,
-                10.0, // the cut off is manually set to 10.0 to emulate QE's
-                      // behaviour. Removie it if better accuracy is required
+                10.0, // NOTE: the cut off is manually set to 10.0 to emulate QE's
+                      // behaviour. Remove this if better accuracy is required
                 1E-12);
             alpha++;
           } // i loop
@@ -144,6 +141,8 @@ namespace dftfe
                               1 :
                               d_BasisOperatorMemPtr->nCells();
     d_numSpins = numSpins;
+
+    //Read the hubbard input data.
     readHubbardInput(atomLocations, imageIds, imagePositions);
 
     createAtomCenteredSphericalFunctionsForProjectors();
@@ -154,6 +153,7 @@ namespace dftfe
     d_atomicProjectorFnsContainer->init(d_mapAtomToAtomicNumber,
                                         d_atomicProjectorFnsMap);
 
+    // set up the non local operator.
     d_nonLocalOperator =
       std::make_shared<AtomicCenteredNonLocalOperator<ValueType, memorySpace>>(
         d_BLASWrapperMemPtr,
@@ -230,6 +230,10 @@ namespace dftfe
     //    computeSymmetricTransforms(atomLocationsFrac,domainBoundaries);
 
 
+
+    // This is to create a locally owned atoms.
+    // This is not very efficient and better methods may exist.
+
     std::vector<unsigned int> atomProcessorMap;
     unsigned int              numAtoms = atomLocations.size();
     atomProcessorMap.resize(numAtoms);
@@ -267,6 +271,11 @@ namespace dftfe
       }
   }
 
+  /*
+   * computes the initial occupation matrix.
+   * The general rule is that iAtom is iterator for atoms whose atomic projectors
+   * has a compact support in the locally owned cells.
+   */
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
   hubbard<ValueType, memorySpace>::setInitialOccMatrix()
@@ -353,6 +362,11 @@ namespace dftfe
     return d_nonLocalOperator;
   }
 
+  /*
+   * computes the initial occupation matrix.
+   * Here iAtom is iterator for locally owned atoms
+   * and a MPI_Allreduce over the mpi domain.
+   */
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
   hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
@@ -442,6 +456,7 @@ namespace dftfe
       }
   }
 
+  //Currently this function is not compatible with band parallelisation
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
   hubbard<ValueType, memorySpace>::computeOccupationMatrix(
@@ -639,22 +654,25 @@ namespace dftfe
         const unsigned int numSphericalFunc =
           d_hubbardSpeciesData[hubbardIds].numberSphericalFunc;
 
-        for (unsigned int spinIndex = 0; spinIndex < d_numSpins; spinIndex++)
+        if (d_verbosity >= 3)
           {
-            for (unsigned int iOrb = 0; iOrb < numSphericalFunc; iOrb++)
+            for (unsigned int spinIndex = 0; spinIndex < d_numSpins; spinIndex++)
               {
-                for (unsigned int jOrb = 0; jOrb < numSphericalFunc; jOrb++)
+                for (unsigned int iOrb = 0; iOrb < numSphericalFunc; iOrb++)
                   {
-                    std::cout
-                      << " "
-                      << d_occupationMatrix
-                           [HubbardOccFieldType::Out]
-                           [spinIndex * d_numTotalOccMatrixEntriesPerSpin +
-                            d_OccMatrixEntryStartForAtom
-                              [d_procLocalAtomId[iAtom]] +
-                            iOrb * numSphericalFunc + jOrb];
+                    for (unsigned int jOrb = 0; jOrb < numSphericalFunc; jOrb++)
+                      {
+                        std::cout
+                          << " "
+                          << d_occupationMatrix
+                               [HubbardOccFieldType::Out]
+                               [spinIndex * d_numTotalOccMatrixEntriesPerSpin +
+                                d_OccMatrixEntryStartForAtom
+                                  [d_procLocalAtomId[iAtom]] +
+                                iOrb * numSphericalFunc + jOrb];
+                      }
+                    std::cout << "\n";
                   }
-                std::cout << "\n";
               }
           }
       }
@@ -906,12 +924,6 @@ namespace dftfe
         hubbardInputFile >> id >> atomicNumber >> hubbardValue >>
           numberOfProjectors >> initialOccupation;
 
-        pcout << " id = " << id << "\n";
-
-        pcout << " atomicNumber = " << atomicNumber << "\n";
-        pcout << " hubbardValue = " << hubbardValue << "\n";
-        pcout << " numberOfProjectors = " << numberOfProjectors << "\n";
-        pcout << " initialOccupation = " << initialOccupation << "\n";
         hubbardSpecies hubbardSpeciesObj;
 
         hubbardSpeciesObj.hubbardValue = hubbardValue;
@@ -927,9 +939,6 @@ namespace dftfe
             hubbardInputFile >> n >> l;
             hubbardSpeciesObj.nQuantumNum[orbitalId] = n;
             hubbardSpeciesObj.lQuantumNum[orbitalId] = l;
-
-            pcout << " n = " << n << "\n";
-            pcout << " l = " << l << "\n";
 
             hubbardSpeciesObj.numberSphericalFunc += 2 * l + 1;
           }
@@ -1092,6 +1101,9 @@ namespace dftfe
           {
             std::pair<unsigned int, unsigned int> cellRange(
               iCell, std::min(iCell + d_cellsBlockSizeApply, nCells));
+
+            // d_cellWaveFunctionMatrixDst has to be reinitialised to zero before
+            // applyCOnVCconjtransX() is called
             d_cellWaveFunctionMatrixDst.setValue(0.0);
 
             d_nonLocalOperator->applyCOnVCconjtransX(
@@ -1193,6 +1205,8 @@ namespace dftfe
             std::pair<unsigned int, unsigned int> cellRange(
               iCell, std::min(iCell + d_cellsBlockSizeApply, nCells));
 
+            // d_cellWaveFunctionMatrixDst has to be reinitialised to zero before
+            // applyCOnVCconjtransX() is called
             d_cellWaveFunctionMatrixDst.setValue(0.0);
 
             d_nonLocalOperator->applyCOnVCconjtransX(

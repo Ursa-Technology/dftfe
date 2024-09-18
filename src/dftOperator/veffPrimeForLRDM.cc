@@ -238,7 +238,7 @@ namespace dftfe
                 quadWeightsAll[iCell * numberQuadraturePointsPerCell + iQuad]);
             }
 
-          d_excManagerPtr->getExcSSDFunctionalObj()->computeOutputXCData(
+          d_excManagerPtr->getExcSSDFunctionalObj()->computeRhoTauDependentXCData(
             *auxDensityXCPerturbedRepresentationPtr,
             quadPointsInCell,
             xDataOut,

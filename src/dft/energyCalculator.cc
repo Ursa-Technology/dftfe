@@ -743,7 +743,7 @@ namespace dftfe
 
     //subtracting the expectation of the wavefunction dependent potential from the total energy and
     // adding the part of Exc energy dependent on wavefunction
-    totalEnergy -= excManagerPtr->getExcSSDFunctionalObj()->getExpectationOfWaveFunctionDependentExcFuncDer();
+    totalEnergy -= excManagerPtr->getExcSSDFunctionalObj()->getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi();
 
     totalEnergy += excManagerPtr->getExcSSDFunctionalObj()->getWaveFunctionDependentExcEnergy();
 
@@ -1035,13 +1035,13 @@ namespace dftfe
               std::real(quadWeightsAll[iCell * nQuadsPerCell + iQuad]);
           }
 
-        excManagerPtr->getExcSSDFunctionalObj()->computeOutputXCData(
+        excManagerPtr->getExcSSDFunctionalObj()->computeRhoTauDependentXCData(
           *auxDensityXCInRepresentationPtr,
           quadPointsInCell,
           xDensityInDataOut,
           cDensityInDataOut);
 
-        excManagerPtr->getExcSSDFunctionalObj()->computeOutputXCData(
+        excManagerPtr->getExcSSDFunctionalObj()->computeRhoTauDependentXCData(
           *auxDensityXCOutRepresentationPtr,
           quadPointsInCell,
           xDensityOutDataOut,

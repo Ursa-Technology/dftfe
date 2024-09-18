@@ -3692,15 +3692,8 @@ namespace dftfe
 
         computeFractionalOccupancies();
 
-        //	for( unsigned int kPoint = 0; kPoint< d_kPointWeights.size();
-        // kPoint++)
-        //	{
-        //		pcout<<" kPoint = "<<kPoint<<" weight in dft =
-        //"<<d_kPointWeights[kPoint]<<"\n";
-        //	}
-
         d_excManagerPtr->getExcSSDFunctionalObj()
-          ->updateWaveFunctionDependentFuncDer(d_auxDensityMatrixXCOutPtr,
+          ->updateWaveFunctionDependentFuncDerWrtPsi(d_auxDensityMatrixXCOutPtr,
                                                d_kPointWeights);
 
 

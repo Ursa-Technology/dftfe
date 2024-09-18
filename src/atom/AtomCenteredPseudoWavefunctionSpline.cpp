@@ -35,24 +35,21 @@ namespace dftfe
 
     unsigned int numRows = radialFunctionData.size() - 1;
 
-    std::cout << " numRows = " << numRows << "\n";
-    std::cout << "numCols = " << radialFunctionData[0].size() << "\n";
     std::vector<double> xData(numRows), yData(numRows);
 
     unsigned int maxRowId = 0;
     for (unsigned int irow = 0; irow < numRows; ++irow)
       {
         xData[irow] = radialFunctionData[irow][0];
+        // the input phi data is multiplied by radius and hence has to
+        // be deleted
         yData[irow] = radialFunctionData[irow][1] / xData[irow];
         if (std::abs(yData[irow]) > truncationTol)
           maxRowId = irow;
       }
 
-    // if (!consider0thEntry) // TODO commented this out for
     yData[0] = yData[1];
 
-    std::cout << "Value of the Datas at : " << xData[0] << " is " << yData[0]
-              << std::endl;
     alglib::real_1d_array x;
     x.setcontent(numRows, &xData[0]);
     alglib::real_1d_array y;
@@ -78,7 +75,6 @@ namespace dftfe
         d_cutOff = cutoff;
       }
     d_rMin = xData[0];
-    std::cout << " cutoff = " << d_cutOff << " d_rMin = " << d_rMin << "\n";
   }
 
 

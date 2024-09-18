@@ -44,7 +44,7 @@ namespace dftfe
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<ValueType, memorySpace>::computeOutputXCData(
+  ExcDFTPlusU<ValueType, memorySpace>::computeRhoTauDependentXCData(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
     const std::vector<double> &    quadPoints,
     std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
@@ -52,7 +52,7 @@ namespace dftfe
     std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
       &cDataOut) const
   {
-    d_excSSDObjPtr->computeOutputXCData(auxDensityMatrix,
+    d_excSSDObjPtr->computeRhoTauDependentXCData(auxDensityMatrix,
                                         quadPoints,
                                         xDataOut,
                                         cDataOut);
@@ -72,7 +72,7 @@ namespace dftfe
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<ValueType, memorySpace>::applyWaveFunctionDependentFuncDerCheby(
+  ExcDFTPlusU<ValueType, memorySpace>::applyWaveFunctionDependentFuncDerWrtPsiCheby(
     const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
       &                                                                src,
     dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
@@ -87,7 +87,7 @@ namespace dftfe
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<ValueType, memorySpace>::applyWaveFunctionDependentFuncDer(
+  ExcDFTPlusU<ValueType, memorySpace>::applyWaveFunctionDependentFuncDerWrtPsi(
     const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
       &                                                                src,
     dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
@@ -103,7 +103,7 @@ namespace dftfe
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<ValueType, memorySpace>::updateWaveFunctionDependentFuncDer(
+  ExcDFTPlusU<ValueType, memorySpace>::updateWaveFunctionDependentFuncDerWrtPsi(
     const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrixPtr,
     const std::vector<double> &                           kPointWeights)
   {
@@ -134,7 +134,7 @@ namespace dftfe
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   double
-  ExcDFTPlusU<ValueType, memorySpace>::getExpectationOfWaveFunctionDependentExcFuncDer()
+  ExcDFTPlusU<ValueType, memorySpace>::getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi()
   {
     return d_hubbardClassPtr->getExpectationOfHubbardPotential();
   }

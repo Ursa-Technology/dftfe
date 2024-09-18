@@ -44,13 +44,10 @@ namespace dftfe
      * @brief Creates splines for radial-Local Potential from file by applying suitable BC on spline and determining the cutOff Radius
      * @param[in] filename the location of file containing the data
      * @param[in] l quantumNumber-l
-     * @param[in] radialPower  mulitply the data with pow(r,radialPower)
-     * @param[in] colIndex the column Number where the function data is present
-     * @param[in] totalColSize the total number oc columns in file
-     * @param[in] truncationTol the minimum function value afterwhich the
+     * @param[in] cutoff  the distance beyond which the radial function is cut off. If it is set to less than 1e-3 then
+     * truncationTol is considered, otherwise cutoff takes precedence.
+     * @param[in] truncationTol the minimum function value after which the
      * function is truncated.
-     * @param[in]  consider0thEntry whether to replace the 0th fn value with the
-     * 1st value in the data.
      */
     AtomCenteredPseudoWavefunctionSpline(std::string  filename,
                                          unsigned int l,

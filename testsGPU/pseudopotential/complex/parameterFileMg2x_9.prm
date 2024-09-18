@@ -1,20 +1,23 @@
 set VERBOSITY = 0
 set REPRODUCIBLE OUTPUT=true
 set USE GPU=true
-subsection GPU
+set MEM OPT MODE = true
+subsection GPU  
   set AUTO GPU BLOCK SIZES=false
+  set USE GPUDIRECT MPI ALL REDUCE = true
+  set USE ELPA GPU KERNEL=false
 end
 
 subsection Boundary conditions
-  set SMEARED NUCLEAR CHARGES=false
-  set FLOATING NUCLEAR CHARGES=false
+  set SMEARED NUCLEAR CHARGES=true
+  set FLOATING NUCLEAR CHARGES=true
   set CONSTRAINTS FROM SERIAL DOFHANDLER = false
   set CONSTRAINTS PARALLEL CHECK         = false
   set PERIODIC1                       = true
   set PERIODIC2                       = true
   set PERIODIC3                       = true
   set SELF POTENTIAL RADIUS           = 3.0
-  set POINT WISE DIRICHLET CONSTRAINT  =true
+  set POINT WISE DIRICHLET CONSTRAINT =false
 end
 
 
@@ -22,6 +25,8 @@ subsection DFT functional parameters
   set EXCHANGE CORRELATION TYPE = GGA-PBE
   set PSEUDOPOTENTIAL CALCULATION = true
   set PSEUDOPOTENTIAL FILE NAMES LIST = pseudoMg.inp
+  set SPIN POLARIZATION=1
+  set START MAGNETIZATION=0.1
 end
 
 
@@ -42,12 +47,26 @@ subsection Geometry
   set ATOMIC COORDINATES FILE      = coordinatesMg2x.inp
   set DOMAIN VECTORS FILE = domainVectorsMg2x.inp
   subsection Optimization
-    set ION FORCE                 = false
+    set ION FORCE                 = true
   end
 end
 
+subsection Brillouin zone k point sampling options
+  set USE TIME REVERSAL SYMMETRY = false
+  subsection Monkhorst-Pack (MP) grid generation
+    set SAMPLING POINTS 1 = 2
+    set SAMPLING POINTS 2 = 1
+    set SAMPLING POINTS 3 = 1
+    set SAMPLING SHIFT 1  = 1
+    set SAMPLING SHIFT 2  = 0
+    set SAMPLING SHIFT 3  = 0
+  end
+end
+
+
 subsection Parallelization
- set NPBAND=2
+ set NPBAND=1
+ set NPKPT=2
 end
 
 subsection SCF parameters
@@ -55,19 +74,18 @@ subsection SCF parameters
   set MAXIMUM ITERATIONS               = 100
   set TEMPERATURE                      = 500
   set TOLERANCE                        = 1e-6
-  set STARTING WFC=RANDOM
+  set STARTING WFC=ATOMIC
+  set USE ENERGY RESIDUAL METRIC = true
   subsection Eigen-solver parameters
-       set CHEBYSHEV POLYNOMIAL DEGREE       = 10
-       set NUMBER OF KOHN-SHAM WAVEFUNCTIONS = 172
-       set SPECTRUM SPLIT CORE EIGENSTATES=86
-       set CHEBY WFC BLOCK SIZE=43
-       set WFC BLOCK SIZE=43
+       set CHEBYSHEV POLYNOMIAL DEGREE       = 20
+       set NUMBER OF KOHN-SHAM WAVEFUNCTIONS = 180
+       set CHEBY WFC BLOCK SIZE=90
+       set WFC BLOCK SIZE=90
        set CHEBYSHEV FILTER TOLERANCE=1e-5
-       set USE MIXED PREC CGS SR=true
-       set OVERLAP COMPUTE COMMUN ORTHO RR=false
-       set OVERLAP COMPUTE COMMUN CHEBY=false
+       set SCALAPACKPROCS=2
   end
 end
+
 subsection Poisson problem parameters
   set GPU MODE           = true
   set MAXIMUM ITERATIONS = 20000

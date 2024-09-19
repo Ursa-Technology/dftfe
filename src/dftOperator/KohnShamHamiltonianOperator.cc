@@ -1022,11 +1022,11 @@ namespace dftfe
       {
         d_excManagerPtr->getExcSSDFunctionalObj()
           ->applyWaveFunctionDependentFuncDerWrtPsi(src,
-                                              dst,
-                                              numberWavefunctions,
-                                              scalarHX,
-                                              d_kPointIndex,
-                                              d_spinIndex);
+                                                    dst,
+                                                    numberWavefunctions,
+                                                    scalarHX,
+                                                    d_kPointIndex,
+                                                    d_spinIndex);
       }
 
     inverseSqrtMassVectorScaledConstraintsNoneDataInfoPtr
@@ -1133,7 +1133,6 @@ namespace dftfe
             d_ONCVNonLocalProjectorTimesVectorBlock
               .accumulateAddLocallyOwnedEnd();
             d_ONCVNonLocalProjectorTimesVectorBlock.updateGhostValuesBegin();
-
           }
         d_BLASWrapperPtr->axpby(src.locallyOwnedSize() * src.numVectors(),
                                 scalarX,
@@ -1216,12 +1215,13 @@ namespace dftfe
                 src.updateGhostValues();
                 d_basisOperationsPtr->distribute(src);
                 d_excManagerPtr->getExcSSDFunctionalObj()
-                  ->applyWaveFunctionDependentFuncDerWrtPsiCheby(src,
-                                                           dst,
-                                                           numberWavefunctions,
-                                                           scalarHX,
-                                                           d_kPointIndex,
-                                                           d_spinIndex);
+                  ->applyWaveFunctionDependentFuncDerWrtPsiCheby(
+                    src,
+                    dst,
+                    numberWavefunctions,
+                    scalarHX,
+                    d_kPointIndex,
+                    d_spinIndex);
 
                 src.zeroOutGhosts();
                 inverseMassVectorScaledConstraintsNoneDataInfoPtr->set_zero(

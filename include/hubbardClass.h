@@ -27,7 +27,6 @@
 
 namespace dftfe
 {
-
   /**
    * @brief This structure provides the
    * relevant information pertaining to hubbard
@@ -70,13 +69,13 @@ namespace dftfe
   class hubbard
   {
   public:
-
     /*
      * @brief The constructor of the Hubbard class.
      * This class takes the relevant mpi communicators.
      * param[in] mpi_comm_parent The global mpi communicator
      * param[in] mpi_comm_domain The mpi communicator for domain decomposition
-     * param[in] mpi_comm_interPool The mpi communicator for the k point parallelisation
+     * param[in] mpi_comm_interPool The mpi communicator for the k point
+     * parallelisation
      */
     hubbard(const MPI_Comm &mpi_comm_parent,
             const MPI_Comm &mpi_comm_domain,
@@ -85,19 +84,22 @@ namespace dftfe
     /*
      * @brief The init function that initialises the relevant data members of the class
      * This class takes the relevant mpi communicators.
-     * param[in] basisOperationsMemPtr The basis Operation class templated to memory space
-     * param[in] basisOperationsHostPtr The basis Operation class templated to HOST memory space
-     * param[in] BLASWrapperMemPtr The Blas wrapper for performing the Blas operations in memory space
-     * param[in] BLASWrapperHostPtr The Blas wrapper for performing the Blas operations in HOST memory space
-     * param[in] matrixFreeVectorComponent The matrix vector component corresponding to wavefunctions
-     * param[in] densityQuadratureId -- the d_nlpspQuadratureId. This cant be changed as it has to compatible with oncv class
-     * as that is required to for the force class
-     * param[in] sparsityPatternQuadratureId - quadrature required for the class atomic non local operator
-     * param[in] numberWaveFunctions - total number of wavefunctions
-     * param[in] numSpins - number of spins
-     * param[in] dftParam - dft parameters for input condition
-     * param[in] scratchFolderName -  the path required to read the atomic orbitals
-     * param[in] atomLocations- the atomic locations (cartesian) for all the atoms ( including the atoms with no hubbard corrections)
+     * param[in] basisOperationsMemPtr The basis Operation class templated to
+     * memory space param[in] basisOperationsHostPtr The basis Operation class
+     * templated to HOST memory space param[in] BLASWrapperMemPtr The Blas
+     * wrapper for performing the Blas operations in memory space param[in]
+     * BLASWrapperHostPtr The Blas wrapper for performing the Blas operations in
+     * HOST memory space param[in] matrixFreeVectorComponent The matrix vector
+     * component corresponding to wavefunctions param[in] densityQuadratureId --
+     * the d_nlpspQuadratureId. This cant be changed as it has to compatible
+     * with oncv class as that is required to for the force class param[in]
+     * sparsityPatternQuadratureId - quadrature required for the class atomic
+     * non local operator param[in] numberWaveFunctions - total number of
+     * wavefunctions param[in] numSpins - number of spins param[in] dftParam -
+     * dft parameters for input condition param[in] scratchFolderName -  the
+     * path required to read the atomic orbitals param[in] atomLocations- the
+     * atomic locations (cartesian) for all the atoms ( including the atoms with
+     * no hubbard corrections)
      *
      */
     void
@@ -134,7 +136,8 @@ namespace dftfe
     /*
      * @brief This function computes the hubbard energy
      *
-     * E_U = \sum_I  \sum_{\sigma} 0.5* U \Big( \sum_m( n^{\sigma}_{mm}) - \sum_{m,m'}( n^{\sigma}_{mm'} n^{\sigma}_{m'm})\Big)
+     * E_U = \sum_I  \sum_{\sigma} 0.5* U \Big( \sum_m( n^{\sigma}_{mm}) -
+     * \sum_{m,m'}( n^{\sigma}_{mm'} n^{\sigma}_{m'm})\Big)
      *
      */
 
@@ -154,7 +157,8 @@ namespace dftfe
     /*
      * @brief This function computes the action of the hubbard potential
      *  V_h \psi^{\sigma}_i = \sum_{I} | \phi^{I}_m>  A^{I \sigma}_{m m'} < \phi^{I}_m' | \psi^{\sigma}_i >
-     *  Where A is the coupling matrix. In the case of hubbard, it is a dense matrix for each atom I.
+     *  Where A is the coupling matrix. In the case of hubbard, it is a dense
+     * matrix for each atom I.
      */
 
     void
@@ -168,10 +172,11 @@ namespace dftfe
 
     /*
      * @brief This function is similar to above
-     * but used in HXCheby(). A different function is required from above as the src requires a different
-     * initialisation
+     * but used in HXCheby(). A different function is required from above as the
+     * src requires a different initialisation
      *  V_h \psi^{\sigma}_i = \sum_{I} | \phi^{I}_m>  A^{I \sigma}_{m m'} < \phi^{I}_m' | \psi^{\sigma}_i >
-     *  Where A is the coupling matrix. In the case of hubbard, it is a dense matrix for each atom I.
+     *  Where A is the coupling matrix. In the case of hubbard, it is a dense
+     * matrix for each atom I.
      */
     void
     applyPotentialDueToHubbardCorrectionCheby(
@@ -228,28 +233,30 @@ namespace dftfe
     /*
      * @brief Returns the Hubbard energy
      */
- double getHubbardEnergy();
+    double
+    getHubbardEnergy();
 
 
- /*
+    /*
      * @brief Returns the Expectation of the Hubbard potential
      * While using band energy approach to compute the total free energy
      * the expectation of the hubbard potential is included in the band energy.
-     * Hence it has to be subtracted and hubbard energy has to be added to the free energy.
-  */
- double getExpectationOfHubbardPotential();
+     * Hence it has to be subtracted and hubbard energy has to be added to the
+     * free energy.
+     */
+    double
+    getExpectationOfHubbardPotential();
 
 
- /*
-     * @brief Get the underlying Atomic nonlocal operator
+    /*
+        * @brief Get the underlying Atomic nonlocal operator
 
-  */
+     */
     const std::shared_ptr<
       AtomicCenteredNonLocalOperator<ValueType, memorySpace>>
     getNonLocalOperator();
 
   private:
-
     void
     computeCouplingMatrix();
 

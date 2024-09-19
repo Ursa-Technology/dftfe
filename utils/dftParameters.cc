@@ -750,9 +750,9 @@ namespace dftfe
             "3 (row1 - number of hubbard species, The ID 0 is reserved for atoms with no hubbard correction ),"
             "0 0 (row2 - Hubbard species Id and the corresponding number of orbitals"
             "1 78 0.110248 1 9.0 (row3 - hubbard species Id corresponding to Pt, Atomic number, Hubbard U parameter in Ha, Number of orbitals on which the hubbard correction is applied (5D in this case), The initial occupancy of the orbitals)"
-            "5 2 (row4 - the Quantum number N and Quantum number L of the orbital)"
+            "5 2 (row4 - the Quantum number n and Quantum number l of the orbital)"
             "2 79 0.1469976 1 10.0 (row3 - hubbard species Id corresponding to Au, Atomic number, Hubbard U parameter in Ha, Number of orbitals on which the hubbard correction is applied (5D in this case), The initial occupancy of the orbitals)"
-            "5 2 (row4 - the Quantum number N and Quantum number L of the orbital)"
+            "5 2 (row4 - the Quantum number n and Quantum number l of the orbital)"
             "78 1 (row5 - the atomic number and the corresponding hubbard species Id. The list has to be copied from the coordinates file"
             "79 2 (row6 - the atomic number and the corresponding hubbard species Id. The list has to be copied from the coordinates file");
         }
@@ -1368,7 +1368,7 @@ namespace dftfe
     tempControllerTypeBOMD     = "";
     MDTrack                    = 0;
 
-    hubbardFileName         = "";
+    hubbardFileName = "";
 
     // New paramter for selecting mode and NEB parameters
     TotalImages = 1;
@@ -1625,7 +1625,7 @@ namespace dftfe
 
       prm.enter_subsection("Hubbard Parameters");
       {
-        hubbardFileName         = prm.get("HUBBARD PARAMETERS FILE");
+        hubbardFileName = prm.get("HUBBARD PARAMETERS FILE");
       }
       prm.leave_subsection();
     }

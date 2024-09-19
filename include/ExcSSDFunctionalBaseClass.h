@@ -97,11 +97,9 @@ namespace dftfe
      * @brief The apply function that will be called in HX().
      * The distribute() and updateGhostValues() for src
      * has to be called before this function.
-     * Similarly for dst, accumulateLocallyOwned() should be called in HX() after
-     * this function is called.
-     * param[in] src The input vector
-     * param[out] dst The output vector
-     * param[in] inputVecSize The size of the input vector
+     * Similarly for dst, accumulateLocallyOwned() should be called in HX()
+     * after this function is called. param[in] src The input vector param[out]
+     * dst The output vector param[in] inputVecSize The size of the input vector
      * param[in] factor the factor with which the output is scaled in HX()
      * param[in] kPointIndex the k point for which the HX() is called
      * param[in] spinIndex the spin index for which the HX() is called
@@ -120,10 +118,9 @@ namespace dftfe
     /*
      * @brief The apply function that will be called in HXCheby().
      * The distribute() and updateGhostValues() for src
- * has to be called before this function.
- * Similarly, for dst, accumulateLocallyOwned() should be called in HXCheby() after
- * this function is called.
-     * param[in] src The input vector
+     * has to be called before this function.
+     * Similarly, for dst, accumulateLocallyOwned() should be called in
+     * HXCheby() after this function is called. param[in] src The input vector
      * param[out] dst The output vector
      * param[in] inputVecSize The size of the input vector
      * param[in] factor the factor with which the output is scaled in HX()
@@ -168,8 +165,9 @@ namespace dftfe
     /*
      * @brief Returns the Expectation of the WaveFunctionDependentExcFuncDerWrtPsi
      * While using band energy approach to compute the total free energy
-     * the expectation of the WaveFunctionDependentExcFuncDerWrtPsi is included in the band energy.
-     * Hence it has to be subtracted and the correct energy has to be added to the free energy.
+     * the expectation of the WaveFunctionDependentExcFuncDerWrtPsi is included
+     * in the band energy. Hence it has to be subtracted and the correct energy
+     * has to be added to the free energy.
      */
     virtual double
     getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi() = 0;

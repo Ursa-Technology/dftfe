@@ -44,8 +44,9 @@ namespace dftfe
      * @brief Creates splines for radial-Local Potential from file by applying suitable BC on spline and determining the cutOff Radius
      * @param[in] filename the location of file containing the data
      * @param[in] l quantumNumber-l
-     * @param[in] cutoff  the distance beyond which the radial function is cut off. If it is set to less than 1e-3 then
-     * truncationTol is considered, otherwise cutoff takes precedence.
+     * @param[in] cutoff  the distance beyond which the radial function is cut
+     * off. If it is set to less than 1e-3 then truncationTol is considered,
+     * otherwise cutoff takes precedence.
      * @param[in] truncationTol the minimum function value after which the
      * function is truncated.
      */

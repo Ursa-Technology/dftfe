@@ -741,11 +741,14 @@ namespace dftfe
 
     totalEnergy += totalNuclearElectrostaticEnergy;
 
-    //subtracting the expectation of the wavefunction dependent potential from the total energy and
+    // subtracting the expectation of the wavefunction dependent potential from
+    // the total energy and
     // adding the part of Exc energy dependent on wavefunction
-    totalEnergy -= excManagerPtr->getExcSSDFunctionalObj()->getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi();
+    totalEnergy -= excManagerPtr->getExcSSDFunctionalObj()
+                     ->getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi();
 
-    totalEnergy += excManagerPtr->getExcSSDFunctionalObj()->getWaveFunctionDependentExcEnergy();
+    totalEnergy += excManagerPtr->getExcSSDFunctionalObj()
+                     ->getWaveFunctionDependentExcEnergy();
 
     const double allElectronElectrostaticEnergy =
       (totalelectrostaticEnergyPot + totalNuclearElectrostaticEnergy);

@@ -613,14 +613,15 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityLLMGGAClass<memorySpace>::applyWaveFunctionDependentFuncDerWrtPsiCheby(
-    const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
-      &                                                                src,
-    dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
-    const unsigned int inputVecSize,
-    const double       factor,
-    const unsigned int kPointIndex,
-    const unsigned int spinIndex)
+  excDensityLLMGGAClass<memorySpace>::
+    applyWaveFunctionDependentFuncDerWrtPsiCheby(
+      const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
+        &                                                                src,
+      dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
+      const unsigned int inputVecSize,
+      const double       factor,
+      const unsigned int kPointIndex,
+      const unsigned int spinIndex)
   {}
 
   template <dftfe::utils::MemorySpace memorySpace>
@@ -645,7 +646,8 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   double
-  excDensityLLMGGAClass<memorySpace>::getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi()
+  excDensityLLMGGAClass<
+    memorySpace>::getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi()
   {
     return 0.0;
   }

@@ -1723,7 +1723,6 @@ namespace dftfe
                         return b * dataTypes::number(a);
                       });
                   }
-
               }
           }
 #if defined(DFTFE_WITH_DEVICE)
@@ -1734,7 +1733,7 @@ namespace dftfe
               d_sphericalFnTimesVectorDevice);
 
             // scaling kernel
-            //TODO this function does not takes sqrt of the alpha
+            // TODO this function does not takes sqrt of the alpha
             dftfe::AtomicCenteredNonLocalOperatorKernelsDevice::
               sqrtAlphaScalingWaveFunctionEntries(
                 d_maxSingleAtomContribution,

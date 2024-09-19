@@ -42,7 +42,7 @@ namespace dftfe
     , pcout(std::cout,
             (dealii::Utilities::MPI::this_mpi_process(d_mpi_comm_parent) == 0))
   {
-    d_hubbardEnergy = 0.0;
+    d_hubbardEnergy                 = 0.0;
     d_expectationOfHubbardPotential = 0.0;
   }
 
@@ -76,8 +76,9 @@ namespace dftfe
               std::make_shared<AtomCenteredPseudoWavefunctionSpline>(
                 waveFunctionFileName,
                 lQuantumNo,
-                10.0, // NOTE: the cut off is manually set to 10.0 to emulate QE's
-                      // behaviour. Remove this if better accuracy is required
+                10.0, // NOTE: the cut off is manually set to 10.0 to emulate
+                      // QE's behaviour. Remove this if better accuracy is
+                      // required
                 1E-12);
             alpha++;
           } // i loop
@@ -142,7 +143,7 @@ namespace dftfe
                               d_BasisOperatorMemPtr->nCells();
     d_numSpins = numSpins;
 
-    //Read the hubbard input data.
+    // Read the hubbard input data.
     readHubbardInput(atomLocations, imageIds, imagePositions);
 
     createAtomCenteredSphericalFunctionsForProjectors();
@@ -221,8 +222,11 @@ namespace dftfe
     std::fill(occResidual.begin(), occResidual.end(), 0.0);
     d_occupationMatrix[HubbardOccFieldType::Residual] = occResidual;
 
-    d_hubbOccMatAfterMixing.resize(d_numSpins * d_numTotalOccMatrixEntriesPerSpin);
-    std::fill(d_hubbOccMatAfterMixing.begin(), d_hubbOccMatAfterMixing.end(), 0.0);
+    d_hubbOccMatAfterMixing.resize(d_numSpins *
+                                   d_numTotalOccMatrixEntriesPerSpin);
+    std::fill(d_hubbOccMatAfterMixing.begin(),
+              d_hubbOccMatAfterMixing.end(),
+              0.0);
 
     setInitialOccMatrix();
 
@@ -273,8 +277,8 @@ namespace dftfe
 
   /*
    * computes the initial occupation matrix.
-   * The general rule is that iAtom is iterator for atoms whose atomic projectors
-   * has a compact support in the locally owned cells.
+   * The general rule is that iAtom is iterator for atoms whose atomic
+   * projectors has a compact support in the locally owned cells.
    */
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
@@ -371,7 +375,7 @@ namespace dftfe
   void
   hubbard<ValueType, memorySpace>::computeEnergyFromOccupationMatrix()
   {
-    d_hubbardEnergy           = 0.0;
+    d_hubbardEnergy                 = 0.0;
     d_expectationOfHubbardPotential = 0.0;
 
     d_spinPolarizedFactor = (d_dftParamsPtr->spinPolarized == 1) ? 1.0 : 2.0;
@@ -425,9 +429,10 @@ namespace dftfe
                                            [d_procLocalAtomId[iAtom]] +
                                          index2]);
                   }
-                d_hubbardEnergy -= 0.5 * d_spinPolarizedFactor *
-                                 d_hubbardSpeciesData[hubbardIds].hubbardValue *
-                                 dftfe::utils::realPart(occMatrixSq);
+                d_hubbardEnergy -=
+                  0.5 * d_spinPolarizedFactor *
+                  d_hubbardSpeciesData[hubbardIds].hubbardValue *
+                  dftfe::utils::realPart(occMatrixSq);
                 d_expectationOfHubbardPotential -=
                   0.5 * d_spinPolarizedFactor *
                   d_hubbardSpeciesData[hubbardIds].hubbardValue *
@@ -436,8 +441,12 @@ namespace dftfe
           }
       }
 
-    MPI_Allreduce(
-      MPI_IN_PLACE, &d_hubbardEnergy, 1, MPI_DOUBLE, MPI_SUM, d_mpi_comm_domain);
+    MPI_Allreduce(MPI_IN_PLACE,
+                  &d_hubbardEnergy,
+                  1,
+                  MPI_DOUBLE,
+                  MPI_SUM,
+                  d_mpi_comm_domain);
 
     MPI_Allreduce(MPI_IN_PLACE,
                   &d_expectationOfHubbardPotential,
@@ -451,12 +460,12 @@ namespace dftfe
     if (d_verbosity >= 2)
       {
         pcout << " Hubbard energy = " << d_hubbardEnergy << "\n";
-        pcout << " Hubbard energy correction = " << d_expectationOfHubbardPotential
-              << "\n";
+        pcout << " Hubbard energy correction = "
+              << d_expectationOfHubbardPotential << "\n";
       }
   }
 
-  //Currently this function is not compatible with band parallelisation
+  // Currently this function is not compatible with band parallelisation
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
   hubbard<ValueType, memorySpace>::computeOccupationMatrix(
@@ -656,7 +665,8 @@ namespace dftfe
 
         if (d_verbosity >= 3)
           {
-            for (unsigned int spinIndex = 0; spinIndex < d_numSpins; spinIndex++)
+            for (unsigned int spinIndex = 0; spinIndex < d_numSpins;
+                 spinIndex++)
               {
                 for (unsigned int iOrb = 0; iOrb < numSphericalFunc; iOrb++)
                   {
@@ -1102,8 +1112,8 @@ namespace dftfe
             std::pair<unsigned int, unsigned int> cellRange(
               iCell, std::min(iCell + d_cellsBlockSizeApply, nCells));
 
-            // d_cellWaveFunctionMatrixDst has to be reinitialised to zero before
-            // applyCOnVCconjtransX() is called
+            // d_cellWaveFunctionMatrixDst has to be reinitialised to zero
+            // before applyCOnVCconjtransX() is called
             d_cellWaveFunctionMatrixDst.setValue(0.0);
 
             d_nonLocalOperator->applyCOnVCconjtransX(
@@ -1205,8 +1215,8 @@ namespace dftfe
             std::pair<unsigned int, unsigned int> cellRange(
               iCell, std::min(iCell + d_cellsBlockSizeApply, nCells));
 
-            // d_cellWaveFunctionMatrixDst has to be reinitialised to zero before
-            // applyCOnVCconjtransX() is called
+            // d_cellWaveFunctionMatrixDst has to be reinitialised to zero
+            // before applyCOnVCconjtransX() is called
             d_cellWaveFunctionMatrixDst.setValue(0.0);
 
             d_nonLocalOperator->applyCOnVCconjtransX(
@@ -1254,13 +1264,15 @@ namespace dftfe
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
-  double hubbard<ValueType, memorySpace>::getHubbardEnergy()
+  double
+  hubbard<ValueType, memorySpace>::getHubbardEnergy()
   {
     return d_hubbardEnergy;
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
-  double hubbard<ValueType, memorySpace>::getExpectationOfHubbardPotential()
+  double
+  hubbard<ValueType, memorySpace>::getExpectationOfHubbardPotential()
   {
     return d_expectationOfHubbardPotential;
   }

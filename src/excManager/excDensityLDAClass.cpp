@@ -273,7 +273,8 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   double
-  excDensityLDAClass<memorySpace>::getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi()
+  excDensityLDAClass<
+    memorySpace>::getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi()
   {
     return 0.0;
   }

@@ -1982,8 +1982,9 @@ namespace dftfe
                     dealii::ExcMessage(
                       "single prec in cheby is not compatible with hubbard "));
 
-        AssertThrow( d_dftParamsPtr->solverMode != "NSCF",  dealii::ExcMessage(
-        "Hubbard correction is not implemented for NSCF mode"));
+        AssertThrow(d_dftParamsPtr->solverMode != "NSCF",
+                    dealii::ExcMessage(
+                      "Hubbard correction is not implemented for NSCF mode"));
       }
 
 
@@ -2668,10 +2669,10 @@ namespace dftfe
 
                 if (d_useHubbard == true)
                   {
-
                     dftfe::utils::MemoryStorage<double,
                                                 dftfe::utils::MemorySpace::HOST>
-                      &hubbOccMatAfterMixing = hubbardPtr->getHubbMatrixForMixing();
+                      &hubbOccMatAfterMixing =
+                        hubbardPtr->getHubbMatrixForMixing();
 
                     std::fill(hubbOccMatAfterMixing.begin(),
                               hubbOccMatAfterMixing.end(),
@@ -3694,15 +3695,12 @@ namespace dftfe
 
         d_excManagerPtr->getExcSSDFunctionalObj()
           ->updateWaveFunctionDependentFuncDerWrtPsi(d_auxDensityMatrixXCOutPtr,
-                                               d_kPointWeights);
+                                                     d_kPointWeights);
 
 
-        double hubbardEnergy = 0.0, hubbardEnergyCorrection = 0.0;
         d_excManagerPtr->getExcSSDFunctionalObj()
           ->computeWaveFunctionDependentExcEnergy(d_auxDensityMatrixXCOutPtr,
-                                                  d_kPointWeights,
-                                                  hubbardEnergy,
-                                                  hubbardEnergyCorrection);
+                                                  d_kPointWeights);
 
         if (d_dftParamsPtr->verbosity >= 1)
           pcout << "***********************Self-Consistent-Field Iteration: "

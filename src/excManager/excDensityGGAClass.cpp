@@ -325,7 +325,8 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   double
-  excDensityGGAClass<memorySpace>::getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi()
+  excDensityGGAClass<
+    memorySpace>::getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi()
   {
     return 0.0;
   }

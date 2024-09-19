@@ -163,7 +163,7 @@ namespace dftfe
     getWaveFunctionDependentExcEnergy() = 0;
 
     /*
-     * @brief Returns the Expectation of the WaveFunctionDependentExcFuncDerWrtPsi
+     * @brief Returns the Expectation value of the WaveFunctionDependentExcFuncDerWrtPsi
      * While using band energy approach to compute the total free energy
      * the expectation of the WaveFunctionDependentExcFuncDerWrtPsi is included
      * in the band energy. Hence it has to be subtracted and the correct energy

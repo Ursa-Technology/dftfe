@@ -26,6 +26,7 @@ subsection DFT functional parameters
   set EXCHANGE CORRELATION TYPE   = GGA-PBE+U
   set PSEUDOPOTENTIAL CALCULATION = true
   set PSEUDOPOTENTIAL FILE NAMES LIST = @SOURCE_DIR@/Pt_hubb_pseudo.inp
+  set PSEUDO TESTS FLAG = true
   subsection Hubbard Parameters
     set HUBBARD PARAMETERS FILE = @SOURCE_DIR@/Pt_hubbard.inp
     set MIXING OCCUPATION = 1.0

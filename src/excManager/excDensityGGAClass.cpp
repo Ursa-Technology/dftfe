@@ -101,7 +101,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityGGAClass<memorySpace>::computeOutputXCData(
+  excDensityGGAClass<memorySpace>::computeRhoTauDependentXCData(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
     const std::vector<double> &    quadPoints,
     std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
@@ -281,7 +281,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityGGAClass<memorySpace>::applyWaveFunctionDependentFuncDer(
+  excDensityGGAClass<memorySpace>::applyWaveFunctionDependentFuncDerWrtPsi(
     const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
       &                                                                src,
     dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
@@ -293,7 +293,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityGGAClass<memorySpace>::applyWaveFunctionDependentFuncDerCheby(
+  excDensityGGAClass<memorySpace>::applyWaveFunctionDependentFuncDerWrtPsiCheby(
     const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
       &                                                                src,
     dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
@@ -305,7 +305,7 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityGGAClass<memorySpace>::updateWaveFunctionDependentFuncDer(
+  excDensityGGAClass<memorySpace>::updateWaveFunctionDependentFuncDerWrtPsi(
     const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrixPtr,
     const std::vector<double> &                           kPointWeights)
   {}
@@ -313,10 +313,23 @@ namespace dftfe
   void
   excDensityGGAClass<memorySpace>::computeWaveFunctionDependentExcEnergy(
     const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrix,
-    const std::vector<double> &                           kPointWeights,
-    double &                                              energyVal,
-    double &                                              energyCorrection)
+    const std::vector<double> &                           kPointWeights)
   {}
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  double
+  excDensityGGAClass<memorySpace>::getWaveFunctionDependentExcEnergy()
+  {
+    return 0.0;
+  }
+
+  template <dftfe::utils::MemorySpace memorySpace>
+  double
+  excDensityGGAClass<
+    memorySpace>::getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi()
+  {
+    return 0.0;
+  }
 
   template class excDensityGGAClass<dftfe::utils::MemorySpace::HOST>;
 #ifdef DFTFE_WITH_DEVICE

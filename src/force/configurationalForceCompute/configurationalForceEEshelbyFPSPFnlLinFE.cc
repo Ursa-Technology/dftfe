@@ -855,7 +855,7 @@ namespace dftfe
                       }
 
                     dftPtr->d_excManagerPtr->getExcSSDFunctionalObj()
-                      ->computeOutputXCData(
+                      ->computeRhoTauDependentXCData(
                         *(dftPtr->d_auxDensityMatrixXCOutPtr),
                         quadPointsInCell,
                         xDensityOutDataOut,

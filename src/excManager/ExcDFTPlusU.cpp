@@ -44,7 +44,7 @@ namespace dftfe
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<ValueType, memorySpace>::computeOutputXCData(
+  ExcDFTPlusU<ValueType, memorySpace>::computeRhoTauDependentXCData(
     AuxDensityMatrix<memorySpace> &auxDensityMatrix,
     const std::vector<double> &    quadPoints,
     std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
@@ -52,10 +52,10 @@ namespace dftfe
     std::unordered_map<xcRemainderOutputDataAttributes, std::vector<double>>
       &cDataOut) const
   {
-    d_excSSDObjPtr->computeOutputXCData(auxDensityMatrix,
-                                        quadPoints,
-                                        xDataOut,
-                                        cDataOut);
+    d_excSSDObjPtr->computeRhoTauDependentXCData(auxDensityMatrix,
+                                                 quadPoints,
+                                                 xDataOut,
+                                                 cDataOut);
   }
 
 
@@ -72,14 +72,15 @@ namespace dftfe
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<ValueType, memorySpace>::applyWaveFunctionDependentFuncDerCheby(
-    const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
-      &                                                                src,
-    dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
-    const unsigned int inputVecSize,
-    const double       factor,
-    const unsigned int kPointIndex,
-    const unsigned int spinIndex)
+  ExcDFTPlusU<ValueType, memorySpace>::
+    applyWaveFunctionDependentFuncDerWrtPsiCheby(
+      const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
+        &                                                                src,
+      dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
+      const unsigned int inputVecSize,
+      const double       factor,
+      const unsigned int kPointIndex,
+      const unsigned int spinIndex)
   {
     d_hubbardClassPtr->applyPotentialDueToHubbardCorrectionCheby(
       src, dst, inputVecSize, factor, kPointIndex, spinIndex);
@@ -87,7 +88,7 @@ namespace dftfe
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<ValueType, memorySpace>::applyWaveFunctionDependentFuncDer(
+  ExcDFTPlusU<ValueType, memorySpace>::applyWaveFunctionDependentFuncDerWrtPsi(
     const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
       &                                                                src,
     dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
@@ -103,7 +104,7 @@ namespace dftfe
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<ValueType, memorySpace>::updateWaveFunctionDependentFuncDer(
+  ExcDFTPlusU<ValueType, memorySpace>::updateWaveFunctionDependentFuncDerWrtPsi(
     const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrixPtr,
     const std::vector<double> &                           kPointWeights)
   {
@@ -120,12 +121,24 @@ namespace dftfe
   void
   ExcDFTPlusU<ValueType, memorySpace>::computeWaveFunctionDependentExcEnergy(
     const std::shared_ptr<AuxDensityMatrix<memorySpace>> &auxDensityMatrix,
-    const std::vector<double> &                           kPointWeights,
-    double &                                              energyVal,
-    double &                                              energyCorrection)
+    const std::vector<double> &                           kPointWeights)
   {
-    d_hubbardClassPtr->computeEnergyFromOccupationMatrix(energyVal,
-                                                         energyCorrection);
+    d_hubbardClassPtr->computeEnergyFromOccupationMatrix();
+  }
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  double
+  ExcDFTPlusU<ValueType, memorySpace>::getWaveFunctionDependentExcEnergy()
+  {
+    return d_hubbardClassPtr->getHubbardEnergy();
+  }
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  double
+  ExcDFTPlusU<ValueType, memorySpace>::
+    getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi()
+  {
+    return d_hubbardClassPtr->getExpectationOfHubbardPotential();
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>

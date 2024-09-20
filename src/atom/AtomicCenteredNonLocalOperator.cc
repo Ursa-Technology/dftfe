@@ -316,11 +316,6 @@ namespace dftfe
         const unsigned int numberElementsInAtomCompactSupport =
           elementIndexesInAtomCompactSupport.size();
 
-        std::vector<double> integAtomWavefunctions(NumTotalSphericalFunctions *
-                                                   NumTotalSphericalFunctions);
-        std::fill(integAtomWavefunctions.begin(),
-                  integAtomWavefunctions.end(),
-                  0.0);
         unsigned int imageIdsSize = imageCoordinates.size() / 3;
 
         if (numberElementsInAtomCompactSupport > 0)
@@ -622,31 +617,6 @@ namespace dftfe
                       //     iQuadPoint];
                     } // beta
 #else
-
-                for (int iQuadPoint = 0; iQuadPoint < numberQuadraturePoints;
-                     ++iQuadPoint)
-                  {
-                    for (unsigned int iOrb = startIndex; iOrb < endIndex;
-                         iOrb++)
-                      {
-                        for (unsigned int jOrb = startIndex; jOrb < endIndex;
-                             jOrb++)
-                          {
-                            integAtomWavefunctions
-                              [(iOrb) * (NumTotalSphericalFunctions) + jOrb] +=
-                              sphericalFunctionBasis[(iOrb - startIndex) *
-                                                       numberQuadraturePoints +
-                                                     iQuadPoint] *
-                              sphericalFunctionBasis[(jOrb - startIndex) *
-                                                       numberQuadraturePoints +
-                                                     iQuadPoint] *
-                              JxwVector[elementIndex * numberQuadraturePoints +
-                                        iQuadPoint];
-                          }
-                      }
-                  }
-
-                /////////
                 for (unsigned int beta = startIndex; beta < endIndex; beta++)
                   {
                     for (int iQuadPoint = 0;
@@ -678,21 +648,6 @@ namespace dftfe
 
 
           } // element loop
-            /*
-                    std::cout<<" Printing integ atom wave functions \n";
-                    for (unsigned int iOrb = 0; iOrb < NumTotalSphericalFunctions;
-               iOrb++)
-                      {
-                        for (unsigned int jOrb = 0; jOrb <
-               NumTotalSphericalFunctions; jOrb++)
-                          {
-                            std::cout<< integAtomWavefunctions[ (iOrb
-               )*(NumTotalSphericalFunctions)+ jOrb ]
-                              <<" "<<"\n";
-                          }
-                        std::cout<<"\n";
-                      }
-                */
 
         const char         transA = 'N', transB = 'N';
         const double       scalarCoeffAlpha = 1.0, scalarCoeffBeta = 0.0;
@@ -1726,13 +1681,6 @@ namespace dftfe
           dealii::ExcMessage(
             "DFT-FE Error: Inconsistent size of scaling vector. Not same as number of WaveFunctions"));
 
-        //        for( unsigned int iWave = 0; iWave < d_numberWaveFunctions;
-        //        iWave++)
-        //         {
-        //            std::cout<<" iWave = "<<iWave<<" fraction occ =
-        //            "<<scalingVector.data()[iWave]<<"\n";
-        //         }
-
         if constexpr (dftfe::utils::MemorySpace::HOST == memorySpace)
           {
             const std::vector<unsigned int> &atomicNumber =
@@ -1775,27 +1723,6 @@ namespace dftfe
                         return b * dataTypes::number(a);
                       });
                   }
-
-                // std::cout<<" printing in copyBack \n";
-                //                for( unsigned int iWave = 0 ;
-                //                     iWave <
-                //                     sphericalFunctionKetTimesVectorParFlattened.localSize()
-                //                               *sphericalFunctionKetTimesVectorParFlattened.numVectors();
-                //                     iWave++)
-                //                  {
-                //                    std::cout<<" iWave = "<<iWave<<" sph
-                //                    flattened =
-                //                    "<<sphericalFunctionKetTimesVectorParFlattened.data()[iWave]<<"\n";
-                //                  }
-                //
-                // for( unsigned int iWave = 0 ;
-                //     iWave < d_sphericalFnTimesWavefunMatrix[atomId].size();
-                //     iWave++)
-                //  {
-                //    std::cout<<" iWave = "<<iWave<<" sph Wave =
-                //    "<<d_sphericalFnTimesWavefunMatrix[atomId].data()[iWave]<<"\n";
-                //  }
-                //
               }
           }
 #if defined(DFTFE_WITH_DEVICE)
@@ -1806,6 +1733,7 @@ namespace dftfe
               d_sphericalFnTimesVectorDevice);
 
             // scaling kernel
+            // TODO this function does not takes sqrt of the alpha
             dftfe::AtomicCenteredNonLocalOperatorKernelsDevice::
               sqrtAlphaScalingWaveFunctionEntries(
                 d_maxSingleAtomContribution,
@@ -1822,16 +1750,6 @@ namespace dftfe
               d_sphericalFnTimesVectorDevice.size());
             sphericalFnTimesVectorHostTemp.copyFrom(
               d_sphericalFnTimesVectorDevice);
-
-            //	  std::cout<<" printing in copyBack \n";
-            //	  for( unsigned int iWave = 0 ;
-            //                     iWave <
-            //                     sphericalFnTimesVectorHostTemp.size();
-            //                     iWave++)
-            //                  {
-            //                    std::cout<<" iWave = "<<iWave<<" sph Wave =
-            //                    "<<sphericalFnTimesVectorHostTemp.data()[iWave]<<"\n";
-            //                  }
           }
 #endif
       }
@@ -1846,14 +1764,6 @@ namespace dftfe
       {
         const unsigned int atomId = d_atomCenteredSphericalFunctionContainer
                                       ->getAtomIdsInCurrentProcess()[iAtom];
-        //        std::cout<<" iAtom = "<<iAtom<<"\n";
-        //
-        //        for(unsigned int iWave = 0; iWave <
-        //        d_sphericalFnTimesWavefunMatrix[atomId].size(); iWave++)
-        //          {
-        //            std::cout<<" iWave = "<<iWave<<" sphWave =
-        //            "<<d_sphericalFnTimesWavefunMatrix[atomId].data()[iWave]<<"\n";
-        //          }
         return d_sphericalFnTimesWavefunMatrix[atomId].begin();
       }
 #if defined(DFTFE_WITH_DEVICE)
@@ -2003,14 +1913,6 @@ namespace dftfe
                       &beta,
                       &d_sphericalFnTimesWavefunMatrix[atomId][0],
                       d_numberWaveFunctions);
-                    // std::cout << "Scaled Matrix " <<atomId<<" rank:
-                    // "<<d_this_mpi_process<< std::endl;
-                    // for (int i = 0; i < inputMatrix.size(); i++)
-                    //   std::cout <<"Scaled Matrix: "<< inputMatrix[i] << " "
-                    //         << d_sphericalFnTimesWavefunMatrix[atomId][i]<<"
-                    //         "
-                    //         << atomId<<" rank: "<<d_this_mpi_process<<
-                    //         std::endl;
                     if (!flagCopyResultsToMatrix)
                       {
                         d_BLASWrapperPtr->xcopy(
@@ -2161,31 +2063,6 @@ namespace dftfe
                 sphericalFunctionKetTimesVectorParFlattened.updateGhostValues(
                   1);
               }
-            /*
-                  std::cout<<" Prininting after allr eaduce in CConjX\n";
-
-                  for (int iAtom = 0; iAtom < d_totalAtomsInCurrentProc;
-               iAtom++)
-                          {
-                            const unsigned int atomId = atomIdsInProc[iAtom];
-                            unsigned int       Znum   = atomicNumber[atomId];
-                            const unsigned int numberSphericalFunctions =
-                              d_atomCenteredSphericalFunctionContainer
-                                ->getTotalNumberOfSphericalFunctionsPerAtom(Znum);
-                            for (unsigned int alpha = 0; alpha <
-               numberSphericalFunctions; alpha++)
-                              {
-                    for( unsigned int iWave = 0; iWave < d_numberWaveFunctions;
-               iWave++)
-                    {
-                      std::cout<<" iAtom = "<<iAtom<<" alpha = "<<alpha<<" iWave
-               = "<<iWave<<" val =
-               "<<*(d_sphericalFnTimesWavefunMatrix[atomId].begin() +
-               d_numberWaveFunctions * alpha + iWave)<<"\n";
-                    }
-                  }
-                    }
-            */
           }
 #if defined(DFTFE_WITH_DEVICE)
         else
@@ -2205,42 +2082,6 @@ namespace dftfe
                 sphericalFunctionKetTimesVectorParFlattened.updateGhostValues(
                   1);
               }
-            /*
-                 std::cout<<" Prininting after allr eaduce in CConjX\n";
-
-                 const std::vector<unsigned int> atomIdsInProc =
-                         d_atomCenteredSphericalFunctionContainer
-                           ->getAtomIdsInCurrentProcess();
-                       const std::vector<unsigned int> &atomicNumber =
-                         d_atomCenteredSphericalFunctionContainer->getAtomicNumbers();
-
-                 dftfe::utils::MemoryStorage<ValueType,
-               dftfe::utils::MemorySpace::HOST> dataFromDevice;
-                 dataFromDevice.resize(sphericalFunctionKetTimesVectorParFlattened.localSize()*sphericalFunctionKetTimesVectorParFlattened.numVectors());
-                 dataFromDevice.copyFrom(sphericalFunctionKetTimesVectorParFlattened.getData());
-                       for (int iAtom = 0; iAtom < d_totalAtomsInCurrentProc;
-               iAtom++)
-                         {
-                           const unsigned int atomId = atomIdsInProc[iAtom];
-                           unsigned int       Znum   = atomicNumber[atomId];
-                           const unsigned int numberSphericalFunctions =
-                             d_atomCenteredSphericalFunctionContainer
-                               ->getTotalNumberOfSphericalFunctionsPerAtom(Znum);
-                           for (unsigned int alpha = 0; alpha <
-               numberSphericalFunctions; alpha++)
-                             {
-                                     for( unsigned int iWave = 0; iWave <
-               d_numberWaveFunctions; iWave++)
-                                     {
-                                             std::cout<<" iAtom = "<<iAtom<<"
-               alpha = "<<alpha<<" iWave = "<<iWave<<" val =
-               "<<*(dataFromDevice.begin() +
-               iAtom*numberSphericalFunctions*d_numberWaveFunctions +
-               d_numberWaveFunctions * alpha + iWave)<<"\n";
-                                     }
-                             }
-                         }
-                   */
           }
 #endif
       }
@@ -2311,17 +2152,6 @@ namespace dftfe
                   } // iAtom
               }
           } // iElem
-
-        //        std::cout<<"integ Cmatrix = "<<integValue<<"\n";
-        //        std::cout<<" printing sph wave in apply \n";
-        //        for(auto const& [key, val] : d_sphericalFnTimesWavefunMatrix)
-        //          {
-        //            for( unsigned int iOrb = 0; iOrb < val.size(); iOrb++)
-        //              {
-        //                std::cout<<" iOrb = "<<iOrb <<"sph =
-        //                "<<val.data()[iOrb]<<"\n";
-        //              }
-        //          }
       }
 #if defined(DFTFE_WITH_DEVICE)
     else

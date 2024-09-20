@@ -1917,7 +1917,7 @@ namespace dftfe
       std::vector<double> &                           residualNormWaveFunctions,
       unsigned int                                    ipass);
 
-    std::shared_ptr<hubbard<dataTypes::number, memorySpace>> hubbardPtr;
+    std::shared_ptr<hubbard<dataTypes::number, memorySpace>> d_hubbardClassPtr;
     bool                                                     d_useHubbard;
   };
 

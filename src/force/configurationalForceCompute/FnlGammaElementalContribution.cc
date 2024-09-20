@@ -38,7 +38,7 @@ namespace dftfe
                            C_num1DQuadNLPSP<FEOrder>() *
                              C_numCopies1DQuadNLPSP(),
                            3> &            forceEvalNLP,
-      const std::shared_ptr<AtomicCenteredNonLocalOperator<ValueType, memorySpace>>
+      const std::shared_ptr<AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
       nonLocalOp,
       unsigned int numNonLocalAtomsCurrentProcess,
       const std::vector<int> & globalChargeIdNonLocalAtoms,
@@ -237,7 +237,7 @@ namespace dftfe
         dealii::Tensor<1, 3, dealii::VectorizedArray<double>>> &FVectQuads,
       const dealii::MatrixFree<3, double> &                     matrixFreeData,
       const unsigned int                                        numQuadPoints,
-      const std::shared_ptr<AtomicCenteredNonLocalOperator<ValueType, memorySpace>>
+      const std::shared_ptr<AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
                                                     nonLocalOp,
       const unsigned int numNonLocalAtomsCurrentProcess,
       const std::vector<int> & globalChargeIdNonLocalAtoms,

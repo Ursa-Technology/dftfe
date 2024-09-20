@@ -605,6 +605,7 @@ namespace dftfe
         const unsigned int cellsBlockSize,
         const unsigned int innerBlockSizeEnlp,
         const bool         isPsp,
+	const unsigned int innerBlockSizeHubbard,
         const bool         useHubbard,
         const bool         isFloatingChargeForces,
         const bool         addEk)
@@ -693,7 +694,7 @@ namespace dftfe
               flattenedArrayBlock,
               kPointIndex,
               CouplingStructure::dense,
-              oncvClassPtr->getCouplingMatrix(spinIndex),
+              hubbardClassPtr->getCouplingMatrix(spinIndex),
               projectorKetTimesVectorHubbard);
 
           }
@@ -781,7 +782,6 @@ namespace dftfe
             // if (this_process==0 && dftParameters::verbosity>=5)
             //	 std::cout<<"Time for nlpPsiContractionD inside blocked loop:
             //"<<kernel3_time<<std::endl;
-          }
       }
 
     } // namespace
@@ -1147,7 +1147,7 @@ namespace dftfe
                     nlpspQuadratureId,
                     BLASWrapperPtr,
                     oncvClassPtr,
-                    hubbardClassPtr
+                    hubbardClassPtr,
                     kPoint,
                     spinIndex,
                     *flattenedArrayBlockPtr,

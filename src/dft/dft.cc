@@ -1965,7 +1965,7 @@ namespace dftfe
           d_kPointWeights,
           d_domainBoundingVectors);
 
-        hubbardPtr = excHubbPtr->getHubbardClass();
+        d_hubbardClassPtr = excHubbPtr->getHubbardClass();
 
         d_useHubbard = true;
 
@@ -2612,11 +2612,11 @@ namespace dftfe
                   {
                     dftfe::utils::MemoryStorage<double,
                                                 dftfe::utils::MemorySpace::HOST>
-                      &hubbOccIn = hubbardPtr->getOccMatIn();
+                      &hubbOccIn = d_hubbardClassPtr->getOccMatIn();
 
                     dftfe::utils::MemoryStorage<double,
                                                 dftfe::utils::MemorySpace::HOST>
-                      &hubbOccRes = hubbardPtr->getOccMatRes();
+                      &hubbOccRes = d_hubbardClassPtr->getOccMatRes();
                     d_mixingScheme.addVariableToInHist(
                       mixingVariable::hubbardOccupation,
                       hubbOccIn.data(),
@@ -2670,7 +2670,7 @@ namespace dftfe
                         dftfe::utils::MemoryStorage<
                           double,
                           dftfe::utils::MemorySpace::HOST> &hubbOccIn =
-                          hubbardPtr->getOccMatIn();
+                          d_hubbardClassPtr->getOccMatIn();
                         d_hubbOccMatAfterMixing.resize(hubbOccIn.size());
                       }
 

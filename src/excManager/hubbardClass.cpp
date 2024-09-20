@@ -1061,7 +1061,7 @@ namespace dftfe
     return d_hubbardSpeciesData[hubbardIds].numberSphericalFunc;
   }
 
-  emplate <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   unsigned int hubbard<ValueType, memorySpace>::getGlobalAtomId(unsigned int iAtom)
   {
     const std::vector<unsigned int> atomIdsInProc =
@@ -1073,9 +1073,6 @@ namespace dftfe
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void hubbard<ValueType, memorySpace>::initialiseOperatorActionOnX(unsigned int kPointIndex)
-  void
-  hubbard<ValueType, memorySpace>::initialiseOperatorActionOnX(
-    unsigned int kPointIndex)
   {
     d_nonLocalOperator->initialiseOperatorActionOnX(kPointIndex);
   }

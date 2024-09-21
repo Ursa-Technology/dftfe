@@ -69,6 +69,7 @@ SET(TARGET_SRC
   ./src/excManager/AtomicBasisData.cpp
   ./src/excManager/SlaterBasis.cpp
   ./src/excManager/GaussianBasis.cpp
+  ./src/excManager/hubbardClass.cpp
   ./src/poisson/poissonSolverProblem.cc
   ./src/poisson/MultiVectorPoissonLinearSolverProblem.cpp
   ./src/helmholtz/kerkerSolverProblem.cc
@@ -190,6 +191,7 @@ SET(TARGET_SRC
   ./src/atom/AtomCenteredSphericalFunctionCoreDensitySpline.cc
   ./src/atom/AtomCenteredSphericalFunctionLocalPotentialSpline.cc
   ./src/atom/AtomCenteredSphericalFunctionProjectorSpline.cc
+        ./src/atom/AtomCenteredPseudoWavefunctionSpline.cpp
   ./src/TransferBetweenMeshes/InterpolateFromCellToLocalPoints.cpp
   ./src/TransferBetweenMeshes/TransferBetweenMeshesIncompatiblePartitioning.cpp
   ./src/TransferBetweenMeshes/InterpolateCellWiseDataToPoints.cpp

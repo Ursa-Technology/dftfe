@@ -279,7 +279,7 @@ namespace dftfe
               dftPtr->d_BLASWrapperPtr,
               dftPtr->d_oncvClassPtr,
               dftPtr->d_hubbardClassPtr,
-              dftPtr->useHubbard,
+              dftPtr->d_useHubbard,
               dftPtr->d_eigenVectorsFlattenedDevice.begin(),
               d_dftParams.spinPolarized,
               spinIndex,
@@ -328,7 +328,7 @@ namespace dftfe
               dftPtr->d_BLASWrapperPtrHost,
               dftPtr->d_oncvClassPtr,
               dftPtr->d_hubbardClassPtr,
-              dftPtr->useHubbard,
+              dftPtr->d_useHubbard,
               dftPtr->d_eigenVectorsFlattenedHost.begin(),
               d_dftParams.spinPolarized,
               spinIndex,
@@ -470,7 +470,7 @@ namespace dftfe
                                                               nonLocalAtomIdPsP[iAtom]);
               }
 
-            const std::shared_ptr<AtomicCenteredNonLocalOperator<ValueType, memorySpace>>
+            const std::shared_ptr<AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
               oncvNonLocalOp = dftPtr->d_oncvClassPtr->getNonLocalOperator();
             for (unsigned int cell = 0; cell < matrixFreeData.n_cell_batches();
                  ++cell)
@@ -556,7 +556,7 @@ namespace dftfe
                                                                ->getTotalNumberOfSphericalFunctionsForAtomId(iAtom);
               }
 
-            const std::shared_ptr<AtomicCenteredNonLocalOperator<ValueType, memorySpace>>
+            const std::shared_ptr<AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
               hubbardNonLocalOp = dftPtr->d_hubbardClassPtr->getNonLocalOperator();
 
             for (unsigned int cell = 0; cell < matrixFreeData.n_cell_batches();

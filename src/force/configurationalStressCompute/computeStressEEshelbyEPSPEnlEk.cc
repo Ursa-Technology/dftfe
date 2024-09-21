@@ -221,9 +221,14 @@ namespace dftfe
         std::vector<dataTypes::number>
           projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattened;
 
+	std::vector<dataTypes::number>
+          projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard;
+
 #ifdef USE_COMPLEX
         std::vector<dataTypes::number>
           projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened;
+        std::vector<dataTypes::number>
+          projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard;
 #endif
 
         if (isPseudopotential)
@@ -257,7 +262,9 @@ namespace dftfe
               dftPtr->d_nlpspQuadratureId,
               dftPtr->d_BLASWrapperPtr,
               dftPtr->d_oncvClassPtr,
-              dftPtr->d_eigenVectorsFlattenedDevice.begin(),
+              dftPtr->d_hubbardClassPtr,
+	      dftPtr->d_useHubbard,
+	      dftPtr->d_eigenVectorsFlattenedDevice.begin(),
               d_dftParams.spinPolarized,
               spinIndex,
               dftPtr->eigenValues,
@@ -271,8 +278,12 @@ namespace dftfe
               elocWfcEshelbyTensorQuadValuesH.data(),
               projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattened
                 .data(),
+	      projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard
+                .data(),
 #  ifdef USE_COMPLEX
               projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened
+                .data(),
+	      projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard
                 .data(),
 #  endif
               d_mpiCommParent,
@@ -299,6 +310,8 @@ namespace dftfe
               dftPtr->d_nlpspQuadratureId,
               dftPtr->d_BLASWrapperPtrHost,
               dftPtr->d_oncvClassPtr,
+	      dftPtr->d_hubbardClassPtr,
+              dftPtr->d_useHubbard,
               dftPtr->d_eigenVectorsFlattenedHost.begin(),
               d_dftParams.spinPolarized,
               spinIndex,
@@ -313,8 +326,12 @@ namespace dftfe
               elocWfcEshelbyTensorQuadValuesH.data(),
               projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattened
                 .data(),
+	      projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard
+                .data(),
 #ifdef USE_COMPLEX
               projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened
+                .data(),
+	      projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard
                 .data(),
 #endif
               d_mpiCommParent,

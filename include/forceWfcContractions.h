@@ -58,9 +58,13 @@ namespace dftfe
       double *                                eshelbyTensorQuadValuesH,
       dataTypes::number *
         projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedH,
+      dataTypes::number *
+        projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHHubbard,
 #ifdef USE_COMPLEX
       dataTypes::number
         *projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedH,
+      dataTypes::number
+        *projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard,
 #endif
       const MPI_Comm &     mpiCommParent,
       const MPI_Comm &     interBandGroupComm,

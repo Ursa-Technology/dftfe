@@ -2672,7 +2672,7 @@ namespace dftfe
                     dftfe::utils::MemoryStorage<double,
                                                 dftfe::utils::MemorySpace::HOST>
                       &hubbOccMatAfterMixing =
-                        hubbardPtr->getHubbMatrixForMixing();
+                        d_hubbardClassPtr->getHubbMatrixForMixing();
 
                     std::fill(hubbOccMatAfterMixing.begin(),
                               hubbOccMatAfterMixing.end(),
@@ -2683,7 +2683,7 @@ namespace dftfe
                       hubbOccMatAfterMixing.data(),
                       hubbOccMatAfterMixing.size());
 
-                    hubbardPtr->setInOccMatrix(hubbOccMatAfterMixing);
+                    d_hubbardClassPtr->setInOccMatrix(hubbOccMatAfterMixing);
                   }
 
 

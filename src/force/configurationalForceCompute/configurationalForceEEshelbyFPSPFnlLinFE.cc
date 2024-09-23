@@ -319,9 +319,11 @@ namespace dftfe
         else
 #endif
           {
+		  
             MPI_Barrier(d_mpiCommParent);
             double host_time = MPI_Wtime();
-            force::wfcContractionsForceKernelsAllH(
+            
+	    force::wfcContractionsForceKernelsAllH(
               dftPtr->d_basisOperationsPtrHost,
               dftPtr->d_densityQuadratureId,
               dftPtr->d_nlpspQuadratureId,
@@ -357,7 +359,7 @@ namespace dftfe
               d_dftParams.floatingNuclearCharges,
               false,
               d_dftParams);
-
+	      
             MPI_Barrier(d_mpiCommParent);
             host_time = MPI_Wtime() - host_time;
 

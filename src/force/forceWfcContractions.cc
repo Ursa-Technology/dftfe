@@ -1060,17 +1060,17 @@ namespace dftfe
             {
               std::fill(
                 projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHHubbard +
-                  kPoint * totalNonTrivialPseudoWfcs * numQuadsNLP * 3,
+                  kPoint * totalNonTrivialHubbardProjectors * numQuadsNLP * 3,
                 projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHHubbard +
-                  (kPoint + 1) * totalNonTrivialPseudoWfcs * numQuadsNLP * 3,
+                  (kPoint + 1) * totalNonTrivialHubbardProjectors * numQuadsNLP * 3,
                 dataTypes::number(0.0));
 
 #ifdef USE_COMPLEX
               std::fill(
                 projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard +
-                  kPoint * totalNonTrivialPseudoWfcs * numQuadsNLP,
+                  kPoint * totalNonTrivialHubbardProjectors * numQuadsNLP,
                 projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard +
-                  (kPoint + 1) * totalNonTrivialPseudoWfcs * numQuadsNLP,
+                  (kPoint + 1) * totalNonTrivialHubbardProjectors * numQuadsNLP,
                 dataTypes::number(0.0));
 #endif
             }

@@ -1038,6 +1038,7 @@ namespace dftfe
     const unsigned int kPointIndex,
     const unsigned int spinIndex)
   {
+    dst.setValue(0.0);
     if (d_nonLocalOperator->getTotalNonLocalElementsInCurrentProcessor() > 0)
       {
         const unsigned int nCells       = d_BasisOperatorMemPtr->nCells();
@@ -1117,13 +1118,13 @@ namespace dftfe
 
 
             d_BLASWrapperMemPtr->axpyStridedBlockAtomicAdd(
-                                 inputVecSize,
-                                 nDofsPerCell * (cellRange.second - cellRange.first),
-                                 d_cellWaveFunctionMatrixDst.data(),
-                                 dst.data(),
-                                 d_BasisOperatorMemPtr->d_flattenedCellDofIndexToProcessDofIndexMap
-                                     .data() +
-                                   cellRange.first * nDofsPerCell);
+              inputVecSize,
+              nDofsPerCell * (cellRange.second - cellRange.first),
+              d_cellWaveFunctionMatrixDst.data(),
+              dst.data(),
+              d_BasisOperatorMemPtr->d_flattenedCellDofIndexToProcessDofIndexMap
+                  .data() +
+                cellRange.first * nDofsPerCell);
           }
       }
   }

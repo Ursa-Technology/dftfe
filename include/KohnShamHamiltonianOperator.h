@@ -297,8 +297,10 @@ namespace dftfe
 
     std::shared_ptr<hubbard<dataTypes::number, memorySpace>> d_hubbardClassPtr;
     bool                                                     d_useHubbard;
-    dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> d_srcNonLocalTemp;
-    dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> d_dstNonLocalTemp;
+    dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
+      d_srcNonLocalTemp;
+    dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
+      d_dstNonLocalTemp;
 
     dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
       d_mapNodeIdToProcId;

@@ -72,33 +72,16 @@ namespace dftfe
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<ValueType, memorySpace>::
-    applyWaveFunctionDependentFuncDerWrtPsiCheby(
-      const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
-        &                                                                src,
-      dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
-      const unsigned int inputVecSize,
-      const double       factor,
-      const unsigned int kPointIndex,
-      const unsigned int spinIndex)
-  {
-    d_hubbardClassPtr->applyPotentialDueToHubbardCorrectionCheby(
-      src, dst, inputVecSize, factor, kPointIndex, spinIndex);
-  }
-
-  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
-  void
   ExcDFTPlusU<ValueType, memorySpace>::applyWaveFunctionDependentFuncDerWrtPsi(
     const dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
       &                                                                src,
     dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dst,
     const unsigned int inputVecSize,
-    const double       factor,
     const unsigned int kPointIndex,
     const unsigned int spinIndex)
   {
     d_hubbardClassPtr->applyPotentialDueToHubbardCorrection(
-      src, dst, inputVecSize, factor, kPointIndex, spinIndex);
+      src, dst, inputVecSize, kPointIndex, spinIndex);
   }
 
 

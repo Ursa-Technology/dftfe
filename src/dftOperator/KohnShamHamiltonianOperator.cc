@@ -686,6 +686,26 @@ namespace dftfe
                                  d_densityQuadratureID,
                                  false,
                                  false);
+
+    d_basisOperationsPtr->createMultiVector(
+      numWaveFunctions,
+      d_srcNonLocalTemp);
+    d_basisOperationsPtr->createMultiVector(
+      numWaveFunctions,
+      d_dstNonLocalTemp);
+
+    dftfe::utils::MemoryStorage<dftfe::global_size_type,
+                                dftfe::utils::MemorySpace::HOST>
+      nodeIds;
+
+    unsigned int relaventDofs = d_basisOperationsPtr->nRelaventDofs();
+    nodeIds.resize(relaventDofs );
+    for (dftfe::size_type i = 0; i < relaventDofs; i++) {
+        nodeIds.data()[i] = i * numWaveFunctions;
+      }
+    d_mapNodeIdToProcId.resize(relaventDofs);
+    d_mapNodeIdToProcId.copyFrom(nodeIds);
+
     d_numVectorsInternal = numWaveFunctions;
   }
 
@@ -1020,13 +1040,22 @@ namespace dftfe
 
     if (!onlyHPrimePartForFirstOrderDensityMatResponse)
       {
+
+        unsigned int relaventDofs = d_basisOperationsPtr->nRelaventDofs();
+        d_BLASWrapperPtr->stridedBlockScaleCopy(
+          numberWavefunctions, relaventDofs, 1.0, getInverseSqrtMassVector().data(), src.data(),
+          d_srcNonLocalTemp.data(), d_mapNodeIdToProcId.data());
+
         d_excManagerPtr->getExcSSDFunctionalObj()
-          ->applyWaveFunctionDependentFuncDerWrtPsi(src,
-                                                    dst,
+          ->applyWaveFunctionDependentFuncDerWrtPsi(d_srcNonLocalTemp,
+                                                    d_dstNonLocalTemp,
                                                     numberWavefunctions,
-                                                    scalarHX,
                                                     d_kPointIndex,
                                                     d_spinIndex);
+
+        d_BLASWrapperPtr->stridedBlockScaleCopy(
+          numberWavefunctions, relaventDofs, scalarHX, getInverseSqrtMassVector().data(), d_dstNonLocalTemp.data(),
+          dst.data(), d_mapNodeIdToProcId.data());
       }
 
     inverseSqrtMassVectorScaledConstraintsNoneDataInfoPtr
@@ -1210,23 +1239,28 @@ namespace dftfe
 
         if (!onlyHPrimePartForFirstOrderDensityMatResponse)
           {
-            if (d_useHubbard)
-              {
-                src.updateGhostValues();
-                d_basisOperationsPtr->distribute(src);
-                d_excManagerPtr->getExcSSDFunctionalObj()
-                  ->applyWaveFunctionDependentFuncDerWrtPsiCheby(
-                    src,
-                    dst,
-                    numberWavefunctions,
-                    scalarHX,
-                    d_kPointIndex,
-                    d_spinIndex);
+            unsigned int relaventDofs = d_basisOperationsPtr->nRelaventDofs();
 
-                src.zeroOutGhosts();
-                inverseMassVectorScaledConstraintsNoneDataInfoPtr->set_zero(
-                  src);
-              }
+            d_srcNonLocalTemp.getData().conpyFrom(src.getData());
+
+            d_srcNonLocalTemp.updateGhostValues();
+            d_basisOperationsPtr->distribute(d_srcNonLocalTemp);
+
+            d_excManagerPtr->getExcSSDFunctionalObj()
+              ->applyWaveFunctionDependentFuncDerWrtPsi(d_srcNonLocalTemp,
+                                                        d_dstNonLocalTemp,
+                                                        numberWavefunctions,
+                                                        d_kPointIndex,
+                                                        d_spinIndex);
+
+            d_BLASWrapperPtr->stridedBlockScaleCopy(
+              numberWavefunctions,
+              relaventDofs,
+              scalarHX,
+              d_basisOperationsPtr->inverseMassVectorBasisData().data(),
+              d_dstNonLocalTemp.data(),
+              dst.data(),
+              d_mapNodeIdToProcId.data());
           }
 
         inverseMassVectorScaledConstraintsNoneDataInfoPtr

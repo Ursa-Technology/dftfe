@@ -1049,12 +1049,21 @@ namespace dftfe
           d_srcNonLocalTemp.data(),
           d_mapNodeIdToProcId.data());
 
+        d_srcNonLocalTemp.updateGhostValues();
+        d_basisOperationsPtr->distribute(d_srcNonLocalTemp);
+
         d_excManagerPtr->getExcSSDFunctionalObj()
           ->applyWaveFunctionDependentFuncDerWrtPsi(d_srcNonLocalTemp,
                                                     d_dstNonLocalTemp,
                                                     numberWavefunctions,
                                                     d_kPointIndex,
                                                     d_spinIndex);
+
+
+        d_basisOperationsPtr
+          ->d_constraintInfo[d_basisOperationsPtr->d_dofHandlerID]
+          .distribute_slave_to_master(d_dstNonLocalTemp);
+
 
         d_BLASWrapperPtr->axpyStridedBlockAtomicAdd(
           numberWavefunctions,
@@ -1264,6 +1273,11 @@ namespace dftfe
                                                         numberWavefunctions,
                                                         d_kPointIndex,
                                                         d_spinIndex);
+
+
+            d_basisOperationsPtr
+              ->d_constraintInfo[d_basisOperationsPtr->d_dofHandlerID]
+              .distribute_slave_to_master(d_dstNonLocalTemp);
 
             d_BLASWrapperPtr->axpyStridedBlockAtomicAdd(
               numberWavefunctions,

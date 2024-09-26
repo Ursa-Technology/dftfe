@@ -74,6 +74,9 @@ namespace dftfe
     double
     getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi() override;
 
+    void
+    reinitKPointDependentVariables(unsigned int kPointIndex) override;
+
   private:
     NNLDA *                       d_NNLDAPtr;
     std::shared_ptr<xc_func_type> d_funcXPtr;

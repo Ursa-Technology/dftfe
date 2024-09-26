@@ -602,10 +602,7 @@ namespace dftfe
 
     if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
       {
-        if (d_useHubbard)
-          {
-            d_hubbardClassPtr->initialiseOperatorActionOnX(d_kPointIndex);
-          }
+        d_excManagerPtr->getExcSSDFunctionalObj()->reinitKPointDependentVariables(d_kPointIndex);
       }
 
     if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
@@ -937,10 +934,7 @@ namespace dftfe
             d_ONCVnonLocalOperator->initialiseOperatorActionOnX(d_kPointIndex);
           }
 
-        if (d_useHubbard)
-          {
-            d_hubbardClassPtr->initialiseOperatorActionOnX(d_kPointIndex);
-          }
+        d_excManagerPtr->getExcSSDFunctionalObj()->reinitKPointDependentVariables(d_kPointIndex);
       }
     const bool hasNonlocalComponents =
       d_dftParamsPtr->isPseudopotential &&
@@ -1130,10 +1124,7 @@ namespace dftfe
                 d_ONCVnonLocalOperator->initialiseOperatorActionOnX(
                   d_kPointIndex);
               }
-            if (d_useHubbard)
-              {
-                d_hubbardClassPtr->initialiseOperatorActionOnX(d_kPointIndex);
-              }
+            d_excManagerPtr->getExcSSDFunctionalObj()->reinitKPointDependentVariables(d_kPointIndex);
           }
 #pragma omp parallel for num_threads(d_nOMPThreads)
         for (unsigned int iCell = 0; iCell < numCells;

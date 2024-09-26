@@ -169,6 +169,9 @@ namespace dftfe
       const std::vector<xcRemainderOutputDataAttributes> &outputDataAttributes)
       const = 0;
 
+    virtual void
+      reinitKPointDependentVariables(unsigned int kPointIndex) = 0;
+
   protected:
     const std::vector<DensityDescriptorDataAttributes>
       d_densityDescriptorAttributesList;

@@ -77,6 +77,9 @@ namespace dftfe
       const override;
 
     void
+    reinitKPointDependentVariables(unsigned int kPointIndex) override;
+
+    void
     initialiseHubbardClass(
       const MPI_Comm &mpi_comm_parent,
       const MPI_Comm &mpi_comm_domain,

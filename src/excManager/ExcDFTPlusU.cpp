@@ -193,6 +193,14 @@ namespace dftfe
     return d_hubbardClassPtr;
   }
 
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  void
+  ExcDFTPlusU<ValueType, memorySpace>::reinitKPointDependentVariables(unsigned int kPointIndex)
+  {
+    d_hubbardClassPtr->initialiseOperatorActionOnX(kPointIndex);
+  }
+
+
   template class ExcDFTPlusU<dataTypes::number,
                              dftfe::utils::MemorySpace::HOST>;
 #ifdef DFTFE_WITH_DEVICE

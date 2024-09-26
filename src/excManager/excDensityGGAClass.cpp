@@ -319,6 +319,13 @@ namespace dftfe
     return 0.0;
   }
 
+  template <dftfe::utils::MemorySpace memorySpace>
+  void
+  excDensityGGAClass<memorySpace>::reinitKPointDependentVariables(unsigned int kPointIndex)
+  {
+
+  }
+
   template class excDensityGGAClass<dftfe::utils::MemorySpace::HOST>;
 #ifdef DFTFE_WITH_DEVICE
   template class excDensityGGAClass<dftfe::utils::MemorySpace::DEVICE>;

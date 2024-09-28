@@ -57,6 +57,9 @@ namespace dftfe
                       MPI_SUM,
                       mpi_communicator);
 
+	pcout<<" iAtom = " <<iAtom<<" F[0] = "<<forceContributionLocalGammaiAtomGlobal[0]<<
+		" F[1] = "<<forceContributionLocalGammaiAtomGlobal[1]<<
+		" F[2] = "<<forceContributionLocalGammaiAtomGlobal[2]<<"\n";
         for (unsigned int idim = 0; idim < 3; idim++)
           accumForcesVector[iAtom * 3 + idim] +=
             forceContributionLocalGammaiAtomGlobal[idim];

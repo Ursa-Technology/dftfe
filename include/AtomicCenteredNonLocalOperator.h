@@ -65,7 +65,8 @@ namespace dftfe
         basisOperatorPtr,
       std::shared_ptr<AtomCenteredSphericalFunctionContainer>
                       atomCenteredSphericalFunctionContainer,
-      const MPI_Comm &mpi_comm_parent);
+      const MPI_Comm &mpi_comm_parent,
+      const bool      memOptMode = false);
 
     /**
      * @brief Resizes various internal data members and selects the kpoint of interest.
@@ -447,6 +448,7 @@ namespace dftfe
     unsigned int d_locallyOwnedCells;
     unsigned int d_numberWaveFunctions;
     unsigned int d_kPointIndex;
+    bool         d_memoryOptMode;
     bool         d_isMallocCalled = false;
     // Host CMatrix Entries are stored here
     std::vector<std::vector<std::vector<ValueType>>> d_CMatrixEntriesConjugate,

@@ -1,5 +1,11 @@
 set VERBOSITY=0
 set REPRODUCIBLE OUTPUT=true
+
+set USE GPU=true
+subsection GPU
+  set AUTO GPU BLOCK SIZES=true
+end
+
 subsection Geometry
   set NATOMS=2
   set NATOM TYPES=2

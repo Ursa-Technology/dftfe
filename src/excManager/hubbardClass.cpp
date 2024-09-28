@@ -486,162 +486,166 @@ namespace dftfe
 
 
 
-    const ValueType    zero = 0;
-    const unsigned int cellsBlockSize =
-      memorySpace == dftfe::utils::MemorySpace::DEVICE ?
-        d_BasisOperatorMemPtr->nCells() :
-        1;
-    const unsigned int totalLocallyOwnedCells = d_BasisOperatorMemPtr->nCells();
-    const unsigned int numCellBlocks = totalLocallyOwnedCells / cellsBlockSize;
-    const unsigned int remCellBlockSize =
-      totalLocallyOwnedCells - numCellBlocks * cellsBlockSize;
+    if (d_nonLocalOperator->getTotalNonLocalElementsInCurrentProcessor() > 0)
+      {
+        const ValueType    zero = 0;
+        const unsigned int cellsBlockSize =
+          memorySpace == dftfe::utils::MemorySpace::DEVICE ?
+            d_BasisOperatorMemPtr->nCells() :
+            1;
+        const unsigned int totalLocallyOwnedCells = d_BasisOperatorMemPtr->nCells();
+        const unsigned int numCellBlocks = totalLocallyOwnedCells / cellsBlockSize;
+        const unsigned int remCellBlockSize =
+          totalLocallyOwnedCells - numCellBlocks * cellsBlockSize;
 
-    const unsigned int BVec =
-      d_dftParamsPtr->chebyWfcBlockSize; // TODO extend to band parallelisation
+        const unsigned int BVec =
+          d_dftParamsPtr->chebyWfcBlockSize; // TODO extend to band parallelisation
 
-    d_BasisOperatorMemPtr->reinit(BVec, cellsBlockSize, d_densityQuadratureId);
-    const unsigned int numQuadPoints = d_BasisOperatorMemPtr->nQuadsPerCell();
+        d_BasisOperatorMemPtr->reinit(BVec, cellsBlockSize, d_densityQuadratureId);
+        const unsigned int numQuadPoints = d_BasisOperatorMemPtr->nQuadsPerCell();
 
-    dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
-      projectorKetTimesVector;
+        dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
+          projectorKetTimesVector;
 
-    dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
-      *flattenedArrayBlock;
+        dftfe::linearAlgebra::MultiVector<ValueType, memorySpace>
+          *flattenedArrayBlock;
 
-    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-      partialOccupVecHost(BVec, 0.0);
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+          partialOccupVecHost(BVec, 0.0);
 #if defined(DFTFE_WITH_DEVICE)
-    dftfe::utils::MemoryStorage<double, memorySpace> partialOccupVec(
-      partialOccupVecHost.size());
+        dftfe::utils::MemoryStorage<double, memorySpace> partialOccupVec(
+          partialOccupVecHost.size());
 #else
-    auto &partialOccupVec = partialOccupVecHost;
+        auto &partialOccupVec = partialOccupVecHost;
 #endif
 
-    unsigned int numLocalDofs       = d_BasisOperatorHostPtr->nOwnedDofs();
-    unsigned int numNodesPerElement = d_BasisOperatorHostPtr->nDofsPerCell();
-    dftfe::utils::MemoryStorage<ValueType, memorySpace> tempCellNodalData;
-    unsigned int                                        previousSize = 0;
-    for (unsigned int kPoint = 0; kPoint < d_kPointWeights.size(); ++kPoint)
-      {
-        for (unsigned int spinIndex = 0; spinIndex < d_noOfSpin; ++spinIndex)
+        unsigned int numLocalDofs       = d_BasisOperatorHostPtr->nOwnedDofs();
+        unsigned int numNodesPerElement = d_BasisOperatorHostPtr->nDofsPerCell();
+        dftfe::utils::MemoryStorage<ValueType, memorySpace> tempCellNodalData;
+        unsigned int                                        previousSize = 0;
+        for (unsigned int kPoint = 0; kPoint < d_kPointWeights.size(); ++kPoint)
           {
-            d_nonLocalOperator->initialiseOperatorActionOnX(kPoint);
-            for (unsigned int jvec = 0; jvec < d_numberWaveFunctions;
-                 jvec += BVec)
+            for (unsigned int spinIndex = 0; spinIndex < d_noOfSpin; ++spinIndex)
               {
-                const unsigned int currentBlockSize =
-                  std::min(BVec, d_numberWaveFunctions - jvec);
-                flattenedArrayBlock =
-                  &(d_BasisOperatorMemPtr->getMultiVector(currentBlockSize, 0));
-                d_nonLocalOperator->initialiseFlattenedDataStructure(
-                  currentBlockSize, projectorKetTimesVector);
-
-                tempCellNodalData.resize(cellsBlockSize * currentBlockSize *
-                                         numNodesPerElement);
-
-                previousSize = cellsBlockSize * currentBlockSize;
-                if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
+                d_nonLocalOperator->initialiseOperatorActionOnX(kPoint);
+                for (unsigned int jvec = 0; jvec < d_numberWaveFunctions;
+                     jvec += BVec)
                   {
-                    d_nonLocalOperator->initialiseCellWaveFunctionPointers(
-                      tempCellNodalData);
-                  }
+                    const unsigned int currentBlockSize =
+                      std::min(BVec, d_numberWaveFunctions - jvec);
+                    flattenedArrayBlock =
+                      &(d_BasisOperatorMemPtr->getMultiVector(currentBlockSize, 0));
+                    d_nonLocalOperator->initialiseFlattenedDataStructure(
+                      currentBlockSize, projectorKetTimesVector);
 
-                //                if ((jvec + currentBlockSize) <=
-                //                      bandGroupLowHighPlusOneIndices[2 *
-                //                      bandGroupTaskId + 1] &&
-                //                    (jvec + currentBlockSize) >
-                //                      bandGroupLowHighPlusOneIndices[2 *
-                //                      bandGroupTaskId])
-                if (true) /// TODO extend to band parallelisation
-                  {
-                    for (unsigned int iEigenVec = 0;
-                         iEigenVec < currentBlockSize;
-                         ++iEigenVec)
+                    tempCellNodalData.resize(cellsBlockSize * currentBlockSize *
+                                             numNodesPerElement);
+
+                    previousSize = cellsBlockSize * currentBlockSize;
+                    if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
                       {
-                        partialOccupVecHost.data()[iEigenVec] = std::sqrt(
-                          orbitalOccupancy[kPoint]
-                                          [d_numberWaveFunctions * spinIndex +
-                                           jvec + iEigenVec] *
-                          d_kPointWeights[kPoint]);
+                        d_nonLocalOperator->initialiseCellWaveFunctionPointers(
+                          tempCellNodalData);
                       }
 
-                    if (memorySpace == dftfe::utils::MemorySpace::HOST)
-                      for (unsigned int iNode = 0; iNode < numLocalDofs;
-                           ++iNode)
-                        std::memcpy(flattenedArrayBlock->data() +
-                                      iNode * currentBlockSize,
-                                    X->data() +
-                                      numLocalDofs * d_numberWaveFunctions *
-                                        (d_noOfSpin * kPoint + spinIndex) +
-                                      iNode * d_numberWaveFunctions + jvec,
-                                    currentBlockSize * sizeof(ValueType));
-#if defined(DFTFE_WITH_DEVICE)
-                    else if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
-                      d_BLASWrapperMemPtr->stridedCopyToBlockConstantStride(
-                        currentBlockSize,
-                        d_numberWaveFunctions,
-                        numLocalDofs,
-                        jvec,
-                        X->data() + numLocalDofs * d_numberWaveFunctions *
-                                      (d_noOfSpin * kPoint + spinIndex),
-                        flattenedArrayBlock->data());
-#endif
-                    d_BasisOperatorMemPtr->reinit(currentBlockSize,
-                                                  cellsBlockSize,
-                                                  d_densityQuadratureId,
-                                                  false);
-
-                    flattenedArrayBlock->updateGhostValues();
-                    d_BasisOperatorMemPtr->distribute(*(flattenedArrayBlock));
-
-
-                    for (int iblock = 0; iblock < (numCellBlocks + 1); iblock++)
+                    //                if ((jvec + currentBlockSize) <=
+                    //                      bandGroupLowHighPlusOneIndices[2 *
+                    //                      bandGroupTaskId + 1] &&
+                    //                    (jvec + currentBlockSize) >
+                    //                      bandGroupLowHighPlusOneIndices[2 *
+                    //                      bandGroupTaskId])
+                    if (true) /// TODO extend to band parallelisation
                       {
-                        const unsigned int currentCellsBlockSize =
-                          (iblock == numCellBlocks) ? remCellBlockSize :
-                                                      cellsBlockSize;
-                        if (currentCellsBlockSize > 0)
+                        for (unsigned int iEigenVec = 0;
+                             iEigenVec < currentBlockSize;
+                             ++iEigenVec)
                           {
-                            const unsigned int startingCellId =
-                              iblock * cellsBlockSize;
-                            if (currentCellsBlockSize * currentBlockSize !=
-                                previousSize)
-                              {
-                                tempCellNodalData.resize(currentCellsBlockSize *
-                                                         currentBlockSize *
-                                                         numNodesPerElement);
-                                previousSize =
-                                  currentCellsBlockSize * currentBlockSize;
-                              }
-                            d_BasisOperatorMemPtr->extractToCellNodalDataKernel(
-                              *(flattenedArrayBlock),
-                              tempCellNodalData.data(),
-                              std::pair<unsigned int, unsigned int>(
-                                startingCellId,
-                                startingCellId + currentCellsBlockSize));
+                            partialOccupVecHost.data()[iEigenVec] = std::sqrt(
+                              orbitalOccupancy[kPoint]
+                                              [d_numberWaveFunctions * spinIndex +
+                                               jvec + iEigenVec] *
+                              d_kPointWeights[kPoint]);
+                          }
 
-                            d_nonLocalOperator->applyCconjtransOnX(
-                              tempCellNodalData.data(),
-                              std::pair<unsigned int, unsigned int>(
-                                startingCellId,
-                                startingCellId + currentCellsBlockSize));
+                        if (memorySpace == dftfe::utils::MemorySpace::HOST)
+                          for (unsigned int iNode = 0; iNode < numLocalDofs;
+                               ++iNode)
+                            std::memcpy(flattenedArrayBlock->data() +
+                                          iNode * currentBlockSize,
+                                        X->data() +
+                                          numLocalDofs * d_numberWaveFunctions *
+                                            (d_noOfSpin * kPoint + spinIndex) +
+                                          iNode * d_numberWaveFunctions + jvec,
+                                        currentBlockSize * sizeof(ValueType));
+#if defined(DFTFE_WITH_DEVICE)
+                        else if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
+                          d_BLASWrapperMemPtr->stridedCopyToBlockConstantStride(
+                            currentBlockSize,
+                            d_numberWaveFunctions,
+                            numLocalDofs,
+                            jvec,
+                            X->data() + numLocalDofs * d_numberWaveFunctions *
+                                          (d_noOfSpin * kPoint + spinIndex),
+                            flattenedArrayBlock->data());
+#endif
+                        d_BasisOperatorMemPtr->reinit(currentBlockSize,
+                                                      cellsBlockSize,
+                                                      d_densityQuadratureId,
+                                                      false);
+
+                        flattenedArrayBlock->updateGhostValues();
+                        d_BasisOperatorMemPtr->distribute(*(flattenedArrayBlock));
+
+
+                        for (int iblock = 0; iblock < (numCellBlocks + 1); iblock++)
+                          {
+                            const unsigned int currentCellsBlockSize =
+                              (iblock == numCellBlocks) ? remCellBlockSize :
+                                                          cellsBlockSize;
+                            if (currentCellsBlockSize > 0)
+                              {
+                                const unsigned int startingCellId =
+                                  iblock * cellsBlockSize;
+                                if (currentCellsBlockSize * currentBlockSize !=
+                                    previousSize)
+                                  {
+                                    tempCellNodalData.resize(currentCellsBlockSize *
+                                                             currentBlockSize *
+                                                             numNodesPerElement);
+                                    previousSize =
+                                      currentCellsBlockSize * currentBlockSize;
+                                  }
+                                d_BasisOperatorMemPtr->extractToCellNodalDataKernel(
+                                  *(flattenedArrayBlock),
+                                  tempCellNodalData.data(),
+                                  std::pair<unsigned int, unsigned int>(
+                                    startingCellId,
+                                    startingCellId + currentCellsBlockSize));
+
+                                d_nonLocalOperator->applyCconjtransOnX(
+                                  tempCellNodalData.data(),
+                                  std::pair<unsigned int, unsigned int>(
+                                    startingCellId,
+                                    startingCellId + currentCellsBlockSize));
+                              }
                           }
                       }
+                    projectorKetTimesVector.setValue(0.0);
+                    d_nonLocalOperator->applyAllReduceOnCconjtransX(
+                      projectorKetTimesVector);
+                    partialOccupVec.copyFrom(partialOccupVecHost);
+                    d_nonLocalOperator
+                      ->copyBackFromDistributedVectorToLocalDataStructure(
+                        projectorKetTimesVector, partialOccupVec);
+                    computeHubbardOccNumberFromCTransOnX(true,
+                                                         currentBlockSize,
+                                                         spinIndex,
+                                                         kPoint);
                   }
-                projectorKetTimesVector.setValue(0.0);
-                d_nonLocalOperator->applyAllReduceOnCconjtransX(
-                  projectorKetTimesVector);
-                partialOccupVec.copyFrom(partialOccupVecHost);
-                d_nonLocalOperator
-                  ->copyBackFromDistributedVectorToLocalDataStructure(
-                    projectorKetTimesVector, partialOccupVec);
-                computeHubbardOccNumberFromCTransOnX(true,
-                                                     currentBlockSize,
-                                                     spinIndex,
-                                                     kPoint);
               }
           }
       }
+
 
     if (dealii::Utilities::MPI::n_mpi_processes(d_mpi_comm_interPool) > 1)
       {

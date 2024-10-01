@@ -579,6 +579,10 @@ namespace dftfe
       const unsigned int                            numQuadPoints,
       const std::vector<double> &                   jxwQuadsSubCells,
       const unsigned int                            cell,
+      const unsigned int numNonLocalAtomsCurrentProcess,
+      const std::shared_ptr<AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
+                                                    nonLocalOp,
+      const std::vector<unsigned int> & numberPseudoWaveFunctionsPerAtom,
       const std::map<dealii::CellId, unsigned int> &cellIdToCellNumberMap,
       const std::vector<dataTypes::number> &zetalmDeltaVlProductDistImageAtoms,
 #ifdef USE_COMPLEX
@@ -586,7 +590,7 @@ namespace dftfe
         &projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened,
 #endif
       const std::vector<dataTypes::number>
-        &projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattened,
+                &projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattened,
       const bool isSpinPolarized);
 
     void

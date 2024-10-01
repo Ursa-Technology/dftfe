@@ -77,6 +77,8 @@ namespace dftfe
 
     const bool isPseudopotential = d_dftParams.isPseudopotential;
 
+    const bool useHubbard = dftPtr->d_useHubbard;
+
     dealii::FEEvaluation<
       3,
       1,
@@ -250,6 +252,25 @@ namespace dftfe
 #endif
           }
 
+        if (useHubbard)
+          {
+            projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard
+              .resize(numKPoints *
+                        dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                          ->getTotalNonTrivialSphericalFnsOverAllCells() *
+                        numQuadPointsNLP * 3,
+                      dataTypes::number(0.0));
+
+#ifdef USE_COMPLEX
+            projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard
+              .resize(numKPoints *
+                        dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                          ->getTotalNonTrivialSphericalFnsOverAllCells() *
+                        numQuadPointsNLP,
+                      dataTypes::number(0.0));
+#endif
+          }
+
 #if defined(DFTFE_WITH_DEVICE)
         if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
           {
@@ -403,7 +424,7 @@ namespace dftfe
           }             // cell loop
 
 
-        if (isPseudopotential)
+        if (isPseudopotential || useHubbard)
           {
             for (unsigned int cell = 0; cell < matrixFreeData.n_cell_batches();
                  ++cell)
@@ -427,20 +448,89 @@ namespace dftfe
                         jxwQuadsVect[iSubCell];
                   }
 
-                stressEnlElementalContribution(
-                  d_stressKPoints,
-                  matrixFreeData,
-                  numQuadPointsNLP,
-                  jxwQuadsSubCells,
-                  cell,
-                  cellIdToCellNumberMap,
-                  dftPtr->d_oncvClassPtr->getNonLocalOperator()
-                    ->getAtomCenteredKpointTimesSphericalFnTimesDistFromAtomQuadValues(),
+                if(isPseudopotential )
+                  {
+
+                    const unsigned int numNonLocalAtomsCurrentProcessPsp =
+                      (dftPtr->d_oncvClassPtr->getTotalNumberOfAtomsInCurrentProcessor());
+
+                    std::vector<int> nonLocalAtomIdPsP ;
+                    nonLocalAtomIdPsP.resize(numNonLocalAtomsCurrentProcessPsP);
+
+                    std::vector<unsigned int> numberPseudoWaveFunctionsPerAtomPsP;
+                    numberPseudoWaveFunctionsPerAtomPsP.resize(numNonLocalAtomsCurrentProcessPsP);
+
+                    for(unsigned int iAtom = 0 ; iAtom < numNonLocalAtomsCurrentProcessPsp;
+                         iAtom++)
+                      {
+                        nonLocalAtomIdPsP[iAtom] = dftPtr->d_oncvClassPtr->getAtomIdInCurrentProcessor(iAtom);
+
+                        numberPseudoWaveFunctionsPerAtomPsP[iAtom] = dftPtr->d_oncvClassPtr
+                                                                       ->getTotalNumberOfSphericalFunctionsForAtomId(
+                                                                         nonLocalAtomIdPsP[iAtom]);
+                      }
+
+                    const std::shared_ptr<AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
+                      oncvNonLocalOp = dftPtr->d_oncvClassPtr->getNonLocalOperator();
+
+                    stressEnlElementalContribution(
+                      d_stressKPoints,
+                      matrixFreeData,
+                      numQuadPointsNLP,
+                      jxwQuadsSubCells,
+                      cell,
+                      numNonLocalAtomsCurrentProcessPsp,
+                      oncvNonLocalOp,
+                      numberPseudoWaveFunctionsPerAtomPsP,
+                      cellIdToCellNumberMap,
+                      dftPtr->d_oncvClassPtr->getNonLocalOperator()
+                        ->getAtomCenteredKpointTimesSphericalFnTimesDistFromAtomQuadValues(),
 #ifdef USE_COMPLEX
-                  projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened,
+                      projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened,
 #endif
-                  projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattened,
-                  d_dftParams.spinPolarized == 1);
+                      projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattened,
+                      d_dftParams.spinPolarized == 1);
+                  }
+
+                if(useHubbard )
+                  {
+
+
+                    const unsigned int numNonLocalAtomsCurrentProcessHubbard =
+                      (dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                         ->getTotalAtomInCurrentProcessor());
+
+                    std::vector<unsigned int> numberPseudoWaveFunctionsPerAtomHubbard;
+                    numberPseudoWaveFunctionsPerAtomHubbard.resize(numNonLocalAtomsCurrentProcessHubbard);
+                    for(unsigned int iAtom = 0 ; iAtom < numNonLocalAtomsCurrentProcessHubbard;
+                         iAtom++)
+                      {
+                        numberPseudoWaveFunctionsPerAtomHubbard[iAtom] = dftPtr->d_hubbardClassPtr
+                                                                           ->getTotalNumberOfSphericalFunctionsForAtomId(iAtom);
+                      }
+
+                    const std::shared_ptr<AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
+                      hubbardNonLocalOp = dftPtr->d_hubbardClassPtr->getNonLocalOperator();
+
+                    stressEnlElementalContribution(
+                      d_stressKPoints,
+                      matrixFreeData,
+                      numQuadPointsNLP,
+                      jxwQuadsSubCells,
+                      cell,
+                      numNonLocalAtomsCurrentProcessHubbard,
+                      hubbardNonLocalOp,
+                      numberPseudoWaveFunctionsPerAtomHubbard,
+                      cellIdToCellNumberMap,
+                      dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                        ->getAtomCenteredKpointTimesSphericalFnTimesDistFromAtomQuadValues(),
+#ifdef USE_COMPLEX
+                      projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard,
+#endif
+                      projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard,
+                      d_dftParams.spinPolarized == 1);
+                  }
+
 
               } // macro cell loop
           }     // pseudopotential check

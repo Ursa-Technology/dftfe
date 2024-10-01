@@ -584,7 +584,6 @@ namespace dftfe
             for(unsigned int iAtom = 0 ; iAtom < numNonLocalAtomsCurrentProcessHubbard;
                  iAtom++)
               {
-                // TODO initialise this properly
                 globalChargeIdNonLocalAtomHubbard[iAtom] = dftPtr->d_hubbardClassPtr
                                                         ->getGlobalAtomId(iAtom);
                 numberPseudoWaveFunctionsPerAtomHubbard[iAtom] = dftPtr->d_hubbardClassPtr

@@ -308,7 +308,7 @@ namespace dftfe
               d_dftParams.floatingNuclearCharges,
               false,
               d_dftParams);
-
+/*
             double  projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbardNorm = 0.0;
             for ( unsigned int i= 0 ; i < projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard.size(); i++)
               {
@@ -324,7 +324,7 @@ namespace dftfe
                           dftPtr->mpi_communicator);
 
             std::cout<<" Norm of projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbardNorm = "<<projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbardNorm<<"\n";
-
+*/
             MPI_Barrier(d_mpiCommParent);
             device_time = MPI_Wtime() - device_time;
 
@@ -376,6 +376,7 @@ namespace dftfe
               false,
               d_dftParams);
 
+	    /*
       double  projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbardNorm = 0.0;
       for ( unsigned int i= 0 ; i < projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard.size(); i++)
         {
@@ -392,7 +393,7 @@ namespace dftfe
 
       std::cout<<" Norm of projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbardNorm = "<<projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbardNorm<<"\n";
 
-
+*/
       MPI_Barrier(d_mpiCommParent);
             host_time = MPI_Wtime() - host_time;
 

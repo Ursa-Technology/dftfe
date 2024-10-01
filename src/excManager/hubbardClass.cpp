@@ -486,8 +486,6 @@ namespace dftfe
 
 
 
-    if (d_nonLocalOperator->getTotalNonLocalElementsInCurrentProcessor() > 0)
-      {
         const ValueType    zero = 0;
         const unsigned int cellsBlockSize =
           memorySpace == dftfe::utils::MemorySpace::DEVICE ?
@@ -622,12 +620,16 @@ namespace dftfe
                                     startingCellId,
                                     startingCellId + currentCellsBlockSize));
 
-                                d_nonLocalOperator->applyCconjtransOnX(
+				if (d_nonLocalOperator->getTotalNonLocalElementsInCurrentProcessor() > 0)
+				{
+					d_nonLocalOperator->applyCconjtransOnX(
                                   tempCellNodalData.data(),
                                   std::pair<unsigned int, unsigned int>(
                                     startingCellId,
                                     startingCellId + currentCellsBlockSize));
-                              }
+				}
+                              
+			      }
                           }
                       }
                     projectorKetTimesVector.setValue(0.0);
@@ -644,7 +646,6 @@ namespace dftfe
                   }
               }
           }
-      }
 
 
     if (dealii::Utilities::MPI::n_mpi_processes(d_mpi_comm_interPool) > 1)

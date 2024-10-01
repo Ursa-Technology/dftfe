@@ -2037,7 +2037,9 @@ namespace dftfe
                   d_maxSingleAtomContribution * d_numberWaveFunctions,
                   d_totalAtomsInCurrentProc);
                 if (flagCopyResultsToMatrix)
-                  dftfe::AtomicCenteredNonLocalOperatorKernelsDevice::
+                  
+		{
+			dftfe::AtomicCenteredNonLocalOperatorKernelsDevice::
                     copyFromParallelNonLocalVecToAllCellsVec(
                       d_numberWaveFunctions,
                       d_totalNonlocalElems,
@@ -2046,6 +2048,13 @@ namespace dftfe
                       d_sphericalFnTimesVectorAllCellsDevice.begin(),
                       d_indexMapFromPaddedNonLocalVecToParallelNonLocalVecDevice
                         .begin());
+		}
+		else
+		{
+                  copyPaddedMemoryStorageVectorToDistributeVectorDevice(
+                    d_couplingMatrixTimesVectorDevice,
+                    sphericalFunctionKetTimesVectorParFlattened);
+		}
               }
           }
 #endif

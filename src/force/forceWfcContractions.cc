@@ -686,7 +686,7 @@ namespace dftfe
               CouplingStructure::diagonal,
               oncvClassPtr->getCouplingMatrix(),
               projectorKetTimesVector);
-
+/*
 
             dftfe::utils::MemoryStorage<dataTypes::number,
                                         dftfe::utils::MemorySpace::HOST>
@@ -698,19 +698,22 @@ namespace dftfe
 
             double projectorKetTimesVectorHostDataNorm = 0.0;
 
-            for( unsigned int i = 0; i < projectorKetTimesVectorHostData.size(); projectorKetTimesVectorHostData++)
+            for( unsigned int i = 0; i < projectorKetTimesVectorHostData.size(); i++)
               {
                 projectorKetTimesVectorHostDataNorm += projectorKetTimesVectorHostData.data()[i]*
                                                        projectorKetTimesVectorHostData.data()[i];
               }
 
             std::cout<<" projectorKetTimesVectorHostDataNorm = "<<projectorKetTimesVectorHostDataNorm<<"\n";
-
+*/
 
           }
 
         if (useHubbard)
           {
+		  flattenedArrayBlock.updateGhostValues();
+        basisOperationsPtr->distribute(flattenedArrayBlock);
+
             hubbardClassPtr->getNonLocalOperator()->applyVCconjtransOnX(
               flattenedArrayBlock,
               kPointIndex,
@@ -718,6 +721,7 @@ namespace dftfe
               hubbardClassPtr->getCouplingMatrix(spinIndex),
               projectorKetTimesVectorHubbard);
 
+	    /*
             dftfe::utils::MemoryStorage<dataTypes::number,
                                         dftfe::utils::MemorySpace::HOST>
               projectorKetTimesVectorHubbardHostData;
@@ -728,14 +732,15 @@ namespace dftfe
 
             double projectorKetTimesVectorHubbardHostDataNorm = 0.0;
 
-            for( unsigned int i = 0; i < projectorKetTimesVectorHubbardHostData.size(); projectorKetTimesVectorHubbardHostData++)
+            for( unsigned int i = 0; i < projectorKetTimesVectorHubbardHostData.size(); i++)
               {
+		std::cout<<" i = "<<i<<" HubbardHostData = "<<projectorKetTimesVectorHubbardHostData.data()[i]<<"\n";
                 projectorKetTimesVectorHubbardHostDataNorm += projectorKetTimesVectorHubbardHostData.data()[i]*
                                                               projectorKetTimesVectorHubbardHostData.data()[i];
               }
 
             std::cout<<" projectorKetTimesVectorHubbardHostDataNorm = "<<projectorKetTimesVectorHubbardHostDataNorm<<"\n";
-
+*/
 
           }
 

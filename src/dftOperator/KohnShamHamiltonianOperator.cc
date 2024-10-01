@@ -1037,6 +1037,9 @@ namespace dftfe
             cellRange.first * numDoFsPerCell);
       }
 
+    inverseSqrtMassVectorScaledConstraintsNoneDataInfoPtr
+      ->distribute_slave_to_master(dst);
+
     if ( (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::DFTPlusU)
         || (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::HYBRID)
         || (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::MGGA))
@@ -1076,9 +1079,6 @@ namespace dftfe
           dst.data(),
           d_mapNodeIdToProcId.data());
       }
-
-    inverseSqrtMassVectorScaledConstraintsNoneDataInfoPtr
-      ->distribute_slave_to_master(dst);
 
     src.zeroOutGhosts();
     inverseSqrtMassVectorScaledConstraintsNoneDataInfoPtr->set_zero(src);
@@ -1251,6 +1251,10 @@ namespace dftfe
                   .data() +
                 cellRange.first * numDoFsPerCell);
           }
+
+        inverseMassVectorScaledConstraintsNoneDataInfoPtr
+          ->distribute_slave_to_master(dst);
+
         if ( (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::DFTPlusU)
                 || (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::HYBRID)
                 || (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::MGGA))
@@ -1287,9 +1291,6 @@ namespace dftfe
               dst.data(),
               d_mapNodeIdToProcId.data());
           }
-
-        inverseMassVectorScaledConstraintsNoneDataInfoPtr
-          ->distribute_slave_to_master(dst);
       }
     if (!skip1 && !skip2 && !skip3)
       {

@@ -602,7 +602,8 @@ namespace dftfe
 
     if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
       {
-        d_excManagerPtr->getExcSSDFunctionalObj()->reinitKPointDependentVariables(d_kPointIndex);
+        d_excManagerPtr->getExcSSDFunctionalObj()
+          ->reinitKPointDependentVariables(d_kPointIndex);
       }
 
     if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
@@ -685,8 +686,10 @@ namespace dftfe
                                  false);
 
     // TODO extend to MGGA if required
-    if ( (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::DFTPlusU)
-        || (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::HYBRID) )
+    if ((d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+         ExcFamilyType::DFTPlusU) ||
+        (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+         ExcFamilyType::HYBRID))
       {
         d_basisOperationsPtr->createMultiVector(numWaveFunctions,
                                                 d_srcNonLocalTemp);
@@ -940,7 +943,8 @@ namespace dftfe
             d_ONCVnonLocalOperator->initialiseOperatorActionOnX(d_kPointIndex);
           }
 
-        d_excManagerPtr->getExcSSDFunctionalObj()->reinitKPointDependentVariables(d_kPointIndex);
+        d_excManagerPtr->getExcSSDFunctionalObj()
+          ->reinitKPointDependentVariables(d_kPointIndex);
       }
     const bool hasNonlocalComponents =
       d_dftParamsPtr->isPseudopotential &&
@@ -1040,9 +1044,12 @@ namespace dftfe
     inverseSqrtMassVectorScaledConstraintsNoneDataInfoPtr
       ->distribute_slave_to_master(dst);
 
-    if ( (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::DFTPlusU)
-        || (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::HYBRID)
-        || (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::MGGA))
+    if ((d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+         ExcFamilyType::DFTPlusU) ||
+        (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+         ExcFamilyType::HYBRID) ||
+        (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+         ExcFamilyType::MGGA))
       {
         unsigned int relaventDofs = d_basisOperationsPtr->nRelaventDofs();
         d_BLASWrapperPtr->stridedBlockScaleCopy(
@@ -1132,7 +1139,8 @@ namespace dftfe
                 d_ONCVnonLocalOperator->initialiseOperatorActionOnX(
                   d_kPointIndex);
               }
-            d_excManagerPtr->getExcSSDFunctionalObj()->reinitKPointDependentVariables(d_kPointIndex);
+            d_excManagerPtr->getExcSSDFunctionalObj()
+              ->reinitKPointDependentVariables(d_kPointIndex);
           }
 #pragma omp parallel for num_threads(d_nOMPThreads)
         for (unsigned int iCell = 0; iCell < numCells;
@@ -1255,9 +1263,12 @@ namespace dftfe
         inverseMassVectorScaledConstraintsNoneDataInfoPtr
           ->distribute_slave_to_master(dst);
 
-        if ( (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::DFTPlusU)
-                || (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::HYBRID)
-                || (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::MGGA))
+        if ((d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+             ExcFamilyType::DFTPlusU) ||
+            (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+             ExcFamilyType::HYBRID) ||
+            (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+             ExcFamilyType::MGGA))
           {
             unsigned int relaventDofs = d_basisOperationsPtr->nRelaventDofs();
 

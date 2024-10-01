@@ -170,7 +170,7 @@ namespace dftfe
       const = 0;
 
     virtual void
-      reinitKPointDependentVariables(unsigned int kPointIndex) = 0;
+    reinitKPointDependentVariables(unsigned int kPointIndex) = 0;
 
   protected:
     const std::vector<DensityDescriptorDataAttributes>

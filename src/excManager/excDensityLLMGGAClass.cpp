@@ -640,10 +640,9 @@ namespace dftfe
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
-  excDensityLLMGGAClass<memorySpace>::reinitKPointDependentVariables(unsigned int kPointIndex)
-  {
-
-  }
+  excDensityLLMGGAClass<memorySpace>::reinitKPointDependentVariables(
+    unsigned int kPointIndex)
+  {}
 
   template class excDensityLLMGGAClass<dftfe::utils::MemorySpace::HOST>;
 #ifdef DFTFE_WITH_DEVICE

@@ -195,7 +195,8 @@ namespace dftfe
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   void
-  ExcDFTPlusU<ValueType, memorySpace>::reinitKPointDependentVariables(unsigned int kPointIndex)
+  ExcDFTPlusU<ValueType, memorySpace>::reinitKPointDependentVariables(
+    unsigned int kPointIndex)
   {
     d_hubbardClassPtr->initialiseOperatorActionOnX(kPointIndex);
   }

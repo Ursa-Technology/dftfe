@@ -775,6 +775,7 @@ namespace dftfe
     const unsigned int nCells       = d_basisOperationsPtr->nCells();
     const unsigned int nDofsPerCell = d_basisOperationsPtr->nDofsPerCell();
     d_cellHamiltonianMatrixExtPot.resize(nCells * nDofsPerCell * nDofsPerCell);
+    d_cellHamiltonianMatrixExtPot.setValue(0.0);
     d_basisOperationsPtr->computeWeightedCellMassMatrix(
       std::pair<unsigned int, unsigned int>(0, nCells),
       d_VeffExtPotJxW,

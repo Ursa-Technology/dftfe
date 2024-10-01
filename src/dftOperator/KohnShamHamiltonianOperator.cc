@@ -684,10 +684,16 @@ namespace dftfe
                                  false,
                                  false);
 
-    d_basisOperationsPtr->createMultiVector(numWaveFunctions,
-                                            d_srcNonLocalTemp);
-    d_basisOperationsPtr->createMultiVector(numWaveFunctions,
-                                            d_dstNonLocalTemp);
+    // TODO extend to MGGA if required
+    if ( (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::DFTPlusU)
+        || (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::HYBRID) )
+      {
+        d_basisOperationsPtr->createMultiVector(numWaveFunctions,
+                                                d_srcNonLocalTemp);
+        d_basisOperationsPtr->createMultiVector(numWaveFunctions,
+                                                d_dstNonLocalTemp);
+      }
+
 
     dftfe::utils::MemoryStorage<dftfe::global_size_type,
                                 dftfe::utils::MemorySpace::HOST>
@@ -1031,7 +1037,9 @@ namespace dftfe
             cellRange.first * numDoFsPerCell);
       }
 
-    if (!onlyHPrimePartForFirstOrderDensityMatResponse)
+    if ( (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::DFTPlusU)
+        || (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::HYBRID)
+        || (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::MGGA))
       {
         unsigned int relaventDofs = d_basisOperationsPtr->nRelaventDofs();
         d_BLASWrapperPtr->stridedBlockScaleCopy(
@@ -1243,9 +1251,9 @@ namespace dftfe
                   .data() +
                 cellRange.first * numDoFsPerCell);
           }
-
-
-        if (!onlyHPrimePartForFirstOrderDensityMatResponse)
+        if ( (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::DFTPlusU)
+                || (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::HYBRID)
+                || (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() == ExcFamilyType::MGGA))
           {
             unsigned int relaventDofs = d_basisOperationsPtr->nRelaventDofs();
 

@@ -451,7 +451,7 @@ namespace dftfe
                 if(isPseudopotential )
                   {
 
-                    const unsigned int numNonLocalAtomsCurrentProcessPsp =
+                    const unsigned int numNonLocalAtomsCurrentProcessPsP =
                       (dftPtr->d_oncvClassPtr->getTotalNumberOfAtomsInCurrentProcessor());
 
                     std::vector<int> nonLocalAtomIdPsP ;
@@ -460,7 +460,7 @@ namespace dftfe
                     std::vector<unsigned int> numberPseudoWaveFunctionsPerAtomPsP;
                     numberPseudoWaveFunctionsPerAtomPsP.resize(numNonLocalAtomsCurrentProcessPsP);
 
-                    for(unsigned int iAtom = 0 ; iAtom < numNonLocalAtomsCurrentProcessPsp;
+                    for(unsigned int iAtom = 0 ; iAtom < numNonLocalAtomsCurrentProcessPsP;
                          iAtom++)
                       {
                         nonLocalAtomIdPsP[iAtom] = dftPtr->d_oncvClassPtr->getAtomIdInCurrentProcessor(iAtom);
@@ -479,7 +479,7 @@ namespace dftfe
                       numQuadPointsNLP,
                       jxwQuadsSubCells,
                       cell,
-                      numNonLocalAtomsCurrentProcessPsp,
+                      numNonLocalAtomsCurrentProcessPsP,
                       oncvNonLocalOp,
                       numberPseudoWaveFunctionsPerAtomPsP,
                       cellIdToCellNumberMap,

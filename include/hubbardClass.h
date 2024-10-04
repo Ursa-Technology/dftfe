@@ -79,7 +79,8 @@ namespace dftfe
      */
     hubbard(const MPI_Comm &mpi_comm_parent,
             const MPI_Comm &mpi_comm_domain,
-            const MPI_Comm &mpi_comm_interPool);
+            const MPI_Comm &mpi_comm_interPool,
+            const MPI_Comm &mpi_comm_interBandGroup);
 
     /*
      * @brief The init function that initialises the relevant data members of the class
@@ -306,8 +307,11 @@ namespace dftfe
     const MPI_Comm d_mpi_comm_parent;
     const MPI_Comm d_mpi_comm_domain;
     const MPI_Comm d_mpi_comm_interPool;
+    const MPI_Comm d_mpi_comm_interBand;
 
     unsigned int n_mpi_processes, this_mpi_process;
+
+    std::vector<unsigned int> d_bandGroupLowHighPlusOneIndices;
 
     unsigned int              d_numSpins;
     std::vector<unsigned int> d_procLocalAtomId;

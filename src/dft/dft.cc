@@ -165,6 +165,7 @@ namespace dftfe
     , d_mixingScheme(mpi_comm_parent, mpi_comm_domain, dftParams.verbosity)
   {
     d_nOMPThreads = 1;
+    d_useHubbard = false;
     if (const char *penv = std::getenv("DFTFE_NUM_THREADS"))
       {
         try
@@ -1330,6 +1331,8 @@ namespace dftfe
                                     d_kPointWeights.size(),
                                   true);
 
+
+    initHubbardOperator();
     initializeKohnShamDFTOperator();
 
     d_netFloatingDispSinceLastCheckForSmearedChargeOverlaps.clear();
@@ -1337,6 +1340,82 @@ namespace dftfe
       atomLocations.size() * 3, 0.0);
 
     computingTimerStandard.leave_subsection("KSDFT problem initialization");
+  }
+
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  void
+    dftClass<FEOrder, FEOrderElectro, memorySpace>::initHubbardOperator()
+  {
+    if (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+        ExcFamilyType::DFTPlusU)
+      {
+        std::shared_ptr<ExcDFTPlusU<dataTypes::number, memorySpace>>
+          excHubbPtr = std::dynamic_pointer_cast<
+            ExcDFTPlusU<dataTypes::number, memorySpace>>(
+            d_excManagerPtr->getSSDSharedObj());
+
+        excHubbPtr->initialiseHubbardClass(
+          d_mpiCommParent,
+          mpi_communicator,
+          interpoolcomm,
+          interBandGroupComm,
+          getBasisOperationsMemSpace(),
+          getBasisOperationsHost(),
+          getBLASWrapperMemSpace(),
+          getBLASWrapperHost(),
+          d_densityDofHandlerIndex,
+          d_nlpspQuadratureId,
+          d_sparsityPatternQuadratureId,
+          d_numEigenValues, // The total number of waveFunctions that are passed
+                            // to the operator
+          d_dftParamsPtr->spinPolarized == 1 ? 2 : 1,
+          *d_dftParamsPtr,
+          d_dftfeScratchFolderName,
+          false, // singlePrecNonLocalOperator
+          true,  // updateNonlocalSparsity
+          atomLocations,
+          atomLocationsFractional,
+          d_imageIds,
+          d_imagePositions,
+          d_kPointCoordinates,
+          d_kPointWeights,
+          d_domainBoundingVectors);
+
+        d_hubbardClassPtr = excHubbPtr->getHubbardClass();
+
+        d_useHubbard = true;
+
+        AssertThrow(d_nOMPThreads == 1,
+                    dealii::ExcMessage(
+                      "open mp is not compatible with hubbard "));
+
+        AssertThrow(d_dftParamsPtr->mixingMethod != "LOW_RANK_DIELECM_PRECOND",
+                    dealii::ExcMessage(
+                      "LRDM preconditioner is not compatible with hubbard "));
+
+        // band group parallelization data structures
+        const unsigned int numberBandGroups =
+          dealii::Utilities::MPI::n_mpi_processes(interBandGroupComm);
+
+        AssertThrow(numberBandGroups == 1,
+                    dealii::ExcMessage(
+                      "Band parallelisation is not compatible with hubbard "));
+
+        AssertThrow(
+          d_dftParamsPtr->overlapComputeCommunCheby == false,
+          dealii::ExcMessage(
+            "overlap compute communication in cheby is not compatible with hubbard "));
+        AssertThrow(d_dftParamsPtr->useSinglePrecCheby == false,
+                    dealii::ExcMessage(
+                      "single prec in cheby is not compatible with hubbard "));
+
+        AssertThrow(d_dftParamsPtr->solverMode != "NSCF",
+                    dealii::ExcMessage(
+                      "Hubbard correction is not implemented for NSCF mode"));
+      }
   }
 
   template <unsigned int              FEOrder,
@@ -1539,6 +1618,8 @@ namespace dftfe
     double init_ksoperator;
     MPI_Barrier(d_mpiCommParent);
     init_ksoperator = MPI_Wtime();
+
+    initHubbardOperator();
 
     if (isMeshDeformed)
       initializeKohnShamDFTOperator();
@@ -1930,74 +2011,6 @@ namespace dftfe
 
     if (d_kohnShamDFTOperatorsInitialized)
       finalizeKohnShamDFTOperator();
-
-    d_useHubbard = false;
-    if (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
-        ExcFamilyType::DFTPlusU)
-      {
-        std::shared_ptr<ExcDFTPlusU<dataTypes::number, memorySpace>>
-          excHubbPtr = std::dynamic_pointer_cast<
-            ExcDFTPlusU<dataTypes::number, memorySpace>>(
-            d_excManagerPtr->getSSDSharedObj());
-
-        excHubbPtr->initialiseHubbardClass(
-          d_mpiCommParent,
-          mpi_communicator,
-          interpoolcomm,
-          getBasisOperationsMemSpace(),
-          getBasisOperationsHost(),
-          getBLASWrapperMemSpace(),
-          getBLASWrapperHost(),
-          d_densityDofHandlerIndex,
-          d_nlpspQuadratureId,
-          d_sparsityPatternQuadratureId,
-          d_numEigenValues, // The total number of waveFunctions that are passed
-                            // to the operator
-          d_dftParamsPtr->spinPolarized == 1 ? 2 : 1,
-          *d_dftParamsPtr,
-          d_dftfeScratchFolderName,
-          false, // singlePrecNonLocalOperator
-          true,  // updateNonlocalSparsity
-          atomLocations,
-          atomLocationsFractional,
-          d_imageIds,
-          d_imagePositions,
-          d_kPointCoordinates,
-          d_kPointWeights,
-          d_domainBoundingVectors);
-
-        d_hubbardClassPtr = excHubbPtr->getHubbardClass();
-
-        d_useHubbard = true;
-
-        AssertThrow(d_nOMPThreads == 1,
-                    dealii::ExcMessage(
-                      "open mp is not compatible with hubbard "));
-
-        AssertThrow(d_dftParamsPtr->mixingMethod != "LOW_RANK_DIELECM_PRECOND",
-                    dealii::ExcMessage(
-                      "LRDM preconditioner is not compatible with hubbard "));
-
-        // band group parallelization data structures
-        const unsigned int numberBandGroups =
-          dealii::Utilities::MPI::n_mpi_processes(interBandGroupComm);
-
-        AssertThrow(numberBandGroups == 1,
-                    dealii::ExcMessage(
-                      "Band parallelisation is not compatible with hubbard "));
-
-        AssertThrow(
-          d_dftParamsPtr->overlapComputeCommunCheby == false,
-          dealii::ExcMessage(
-            "overlap compute communication in cheby is not compatible with hubbard "));
-        AssertThrow(d_dftParamsPtr->useSinglePrecCheby == false,
-                    dealii::ExcMessage(
-                      "single prec in cheby is not compatible with hubbard "));
-
-        AssertThrow(d_dftParamsPtr->solverMode != "NSCF",
-                    dealii::ExcMessage(
-                      "Hubbard correction is not implemented for NSCF mode"));
-      }
 
 
 #ifdef DFTFE_WITH_DEVICE

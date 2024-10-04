@@ -730,7 +730,14 @@ namespace dftfe
     void
     initImageChargesUpdateKPoints(bool flag = true);
 
+    /**
+     * @brief Checks if the Exc functional requires Hubbard correction
+     * and sets up the Hubbard class if required.
+     */
     void
+    initHubbardOperator();
+
+      void
     determineAtomsOfInterstPseudopotential(
       const std::vector<std::vector<double>> &atomCoordinates);
 

@@ -130,6 +130,7 @@ namespace dftfe
     const MPI_Comm &mpi_comm_parent,
     const MPI_Comm &mpi_comm_domain,
     const MPI_Comm &mpi_comm_interPool,
+    const MPI_Comm &mpi_comm_interBandGroup,
     std::shared_ptr<
       dftfe::basis::FEBasisOperations<ValueType, double, memorySpace>>
       basisOperationsMemPtr,
@@ -162,7 +163,8 @@ namespace dftfe
     d_hubbardClassPtr =
       std::make_shared<hubbard<ValueType, memorySpace>>(mpi_comm_parent,
                                                         mpi_comm_domain,
-                                                        mpi_comm_interPool);
+                                                        mpi_comm_interPool,
+                                                        mpi_comm_interBandGroup);
 
     d_hubbardClassPtr->init(basisOperationsMemPtr,
                             basisOperationsHostPtr,

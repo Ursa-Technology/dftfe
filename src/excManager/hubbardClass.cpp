@@ -35,10 +35,12 @@ namespace dftfe
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   hubbard<ValueType, memorySpace>::hubbard(const MPI_Comm &mpi_comm_parent,
                                            const MPI_Comm &mpi_comm_domain,
-                                           const MPI_Comm &mpi_comm_interPool)
+                                           const MPI_Comm &mpi_comm_interPool,
+                                           const MPI_Comm &mpi_comm_interBandGroup)
     : d_mpi_comm_parent(mpi_comm_parent)
     , d_mpi_comm_domain(mpi_comm_domain)
     , d_mpi_comm_interPool(mpi_comm_interPool)
+    , d_mpi_comm_interBand(mpi_comm_interBandGroup)
     , pcout(std::cout,
             (dealii::Utilities::MPI::this_mpi_process(d_mpi_comm_parent) == 0))
   {
@@ -180,6 +182,9 @@ namespace dftfe
 
     MPI_Barrier(d_mpi_comm_domain);
     double endRead = MPI_Wtime();
+
+    dftUtils::createBandParallelizationIndices(
+      d_mpi_comm_interBand, d_numberWaveFunctions, d_bandGroupLowHighPlusOneIndices);
 
 
     d_spinPolarizedFactor = (d_dftParamsPtr->spinPolarized == 1) ? 1.0 : 2.0;
@@ -517,6 +522,9 @@ namespace dftfe
         auto &partialOccupVec = partialOccupVecHost;
 #endif
 
+        const unsigned int bandGroupTaskId =
+          dealii::Utilities::MPI::this_mpi_process(d_mpi_comm_interBand);
+
         unsigned int numLocalDofs       = d_BasisOperatorHostPtr->nOwnedDofs();
         unsigned int numNodesPerElement = d_BasisOperatorHostPtr->nDofsPerCell();
         dftfe::utils::MemoryStorage<ValueType, memorySpace> tempCellNodalData;
@@ -546,13 +554,12 @@ namespace dftfe
                           tempCellNodalData);
                       }
 
-                    //                if ((jvec + currentBlockSize) <=
-                    //                      bandGroupLowHighPlusOneIndices[2 *
-                    //                      bandGroupTaskId + 1] &&
-                    //                    (jvec + currentBlockSize) >
-                    //                      bandGroupLowHighPlusOneIndices[2 *
-                    //                      bandGroupTaskId])
-                    if (true) /// TODO extend to band parallelisation
+                                    if ( ( (jvec + currentBlockSize) <=
+                          d_bandGroupLowHighPlusOneIndices[2 *
+                                          bandGroupTaskId + 1] ) &&
+                                        ((jvec + currentBlockSize) >
+                          d_bandGroupLowHighPlusOneIndices[2 *
+                                          bandGroupTaskId]))
                       {
                         for (unsigned int iEigenVec = 0;
                              iEigenVec < currentBlockSize;
@@ -648,6 +655,15 @@ namespace dftfe
           }
 
 
+        if ( dealii::Utilities::MPI::n_mpi_processes(d_mpi_comm_interBand) > 1)
+          {
+            MPI_Allreduce(MPI_IN_PLACE,
+                          d_occupationMatrix[HubbardOccFieldType::Out].data(),
+                          d_numSpins * d_numTotalOccMatrixEntriesPerSpin,
+                          MPI_DOUBLE,
+                          MPI_SUM,
+                          d_mpi_comm_interBand);
+          }
     if (dealii::Utilities::MPI::n_mpi_processes(d_mpi_comm_interPool) > 1)
       {
         MPI_Allreduce(MPI_IN_PLACE,

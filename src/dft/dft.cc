@@ -2131,7 +2131,7 @@ namespace dftfe
   dftClass<FEOrder, FEOrderElectro, memorySpace>::
     reInitializeKohnShamDFTOperator()
   {
-    d_kohnShamDFTOperatorPtr->resetExtPotHamFlag();
+    d_kohnShamDFTOperatorPtr->resetKohnShamOp();
   }
 
   //

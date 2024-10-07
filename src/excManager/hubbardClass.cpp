@@ -1088,16 +1088,16 @@ namespace dftfe
         d_cellWaveFunctionMatrixDst.setValue(0.0);
         d_cellWaveFunctionMatrixSrc.setValue(0.0);
         Assert(
-          d_cellWaveFunctionMatrixSrc.size() <
+          d_cellWaveFunctionMatrixSrc.size() >=
             nCells * nDofsPerCell * inputVecSize,
           dealii::ExcMessage(
             "DFT-FE Error: d_cellWaveFunctionMatrixSrc in Hubbard is not set properly. Call initialiseCellWaveFunctionPointers()."));
 
         Assert(
-          d_cellWaveFunctionMatrixDst.size() <
+          d_cellWaveFunctionMatrixDst.size() >=
             d_cellsBlockSizeApply * nDofsPerCell * inputVecSize,
           dealii::ExcMessage(
-            "DFT-FE Error: d_cellWaveFunctionMatrixSrc in Hubbard is not set properly. Call initialiseCellWaveFunctionPointers()."));
+            "DFT-FE Error: d_cellWaveFunctionMatrixDst in Hubbard is not set properly. Call initialiseCellWaveFunctionPointers()."));
 
         Assert(
           d_BasisOperatorMemPtr->nVectors() == inputVecSize,

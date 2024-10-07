@@ -63,6 +63,10 @@ namespace dftfe
     void
     resetExtPotHamFlag();
 
+    void 
+    resetKohnShamOp();
+
+
     const MPI_Comm &
     getMPICommunicatorDomain();
 

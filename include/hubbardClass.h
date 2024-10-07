@@ -243,9 +243,25 @@ namespace dftfe
 
     unsigned int getGlobalAtomId(unsigned int iAtom);
 
+
+    /*
+        * @brief Write the hubbard occupation numbers to a
+        * file. Used for nscf calculations.
+    */
+    void writeHubbOccToFile();
+
+    /*
+        * @brief Read the hubbard occupation numbers from a file.
+        * Used for nscf calculations.
+     */
+    void readHubbOccFromFile();
+
+
   private:
 
     std::map<unsigned int , unsigned int> d_mapHubbardAtomToGlobalAtomId;
+
+    unsigned int d_totalNumHubbAtoms;
     void
     computeCouplingMatrix();
 
@@ -355,6 +371,8 @@ namespace dftfe
 
     double d_hubbardEnergy;
     double d_expectationOfHubbardPotential;
+
+    unsigned int d_maxOccMatSizePerAtom;
   };
 } // namespace dftfe
 

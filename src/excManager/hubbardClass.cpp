@@ -46,6 +46,7 @@ namespace dftfe
   {
     d_hubbardEnergy                 = 0.0;
     d_expectationOfHubbardPotential = 0.0;
+    d_maxOccMatSizePerAtom = 0;
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
@@ -358,8 +359,6 @@ namespace dftfe
               }
           }
       }
-
-
     computeCouplingMatrix();
   }
 
@@ -839,6 +838,123 @@ namespace dftfe
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  void
+  hubbard<ValueType, memorySpace>::writeHubbOccToFile()
+  {
+    unsigned int bandGroupTaskId =
+    dealii::Utilities::MPI::this_mpi_process(d_mpi_comm_interBand);
+
+    unsigned int interPoolId =
+      dealii::Utilities::MPI::this_mpi_process(d_mpi_comm_interPool);
+
+    if( (bandGroupTaskId == 0) && (interPoolId == 0))
+      {
+        std::vector<std::shared_ptr<dftfe::dftUtils::CompositeData>> data(0);
+
+        unsigned int numOwnedAtomsInProc = d_procLocalAtomId.size();
+        for ( unsigned int iAtom = 0; iAtom < numOwnedAtomsInProc; iAtom++)
+          {
+            const unsigned int atomId     = atomIdsInProc[d_procLocalAtomId[iAtom]];
+            const unsigned int Znum       = atomicNumber[atomId];
+            const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
+
+            const unsigned int numSphericalFunc =
+              d_hubbardSpeciesData[hubbardIds].numberSphericalFunc;
+
+            std::vector<double> nodeVals(0);
+
+            nodeVals.push_back( (double) getGlobalAtomId(atomId));
+            for (unsigned int spinIndex = 0; spinIndex < d_numSpins; spinIndex++)
+              {
+                for (unsigned int iOrb = 0; iOrb < numSphericalFunc*numSphericalFunc; iOrb++)
+                  {
+                    double occVal = d_occupationMatrix
+                                      [HubbardOccFieldType::Out][
+                                        spinIndex * d_numTotalOccMatrixEntriesPerSpin +
+                                        d_OccMatrixEntryStartForAtom[d_procLocalAtomId[iAtom]] + iOrb];
+                    nodeVals.push_back(occVal);
+                  }
+              }
+
+            for( unsigned int iOrb = numSphericalFunc*numSphericalFunc*d_numSpins;
+                 iOrb < d_maxOccMatSizePerAtom*d_numSpins;
+                 iOrb++)
+              {
+                nodeVals.push_back(0.0);
+              }
+
+            data.push_back(std::make_shared<dftfe::dftUtils::NodalData>(nodeVals));
+          }
+
+        std::vector<dftfe::dftUtils::CompositeData *> dataRawPtrs(data.size());
+        for (unsigned int i = 0; i < data.size(); ++i)
+          dataRawPtrs[i] = data[i].get();
+
+
+        const std::string filename = "HubbardOccData.chk";
+
+        dftUtils::MPIWriteOnFile().writeData(dataRawPtrs, filename ,
+                                                    d_mpi_comm_domain);
+
+      }
+  }
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
+  void
+  hubbard<ValueType, memorySpace>::readHubbOccFromFile()
+  {
+
+    const std::string filename = "HubbardOccData.chk";
+    std::ifstream hubbOccInputFile(filename);
+
+    const std::vector<unsigned int> atomIdsInProc =
+      d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
+
+    std::map<unsigned int , unsigned int> mapGlobalIdToProcLocalId;
+
+    mapGlobalIdToProcLocalId.clear();
+    for( unsigned int iAtom = 0; iAtom < atomIdsInProc.size(); iAtom++)
+      {
+        const unsigned int atomId = atomIdsInProc[iAtom];
+        unsigned int globalId =  d_mapHubbardAtomToGlobalAtomId.find(atomId)->second;
+
+        mapGlobalIdToProcLocalId[globalId] = iAtom;
+      }
+
+    std::vector<double> hubbOccTemp;
+    hubbOccTemp.resize(d_maxOccMatSizePerAtom * d_numSpins);
+    for( unsigned int iGlobalAtomInd = 0; iGlobalAtomInd < d_totalNumHubbAtoms;
+         iGlobalAtomInd++)
+      {
+        double globalAtomIndexFromFile;
+        hubbOccInputFile >> globalAtomIndexFromFile;
+
+        for( unsigned int iOrb = 0; iOrb < d_numSpins * d_maxOccMatSizePerAtom; iOrb++)
+          {
+            hubbOccInputFile >> hubbOccTemp[iOrb];
+          }
+
+        if( mapGlobalIdToProcLocalId.find(globalId) != mapGlobalIdToProcLocalId.end())
+          {
+
+            unsigned int iAtom = mapGlobalIdToProcLocalId.find(globalId)->second;
+
+            for (unsigned int spinIndex = 0; spinIndex < d_numSpins; spinIndex++)
+              {
+                for (unsigned int iOrb = 0; iOrb < numSphericalFunc*numSphericalFunc; iOrb++)
+                  {
+                    d_occupationMatrix[HubbardOccFieldType::In][
+                        spinIndex * d_numTotalOccMatrixEntriesPerSpin +
+                        d_OccMatrixEntryStartForAtom[d_procLocalAtomId[iAtom]] + iOrb] =
+                      hubbOccTemp[spinIndex*numSphericalFunc*numSphericalFunc + iOrb];
+                  }
+              }
+          }
+      }
+    hubbOccInputFile.close();
+  }
+
+  template <typename ValueType, dftfe::utils::MemorySpace memorySpace>
   const dftfe::utils::MemoryStorage<ValueType, memorySpace> &
   hubbard<ValueType, memorySpace>::getCouplingMatrix(unsigned int spinIndex)
   {
@@ -978,6 +1094,12 @@ namespace dftfe
           hubbardSpeciesObj.numberSphericalFunc *
           hubbardSpeciesObj.numberSphericalFunc;
         d_hubbardSpeciesData[id - 1] = hubbardSpeciesObj;
+
+        if( d_maxOccMatSizePerAtom < hubbardSpeciesObj.numberSphericalFuncSq)
+          {
+            d_maxOccMatSizePerAtom
+             = hubbardSpeciesObj.numberSphericalFuncSq;
+          }
       }
 
     std::vector<std::vector<unsigned int>> mapAtomToImageAtom;
@@ -1003,6 +1125,7 @@ namespace dftfe
     d_mapAtomToAtomicNumber.resize(0);
     unsigned int hubbardAtomId = 0;
     unsigned int atomicNum;
+    d_totalNumHubbAtoms = 0;
     for (unsigned int iAtom = 0; iAtom < atomLocations.size(); iAtom++)
       {
         hubbardInputFile >> atomicNum >> id;
@@ -1025,6 +1148,7 @@ namespace dftfe
 
           d_mapHubbardAtomToGlobalAtomId[hubbardAtomId] = iAtom;
           hubbardAtomId++;
+          d_totalNumHubbAtoms++;
         }
       }
     hubbardInputFile.close();

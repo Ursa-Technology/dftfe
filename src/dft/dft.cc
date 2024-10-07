@@ -1333,6 +1333,10 @@ namespace dftfe
 
 
     initHubbardOperator();
+    if (d_useHubbard && d_dftParamsPtr->loadRhoData)
+      {
+        d_hubbardClassPtr->readHubbOccFromFile();
+      }
     initializeKohnShamDFTOperator();
 
     d_netFloatingDispSinceLastCheckForSmearedChargeOverlaps.clear();
@@ -1352,6 +1356,10 @@ namespace dftfe
     if (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
         ExcFamilyType::DFTPlusU)
       {
+        double init_hubbOp;
+        MPI_Barrier(d_mpiCommParent);
+        init_hubbOp = MPI_Wtime();
+
         std::shared_ptr<ExcDFTPlusU<dataTypes::number, memorySpace>>
           excHubbPtr = std::dynamic_pointer_cast<
             ExcDFTPlusU<dataTypes::number, memorySpace>>(
@@ -1415,6 +1423,13 @@ namespace dftfe
         AssertThrow(d_dftParamsPtr->solverMode != "NSCF",
                     dealii::ExcMessage(
                       "Hubbard correction is not implemented for NSCF mode"));
+
+        init_hubbOp = MPI_Wtime() - init_hubbOp ;
+
+        if (d_dftParamsPtr->verbosity >= 2)
+          pcout << "Time taken for hubbard class initialization: "
+                << init_hubbOp << std::endl;
+
       }
   }
 
@@ -1615,11 +1630,20 @@ namespace dftfe
                                     d_kPointWeights.size(),
                                   true);
 
+    if (d_useHubbard)
+      {
+        dftfe::utils::MemoryStorage<double,
+                                    dftfe::utils::MemorySpace::HOST>
+          &hubbOccIn = d_hubbardClassPtr->getOccMatIn();
+
+        initHubbardOperator();
+
+        d_hubbardClassPtr->setInOccMatrix(hubbOccIn);
+      }
+
     double init_ksoperator;
     MPI_Barrier(d_mpiCommParent);
     init_ksoperator = MPI_Wtime();
-
-    initHubbardOperator();
 
     if (isMeshDeformed)
       initializeKohnShamDFTOperator();
@@ -3744,12 +3768,27 @@ namespace dftfe
 
         if (d_dftParamsPtr->saveRhoData && scfIter % 10 == 0 &&
             d_dftParamsPtr->solverMode == "GS")
-          saveTriaInfoAndRhoNodalData();
+          {
+            saveTriaInfoAndRhoNodalData();
+            if (d_useHubbard)
+              {
+                d_hubbardClassPtr->writeHubbOccToFile();
+              }
+
+          }
+
       }
 
     if (d_dftParamsPtr->saveRhoData &&
         !(d_dftParamsPtr->solverMode == "GS" && scfIter % 10 == 0))
-      saveTriaInfoAndRhoNodalData();
+      {
+        saveTriaInfoAndRhoNodalData();
+        if (d_useHubbard)
+          {
+            d_hubbardClassPtr->writeHubbOccToFile();
+          }
+      }
+
 
 
     if (scfIter == d_dftParamsPtr->numSCFIterations)

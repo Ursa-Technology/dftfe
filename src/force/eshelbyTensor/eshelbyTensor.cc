@@ -104,7 +104,6 @@ namespace dftfe
 
     dealii::Tensor<2, 3, dealii::VectorizedArray<double>>
     getELocXcEshelbyTensor(
-      const dealii::VectorizedArray<double> &                      rho,
       const dealii::Tensor<1, 3, dealii::VectorizedArray<double>> &gradRho,
       const dealii::VectorizedArray<double> &                      exc,
       const dealii::Tensor<1, 3, dealii::VectorizedArray<double>>
@@ -112,7 +111,7 @@ namespace dftfe
     {
       dealii::Tensor<2, 3, dealii::VectorizedArray<double>> eshelbyTensor =
         -outer_product(gradRho, derExcGradRho);
-      dealii::VectorizedArray<double> identityTensorFactor = exc * rho;
+      dealii::VectorizedArray<double> identityTensorFactor = exc;
 
 
       eshelbyTensor[0][0] += identityTensorFactor;

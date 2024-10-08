@@ -261,19 +261,23 @@ namespace dftfe
           d_mixingParameter[key] *= ci;
         }
     if (d_verbosity > 0)
-      if (d_adaptMixingParameter[mixingVariable::rho])
-        pcout << "Adaptive Anderson mixing parameter for Rho: "
-              << d_mixingParameter[mixingVariable::rho] << std::endl;
-      else
-        pcout << "Anderson mixing parameter for Rho: "
-              << d_mixingParameter[mixingVariable::rho] << std::endl;
-    if (d_verbosity > 0)
-      if (d_adaptMixingParameter[mixingVariable::magZ])
-        pcout << "Adaptive Anderson mixing parameter for magZ: "
-              << d_mixingParameter[mixingVariable::rho] << std::endl;
-      else
-        pcout << "Anderson mixing parameter for magZ: "
-              << d_mixingParameter[mixingVariable::magZ] << std::endl;
+      for (const auto &[key, value] : d_variableHistoryIn)
+        {
+          if (key == mixingVariable::rho &&
+              d_adaptMixingParameter[mixingVariable::rho])
+            pcout << "Adaptive Anderson mixing parameter for Rho: "
+                  << d_mixingParameter[mixingVariable::rho] << std::endl;
+          else if (key == mixingVariable::rho)
+            pcout << "Anderson mixing parameter for Rho: "
+                  << d_mixingParameter[mixingVariable::rho] << std::endl;
+          if (key == mixingVariable::magZ &&
+              d_adaptMixingParameter[mixingVariable::magZ])
+            pcout << "Adaptive Anderson mixing parameter for magZ: "
+                  << d_mixingParameter[mixingVariable::magZ] << std::endl;
+          else if (key == mixingVariable::magZ)
+            pcout << "Anderson mixing parameter for magZ: "
+                  << d_mixingParameter[mixingVariable::magZ] << std::endl;
+        }
   }
 
   // Fucntions to add to the history
@@ -340,6 +344,66 @@ namespace dftfe
       }
   }
 
+  void
+  MixingScheme::getOptimizedResidual(mixingVariable     mixingVariableName,
+                                     double *           outputVariable,
+                                     const unsigned int lenVar)
+  {
+    unsigned int N = d_variableHistoryIn[mixingVariableName].size() - 1;
+    // Assumes the variable is present otherwise will lead to a seg fault
+    AssertThrow(
+      lenVar == d_variableHistoryIn[mixingVariableName][0].size(),
+      dealii::ExcMessage(
+        "DFT-FE Error: The size of the input variables in history does not match the provided size."));
+
+    std::fill(outputVariable, outputVariable + lenVar, 0.0);
+
+    for (unsigned int iQuad = 0; iQuad < lenVar; iQuad++)
+      {
+        double varResidualBar =
+          d_cFinal * d_variableHistoryResidual[mixingVariableName][N][iQuad];
+        for (int i = 0; i < N; i++)
+          {
+            varResidualBar +=
+              d_c[i] *
+              d_variableHistoryResidual[mixingVariableName][N - 1 - i][iQuad];
+          }
+        outputVariable[iQuad] = varResidualBar;
+      }
+  }
+
+  void
+  MixingScheme::mixPreconditionedResidual(mixingVariable     mixingVariableName,
+                                          double *           inputVariable,
+                                          double *           outputVariable,
+                                          const unsigned int lenVar)
+  {
+    unsigned int N = d_variableHistoryIn[mixingVariableName].size() - 1;
+    // Assumes the variable is present otherwise will lead to a seg fault
+    AssertThrow(
+      lenVar == d_variableHistoryIn[mixingVariableName][0].size(),
+      dealii::ExcMessage(
+        "DFT-FE Error: The size of the input variables in history does not match the provided size."));
+
+    std::fill(outputVariable, outputVariable + lenVar, 0.0);
+
+    for (unsigned int iQuad = 0; iQuad < lenVar; iQuad++)
+      {
+        double varInBar =
+          d_cFinal * d_variableHistoryIn[mixingVariableName][N][iQuad];
+
+        for (int i = 0; i < N; i++)
+          {
+            varInBar +=
+              d_c[i] *
+              d_variableHistoryIn[mixingVariableName][N - 1 - i][iQuad];
+          }
+        outputVariable[iQuad] =
+          (varInBar +
+           d_mixingParameter[mixingVariableName] * inputVariable[iQuad]);
+      }
+  }
+
   // Clears the history
   // But it does not clear the list of variables
   // and its corresponding JxW values
@@ -361,7 +425,7 @@ namespace dftfe
   void
   MixingScheme::popOldHistory(unsigned int mixingHistory)
   {
-    if (d_variableHistoryIn[mixingVariable::rho].size() >= mixingHistory)
+    if (d_variableHistoryIn[mixingVariable::rho].size() > mixingHistory)
       {
         for (const auto &[key, value] : d_variableHistoryIn)
           {

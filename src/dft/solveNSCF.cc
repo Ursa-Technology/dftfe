@@ -41,11 +41,11 @@ namespace dftfe
       matrix_free_data.get_quadrature(d_densityQuadratureId);
 
     // computingTimerStandard.enter_subsection("Total scf solve");
-    energyCalculator energyCalc(d_mpiCommParent,
-                                mpi_communicator,
-                                interpoolcomm,
-                                interBandGroupComm,
-                                *d_dftParamsPtr);
+    energyCalculator<memorySpace> energyCalc(d_mpiCommParent,
+                                             mpi_communicator,
+                                             interpoolcomm,
+                                             interBandGroupComm,
+                                             *d_dftParamsPtr);
 
 
     // set up linear solver
@@ -317,6 +317,46 @@ namespace dftfe
     //
     // eigen solve
     //
+    if (d_dftParamsPtr->writeBandsFile)
+      {
+        std::ifstream file("fermiEnergy.out");
+        std::string   line;
+
+        if (file.is_open())
+          {
+            if (d_dftParamsPtr->constraintMagnetization)
+              {
+                std::vector<double> temp;
+                while (getline(file, line))
+                  {
+                    if (!line.empty())
+                      {
+                        std::istringstream iss(line);
+                        double             temp1;
+                        while (iss >> temp1)
+                          {
+                            temp.push_back(temp1);
+                          }
+                      }
+                  }
+                fermiEnergy     = temp[0];
+                fermiEnergyUp   = temp[1];
+                fermiEnergyDown = temp[2];
+              }
+            else
+              {
+                getline(file, line);
+                std::istringstream iss(line);
+                iss >> fermiEnergy;
+              }
+          }
+        else
+          {
+            pcout
+              << "Unable to open file fermiEnergy.out. Check if it is present.";
+          }
+      }
+
     if (d_dftParamsPtr->spinPolarized == 1)
       {
         std::vector<std::vector<std::vector<double>>> eigenValuesSpins(
@@ -330,15 +370,27 @@ namespace dftfe
             std::vector<std::vector<double>>(
               d_kPointWeights.size(), std::vector<double>(d_numEigenValues)));
 
+        updateAuxDensityXCMatrix(d_densityInQuadValues,
+                                 d_gradDensityInQuadValues,
+                                 d_rhoCore,
+                                 d_gradRhoCore,
+                                 getEigenVectors(),
+                                 eigenValues,
+                                 fermiEnergy,
+                                 fermiEnergyUp,
+                                 fermiEnergyDown,
+                                 d_auxDensityMatrixXCInPtr);
+
+
         for (unsigned int s = 0; s < 2; ++s)
           {
             computing_timer.enter_subsection("VEff Computation");
-            kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
-                                                 d_gradDensityInQuadValues,
+
+
+            kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixXCInPtr,
                                                  d_phiInQuadValues,
-                                                 d_rhoCore,
-                                                 d_gradRhoCore,
                                                  s);
+
             computing_timer.leave_subsection("VEff Computation");
 
 
@@ -408,10 +460,13 @@ namespace dftfe
         //
         // fermi energy
         //
-        if (d_dftParamsPtr->constraintMagnetization)
-          compute_fermienergy_constraintMagnetization(eigenValues);
-        else
-          compute_fermienergy(eigenValues, numElectrons);
+        if (!(d_dftParamsPtr->writeBandsFile))
+          {
+            if (d_dftParamsPtr->constraintMagnetization)
+              compute_fermienergy_constraintMagnetization(eigenValues);
+            else
+              compute_fermienergy(eigenValues, numElectrons);
+          }
 
         unsigned int count = 1;
 
@@ -475,12 +530,8 @@ namespace dftfe
                   {
                     computing_timer.enter_subsection("VEff Computation");
                     kohnShamDFTEigenOperator.computeVEff(
-                      d_densityInQuadValues,
-                      d_gradDensityInQuadValues,
-                      d_phiInQuadValues,
-                      d_rhoCore,
-                      d_gradRhoCore,
-                      s);
+                      d_auxDensityMatrixXCInPtr, d_phiInQuadValues, s);
+
                     computing_timer.leave_subsection("VEff Computation");
                   }
                 for (unsigned int kPoint = 0; kPoint < d_kPointWeights.size();
@@ -540,12 +591,14 @@ namespace dftfe
                     eigenValuesSpins[s][kPoint][i] =
                       eigenValues[kPoint][d_numEigenValues * s + i];
                 }
-            //
-            if (d_dftParamsPtr->constraintMagnetization)
-              compute_fermienergy_constraintMagnetization(eigenValues);
-            else
-              compute_fermienergy(eigenValues, numElectrons);
-            //
+            if (!(d_dftParamsPtr->writeBandsFile))
+              {
+                if (d_dftParamsPtr->constraintMagnetization)
+                  compute_fermienergy_constraintMagnetization(eigenValues);
+                else
+                  compute_fermienergy(eigenValues, numElectrons);
+              }
+
             if (d_dftParamsPtr->highestStateOfInterestForChebFiltering == 0)
               {
                 maxRes =
@@ -604,13 +657,20 @@ namespace dftfe
         for (unsigned int kPoint = 0; kPoint < d_kPointWeights.size(); ++kPoint)
           residualNormWaveFunctionsAllkPoints[kPoint].resize(d_numEigenValues);
 
+        updateAuxDensityXCMatrix(d_densityInQuadValues,
+                                 d_gradDensityInQuadValues,
+                                 d_rhoCore,
+                                 d_gradRhoCore,
+                                 getEigenVectors(),
+                                 eigenValues,
+                                 fermiEnergy,
+                                 fermiEnergyUp,
+                                 fermiEnergyDown,
+                                 d_auxDensityMatrixXCInPtr);
 
         computing_timer.enter_subsection("VEff Computation");
-        kohnShamDFTEigenOperator.computeVEff(d_densityInQuadValues,
-                                             d_gradDensityInQuadValues,
-                                             d_phiInQuadValues,
-                                             d_rhoCore,
-                                             d_gradRhoCore);
+        kohnShamDFTEigenOperator.computeVEff(d_auxDensityMatrixXCInPtr,
+                                             d_phiInQuadValues);
         computing_timer.leave_subsection("VEff Computation");
 
         for (unsigned int kPoint = 0; kPoint < d_kPointWeights.size(); ++kPoint)
@@ -666,10 +726,13 @@ namespace dftfe
         //
         // fermi energy
         //
-        if (d_dftParamsPtr->constraintMagnetization)
-          compute_fermienergy_constraintMagnetization(eigenValues);
-        else
-          compute_fermienergy(eigenValues, numElectrons);
+        if (!(d_dftParamsPtr->writeBandsFile))
+          {
+            if (d_dftParamsPtr->constraintMagnetization)
+              compute_fermienergy_constraintMagnetization(eigenValues);
+            else
+              compute_fermienergy(eigenValues, numElectrons);
+          }
 
         unsigned int count = 1;
 
@@ -763,11 +826,14 @@ namespace dftfe
                     true);
               }
 
-            //
-            if (d_dftParamsPtr->constraintMagnetization)
-              compute_fermienergy_constraintMagnetization(eigenValues);
-            else
-              compute_fermienergy(eigenValues, numElectrons);
+            // //
+            if (!(d_dftParamsPtr->writeBandsFile))
+              {
+                if (d_dftParamsPtr->constraintMagnetization)
+                  compute_fermienergy_constraintMagnetization(eigenValues);
+                else
+                  compute_fermienergy(eigenValues, numElectrons);
+              }
             //
             if (d_dftParamsPtr->highestStateOfInterestForChebFiltering == 0)
               {
@@ -815,6 +881,17 @@ namespace dftfe
     compute_rhoOut(false, true);
 
     computing_timer.leave_subsection("compute rho");
+
+    updateAuxDensityXCMatrix(d_densityOutQuadValues,
+                             d_gradDensityOutQuadValues,
+                             d_rhoCore,
+                             d_gradRhoCore,
+                             getEigenVectors(),
+                             eigenValues,
+                             fermiEnergy,
+                             fermiEnergyUp,
+                             fermiEnergyDown,
+                             d_auxDensityMatrixXCOutPtr);
 
     //
     // compute integral rhoOut
@@ -971,11 +1048,10 @@ namespace dftfe
       d_phiTotRhoOut,
       d_densityInQuadValues,
       d_densityOutQuadValues,
-      d_gradDensityInQuadValues,
       d_gradDensityOutQuadValues,
       d_densityTotalOutValuesLpspQuad,
-      d_rhoCore,
-      d_gradRhoCore,
+      d_auxDensityMatrixXCInPtr,
+      d_auxDensityMatrixXCOutPtr,
       d_bQuadValuesAllAtoms,
       d_bCellNonTrivialAtomIds,
       d_localVselfs,

@@ -210,6 +210,19 @@ namespace dftfe
      */
     virtual void
     writeGSElectronDensity(const std::string Path) const = 0;
+
+
+    virtual const MPI_Comm &
+    getMPIDomain() const = 0;
+
+    virtual const MPI_Comm &
+    getMPIParent() const = 0;
+
+    virtual const MPI_Comm &
+    getMPIInterPool() const = 0;
+
+    virtual const MPI_Comm &
+    getMPIInterBand() const = 0;
   };
 
 } // namespace dftfe

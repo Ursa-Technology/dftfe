@@ -4,6 +4,7 @@ set SOLVER MODE = NSCF
 set RESTART FOLDER = ../../fccAl_03.release/mpirun=16/fccAl_03
 
 subsection Post-processing Options
+ set WRITE BANDS = false
  set WRITE DENSITY OF STATES=true
 end
 
@@ -35,7 +36,7 @@ subsection Parallelization
 end
 
 subsection DFT functional parameters
-  set EXCHANGE CORRELATION TYPE   = 1
+  set EXCHANGE CORRELATION TYPE = LDA-PZ
   set PSEUDOPOTENTIAL CALCULATION = true
   set PSEUDOPOTENTIAL FILE NAMES LIST = @SOURCE_DIR@/pseudoAlKB.inp
   set PSEUDO TESTS FLAG        = true

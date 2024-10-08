@@ -924,7 +924,10 @@ namespace dftfe
   void triangulationManager::generateMesh(
     dealii::parallel::distributed::Triangulation<3> &parallelTriangulation,
     dealii::parallel::distributed::Triangulation<3> &serialTriangulation,
-    const bool                                       generateSerialTria)
+    std::vector<std::vector<bool>> &parallelTriaCurrentRefinement,
+    std::vector<std::vector<bool>> &serialTriaCurrentRefinement,
+    const bool                      generateSerialTria,
+    const bool                      enableManualRepartitioning)
   {
     generateCoarseMesh(parallelTriangulation);
     if (generateSerialTria)
@@ -937,9 +940,9 @@ namespace dftfe
             "Number of coarse mesh cells are different in serial and parallel triangulations."));
       }
 
-    d_parallelTriaCurrentRefinement.clear();
+    parallelTriaCurrentRefinement.clear();
     if (generateSerialTria)
-      d_serialTriaCurrentRefinement.clear();
+      serialTriaCurrentRefinement.clear();
 
     //
     // Multilayer refinement. Refinement algorithm is progressively modified
@@ -980,22 +983,23 @@ namespace dftfe
 
                 if (generateSerialTria)
                   {
-                    d_serialTriaCurrentRefinement.push_back(
-                      std::vector<bool>());
+                    serialTriaCurrentRefinement.push_back(std::vector<bool>());
 
                     // First refine serial mesh
                     refineSerialMesh(cellIdToCellRefineFlagMapLocal,
                                      mpi_communicator,
                                      serialTriangulation,
                                      parallelTriangulation,
-                                     d_serialTriaCurrentRefinement[numLevels]);
+                                     serialTriaCurrentRefinement[numLevels]);
                   }
 
-                d_parallelTriaCurrentRefinement.push_back(std::vector<bool>());
+                parallelTriaCurrentRefinement.push_back(std::vector<bool>());
                 parallelTriangulation.save_refine_flags(
-                  d_parallelTriaCurrentRefinement[numLevels]);
+                  parallelTriaCurrentRefinement[numLevels]);
 
                 parallelTriangulation.execute_coarsening_and_refinement();
+                if (enableManualRepartitioning)
+                  parallelTriangulation.repartition();
                 numLevels++;
               }
             else
@@ -1100,7 +1104,7 @@ namespace dftfe
 
                         if (generateSerialTria)
                           {
-                            d_serialTriaCurrentRefinement.push_back(
+                            serialTriaCurrentRefinement.push_back(
                               std::vector<bool>());
 
                             // First refine serial mesh
@@ -1109,16 +1113,18 @@ namespace dftfe
                               mpi_communicator,
                               serialTriangulation,
                               parallelTriangulation,
-                              d_serialTriaCurrentRefinement[numLevels]);
+                              serialTriaCurrentRefinement[numLevels]);
                           }
 
-                        d_parallelTriaCurrentRefinement.push_back(
+                        parallelTriaCurrentRefinement.push_back(
                           std::vector<bool>());
                         parallelTriangulation.save_refine_flags(
-                          d_parallelTriaCurrentRefinement[numLevels]);
+                          parallelTriaCurrentRefinement[numLevels]);
 
                         parallelTriangulation
                           .execute_coarsening_and_refinement();
+                        if (enableManualRepartitioning)
+                          parallelTriangulation.repartition();
 
                         numLevels++;
                       }
@@ -1228,7 +1234,7 @@ namespace dftfe
 
                         if (generateSerialTria)
                           {
-                            d_serialTriaCurrentRefinement.push_back(
+                            serialTriaCurrentRefinement.push_back(
                               std::vector<bool>());
 
                             // First refine serial mesh
@@ -1237,16 +1243,20 @@ namespace dftfe
                               mpi_communicator,
                               serialTriangulation,
                               parallelTriangulation,
-                              d_serialTriaCurrentRefinement[numLevels]);
+                              serialTriaCurrentRefinement[numLevels]);
                           }
 
-                        d_parallelTriaCurrentRefinement.push_back(
+                        parallelTriaCurrentRefinement.push_back(
                           std::vector<bool>());
                         parallelTriangulation.save_refine_flags(
-                          d_parallelTriaCurrentRefinement[numLevels]);
+                          parallelTriaCurrentRefinement[numLevels]);
 
                         parallelTriangulation
                           .execute_coarsening_and_refinement();
+
+                        if (enableManualRepartitioning)
+                          parallelTriangulation.repartition();
+
                         numLevels++;
                       }
                     else
@@ -1356,7 +1366,7 @@ namespace dftfe
 
                         if (generateSerialTria)
                           {
-                            d_serialTriaCurrentRefinement.push_back(
+                            serialTriaCurrentRefinement.push_back(
                               std::vector<bool>());
 
                             // First refine serial mesh
@@ -1365,16 +1375,20 @@ namespace dftfe
                               mpi_communicator,
                               serialTriangulation,
                               parallelTriangulation,
-                              d_serialTriaCurrentRefinement[numLevels]);
+                              serialTriaCurrentRefinement[numLevels]);
                           }
 
-                        d_parallelTriaCurrentRefinement.push_back(
+                        parallelTriaCurrentRefinement.push_back(
                           std::vector<bool>());
                         parallelTriangulation.save_refine_flags(
-                          d_parallelTriaCurrentRefinement[numLevels]);
+                          parallelTriaCurrentRefinement[numLevels]);
 
                         parallelTriangulation
                           .execute_coarsening_and_refinement();
+
+                        if (enableManualRepartitioning)
+                          parallelTriangulation.repartition();
+
                         numLevels++;
                       }
                     else
@@ -1398,11 +1412,12 @@ namespace dftfe
               pcout
                 << "Hanging node and periodic constraints parallel consistency not achieved."
                 << std::endl;
-
+#ifdef DFTFE_WITH_CUSTOMIZED_DEALII
             AssertThrow(
               d_dftParams.createConstraintsFromSerialDofhandler,
               dealii::ExcMessage(
                 "DFT-FE error: this is due to a known issue related to hanging node constraints in dealii. Please set CONSTRAINTS FROM SERIAL DOFHANDLER = true under the Boundary conditions subsection in the input parameters file to circumvent this issue."));
+#endif
           }
       }
 

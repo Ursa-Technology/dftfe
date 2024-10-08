@@ -25,11 +25,9 @@
 #include <MemoryStorage.h>
 #include <MemoryTransfer.h>
 #if defined(DFTFE_WITH_DEVICE)
-#  include "deviceKernelsGeneric.h"
 #  include <DeviceDataTypeOverloads.h>
 #  include <DeviceAPICalls.h>
 #  include <DeviceKernelLauncherConstants.h>
-#  include <DeviceBlasWrapper.h>
 #  include <forceWfcContractionsDeviceKernels.h>
 #endif
 
@@ -592,15 +590,7 @@ namespace dftfe
         // int this_process;
         // MPI_Comm_rank(d_mpiCommParent, &this_process);
 
-        /*
-        dftfe::utils::deviceKernelsGeneric::stridedCopyToBlockConstantStride(
-          numPsi,
-          N,
-          basisOperationsPtr->nOwnedDofs(),
-          startingVecId,
-          X,
-          deviceFlattenedArrayBlock.data());
-        */
+
 
         if (memorySpace == dftfe::utils::MemorySpace::HOST)
           for (unsigned int iNode = 0; iNode < basisOperationsPtr->nOwnedDofs();
@@ -610,7 +600,7 @@ namespace dftfe
                         numPsi * sizeof(dataTypes::number));
 #if defined(DFTFE_WITH_DEVICE)
         else if (memorySpace == dftfe::utils::MemorySpace::DEVICE)
-          dftfe::utils::deviceKernelsGeneric::stridedCopyToBlockConstantStride(
+          BLASWrapperPtr->stridedCopyToBlockConstantStride(
             numPsi,
             N,
             basisOperationsPtr->nOwnedDofs(),
@@ -664,8 +654,8 @@ namespace dftfe
             // MPI_Barrier(d_mpiCommParent);
             // double kernel2_time = MPI_Wtime();
 
-            oncvClassPtr->getNonLocalOperator()->initialiseOperatorActionOnX(
-              kPointIndex);
+            // oncvClassPtr->getNonLocalOperator()->initialiseOperatorActionOnX(
+            //   kPointIndex);
 
             oncvClassPtr->getNonLocalOperator()->applyVCconjtransOnX(
               flattenedArrayBlock,

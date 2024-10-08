@@ -20,27 +20,20 @@
 #define kohnShamHamiltonianOperatorClass_H_
 #include <constants.h>
 #include <constraintMatrixInfo.h>
-#include <constraintMatrixInfoDevice.h>
 #include <headers.h>
 #include <operator.h>
 #include <BLASWrapper.h>
 #include <FEBasisOperations.h>
 #include <oncvClass.h>
+#include <AuxDensityMatrix.h>
+
+#include "hubbardClass.h"
 
 namespace dftfe
 {
   template <dftfe::utils::MemorySpace memorySpace>
   class KohnShamHamiltonianOperator : public operatorDFTClass<memorySpace>
   {
-#if defined(DFTFE_WITH_DEVICE)
-    using constraintInfoClass =
-      typename std::conditional<memorySpace ==
-                                  dftfe::utils::MemorySpace::DEVICE,
-                                dftUtils::constraintMatrixInfoDevice,
-                                dftUtils::constraintMatrixInfo>::type;
-#else
-    using constraintInfoClass = dftUtils::constraintMatrixInfo;
-#endif
   public:
     KohnShamHamiltonianOperator(
       std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
@@ -54,14 +47,14 @@ namespace dftfe
                                         dftfe::utils::MemorySpace::HOST>>
         basisOperationsPtrHost,
       std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>>
-                                  oncvClassPtr,
-      std::shared_ptr<excManager> excManagerPtr,
-      dftParameters *             dftParamsPtr,
-      const unsigned int          densityQuadratureID,
-      const unsigned int          lpspQuadratureID,
-      const unsigned int          feOrderPlusOneQuadratureID,
-      const MPI_Comm &            mpi_comm_parent,
-      const MPI_Comm &            mpi_comm_domain);
+                                               oncvClassPtr,
+      std::shared_ptr<excManager<memorySpace>> excManagerPtr,
+      dftParameters *                          dftParamsPtr,
+      const unsigned int                       densityQuadratureID,
+      const unsigned int                       lpspQuadratureID,
+      const unsigned int                       feOrderPlusOneQuadratureID,
+      const MPI_Comm &                         mpi_comm_parent,
+      const MPI_Comm &                         mpi_comm_domain);
 
     void
     init(const std::vector<double> &kPointCoordinates,
@@ -73,10 +66,10 @@ namespace dftfe
     const MPI_Comm &
     getMPICommunicatorDomain();
 
-    dftUtils::constraintMatrixInfo *
+    dftUtils::constraintMatrixInfo<dftfe::utils::MemorySpace::HOST> *
     getOverloadedConstraintMatrixHost() const;
 
-    constraintInfoClass *
+    dftUtils::constraintMatrixInfo<memorySpace> *
     getOverloadedConstraintMatrix() const
     {
       return &(d_basisOperationsPtr
@@ -88,25 +81,35 @@ namespace dftfe
                             const unsigned int index);
 
 
+    dftfe::linearAlgebra::MultiVector<dataTypes::numberFP32, memorySpace> &
+    getScratchFEMultivectorSinglePrec(const unsigned int numVectors,
+                                      const unsigned int index);
+
+
     /**
      * @brief Computes effective potential involving exchange-correlation functionals
-     * @param rhoValues electron-density
+     * @param auxDensityMatrixRepresentation core plus valence electron-density
      * @param phiValues electrostatic potential arising both from electron-density and nuclear charge
-     * @param rhoCoreValues quadrature data of sum{Vext} minus sum{Vnu}
      */
     void
     computeVEff(
-      const std::vector<
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &rhoValues,
-      const std::vector<
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &gradRhoValues,
+      std::shared_ptr<AuxDensityMatrix<memorySpace>>
+        auxDensityXCRepresentationPtr,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-        &                                                  phiValues,
-      const std::map<dealii::CellId, std::vector<double>> &rhoCoreValues,
-      const std::map<dealii::CellId, std::vector<double>> &gradRhoCoreValues,
-      const unsigned int                                   spinIndex = 0);
+        &                phiValues,
+      const unsigned int spinIndex = 0);
+
+    /**
+     * @brief Sets the V-eff potential
+     * @param vKS_quadValues the input V-KS values stored at the quadrature points
+     * @param spinIndex spin index
+     */
+    void
+    setVEff(
+      const std::vector<
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+        &                vKS_quadValues,
+      const unsigned int spinIndex);
 
     void
     computeVEffExternalPotCorr(
@@ -115,23 +118,17 @@ namespace dftfe
 
     void
     computeVEffPrime(
-      const std::vector<
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &rhoValues,
+      std::shared_ptr<AuxDensityMatrix<memorySpace>>
+        auxDensityXCRepresentationPtr,
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &rhoPrimeValues,
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
-        &gradRhoValues,
-      const std::vector<
-        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &gradRhoPrimeValues,
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
-        &                                                  phiPrimeValues,
-      const std::map<dealii::CellId, std::vector<double>> &rhoCoreValues,
-      const std::map<dealii::CellId, std::vector<double>> &gradRhoCoreValues,
-      const unsigned int                                   spinIndex);
+        &                phiPrimeValues,
+      const unsigned int spinIndex);
 
     /**
      * @brief sets the data member to appropriate kPoint and spin Index
@@ -179,6 +176,19 @@ namespace dftfe
       const bool skip3                                         = false);
 
     void
+    HXCheby(dftfe::linearAlgebra::MultiVector<dataTypes::numberFP32,
+                                              memorySpace> &src,
+            const double                                    scalarHX,
+            const double                                    scalarY,
+            const double                                    scalarX,
+            dftfe::linearAlgebra::MultiVector<dataTypes::numberFP32,
+                                              memorySpace> &dst,
+            const bool onlyHPrimePartForFirstOrderDensityMatResponse,
+            const bool skip1,
+            const bool skip2,
+            const bool skip3);
+
+    void
     HXRR(
       dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &src,
       dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace> &dstHX,
@@ -186,9 +196,27 @@ namespace dftfe
       const bool onlyHPrimePartForFirstOrderDensityMatResponse = false);
 
   private:
+    void
+    setVEffExternalPotCorrToZero();
+
     std::shared_ptr<
       AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
       d_ONCVnonLocalOperator;
+
+
+    /*
+     * TODO  ------------------------------
+     * TODO For debugging Purposes:  remove afterwards
+     * TODO --------------------------------
+     */
+
+    // std::shared_ptr<
+    //  AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
+    //  d_HubbnonLocalOperator;
+
+    std::shared_ptr<
+      AtomicCenteredNonLocalOperator<dataTypes::numberFP32, memorySpace>>
+      d_ONCVnonLocalOperatorSinglePrec;
 
     std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
       d_BLASWrapperPtr;
@@ -201,12 +229,14 @@ namespace dftfe
                                       dftfe::utils::MemorySpace::HOST>>
       d_basisOperationsPtrHost;
     std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>>
-                                d_oncvClassPtr;
-    std::shared_ptr<excManager> d_excManagerPtr;
-    dftParameters *             d_dftParamsPtr;
+                                             d_oncvClassPtr;
+    std::shared_ptr<excManager<memorySpace>> d_excManagerPtr;
+    dftParameters *                          d_dftParamsPtr;
 
     std::vector<dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>>
       d_cellHamiltonianMatrix;
+    std::vector<dftfe::utils::MemoryStorage<dataTypes::numberFP32, memorySpace>>
+      d_cellHamiltonianMatrixSinglePrec;
     dftfe::utils::MemoryStorage<double, memorySpace>
       d_cellHamiltonianMatrixExtPot;
 
@@ -216,8 +246,15 @@ namespace dftfe
     dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
       d_cellWaveFunctionMatrixDst;
 
+    dftfe::utils::MemoryStorage<dataTypes::numberFP32, memorySpace>
+      d_cellWaveFunctionMatrixSrcSinglePrec;
+    dftfe::utils::MemoryStorage<dataTypes::numberFP32, memorySpace>
+      d_cellWaveFunctionMatrixDstSinglePrec;
+
     dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
-                                                     d_ONCVNonLocalProjectorTimesVectorBlock;
+      d_ONCVNonLocalProjectorTimesVectorBlock;
+    dftfe::linearAlgebra::MultiVector<dataTypes::numberFP32, memorySpace>
+                                                     d_ONCVNonLocalProjectorTimesVectorBlockSinglePrec;
     dftfe::utils::MemoryStorage<double, memorySpace> d_VeffJxW;
     dftfe::utils::MemoryStorage<double, memorySpace> d_VeffExtPotJxW;
 
@@ -226,9 +263,9 @@ namespace dftfe
     std::vector<dftfe::utils::MemoryStorage<double, memorySpace>>
       d_invJacKPointTimesJxW;
     // Constraints scaled with inverse sqrt diagonal Mass Matrix
-    std::shared_ptr<constraintInfoClass>
+    std::shared_ptr<dftUtils::constraintMatrixInfo<memorySpace>>
       inverseMassVectorScaledConstraintsNoneDataInfoPtr;
-    std::shared_ptr<constraintInfoClass>
+    std::shared_ptr<dftUtils::constraintMatrixInfo<memorySpace>>
       inverseSqrtMassVectorScaledConstraintsNoneDataInfoPtr;
     // kPoint cartesian coordinates
     std::vector<double> d_kPointCoordinates;
@@ -252,10 +289,21 @@ namespace dftfe
     unsigned int               d_cellsBlockSizeHamiltonianConstruction;
     unsigned int               d_cellsBlockSizeHX;
     unsigned int               d_numVectorsInternal;
+    unsigned int               d_nOMPThreads;
     dealii::ConditionalOStream pcout;
 
     // compute-time logger
     dealii::TimerOutput computing_timer;
+
+    std::shared_ptr<hubbard<dataTypes::number, memorySpace>> d_hubbardClassPtr;
+    bool                                                     d_useHubbard;
+    dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
+      d_srcNonLocalTemp;
+    dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
+      d_dstNonLocalTemp;
+
+    dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
+      d_mapNodeIdToProcId;
   };
 } // namespace dftfe
 #endif

@@ -24,8 +24,7 @@
 
 #    include <linearSolverProblemDevice.h>
 #    include <triangulationManager.h>
-#    include <constraintMatrixInfoDevice.h>
-#    include <deviceKernelsGeneric.h>
+#    include <constraintMatrixInfo.h>
 #    include <MemoryStorage.h>
 #    include <dftUtils.h>
 #    include <FEBasisOperations.h>
@@ -175,7 +174,7 @@ namespace dftfe
      *
      */
     void
-    setupconstraints();
+    setupConstraints();
 
     /**
      * @brief Compute the diagonal of A.
@@ -214,7 +213,8 @@ namespace dftfe
     int *   d_mapPtr;
 
     // constraints
-    dftUtils::constraintMatrixInfoDevice d_constraintsTotalPotentialInfo;
+    dftUtils::constraintMatrixInfo<dftfe::utils::MemorySpace::DEVICE>
+      d_constraintsTotalPotentialInfo;
 
     /// matrix free index required to access the DofHandler and
     /// dealii::AffineConstraints<double> objects corresponding to the problem

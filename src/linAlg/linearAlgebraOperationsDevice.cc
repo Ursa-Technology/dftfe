@@ -16,10 +16,9 @@
 // @author Sambit Das, Phani Motamarri
 
 
-#include <deviceKernelsGeneric.h>
+
 #include <DeviceAPICalls.h>
 #include <DeviceDataTypeOverloads.h>
-#include <DeviceBlasWrapper.h>
 #include <DeviceKernelLauncherConstants.h>
 #include <MemoryStorage.h>
 #include <dftUtils.h>
@@ -490,15 +489,312 @@ namespace dftfe
       X2 = Y2;
     }
 
+    void
+    chebyshevFilterOverlapComputeCommunicationSinglePrec(
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &                                                  BLASWrapperPtr,
+      operatorDFTClass<dftfe::utils::MemorySpace::DEVICE> &operatorMatrix,
+      dftfe::linearAlgebra::MultiVector<dataTypes::number,
+                                        dftfe::utils::MemorySpace::DEVICE> &X1,
+      dftfe::linearAlgebra::MultiVector<dataTypes::number,
+                                        dftfe::utils::MemorySpace::DEVICE> &Y1,
+      dftfe::linearAlgebra::MultiVector<dataTypes::number,
+                                        dftfe::utils::MemorySpace::DEVICE> &X2,
+      dftfe::linearAlgebra::MultiVector<dataTypes::number,
+                                        dftfe::utils::MemorySpace::DEVICE> &Y2,
+      dftfe::linearAlgebra::MultiVector<dataTypes::numberFP32,
+                                        dftfe::utils::MemorySpace::DEVICE>
+        &X1_SP,
+      dftfe::linearAlgebra::MultiVector<dataTypes::numberFP32,
+                                        dftfe::utils::MemorySpace::DEVICE>
+        &Y1_SP,
+      dftfe::linearAlgebra::MultiVector<dataTypes::numberFP32,
+                                        dftfe::utils::MemorySpace::DEVICE>
+        &X2_SP,
+      dftfe::linearAlgebra::MultiVector<dataTypes::numberFP32,
+                                        dftfe::utils::MemorySpace::DEVICE>
+        &                 Y2_SP,
+      std::vector<double> eigenvalues,
+      const unsigned int  m,
+      const double        a,
+      const double        b,
+      const double        a0)
+    {
+      double e, c, sigma, sigma1, sigma2, gamma, alpha1Old, alpha2Old;
+      e      = (b - a) / 2.0;
+      c      = (b + a) / 2.0;
+      sigma  = e / (a0 - c);
+      sigma1 = sigma;
+      gamma  = 2.0 / sigma1;
+
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::DEVICE>
+        eigenValuesFiltered, eigenValuesFiltered1, eigenValuesFiltered2;
+      eigenValuesFiltered.resize(eigenvalues.size());
+      eigenValuesFiltered.copyFrom(eigenvalues);
+      eigenValuesFiltered1 = eigenValuesFiltered;
+      eigenValuesFiltered2 = eigenValuesFiltered;
+      eigenValuesFiltered1.setValue(1.0);
+
+      //
+      // create YArray
+      // initialize to zeros.
+      // x
+      operatorMatrix.HXCheby(X1, 1.0, 0.0, 0.0, Y1);
+
+
+      //
+      // call HX
+      //
+
+
+      double alpha1 = sigma1 / e, alpha2 = -c;
+      eigenValuesFiltered2.setValue(alpha1 * alpha2);
+      BLASWrapperPtr->ApaBD(1,
+                            eigenValuesFiltered2.size(),
+                            alpha1,
+                            eigenValuesFiltered2.data(),
+                            eigenValuesFiltered1.data(),
+                            eigenValuesFiltered.data(),
+                            eigenValuesFiltered2.data());
+      BLASWrapperPtr->ApaBD(X1.locallyOwnedSize(),
+                            X1.numVectors(),
+                            -1.0,
+                            Y1.data(),
+                            X1.data(),
+                            eigenValuesFiltered.data(),
+                            Y1.data());
+      X1_SP.setValue(0.0);
+      X2_SP.setValue(0.0);
+      BLASWrapperPtr->copyValueType1ArrToValueType2Arr(
+        X1.locallyOwnedSize() * X1.numVectors(), Y1.data(), Y1_SP.data());
+      BLASWrapperPtr->xscal(Y1_SP.data(),
+                            dataTypes::numberFP32(alpha1),
+                            X2.locallyOwnedSize() * X2.numVectors());
+      X2.updateGhostValues();
+      operatorMatrix.HXCheby(X2, 1.0, 0.0, 0.0, Y2, false, false, true, true);
+      //
+      // polynomial loop
+      //
+      for (unsigned int degree = 2; degree < m + 1; ++degree)
+        {
+          sigma2    = 1.0 / (gamma - sigma);
+          alpha1Old = alpha1, alpha2Old = alpha2;
+          alpha1 = 2.0 * sigma2 / e, alpha2 = -(sigma * sigma2);
+
+          if (degree == 2)
+            {
+              operatorMatrix.HXCheby(
+                X2, 1.0, 0.0, 0.0, Y2, false, true, false, true);
+              Y1_SP.updateGhostValuesBegin();
+              operatorMatrix.HXCheby(
+                X2, 1.0, 0.0, 0.0, Y2, false, true, true, false);
+              Y1_SP.updateGhostValuesEnd();
+              Y2.accumulateAddLocallyOwnedBegin();
+            }
+          else
+            {
+              operatorMatrix.HXCheby(Y2_SP,
+                                     alpha1Old,
+                                     alpha2Old,
+                                     -c * alpha1Old,
+                                     X2_SP,
+                                     false,
+                                     true,
+                                     false,
+                                     true);
+              Y1_SP.updateGhostValuesBegin();
+              operatorMatrix.HXCheby(Y2_SP,
+                                     alpha1Old,
+                                     alpha2Old,
+                                     -c * alpha1Old,
+                                     X2_SP,
+                                     false,
+                                     true,
+                                     true,
+                                     false);
+              Y1_SP.updateGhostValuesEnd();
+              X2_SP.accumulateAddLocallyOwnedBegin();
+            }
+
+
+          //
+          // call HX
+          //
+          operatorMatrix.HXCheby(Y1_SP,
+                                 alpha1,
+                                 alpha2,
+                                 -c * alpha1,
+                                 X1_SP,
+                                 false,
+                                 false,
+                                 true,
+                                 true);
+          if (degree == 2)
+            {
+              Y2.accumulateAddLocallyOwnedEnd();
+              Y2.zeroOutGhosts();
+              BLASWrapperPtr->ApaBD(X2.locallyOwnedSize(),
+                                    X2.numVectors(),
+                                    -1.0,
+                                    Y2.data(),
+                                    X2.data(),
+                                    eigenValuesFiltered.data() +
+                                      X1.numVectors(),
+                                    Y2.data());
+              BLASWrapperPtr->copyValueType1ArrToValueType2Arr(
+                X2.locallyOwnedSize() * X2.numVectors(),
+                Y2.data(),
+                Y2_SP.data());
+              BLASWrapperPtr->xscal(Y2_SP.data(),
+                                    dataTypes::numberFP32(alpha1Old),
+                                    X2.locallyOwnedSize() * X2.numVectors());
+            }
+          else
+            {
+              X2_SP.accumulateAddLocallyOwnedEnd();
+              X2_SP.zeroOutGhosts();
+              BLASWrapperPtr->ApaBD(X2_SP.locallyOwnedSize(),
+                                    X2_SP.numVectors(),
+                                    alpha1Old,
+                                    X2_SP.data(),
+                                    Y2.data(),
+                                    eigenValuesFiltered2.data() +
+                                      X1_SP.numVectors(),
+                                    X2_SP.data());
+              BLASWrapperPtr->axpby(eigenValuesFiltered2.size(),
+                                    -c * alpha1Old,
+                                    eigenValuesFiltered2.data(),
+                                    alpha2Old,
+                                    eigenValuesFiltered1.data());
+              BLASWrapperPtr->ApaBD(1,
+                                    eigenValuesFiltered1.size(),
+                                    alpha1Old,
+                                    eigenValuesFiltered1.data(),
+                                    eigenValuesFiltered2.data(),
+                                    eigenValuesFiltered.data(),
+                                    eigenValuesFiltered1.data());
+              X2_SP.swap(Y2_SP);
+              eigenValuesFiltered1.swap(eigenValuesFiltered2);
+            }
+
+          operatorMatrix.HXCheby(Y1_SP,
+                                 alpha1,
+                                 alpha2,
+                                 -c * alpha1,
+                                 X1_SP,
+                                 false,
+                                 true,
+                                 false,
+                                 true);
+          Y2_SP.updateGhostValuesBegin();
+          operatorMatrix.HXCheby(Y1_SP,
+                                 alpha1,
+                                 alpha2,
+                                 -c * alpha1,
+                                 X1_SP,
+                                 false,
+                                 true,
+                                 true,
+                                 false);
+          Y2_SP.updateGhostValuesEnd();
+          X1_SP.accumulateAddLocallyOwnedBegin();
+          operatorMatrix.HXCheby(Y2_SP,
+                                 alpha1,
+                                 alpha2,
+                                 -c * alpha1,
+                                 X2_SP,
+                                 false,
+                                 false,
+                                 true,
+                                 true);
+          X1_SP.accumulateAddLocallyOwnedEnd();
+          X1_SP.zeroOutGhosts();
+          BLASWrapperPtr->ApaBD(X1_SP.locallyOwnedSize(),
+                                X1_SP.numVectors(),
+                                alpha1,
+                                X1_SP.data(),
+                                Y1.data(),
+                                eigenValuesFiltered2.data(),
+                                X1_SP.data());
+
+          //
+          // XArray = YArray
+          //
+          X1_SP.swap(Y1_SP);
+
+          if (degree == m)
+            {
+              operatorMatrix.HXCheby(Y2_SP,
+                                     alpha1,
+                                     alpha2,
+                                     -c * alpha1,
+                                     X2_SP,
+                                     false,
+                                     true,
+                                     false,
+                                     false);
+              X2_SP.accumulateAddLocallyOwned();
+              X2_SP.zeroOutGhosts();
+              BLASWrapperPtr->ApaBD(X2_SP.locallyOwnedSize(),
+                                    X2_SP.numVectors(),
+                                    alpha1,
+                                    X2_SP.data(),
+                                    Y2.data(),
+                                    eigenValuesFiltered2.data() +
+                                      X1_SP.numVectors(),
+                                    X2_SP.data());
+              BLASWrapperPtr->axpby(eigenValuesFiltered2.size(),
+                                    -c * alpha1,
+                                    eigenValuesFiltered2.data(),
+                                    alpha2,
+                                    eigenValuesFiltered1.data());
+              BLASWrapperPtr->ApaBD(1,
+                                    eigenValuesFiltered1.size(),
+                                    alpha1,
+                                    eigenValuesFiltered1.data(),
+                                    eigenValuesFiltered2.data(),
+                                    eigenValuesFiltered.data(),
+                                    eigenValuesFiltered1.data());
+              X2_SP.swap(Y2_SP);
+              eigenValuesFiltered1.swap(eigenValuesFiltered2);
+            }
+
+          //
+          // YArray = YNewArray
+          //
+          sigma = sigma2;
+        }
+
+      // copy back YArray to XArray
+      BLASWrapperPtr->ApaBD(X1.locallyOwnedSize(),
+                            X1.numVectors(),
+                            1.0,
+                            Y1_SP.data(),
+                            X1.data(),
+                            eigenValuesFiltered2.data(),
+                            X1.data());
+
+      BLASWrapperPtr->ApaBD(X2.locallyOwnedSize(),
+                            X2.numVectors(),
+                            1.0,
+                            Y2_SP.data(),
+                            X2.data(),
+                            eigenValuesFiltered2.data() + X1.numVectors(),
+                            X2.data());
+    }
+
 
     void
     subspaceRotationSpectrumSplitScalapack(
-      const dataTypes::number *                        X,
-      dataTypes::number *                              XFrac,
-      const unsigned int                               M,
-      const unsigned int                               N,
-      const unsigned int                               Nfr,
-      dftfe::utils::deviceBlasHandle_t &               handle,
+      const dataTypes::number *X,
+      dataTypes::number *      XFrac,
+      const unsigned int       M,
+      const unsigned int       N,
+      const unsigned int       Nfr,
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &                                              BLASWrapperPtr,
       const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
       const MPI_Comm &                                 mpiCommDomain,
       utils::DeviceCCLWrapper &                        devicecclMpiCommDomain,
@@ -543,7 +839,7 @@ namespace dftfe
       dftfe::utils::deviceStreamCreate(&streamDeviceCCL);
 
       // attach deviceblas handle to compute stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, streamCompute);
+      BLASWrapperPtr->setStream(streamCompute);
 
       // create array of compute and device direct commun events on Devices
       // for all the blocks. These are required for synchronization
@@ -829,21 +1125,19 @@ namespace dftfe
 
               if (BDof != 0)
                 {
-                  dftfe::utils::deviceBlasWrapper::gemm(
-                    handle,
-                    dftfe::utils::DEVICEBLAS_OP_N,
-                    dftfe::utils::DEVICEBLAS_OP_N,
-                    BVec,
-                    BDof,
-                    N,
-                    &scalarCoeffAlpha,
-                    rotationMatBlock.begin(),
-                    BVec,
-                    X + idof * N,
-                    N,
-                    &scalarCoeffBeta,
-                    rotatedVectorsMatBlock.begin() + jvec,
-                    Nfr);
+                  BLASWrapperPtr->xgemm('N',
+                                        'N',
+                                        BVec,
+                                        BDof,
+                                        N,
+                                        &scalarCoeffAlpha,
+                                        rotationMatBlock.begin(),
+                                        BVec,
+                                        X + idof * N,
+                                        N,
+                                        &scalarCoeffBeta,
+                                        rotatedVectorsMatBlock.begin() + jvec,
+                                        Nfr);
                 }
 
               blockCount++;
@@ -863,7 +1157,7 @@ namespace dftfe
         } // block loop over dofs
 
       // return deviceblas handle to default stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, NULL);
+      BLASWrapperPtr->setStream(NULL);
 
       for (int i = 0; i < numberBlocks; ++i)
         {
@@ -879,10 +1173,12 @@ namespace dftfe
 
     void
     subspaceRotationScalapack(
-      dataTypes::number *                              X,
-      const unsigned int                               M,
-      const unsigned int                               N,
-      dftfe::utils::deviceBlasHandle_t &               handle,
+      dataTypes::number *X,
+      const unsigned int M,
+      const unsigned int N,
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &                                              BLASWrapperPtr,
       const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
       const MPI_Comm &                                 mpiCommDomain,
       utils::DeviceCCLWrapper &                        devicecclMpiCommDomain,
@@ -938,7 +1234,7 @@ namespace dftfe
       dftfe::utils::deviceStreamCreate(&streamDeviceCCL);
 
       // attach deviceblas handle to compute stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, streamCompute);
+      BLASWrapperPtr->setStream(streamCompute);
 
       // create array of compute and device direct commun events on Devices
       // for all the blocks. These are required for synchronization
@@ -1241,21 +1537,20 @@ namespace dftfe
 
                   if (BDof != 0)
                     {
-                      dftfe::utils::deviceBlasWrapper::gemm(
-                        handle,
-                        dftfe::utils::DEVICEBLAS_OP_N,
-                        dftfe::utils::DEVICEBLAS_OP_N,
-                        BVec,
-                        BDof,
-                        D,
-                        &scalarCoeffAlpha,
-                        rotationMatBlock.begin(),
-                        BVec,
-                        X + idof * N,
-                        N,
-                        &scalarCoeffBeta,
-                        rotatedVectorsMatBlock.begin() + jvec,
-                        N);
+                      BLASWrapperPtr->xgemm('N',
+                                            'N',
+                                            BVec,
+                                            BDof,
+                                            D,
+                                            &scalarCoeffAlpha,
+                                            rotationMatBlock.begin(),
+                                            BVec,
+                                            X + idof * N,
+                                            N,
+                                            &scalarCoeffBeta,
+                                            rotatedVectorsMatBlock.begin() +
+                                              jvec,
+                                            N);
                     }
                 } // band parallelization
               blockCount++;
@@ -1276,7 +1571,7 @@ namespace dftfe
 
 
       // return deviceblas handle to default stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, NULL);
+      BLASWrapperPtr->setStream(NULL);
 
       for (int i = 0; i < numberBlocks; ++i)
         {
@@ -1290,10 +1585,12 @@ namespace dftfe
 
     void
     subspaceRotationCGSMixedPrecScalapack(
-      dataTypes::number *                              X,
-      const unsigned int                               M,
-      const unsigned int                               N,
-      dftfe::utils::deviceBlasHandle_t &               handle,
+      dataTypes::number *X,
+      const unsigned int M,
+      const unsigned int N,
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &                                              BLASWrapperPtr,
       const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
       const MPI_Comm &                                 mpiCommDomain,
       utils::DeviceCCLWrapper &                        devicecclMpiCommDomain,
@@ -1328,8 +1625,7 @@ namespace dftfe
         XSP(MPadded * N, dataTypes::numberFP32(0));
 
 
-      dftfe::utils::deviceKernelsGeneric::copyValueType1ArrToValueType2Arr(
-        N * M, X, XSP.begin());
+      BLASWrapperPtr->copyValueType1ArrToValueType2Arr(N * M, X, XSP.begin());
 
       const unsigned int vectorsBlockSize = std::min(dftParams.wfcBlockSize, N);
       const unsigned int dofsBlockSize =
@@ -1355,7 +1651,7 @@ namespace dftfe
       dftfe::utils::deviceStreamCreate(&streamDeviceCCL);
 
       // attach deviceblas handle to compute stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, streamCompute);
+      BLASWrapperPtr->setStream(streamCompute);
 
       // create array of compute and device direct commun events on Devices
       // for all the blocks. These are required for synchronization
@@ -1638,21 +1934,19 @@ namespace dftfe
 
                   if (BDof != 0)
                     {
-                      dftfe::utils::deviceBlasWrapper::gemm(
-                        handle,
-                        dftfe::utils::DEVICEBLAS_OP_N,
-                        dftfe::utils::DEVICEBLAS_OP_N,
-                        BVec,
-                        BDof,
-                        D,
-                        &scalarCoeffAlphaSP,
-                        rotationMatBlockSP.begin(),
-                        BVec,
-                        XSP.begin() + idof * N,
-                        N,
-                        &scalarCoeffBetaSP,
-                        rotatedVectorsMatBlockSP.begin(),
-                        BVec);
+                      BLASWrapperPtr->xgemm('N',
+                                            'N',
+                                            BVec,
+                                            BDof,
+                                            D,
+                                            &scalarCoeffAlphaSP,
+                                            rotationMatBlockSP.begin(),
+                                            BVec,
+                                            XSP.begin() + idof * N,
+                                            N,
+                                            &scalarCoeffBetaSP,
+                                            rotatedVectorsMatBlockSP.begin(),
+                                            BVec);
 
 #ifdef DFTFE_WITH_DEVICE_LANG_CUDA
                       addSubspaceRotatedBlockToXKernel<<<
@@ -1693,7 +1987,7 @@ namespace dftfe
         } // block loop over vectors
 
       // return deviceblas handle to default stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, NULL);
+      BLASWrapperPtr->setStream(NULL);
 
       for (int i = 0; i < numberBlocks; ++i)
         {
@@ -1707,10 +2001,12 @@ namespace dftfe
 
     void
     subspaceRotationRRMixedPrecScalapack(
-      dataTypes::number *                              X,
-      const unsigned int                               M,
-      const unsigned int                               N,
-      dftfe::utils::deviceBlasHandle_t &               handle,
+      dataTypes::number *X,
+      const unsigned int M,
+      const unsigned int N,
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &                                              BLASWrapperPtr,
       const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
       const MPI_Comm &                                 mpiCommDomain,
       utils::DeviceCCLWrapper &                        devicecclMpiCommDomain,
@@ -1736,8 +2032,7 @@ namespace dftfe
         XSP(MPadded * N, dataTypes::numberFP32(0));
 
 
-      dftfe::utils::deviceKernelsGeneric::copyValueType1ArrToValueType2Arr(
-        N * M, X, XSP.begin());
+      BLASWrapperPtr->copyValueType1ArrToValueType2Arr(N * M, X, XSP.begin());
 
       // band group parallelization data structures
       const unsigned int numberBandGroups =
@@ -1771,7 +2066,7 @@ namespace dftfe
       dftfe::utils::deviceStreamCreate(&streamDeviceCCL);
 
       // attach deviceblas handle to compute stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, streamCompute);
+      BLASWrapperPtr->setStream(streamCompute);
 
       // create array of compute and device direct commun events on Devices
       // for all the blocks. These are required for synchronization
@@ -2055,21 +2350,19 @@ namespace dftfe
 
                   if (BDof != 0)
                     {
-                      dftfe::utils::deviceBlasWrapper::gemm(
-                        handle,
-                        dftfe::utils::DEVICEBLAS_OP_N,
-                        dftfe::utils::DEVICEBLAS_OP_N,
-                        BVec,
-                        BDof,
-                        D,
-                        &scalarCoeffAlphaSP,
-                        rotationMatBlockSP.begin(),
-                        BVec,
-                        XSP.begin() + idof * N,
-                        N,
-                        &scalarCoeffBetaSP,
-                        rotatedVectorsMatBlockSP.begin(),
-                        BVec);
+                      BLASWrapperPtr->xgemm('N',
+                                            'N',
+                                            BVec,
+                                            BDof,
+                                            D,
+                                            &scalarCoeffAlphaSP,
+                                            rotationMatBlockSP.begin(),
+                                            BVec,
+                                            XSP.begin() + idof * N,
+                                            N,
+                                            &scalarCoeffBetaSP,
+                                            rotatedVectorsMatBlockSP.begin(),
+                                            BVec);
 
 #ifdef DFTFE_WITH_DEVICE_LANG_CUDA
                       addSubspaceRotatedBlockToXKernel<<<
@@ -2111,7 +2404,7 @@ namespace dftfe
 
 
       // return deviceblas handle to default stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, NULL);
+      BLASWrapperPtr->setStream(NULL);
 
       for (int i = 0; i < numberBlocks; ++i)
         {
@@ -2125,10 +2418,12 @@ namespace dftfe
 
     void
     fillParallelOverlapMatScalapack(
-      const dataTypes::number *                        X,
-      const unsigned int                               M,
-      const unsigned int                               N,
-      dftfe::utils::deviceBlasHandle_t &               handle,
+      const dataTypes::number *X,
+      const unsigned int       M,
+      const unsigned int       N,
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &                                              BLASWrapperPtr,
       const MPI_Comm &                                 mpiCommDomain,
       utils::DeviceCCLWrapper &                        devicecclMpiCommDomain,
       const MPI_Comm &                                 interBandGroupComm,
@@ -2168,8 +2463,7 @@ namespace dftfe
                   0,
                   vectorsBlockSize * N * sizeof(dataTypes::number));
 
-      dftfe::utils::deviceStream_t streamDeviceCCL;
-      dftfe::utils::deviceStreamCreate(&streamDeviceCCL);
+      dftfe::utils::deviceStream_t streamDeviceCCL = 0;
 
       const dataTypes::number scalarCoeffAlpha = dataTypes::number(1.0);
       const dataTypes::number scalarCoeffBeta  = dataTypes::number(0);
@@ -2199,12 +2493,11 @@ namespace dftfe
               (ivec + B) > bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId])
             {
               // Comptute local XTrunc^{T}*XcBlock.
-              dftfe::utils::deviceBlasWrapper::gemm(
-                handle,
-                dftfe::utils::DEVICEBLAS_OP_N,
+              BLASWrapperPtr->xgemm(
+                'N',
                 std::is_same<dataTypes::number, std::complex<double>>::value ?
-                  dftfe::utils::DEVICEBLAS_OP_C :
-                  dftfe::utils::DEVICEBLAS_OP_T,
+                  'C' :
+                  'T',
                 D,
                 B,
                 M,
@@ -2279,9 +2572,6 @@ namespace dftfe
             } // band parallelization
         }     // end block loop
 
-
-      dftfe::utils::deviceStreamDestroy(streamDeviceCCL);
-
       if (numberBandGroups > 1)
         linearAlgebraOperations::internal::sumAcrossInterCommScaLAPACKMat(
           processGrid, overlapMatPar, interBandGroupComm);
@@ -2319,10 +2609,12 @@ namespace dftfe
 
     void
     fillParallelOverlapMatScalapackAsyncComputeCommun(
-      const dataTypes::number *                        X,
-      const unsigned int                               M,
-      const unsigned int                               N,
-      dftfe::utils::deviceBlasHandle_t &               handle,
+      const dataTypes::number *X,
+      const unsigned int       M,
+      const unsigned int       N,
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &                                              BLASWrapperPtr,
       const MPI_Comm &                                 mpiCommDomain,
       utils::DeviceCCLWrapper &                        devicecclMpiCommDomain,
       const MPI_Comm &                                 interBandGroupComm,
@@ -2357,7 +2649,7 @@ namespace dftfe
       dftfe::utils::deviceStreamCreate(&streamDataMove);
 
       // attach deviceblas handle to compute stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, streamCompute);
+      BLASWrapperPtr->setStream(streamCompute);
 
       // create array of compute and copy events on Devices
       // for all the blocks. These are required for synchronization
@@ -2418,13 +2710,12 @@ namespace dftfe
               // Compute local XTrunc^{T}*XcBlock.
               if (ivec == bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId])
                 {
-                  dftfe::utils::deviceBlasWrapper::gemm(
-                    handle,
-                    dftfe::utils::DEVICEBLAS_OP_N,
+                  BLASWrapperPtr->xgemm(
+                    'N',
                     std::is_same<dataTypes::number,
                                  std::complex<double>>::value ?
-                      dftfe::utils::DEVICEBLAS_OP_C :
-                      dftfe::utils::DEVICEBLAS_OP_T,
+                      'C' :
+                      'T',
                     D,
                     B,
                     M,
@@ -2464,13 +2755,12 @@ namespace dftfe
                   bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId + 1])
                 {
                   // evaluate X^{T} times XBlock
-                  dftfe::utils::deviceBlasWrapper::gemm(
-                    handle,
-                    dftfe::utils::DEVICEBLAS_OP_N,
+                  BLASWrapperPtr->xgemm(
+                    'N',
                     std::is_same<dataTypes::number,
                                  std::complex<double>>::value ?
-                      dftfe::utils::DEVICEBLAS_OP_C :
-                      dftfe::utils::DEVICEBLAS_OP_T,
+                      'C' :
+                      'T',
                     DNew,
                     BNew,
                     M,
@@ -2567,7 +2857,7 @@ namespace dftfe
 
 
       // return deviceblas handle to default stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, NULL);
+      BLASWrapperPtr->setStream(NULL);
 
       for (int i = 0; i < numberBlocks; ++i)
         {
@@ -2590,10 +2880,12 @@ namespace dftfe
 
     void
     fillParallelOverlapMatMixedPrecScalapack(
-      const dataTypes::number *                        X,
-      const unsigned int                               M,
-      const unsigned int                               N,
-      dftfe::utils::deviceBlasHandle_t &               handle,
+      const dataTypes::number *X,
+      const unsigned int       M,
+      const unsigned int       N,
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &                                              BLASWrapperPtr,
       const MPI_Comm &                                 mpiCommDomain,
       utils::DeviceCCLWrapper &                        devicecclMpiCommDomain,
       const MPI_Comm &                                 interBandGroupComm,
@@ -2635,8 +2927,7 @@ namespace dftfe
                                   dftfe::utils::MemorySpace::DEVICE>
         XSP(MPadded * N, dataTypes::numberFP32(0));
 
-      dftfe::utils::deviceKernelsGeneric::copyValueType1ArrToValueType2Arr(
-        N * M, X, XSP.begin());
+      BLASWrapperPtr->copyValueType1ArrToValueType2Arr(N * M, X, XSP.begin());
 
       dftfe::utils::MemoryStorage<dataTypes::number,
                                   dftfe::utils::MemorySpace::HOST_PINNED>
@@ -2655,8 +2946,7 @@ namespace dftfe
                   0,
                   N * vectorsBlockSize * sizeof(dataTypes::numberFP32));
 
-      dftfe::utils::deviceStream_t streamDeviceCCL;
-      dftfe::utils::deviceStreamCreate(&streamDeviceCCL);
+      dftfe::utils::deviceStream_t streamDeviceCCL = 0;
 
       const dataTypes::number     scalarCoeffAlpha = dataTypes::number(1.0);
       const dataTypes::number     scalarCoeffBeta  = dataTypes::number(0);
@@ -2697,12 +2987,11 @@ namespace dftfe
                 bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId + 1] &&
               (ivec + B) > bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId])
             {
-              dftfe::utils::deviceBlasWrapper::gemm(
-                handle,
-                dftfe::utils::DEVICEBLAS_OP_N,
+              BLASWrapperPtr->xgemm(
+                'N',
                 std::is_same<dataTypes::number, std::complex<double>>::value ?
-                  dftfe::utils::DEVICEBLAS_OP_C :
-                  dftfe::utils::DEVICEBLAS_OP_T,
+                  'C' :
+                  'T',
                 B,
                 B,
                 M,
@@ -2719,13 +3008,12 @@ namespace dftfe
 
               if (DRem != 0)
                 {
-                  dftfe::utils::deviceBlasWrapper::gemm(
-                    handle,
-                    dftfe::utils::DEVICEBLAS_OP_N,
+                  BLASWrapperPtr->xgemm(
+                    'N',
                     std::is_same<dataTypes::number,
                                  std::complex<double>>::value ?
-                      dftfe::utils::DEVICEBLAS_OP_C :
-                      dftfe::utils::DEVICEBLAS_OP_T,
+                      'C' :
+                      'T',
                     DRem,
                     B,
                     M,
@@ -2837,9 +3125,6 @@ namespace dftfe
             } // band parallelization
         }     // end block loop
 
-
-      dftfe::utils::deviceStreamDestroy(streamDeviceCCL);
-
       if (numberBandGroups > 1)
         linearAlgebraOperations::internal::sumAcrossInterCommScaLAPACKMat(
           processGrid, overlapMatPar, interBandGroupComm);
@@ -2878,10 +3163,12 @@ namespace dftfe
 
     void
     fillParallelOverlapMatMixedPrecScalapackAsyncComputeCommun(
-      const dataTypes::number *                        X,
-      const unsigned int                               M,
-      const unsigned int                               N,
-      dftfe::utils::deviceBlasHandle_t &               handle,
+      const dataTypes::number *X,
+      const unsigned int       M,
+      const unsigned int       N,
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &                                              BLASWrapperPtr,
       const MPI_Comm &                                 mpiCommDomain,
       utils::DeviceCCLWrapper &                        devicecclMpiCommDomain,
       const MPI_Comm &                                 interBandGroupComm,
@@ -2916,7 +3203,7 @@ namespace dftfe
       dftfe::utils::deviceStreamCreate(&streamDataMove);
 
       // attach deviceblas handle to compute stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, streamCompute);
+      BLASWrapperPtr->setStream(streamCompute);
 
       // create array of compute and copy events on Devices
       // for all the blocks. These are required for synchronization
@@ -2953,8 +3240,7 @@ namespace dftfe
         XSP(MPadded * N, dataTypes::numberFP32(0));
 
 
-      dftfe::utils::deviceKernelsGeneric::copyValueType1ArrToValueType2Arr(
-        N * M, X, XSP.begin());
+      BLASWrapperPtr->copyValueType1ArrToValueType2Arr(N * M, X, XSP.begin());
 
       dftfe::utils::MemoryStorage<dataTypes::number,
                                   dftfe::utils::MemorySpace::HOST_PINNED>
@@ -3014,13 +3300,12 @@ namespace dftfe
               // Compute local XTrunc^{T}*XcBlock
               if (ivec == bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId])
                 {
-                  dftfe::utils::deviceBlasWrapper::gemm(
-                    handle,
-                    dftfe::utils::DEVICEBLAS_OP_N,
+                  BLASWrapperPtr->xgemm(
+                    'N',
                     std::is_same<dataTypes::number,
                                  std::complex<double>>::value ?
-                      dftfe::utils::DEVICEBLAS_OP_C :
-                      dftfe::utils::DEVICEBLAS_OP_T,
+                      'C' :
+                      'T',
                     B,
                     B,
                     M,
@@ -3037,13 +3322,12 @@ namespace dftfe
 
                   if (DRem != 0)
                     {
-                      dftfe::utils::deviceBlasWrapper::gemm(
-                        handle,
-                        dftfe::utils::DEVICEBLAS_OP_N,
+                      BLASWrapperPtr->xgemm(
+                        'N',
                         std::is_same<dataTypes::number,
                                      std::complex<double>>::value ?
-                          dftfe::utils::DEVICEBLAS_OP_C :
-                          dftfe::utils::DEVICEBLAS_OP_T,
+                          'C' :
+                          'T',
                         DRem,
                         B,
                         M,
@@ -3087,13 +3371,12 @@ namespace dftfe
                   bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId + 1])
                 {
                   // evaluate X^{T} times XBlock
-                  dftfe::utils::deviceBlasWrapper::gemm(
-                    handle,
+                  BLASWrapperPtr->xgemm(
                     dftfe::utils::DEVICEBLAS_OP_N,
                     std::is_same<dataTypes::number,
                                  std::complex<double>>::value ?
-                      dftfe::utils::DEVICEBLAS_OP_C :
-                      dftfe::utils::DEVICEBLAS_OP_T,
+                      'C' :
+                      'T',
                     BNew,
                     BNew,
                     M,
@@ -3110,13 +3393,12 @@ namespace dftfe
 
                   if (DRemNew != 0)
                     {
-                      dftfe::utils::deviceBlasWrapper::gemm(
-                        handle,
-                        dftfe::utils::DEVICEBLAS_OP_N,
+                      BLASWrapperPtr->xgemm(
+                        'N',
                         std::is_same<dataTypes::number,
                                      std::complex<double>>::value ?
-                          dftfe::utils::DEVICEBLAS_OP_C :
-                          dftfe::utils::DEVICEBLAS_OP_T,
+                          'C' :
+                          'T',
                         DRemNew,
                         BNew,
                         M,
@@ -3256,7 +3538,7 @@ namespace dftfe
 
 
       // return deviceblas handle to default stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, NULL);
+      BLASWrapperPtr->setStream(NULL);
 
       for (int i = 0; i < numberBlocks; ++i)
         {
@@ -3279,10 +3561,12 @@ namespace dftfe
 
     void
     fillParallelOverlapMatMixedPrecCommunScalapackAsyncComputeCommun(
-      const dataTypes::number *                        X,
-      const unsigned int                               M,
-      const unsigned int                               N,
-      dftfe::utils::deviceBlasHandle_t &               handle,
+      const dataTypes::number *X,
+      const unsigned int       M,
+      const unsigned int       N,
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &                                              BLASWrapperPtr,
       const MPI_Comm &                                 mpiCommDomain,
       utils::DeviceCCLWrapper &                        devicecclMpiCommDomain,
       const MPI_Comm &                                 interBandGroupComm,
@@ -3317,7 +3601,7 @@ namespace dftfe
       dftfe::utils::deviceStreamCreate(&streamDataMove);
 
       // attach deviceblas handle to compute stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, streamCompute);
+      BLASWrapperPtr->setStream(streamCompute);
 
       // create array of compute and copy events on Devices
       // for all the blocks. These are required for synchronization
@@ -3408,13 +3692,12 @@ namespace dftfe
               // Compute local XTrunc^{T}*XcBlock.
               if (ivec == bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId])
                 {
-                  dftfe::utils::deviceBlasWrapper::gemm(
-                    handle,
+                  BLASWrapperPtr->xgemm(
                     dftfe::utils::DEVICEBLAS_OP_N,
                     std::is_same<dataTypes::number,
                                  std::complex<double>>::value ?
-                      dftfe::utils::DEVICEBLAS_OP_C :
-                      dftfe::utils::DEVICEBLAS_OP_T,
+                      'C' :
+                      'T',
                     D,
                     B,
                     M,
@@ -3454,13 +3737,12 @@ namespace dftfe
                   bandGroupLowHighPlusOneIndices[2 * bandGroupTaskId + 1])
                 {
                   // evaluate X^{T} times XBlock
-                  dftfe::utils::deviceBlasWrapper::gemm(
-                    handle,
-                    dftfe::utils::DEVICEBLAS_OP_N,
+                  BLASWrapperPtr->xgemm(
+                    'N',
                     std::is_same<dataTypes::number,
                                  std::complex<double>>::value ?
-                      dftfe::utils::DEVICEBLAS_OP_C :
-                      dftfe::utils::DEVICEBLAS_OP_T,
+                      'C' :
+                      'T',
                     DNew,
                     BNew,
                     M,
@@ -3634,7 +3916,7 @@ namespace dftfe
 
 
       // return deviceblas handle to default stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, NULL);
+      BLASWrapperPtr->setStream(NULL);
 
       for (int i = 0; i < numberBlocks; ++i)
         {
@@ -3667,10 +3949,12 @@ namespace dftfe
       const MPI_Comm &                                     mpiCommParent,
       const MPI_Comm &                                     mpiCommDomain,
       const MPI_Comm &                                     interBandGroupComm,
-      dftfe::utils::deviceBlasHandle_t &                   handle,
-      std::vector<double> &                                residualNorm,
-      const dftParameters &                                dftParams,
-      const bool                                           useBandParal)
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &                  BLASWrapperPtr,
+      std::vector<double> &residualNorm,
+      const dftParameters &dftParams,
+      const bool           useBandParal)
     {
       // band group parallelization data structures
       const unsigned int numberBandGroups =
@@ -3721,19 +4005,18 @@ namespace dftfe
 
               for (unsigned int k = jvec; k < jvec + B; k += chebyBlockSize)
                 {
-                  dftfe::utils::deviceKernelsGeneric::
-                    stridedCopyToBlockConstantStride(
-                      chebyBlockSize, N, M, k, X, XBlock.begin());
+                  BLASWrapperPtr->stridedCopyToBlockConstantStride(
+                    chebyBlockSize, N, M, k, X, XBlock.begin());
 
                   // evaluate H times XBlock^{T} and store in HXBlock^{T}
                   operatorMatrix.HX(XBlock, 1.0, 0.0, 0.0, HXBlock);
-                  dftfe::utils::deviceKernelsGeneric::
-                    stridedCopyFromBlockConstantStride(B,
-                                                       chebyBlockSize,
-                                                       M,
-                                                       k - jvec,
-                                                       HXBlock.begin(),
-                                                       HXBlockFull.begin());
+                  BLASWrapperPtr->stridedCopyFromBlockConstantStride(
+                    B,
+                    chebyBlockSize,
+                    M,
+                    k - jvec,
+                    HXBlock.begin(),
+                    HXBlockFull.begin());
                 }
 
 #ifdef DFTFE_WITH_DEVICE_LANG_CUDA
@@ -3767,21 +4050,19 @@ namespace dftfe
                                  residualSqDevice.begin());
 #endif
 
-              dftfe::utils::deviceBlasWrapper::gemm(
-                handle,
-                dftfe::utils::DEVICEBLAS_OP_N,
-                dftfe::utils::DEVICEBLAS_OP_T,
-                1,
-                B,
-                M,
-                &alpha,
-                onesVecDevice.begin(),
-                1,
-                residualSqDevice.begin(),
-                B,
-                &beta,
-                residualNormSquareDevice.begin() + jvec,
-                1);
+              BLASWrapperPtr->xgemm('N',
+                                    'T',
+                                    1,
+                                    B,
+                                    M,
+                                    &alpha,
+                                    onesVecDevice.begin(),
+                                    1,
+                                    residualSqDevice.begin(),
+                                    B,
+                                    &beta,
+                                    residualNormSquareDevice.begin() + jvec,
+                                    1);
             }
         }
 
@@ -3829,9 +4110,11 @@ namespace dftfe
          distributedDeviceVec<dataTypes::number> &            HXBlock,
          const unsigned int                                   M,
          const unsigned int                                   N,
-         dftfe::utils::deviceBlasHandle_t &                   handle,
-         const std::shared_ptr<const dftfe::ProcessGrid> &    processGrid,
-         dftfe::ScaLAPACKMatrix<dataTypes::number> &          projHamPar,
+         std::shared_ptr<
+           dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+           &                                              BLASWrapperPtr,
+         const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
+         dftfe::ScaLAPACKMatrix<dataTypes::number> &      projHamPar,
          utils::DeviceCCLWrapper &devicecclMpiCommDomain,
          const MPI_Comm &         mpiCommDomain,
          const MPI_Comm &         interBandGroupComm,
@@ -3888,9 +4171,8 @@ namespace dftfe
 
               for (unsigned int k = jvec; k < jvec + B; k += chebyBlockSize)
                 {
-                  dftfe::utils::deviceKernelsGeneric::
-                    stridedCopyToBlockConstantStride(
-                      chebyBlockSize, N, M, k, X, XBlock.begin());
+                  BLASWrapperPtr->stridedCopyToBlockConstantStride(
+                    chebyBlockSize, N, M, k, X, XBlock.begin());
 
                   // evaluate XBlock^{T} times H^{T} and store in HXBlock
                   operatorMatrix.HX(
@@ -3901,25 +4183,24 @@ namespace dftfe
                     HXBlock,
                     onlyHPrimePartForFirstOrderDensityMatResponse);
 
-                  dftfe::utils::deviceKernelsGeneric::
-                    stridedCopyFromBlockConstantStride(B,
-                                                       chebyBlockSize,
-                                                       M,
-                                                       k - jvec,
-                                                       HXBlock.begin(),
-                                                       HXBlockFull.begin());
+                  BLASWrapperPtr->stridedCopyFromBlockConstantStride(
+                    B,
+                    chebyBlockSize,
+                    M,
+                    k - jvec,
+                    HXBlock.begin(),
+                    HXBlockFull.begin());
                 }
 
               // Comptute local XTrunc^{T}*HConj*XConj.
               const dataTypes::number alpha = dataTypes::number(1.0),
                                       beta  = dataTypes::number(0.0);
               const unsigned int D          = N - jvec;
-              dftfe::utils::deviceBlasWrapper::gemm(
-                handle,
-                dftfe::utils::DEVICEBLAS_OP_N,
+              BLASWrapperPtr->xgemm(
+                'N',
                 std::is_same<dataTypes::number, std::complex<double>>::value ?
-                  dftfe::utils::DEVICEBLAS_OP_C :
-                  dftfe::utils::DEVICEBLAS_OP_T,
+                  'C' :
+                  'T',
                 D,
                 B,
                 M,
@@ -3989,14 +4270,16 @@ namespace dftfe
       distributedDeviceVec<dataTypes::number> &            HXBlock,
       const unsigned int                                   M,
       const unsigned int                                   N,
-      dftfe::utils::deviceBlasHandle_t &                   handle,
-      const std::shared_ptr<const dftfe::ProcessGrid> &    processGrid,
-      dftfe::ScaLAPACKMatrix<dataTypes::number> &          projHamPar,
-      utils::DeviceCCLWrapper &devicecclMpiCommDomain,
-      const MPI_Comm &         mpiCommDomain,
-      const MPI_Comm &         interBandGroupComm,
-      const dftParameters &    dftParams,
-      const bool               onlyHPrimePartForFirstOrderDensityMatResponse)
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &                                              BLASWrapperPtr,
+      const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
+      dftfe::ScaLAPACKMatrix<dataTypes::number> &      projHamPar,
+      utils::DeviceCCLWrapper &                        devicecclMpiCommDomain,
+      const MPI_Comm &                                 mpiCommDomain,
+      const MPI_Comm &                                 interBandGroupComm,
+      const dftParameters &                            dftParams,
+      const bool onlyHPrimePartForFirstOrderDensityMatResponse)
     {
       /////////////PSEUDO CODE for the implementation below for Overlapping
       /// compute and communication/////////////////
@@ -4054,7 +4337,7 @@ namespace dftfe
       dftfe::utils::deviceStreamCreate(&streamDataMove);
 
       // attach deviceblas handle to compute stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, streamCompute);
+      BLASWrapperPtr->setStream(streamCompute);
 
       // create array of compute and copy events on Devices
       // for all the blocks. These are required for synchronization
@@ -4124,9 +4407,8 @@ namespace dftfe
                   // wavefunction vectors
                   for (unsigned int k = jvec; k < jvec + B; k += chebyBlockSize)
                     {
-                      dftfe::utils::deviceKernelsGeneric::
-                        stridedCopyToBlockConstantStride(
-                          chebyBlockSize, N, M, k, X, XBlock.begin());
+                      BLASWrapperPtr->stridedCopyToBlockConstantStride(
+                        chebyBlockSize, N, M, k, X, XBlock.begin());
 
                       // evaluate H times XBlock^{T} and store in HXBlock^{T}
                       operatorMatrix.HX(
@@ -4137,23 +4419,22 @@ namespace dftfe
                         HXBlock,
                         onlyHPrimePartForFirstOrderDensityMatResponse);
 
-                      dftfe::utils::deviceKernelsGeneric::
-                        stridedCopyFromBlockConstantStride(B,
-                                                           chebyBlockSize,
-                                                           M,
-                                                           k - jvec,
-                                                           HXBlock.begin(),
-                                                           HXBlockFull.begin());
+                      BLASWrapperPtr->stridedCopyFromBlockConstantStride(
+                        B,
+                        chebyBlockSize,
+                        M,
+                        k - jvec,
+                        HXBlock.begin(),
+                        HXBlockFull.begin());
                     }
 
                   // evalute X^{T} times HXBlock
-                  dftfe::utils::deviceBlasWrapper::gemm(
-                    handle,
-                    dftfe::utils::DEVICEBLAS_OP_N,
+                  BLASWrapperPtr->xgemm(
+                    'N',
                     std::is_same<dataTypes::number,
                                  std::complex<double>>::value ?
-                      dftfe::utils::DEVICEBLAS_OP_C :
-                      dftfe::utils::DEVICEBLAS_OP_T,
+                      'C' :
+                      'T',
                     D,
                     B,
                     M,
@@ -4194,9 +4475,8 @@ namespace dftfe
                   for (unsigned int k = jvecNew; k < jvecNew + B;
                        k += chebyBlockSize)
                     {
-                      dftfe::utils::deviceKernelsGeneric::
-                        stridedCopyToBlockConstantStride(
-                          chebyBlockSize, N, M, k, X, XBlock.begin());
+                      BLASWrapperPtr->stridedCopyToBlockConstantStride(
+                        chebyBlockSize, N, M, k, X, XBlock.begin());
 
                       // evaluate H times XBlock^{T} and store in HXBlock^{T}
                       operatorMatrix.HX(
@@ -4207,23 +4487,22 @@ namespace dftfe
                         HXBlock,
                         onlyHPrimePartForFirstOrderDensityMatResponse);
 
-                      dftfe::utils::deviceKernelsGeneric::
-                        stridedCopyFromBlockConstantStride(B,
-                                                           chebyBlockSize,
-                                                           M,
-                                                           k - jvecNew,
-                                                           HXBlock.begin(),
-                                                           HXBlockFull.begin());
+                      BLASWrapperPtr->stridedCopyFromBlockConstantStride(
+                        B,
+                        chebyBlockSize,
+                        M,
+                        k - jvecNew,
+                        HXBlock.begin(),
+                        HXBlockFull.begin());
                     }
 
                   // evalute X^{T} times HXBlock
-                  dftfe::utils::deviceBlasWrapper::gemm(
-                    handle,
-                    dftfe::utils::DEVICEBLAS_OP_N,
+                  BLASWrapperPtr->xgemm(
+                    'N',
                     std::is_same<dataTypes::number,
                                  std::complex<double>>::value ?
-                      dftfe::utils::DEVICEBLAS_OP_C :
-                      dftfe::utils::DEVICEBLAS_OP_T,
+                      'C' :
+                      'T',
                     DNew,
                     B,
                     M,
@@ -4318,7 +4597,7 @@ namespace dftfe
         }
 
       // return deviceblas handle to default stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, NULL);
+      BLASWrapperPtr->setStream(NULL);
 
       for (int i = 0; i < numberBlocks; ++i)
         {
@@ -4376,14 +4655,16 @@ namespace dftfe
       const unsigned int                                   M,
       const unsigned int                                   N,
       const unsigned int                                   Noc,
-      dftfe::utils::deviceBlasHandle_t &                   handle,
-      const std::shared_ptr<const dftfe::ProcessGrid> &    processGrid,
-      dftfe::ScaLAPACKMatrix<dataTypes::number> &          projHamPar,
-      utils::DeviceCCLWrapper &devicecclMpiCommDomain,
-      const MPI_Comm &         mpiCommDomain,
-      const MPI_Comm &         interBandGroupComm,
-      const dftParameters &    dftParams,
-      const bool               onlyHPrimePartForFirstOrderDensityMatResponse)
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &                                              BLASWrapperPtr,
+      const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
+      dftfe::ScaLAPACKMatrix<dataTypes::number> &      projHamPar,
+      utils::DeviceCCLWrapper &                        devicecclMpiCommDomain,
+      const MPI_Comm &                                 mpiCommDomain,
+      const MPI_Comm &                                 interBandGroupComm,
+      const dftParameters &                            dftParams,
+      const bool onlyHPrimePartForFirstOrderDensityMatResponse)
     {
       std::unordered_map<unsigned int, unsigned int> globalToLocalColumnIdMap;
       std::unordered_map<unsigned int, unsigned int> globalToLocalRowIdMap;
@@ -4413,7 +4694,7 @@ namespace dftfe
       dftfe::utils::deviceStreamCreate(&streamDataMove);
 
       // attach deviceblas handle to compute stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, streamCompute);
+      BLASWrapperPtr->setStream(streamCompute);
 
       // create array of compute and copy events on Devices
       // for all the blocks. These are required for synchronization
@@ -4432,8 +4713,7 @@ namespace dftfe
                                   dftfe::utils::MemorySpace::DEVICE>
         XFP32(M * N, dataTypes::numberFP32(0.0));
 
-      dftfe::utils::deviceKernelsGeneric::copyValueType1ArrToValueType2Arr(
-        N * M, X, XFP32.begin());
+      BLASWrapperPtr->copyValueType1ArrToValueType2Arr(N * M, X, XFP32.begin());
 
       dftfe::utils::MemoryStorage<dataTypes::number,
                                   dftfe::utils::MemorySpace::HOST_PINNED>
@@ -4520,9 +4800,8 @@ namespace dftfe
                   // over blocks of B wavefunction vectors
                   for (unsigned int k = jvec; k < jvec + B; k += chebyBlockSize)
                     {
-                      dftfe::utils::deviceKernelsGeneric::
-                        stridedCopyToBlockConstantStride(
-                          chebyBlockSize, N, M, k, X, XBlock.begin());
+                      BLASWrapperPtr->stridedCopyToBlockConstantStride(
+                        chebyBlockSize, N, M, k, X, XBlock.begin());
 
                       // evaluate H times XBlock^{T} and store in HXBlock^{T}
                       HXBlock.setValue(0);
@@ -4551,35 +4830,32 @@ namespace dftfe
                         }
 
                       if (jvec + B > Noc)
-                        dftfe::utils::deviceKernelsGeneric::
-                          stridedCopyFromBlockConstantStride(
-                            B,
-                            chebyBlockSize,
-                            M,
-                            k - jvec,
-                            HXBlock.begin(),
-                            HXBlockFull.begin());
+                        BLASWrapperPtr->stridedCopyFromBlockConstantStride(
+                          B,
+                          chebyBlockSize,
+                          M,
+                          k - jvec,
+                          HXBlock.begin(),
+                          HXBlockFull.begin());
                       else
-                        dftfe::utils::deviceKernelsGeneric::
-                          stridedCopyFromBlockConstantStride(
-                            B,
-                            chebyBlockSize,
-                            M,
-                            k - jvec,
-                            HXBlock.begin(),
-                            HXBlockFullFP32.begin());
+                        BLASWrapperPtr->stridedCopyFromBlockConstantStride(
+                          B,
+                          chebyBlockSize,
+                          M,
+                          k - jvec,
+                          HXBlock.begin(),
+                          HXBlockFullFP32.begin());
                     }
 
                   // evaluate X^{T} times HXBlockFullConj or XFP32^{T} times
                   // HXBlockFullFP32Conj
                   if (jvec + B > Noc)
-                    dftfe::utils::deviceBlasWrapper::gemm(
-                      handle,
-                      dftfe::utils::DEVICEBLAS_OP_N,
+                    BLASWrapperPtr->xgemm(
+                      'N',
                       std::is_same<dataTypes::number,
                                    std::complex<double>>::value ?
-                        dftfe::utils::DEVICEBLAS_OP_C :
-                        dftfe::utils::DEVICEBLAS_OP_T,
+                        'C' :
+                        'T',
                       D,
                       B,
                       M,
@@ -4592,13 +4868,12 @@ namespace dftfe
                       projHamBlock.begin(),
                       D);
                   else
-                    dftfe::utils::deviceBlasWrapper::gemm(
-                      handle,
-                      dftfe::utils::DEVICEBLAS_OP_N,
+                    BLASWrapperPtr->xgemm(
+                      'N',
                       std::is_same<dataTypes::numberFP32,
                                    std::complex<float>>::value ?
-                        dftfe::utils::DEVICEBLAS_OP_C :
-                        dftfe::utils::DEVICEBLAS_OP_T,
+                        'C' :
+                        'T',
                       D,
                       B,
                       M,
@@ -4644,9 +4919,8 @@ namespace dftfe
                   for (unsigned int k = jvecNew; k < jvecNew + B;
                        k += chebyBlockSize)
                     {
-                      dftfe::utils::deviceKernelsGeneric::
-                        stridedCopyToBlockConstantStride(
-                          chebyBlockSize, N, M, k, X, XBlock.begin());
+                      BLASWrapperPtr->stridedCopyToBlockConstantStride(
+                        chebyBlockSize, N, M, k, X, XBlock.begin());
 
                       // evaluate H times XBlock^{T} and store in HXBlock^{T}
                       HXBlock.setValue(0);
@@ -4675,35 +4949,32 @@ namespace dftfe
                         }
 
                       if (jvecNew + B > Noc)
-                        dftfe::utils::deviceKernelsGeneric::
-                          stridedCopyFromBlockConstantStride(
-                            B,
-                            chebyBlockSize,
-                            M,
-                            k - jvecNew,
-                            HXBlock.begin(),
-                            HXBlockFull.begin());
+                        BLASWrapperPtr->stridedCopyFromBlockConstantStride(
+                          B,
+                          chebyBlockSize,
+                          M,
+                          k - jvecNew,
+                          HXBlock.begin(),
+                          HXBlockFull.begin());
                       else
-                        dftfe::utils::deviceKernelsGeneric::
-                          stridedCopyFromBlockConstantStride(
-                            B,
-                            chebyBlockSize,
-                            M,
-                            k - jvecNew,
-                            HXBlock.begin(),
-                            HXBlockFullFP32.begin());
+                        BLASWrapperPtr->stridedCopyFromBlockConstantStride(
+                          B,
+                          chebyBlockSize,
+                          M,
+                          k - jvecNew,
+                          HXBlock.begin(),
+                          HXBlockFullFP32.begin());
                     }
 
                   // evaluate X^{T} times HXBlockFullConj or XFP32^{T} times
                   // HXBlockFullFP32Conj
                   if (jvecNew + B > Noc)
-                    dftfe::utils::deviceBlasWrapper::gemm(
-                      handle,
-                      dftfe::utils::DEVICEBLAS_OP_N,
+                    BLASWrapperPtr->xgemm(
+                      'N',
                       std::is_same<dataTypes::number,
                                    std::complex<double>>::value ?
-                        dftfe::utils::DEVICEBLAS_OP_C :
-                        dftfe::utils::DEVICEBLAS_OP_T,
+                        'C' :
+                        'T',
                       DNew,
                       B,
                       M,
@@ -4716,13 +4987,12 @@ namespace dftfe
                       projHamBlockNext.begin(),
                       DNew);
                   else
-                    dftfe::utils::deviceBlasWrapper::gemm(
-                      handle,
-                      dftfe::utils::DEVICEBLAS_OP_N,
+                    BLASWrapperPtr->xgemm(
+                      'N',
                       std::is_same<dataTypes::numberFP32,
                                    std::complex<float>>::value ?
-                        dftfe::utils::DEVICEBLAS_OP_C :
-                        dftfe::utils::DEVICEBLAS_OP_T,
+                        'C' :
+                        'T',
                       DNew,
                       B,
                       M,
@@ -4879,7 +5149,7 @@ namespace dftfe
         }
 
       // return deviceblas handle to default stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, NULL);
+      BLASWrapperPtr->setStream(NULL);
 
       for (int i = 0; i < numberBlocks; ++i)
         {
@@ -4909,14 +5179,16 @@ namespace dftfe
       const unsigned int                                   M,
       const unsigned int                                   N,
       const unsigned int                                   Noc,
-      dftfe::utils::deviceBlasHandle_t &                   handle,
-      const std::shared_ptr<const dftfe::ProcessGrid> &    processGrid,
-      dftfe::ScaLAPACKMatrix<dataTypes::number> &          projHamPar,
-      utils::DeviceCCLWrapper &devicecclMpiCommDomain,
-      const MPI_Comm &         mpiCommDomain,
-      const MPI_Comm &         interBandGroupComm,
-      const dftParameters &    dftParams,
-      const bool               onlyHPrimePartForFirstOrderDensityMatResponse)
+      std::shared_ptr<
+        dftfe::linearAlgebra::BLASWrapper<dftfe::utils::MemorySpace::DEVICE>>
+        &                                              BLASWrapperPtr,
+      const std::shared_ptr<const dftfe::ProcessGrid> &processGrid,
+      dftfe::ScaLAPACKMatrix<dataTypes::number> &      projHamPar,
+      utils::DeviceCCLWrapper &                        devicecclMpiCommDomain,
+      const MPI_Comm &                                 mpiCommDomain,
+      const MPI_Comm &                                 interBandGroupComm,
+      const dftParameters &                            dftParams,
+      const bool onlyHPrimePartForFirstOrderDensityMatResponse)
     {
       /////////////PSEUDO CODE for the implementation below for Overlapping
       /// compute and communication/////////////////
@@ -4974,7 +5246,7 @@ namespace dftfe
       dftfe::utils::deviceStreamCreate(&streamDataMove);
 
       // attach deviceblas handle to compute stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, streamCompute);
+      BLASWrapperPtr->setStream(streamCompute);
 
       // create array of compute and copy events on Devices
       // for all the blocks. These are required for synchronization
@@ -5066,9 +5338,8 @@ namespace dftfe
                   // wavefunction vectors
                   for (unsigned int k = jvec; k < jvec + B; k += chebyBlockSize)
                     {
-                      dftfe::utils::deviceKernelsGeneric::
-                        stridedCopyToBlockConstantStride(
-                          chebyBlockSize, N, M, k, X, XBlock.begin());
+                      BLASWrapperPtr->stridedCopyToBlockConstantStride(
+                        chebyBlockSize, N, M, k, X, XBlock.begin());
 
                       // evaluate H times XBlock^{T} and store in HXBlock^{T}
                       operatorMatrix.HX(
@@ -5079,23 +5350,22 @@ namespace dftfe
                         HXBlock,
                         onlyHPrimePartForFirstOrderDensityMatResponse);
 
-                      dftfe::utils::deviceKernelsGeneric::
-                        stridedCopyFromBlockConstantStride(B,
-                                                           chebyBlockSize,
-                                                           M,
-                                                           k - jvec,
-                                                           HXBlock.begin(),
-                                                           HXBlockFull.begin());
+                      BLASWrapperPtr->stridedCopyFromBlockConstantStride(
+                        B,
+                        chebyBlockSize,
+                        M,
+                        k - jvec,
+                        HXBlock.begin(),
+                        HXBlockFull.begin());
                     }
 
                   // evalute X^{T} times HXBlock
-                  dftfe::utils::deviceBlasWrapper::gemm(
-                    handle,
-                    dftfe::utils::DEVICEBLAS_OP_N,
+                  BLASWrapperPtr->xgemm(
+                    'N',
                     std::is_same<dataTypes::number,
                                  std::complex<double>>::value ?
-                      dftfe::utils::DEVICEBLAS_OP_C :
-                      dftfe::utils::DEVICEBLAS_OP_T,
+                      'C' :
+                      'T',
                     D,
                     B,
                     M,
@@ -5136,9 +5406,8 @@ namespace dftfe
                   for (unsigned int k = jvecNew; k < jvecNew + B;
                        k += chebyBlockSize)
                     {
-                      dftfe::utils::deviceKernelsGeneric::
-                        stridedCopyToBlockConstantStride(
-                          chebyBlockSize, N, M, k, X, XBlock.begin());
+                      BLASWrapperPtr->stridedCopyToBlockConstantStride(
+                        chebyBlockSize, N, M, k, X, XBlock.begin());
 
                       // evaluate H times XBlock^{T} and store in HXBlock^{T}
                       operatorMatrix.HX(
@@ -5149,23 +5418,22 @@ namespace dftfe
                         HXBlock,
                         onlyHPrimePartForFirstOrderDensityMatResponse);
 
-                      dftfe::utils::deviceKernelsGeneric::
-                        stridedCopyFromBlockConstantStride(B,
-                                                           chebyBlockSize,
-                                                           M,
-                                                           k - jvecNew,
-                                                           HXBlock.begin(),
-                                                           HXBlockFull.begin());
+                      BLASWrapperPtr->stridedCopyFromBlockConstantStride(
+                        B,
+                        chebyBlockSize,
+                        M,
+                        k - jvecNew,
+                        HXBlock.begin(),
+                        HXBlockFull.begin());
                     }
 
                   // evalute X^{T} times HXBlock
-                  dftfe::utils::deviceBlasWrapper::gemm(
-                    handle,
-                    dftfe::utils::DEVICEBLAS_OP_N,
+                  BLASWrapperPtr->xgemm(
+                    'N',
                     std::is_same<dataTypes::number,
                                  std::complex<double>>::value ?
-                      dftfe::utils::DEVICEBLAS_OP_C :
-                      dftfe::utils::DEVICEBLAS_OP_T,
+                      'C' :
+                      'T',
                     DNew,
                     B,
                     M,
@@ -5185,11 +5453,9 @@ namespace dftfe
 
               if (!(jvec + B > Noc))
                 {
-                  dftfe::utils::deviceKernelsGeneric::
-                    copyValueType1ArrToValueType2Arr(D * B,
-                                                     projHamBlock.begin(),
-                                                     projHamBlockFP32.begin(),
-                                                     streamDataMove);
+                  BLASWrapperPtr->setStream(streamDataMove);
+                  BLASWrapperPtr->copyValueType1ArrToValueType2Arr(
+                    D * B, projHamBlock.begin(), projHamBlockFP32.begin());
                 }
 
               if (dftParams.useDeviceDirectAllReduce)
@@ -5332,7 +5598,7 @@ namespace dftfe
         }
 
       // return deviceblas handle to default stream
-      dftfe::utils::deviceBlasWrapper::setStream(handle, NULL);
+      BLASWrapperPtr->setStream(NULL);
 
       for (int i = 0; i < numberBlocks; ++i)
         {

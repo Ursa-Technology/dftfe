@@ -60,13 +60,6 @@ namespace dftfe
       prm.enter_subsection("GPU");
       {
         prm.declare_entry(
-          "USE TF32 OP",
-          "false",
-          dealii::Patterns::Bool(),
-          "[Advanced] Enables TensorFloat-32 precision for single precision math operations on GPUs, which take advantage of the tensor core hardware. This capability is currently available for certain GPUs like NVIDIA A100. Accuracy of USE TF32 OP has been tested in the case of LRDM preconditioner with USE SINGLE PREC DENSITY RESPONSE mode set to true.");
-
-
-        prm.declare_entry(
           "AUTO GPU BLOCK SIZES",
           "true",
           dealii::Patterns::Bool(),
@@ -112,6 +105,12 @@ namespace dftfe
           "false",
           dealii::Patterns::Bool(),
           R"([Standard] Writes DFT ground state wavefunction solution fields (FEM mesh nodal values) to wfcOutput.vtu file for visualization purposes. The wavefunction solution fields in wfcOutput.vtu are named wfc\_s\_k\_i in case of spin-polarized calculations and wfc\_k\_i otherwise, where s denotes the spin index (0 or 1), k denotes the k point index starting from 0, and i denotes the Kohn-Sham wavefunction index starting from 0. In the case of geometry optimization, the wavefunctions corresponding to the last ground-state solve are written.  Default: false.)");
+
+        prm.declare_entry(
+          "PRINT KINETIC ENERGY",
+          "false",
+          dealii::Patterns::Bool(),
+          R"([Standard] Prints the Kinetic energy of the electrons.  Default: false.)");
 
         prm.declare_entry(
           "WRITE DENSITY FE MESH",
@@ -160,10 +159,19 @@ namespace dftfe
           "WRITE BANDS",
           "false",
           dealii::Patterns::Bool(),
-          "[Standard] Write bands for every k-point to an outputfile called 'bands.out' in the units of Ha. This can be used after GS (Ground-state) or NSCF (Non-Self consistent field iteration) modes of solve. This option is by default on for NSCF mode of solve. Outputs a file name 'bands.out'. The first line has 3 entries with first one denoting the number of k-points and second entry denoting the number of eigenvalues(bands) for each k-point and third the fermi energy in Ha. Subsequent lines have 4 columns with first column indicating the k-point index, second column indicating band index, third column indicating corresponding eigenvalue and fourth column indicating the corresponding occupation number.");
+          "[Standard] Write bands for every k-point to an outputfile called 'bands.out' in the units of Ha. This can be used after GS (Ground-state) or NSCF (Non-Self consistent field iteration) modes of solve. If it is set to true, Fermi energy is obtained from 'fermiEnergy.out' file, created from previous GS calculation with 'SAVE RHO DATA' set to true. Outputs a file name 'bands.out'. The first line has 2 entries with first one denoting the number of k-points and second entry denoting the number of eigenvalues(bands) for each k-point. Subsequent lines have 4 columns with first column indicating the k-point index, second column indicating band index, third column indicating corresponding eigenvalue and fourth column indicating the corresponding occupation number.");
       }
       prm.leave_subsection();
 
+      prm.enter_subsection("FunctionalTest");
+      {
+        prm.declare_entry(
+          "TEST NAME",
+          "",
+          dealii::Patterns::Anything(),
+          "[Standard] Name of the Functional test that needs to be run.");
+      }
+      prm.leave_subsection();
       prm.enter_subsection("Parallelization");
       {
         prm.declare_entry(
@@ -198,7 +206,7 @@ namespace dftfe
           "SAVE RHO DATA",
           "false",
           dealii::Patterns::Bool(),
-          "[Standard] Saves charge density and mesh triagulation data for restart, if SOLVER MODE is GS then the save is done every 10 scf iterations, otherwise it is done after each converged scf solve.");
+          "[Standard] Saves charge density and mesh triagulation data for restart, if SOLVER MODE is GS then the save is done every 10 scf iterations, otherwise it is done after each converged scf solve. If the value is 'true', the SOLVER MODE is GS and if the SCF loop converges, an outputfile 'fermiEnergy.out' is written that contains the fermi energy in the units of Ha. This Fermi energy is used when 'WRITE BANDS' is true");
 
         prm.declare_entry(
           "LOAD RHO DATA",
@@ -636,16 +644,28 @@ namespace dftfe
 
         prm.declare_entry(
           "EXCHANGE CORRELATION TYPE",
-          "1",
-          dealii::Patterns::Integer(1, 8),
-          R"([Standard] Parameter specifying the type of exchange-correlation to be used: 1(LDA: Perdew Zunger Ceperley Alder correlation with Slater Exchange[PRB. 23, 5048 (1981)]), 2(LDA: Perdew-Wang 92 functional with Slater Exchange [PRB. 45, 13244 (1992)]), 3(LDA: Vosko, Wilk \& Nusair with Slater Exchange[Can. J. Phys. 58, 1200 (1980)]), 4(GGA: Perdew-Burke-Ernzerhof functional [PRL. 77, 3865 (1996)], 5(RPBE: B. Hammer, L. B. Hansen, and J. K. Nørskov, Phys. Rev. B 59, 7413 (1999)), 6(ML-XC NNLDA: LDA-PW + NN), 7(ML-XC NNGGA: GGA-PBE + NN). Caution: options 6-7 are experimental and only accessible to the DFT-FE developers currently.)");
+          "GGA-PBE",
+          dealii::Patterns::Selection(
+            "LDA-PZ|LDA-PW|LDA-VWN|GGA-PBE|GGA-RPBE|GGA-LBxPBEc|MLXC-NNLDA|MLXC-NNGGA|MLXC-NNLLMGGA|LDA-PZ+U|LDA-PW+U|LDA-VWN+U|GGA-PBE+U|GGA-RPBE+U|GGA-LBxPBEc+U|MLXC-NNLDA+U|MLXC-NNGGA+U|MLXC-NNLLMGGA+U"),
+          R"([Standard] Parameter specifying the type of exchange-correlation to be used: LDA-PZ (Perdew Zunger Ceperley Alder correlation with Slater Exchange[PRB. 23, 5048 (1981)]), LDA-PW (Perdew-Wang 92 functional with Slater Exchange [PRB. 45, 13244 (1992)]), LDA-VWN (Vosko, Wilk \& Nusair with Slater Exchange[Can. J. Phys. 58, 1200 (1980)]), GGA-PBE (Perdew-Burke-Ernzerhof functional [PRL. 77, 3865 (1996)]), GGA-RPBE (RPBE: B. Hammer, L. B. Hansen, and J. K. Nørskov, Phys. Rev. B 59, 7413 (1999)), GGA-LBxPBEc van Leeuwen & Baerends exchange [Phys. Rev. A 49, 2421 (1994)] with  PBE correlation [Phys. Rev. Lett. 77, 3865 (1996)], MLXC-NNLDA (LDA-PW + NN-LDA), MLXC-NNGGA (GGA-PBE + NN-GGA), MLXC-NNLLMGGA (GGA-PBE + NN Laplacian level MGGA). Caution: MLXC options are experimental. Add +U to use hubbard correction)");
 
         prm.declare_entry(
           "MODEL XC INPUT FILE",
           "",
           dealii::Patterns::Anything(),
-          "[Developer] File that contains both the pytorch ML-XC NN model (.ptc file) and the tolerances. This is an experimental feature to test out any new XC functional developed using machine learning.");
+          "[Developer] File that contains both the pytorch MLXC NN model (.ptc file) and the tolerances. This is an experimental feature to test out any new XC functional developed using machine learning.");
 
+        prm.declare_entry(
+          "AUX BASIS TYPE",
+          "FE",
+          dealii::Patterns::Selection("FE|SLATER|PW"),
+          "[Developer] Auxiliary basis for projecting the Kohn-Sham density or density matrix for XC evaluation. FE is the default option.");
+
+        prm.declare_entry(
+          "AUX BASIS DATA",
+          "",
+          dealii::Patterns::Anything(),
+          "[Developer] File that contains additional information for the Auxiliary basis selected in AUX BASIS TYPE.");
 
         prm.declare_entry(
           "NET CHARGE",
@@ -716,6 +736,26 @@ namespace dftfe
             "[Advanced] Cutoff in a.u. for computing coordination number in D3 correction");
         }
         prm.leave_subsection();
+
+        prm.enter_subsection("Hubbard Parameters");
+        {
+          prm.declare_entry(
+            "HUBBARD PARAMETERS FILE",
+            "",
+            dealii::Patterns::Anything(),
+            "[Standard] Name of the file containing hubbard parameters. "
+            "This file describes the orbitals and the hubbard U parameter for each hubbard species."
+            " A sample file for Pt-Au dimer is as follows:  "
+            "3 (row1 - number of hubbard species, The ID 0 is reserved for atoms with no hubbard correction ),"
+            "0 0 (row2 - Hubbard species Id and the corresponding number of orbitals"
+            "1 78 0.110248 1 9.0 (row3 - hubbard species Id corresponding to Pt, Atomic number, Hubbard U parameter in Ha, Number of orbitals on which the hubbard correction is applied (5D in this case), The initial occupancy of the orbitals)"
+            "5 2 (row4 - the Quantum number n and Quantum number l of the orbital)"
+            "2 79 0.1469976 1 10.0 (row3 - hubbard species Id corresponding to Au, Atomic number, Hubbard U parameter in Ha, Number of orbitals on which the hubbard correction is applied (5D in this case), The initial occupancy of the orbitals)"
+            "5 2 (row4 - the Quantum number n and Quantum number l of the orbital)"
+            "78 1 (row5 - the atomic number and the corresponding hubbard species Id. The list has to be copied from the coordinates file"
+            "79 2 (row6 - the atomic number and the corresponding hubbard species Id. The list has to be copied from the coordinates file");
+        }
+        prm.leave_subsection();
       }
       prm.leave_subsection();
 
@@ -741,6 +781,12 @@ namespace dftfe
           "[Standard] SCF iterations stopping tolerance in terms of $L_2$ norm of the electron-density difference between two successive iterations. The default tolerance of is set to a tight value of 1e-5 for accurate ionic forces and cell stresses keeping structural optimization and molecular dynamics in mind. A tolerance of 1e-4 would be accurate enough for calculations without structural optimization and dynamics. CAUTION: A tolerance close to 1e-7 or lower can deteriorate the SCF convergence due to the round-off error accumulation.");
 
         prm.declare_entry(
+          "ENERGY TOLERANCE",
+          "1e-07",
+          dealii::Patterns::Double(1e-12, 1.0),
+          "[Standard] SCF iterations stopping tolerance in terms of difference between Harris-Foulkes and Kohn-Sham energies. The default tolerance of is set to a tight value of 1e-7 for accurate ionic forces and cell stresses keeping structural optimization and molecular dynamics in mind. A tolerance of 1e-6 would be accurate enough for calculations without structural optimization and dynamics.");
+
+        prm.declare_entry(
           "MIXING HISTORY",
           "10",
           dealii::Patterns::Integer(1, 1000),
@@ -755,7 +801,7 @@ namespace dftfe
         prm.declare_entry(
           "SPIN MIXING ENHANCEMENT FACTOR",
           "4.0",
-          dealii::Patterns::Double(-1e-12, 10.0),
+          dealii::Patterns::Double(-1e-12, 100.0),
           "[Standard] Scales the mixing parameter for the spin densities as SPIN MIXING ENHANCEMENT FACTOR times MIXING PARAMETER. This parameter is not used for LOW\_RANK\_DIELECM\_PRECOND mixing method.");
 
         prm.declare_entry(
@@ -807,6 +853,12 @@ namespace dftfe
           "false",
           dealii::Patterns::Bool(),
           "[Advanced] Boolean parameter specifying whether to compute the total energy at the end of every SCF. Setting it to false can lead to some computational time savings. Default value is false but is internally set to true if VERBOSITY==5");
+
+        prm.declare_entry(
+          "USE ENERGY RESIDUAL METRIC",
+          "false",
+          dealii::Patterns::Bool(),
+          "[Advanced] Boolean parameter specifying whether to use the energy residual metric (equation 7.23 of Richard Matrin second edition) for convergence check. Setting it to false can lead to some computational time savings. Default value is false");
 
 
         prm.enter_subsection("LOW RANK DIELECM PRECOND");
@@ -976,16 +1028,22 @@ namespace dftfe
             "[Advanced] Use mixed precision arithmetic in Rayleigh-Ritz subspace rotation step. Default setting is false.");
 
           prm.declare_entry(
-            "USE MIXED PREC CHEBY",
+            "USE SINGLE PREC COMMUN CHEBY",
             "false",
             dealii::Patterns::Bool(),
-            "[Advanced] Use mixed precision arithmetic in Chebyshev filtering. Currently this option is only available for real executable and USE ELPA=true for which DFT-FE also has to be linked to ELPA library. Default setting is false.");
+            "[Advanced] Use single precision communication in Chebyshev filtering. Default setting is false.");
 
           prm.declare_entry(
             "USE MIXED PREC COMMUN ONLY XTX XTHX",
             "false",
             dealii::Patterns::Bool(),
             "[Advanced] Use mixed precision communication only for XtX and XtHX instead of mixed precision compute and communication. This setting has been found to be more optimal on certain architectures. Default setting is false.");
+
+          prm.declare_entry(
+            "USE SINGLE PREC CHEBY",
+            "false",
+            dealii::Patterns::Bool(),
+            "[Advanced] Use a modified single precision algorithm for Chebyshev filtering. This cannot be used in conjunction with spectrum splitting. Default setting is false.");
 
           prm.declare_entry(
             "OVERLAP COMPUTE COMMUN CHEBY",
@@ -1054,7 +1112,7 @@ namespace dftfe
                           "[Advanced] Toggle GPU MODE in Poisson solve.");
 
         prm.declare_entry("VSELF GPU MODE",
-                          "false",
+                          "true",
                           dealii::Patterns::Bool(),
                           "[Advanced] Toggle GPU MODE in vself Poisson solve.");
       }
@@ -1151,9 +1209,11 @@ namespace dftfe
     finiteElementPolynomialOrderElectrostatics = 1;
     n_refinement_steps                         = 1;
     numberEigenValues                          = 1;
-    xc_id                                      = 1;
+    XCType                                     = "GGA-PBE";
     spinPolarized                              = 0;
     modelXCInputFile                           = "";
+    auxBasisTypeXC                             = "";
+    auxBasisDataXC                             = "";
     nkx                                        = 1;
     nky                                        = 1;
     nkz                                        = 1;
@@ -1165,10 +1225,12 @@ namespace dftfe
     numSCFIterations                           = 1;
     maxLinearSolverIterations                  = 1;
     poissonGPU                                 = true;
+    vselfGPU                                   = true;
     mixingHistory                              = 1;
     npool                                      = 1;
     maxLinearSolverIterationsHelmholtz         = 1;
 
+    functionalTestName                = "";
     radiusAtomBall                    = 0.0;
     mixingParameter                   = 0.5;
     spinMixingEnhancementFactor       = 4.0;
@@ -1238,6 +1300,7 @@ namespace dftfe
     startingWFCType                                = "";
     restrictToOnePass                              = false;
     writeWfcSolutionFields                         = false;
+    printKE                                        = false;
     writeDensitySolutionFields                     = false;
     writeDensityQuadData                           = false;
     wfcBlockSize                                   = 400;
@@ -1268,10 +1331,9 @@ namespace dftfe
     autoAdaptBaseMeshSize                          = true;
     readWfcForPdosPspFile                          = false;
     useDevice                                      = false;
-    useTF32Device                                  = false;
     deviceFineGrainedTimings                       = false;
     allowFullCPUMemSubspaceRot                     = true;
-    useMixedPrecCheby                              = false;
+    useSinglePrecCommunCheby                       = false;
     overlapComputeCommunCheby                      = false;
     overlapComputeCommunOrthoRR                    = false;
     autoDeviceBlockSizes                           = true;
@@ -1305,6 +1367,7 @@ namespace dftfe
     tempControllerTypeBOMD     = "";
     MDTrack                    = 0;
 
+    hubbardFileName = "";
 
     // New paramter for selecting mode and NEB parameters
     TotalImages = 1;
@@ -1369,7 +1432,6 @@ namespace dftfe
 
     prm.enter_subsection("GPU");
     {
-      useTF32Device = useDevice && prm.get_bool("USE TF32 OP");
       deviceFineGrainedTimings =
         useDevice && prm.get_bool("FINE GRAINED GPU TIMINGS");
       allowFullCPUMemSubspaceRot =
@@ -1385,6 +1447,7 @@ namespace dftfe
     prm.enter_subsection("Post-processing Options");
     {
       writeWfcSolutionFields     = prm.get_bool("WRITE WFC FE MESH");
+      printKE                    = prm.get_bool("PRINT KINETIC ENERGY");
       writeDensitySolutionFields = prm.get_bool("WRITE DENSITY FE MESH");
       writeDensityQuadData       = prm.get_bool("WRITE DENSITY QUAD DATA");
       writeDosFile               = prm.get_bool("WRITE DENSITY OF STATES");
@@ -1397,6 +1460,11 @@ namespace dftfe
     }
     prm.leave_subsection();
 
+    prm.enter_subsection("FunctionalTest");
+    {
+      functionalTestName = prm.get("TEST NAME");
+    }
+    prm.leave_subsection();
     prm.enter_subsection("Parallelization");
     {
       npool        = prm.get_integer("NPKPT");
@@ -1544,12 +1612,20 @@ namespace dftfe
       isPseudopotential     = prm.get_bool("PSEUDOPOTENTIAL CALCULATION");
       pseudoTestsFlag       = prm.get_bool("PSEUDO TESTS FLAG");
       pseudoPotentialFile   = prm.get("PSEUDOPOTENTIAL FILE NAMES LIST");
-      xc_id                 = prm.get_integer("EXCHANGE CORRELATION TYPE");
+      XCType                = prm.get("EXCHANGE CORRELATION TYPE");
       spinPolarized         = prm.get_integer("SPIN POLARIZATION");
       modelXCInputFile      = prm.get("MODEL XC INPUT FILE");
+      auxBasisTypeXC        = prm.get("AUX BASIS TYPE");
+      auxBasisDataXC        = prm.get("AUX BASIS DATA");
       start_magnetization   = prm.get_double("START MAGNETIZATION");
       pspCutoffImageCharges = prm.get_double("PSP CUTOFF IMAGE CHARGES");
       netCharge             = prm.get_double("NET CHARGE");
+
+      prm.enter_subsection("Hubbard Parameters");
+      {
+        hubbardFileName = prm.get("HUBBARD PARAMETERS FILE");
+      }
+      prm.leave_subsection();
     }
     prm.leave_subsection();
 
@@ -1558,19 +1634,21 @@ namespace dftfe
       TVal                          = prm.get_double("TEMPERATURE");
       numSCFIterations              = prm.get_integer("MAXIMUM ITERATIONS");
       selfConsistentSolverTolerance = prm.get_double("TOLERANCE");
-      mixingHistory                 = prm.get_integer("MIXING HISTORY");
-      mixingParameter               = prm.get_double("MIXING PARAMETER");
+      selfConsistentSolverEnergyTolerance = prm.get_double("ENERGY TOLERANCE");
+      mixingHistory                       = prm.get_integer("MIXING HISTORY");
+      mixingParameter                     = prm.get_double("MIXING PARAMETER");
       spinMixingEnhancementFactor =
         prm.get_double("SPIN MIXING ENHANCEMENT FACTOR");
       adaptAndersonMixingParameter =
         prm.get_bool("ADAPT ANDERSON MIXING PARAMETER");
-      kerkerParameter         = prm.get_double("KERKER MIXING PARAMETER");
-      restaFermiWavevector    = prm.get_double("RESTA FERMI WAVEVECTOR");
-      restaScreeningLength    = prm.get_double("RESTA SCREENING LENGTH");
-      mixingMethod            = prm.get("MIXING METHOD");
-      constraintMagnetization = prm.get_bool("CONSTRAINT MAGNETIZATION");
-      startingWFCType         = prm.get("STARTING WFC");
-      computeEnergyEverySCF   = prm.get_bool("COMPUTE ENERGY EACH ITER");
+      kerkerParameter            = prm.get_double("KERKER MIXING PARAMETER");
+      restaFermiWavevector       = prm.get_double("RESTA FERMI WAVEVECTOR");
+      restaScreeningLength       = prm.get_double("RESTA SCREENING LENGTH");
+      mixingMethod               = prm.get("MIXING METHOD");
+      constraintMagnetization    = prm.get_bool("CONSTRAINT MAGNETIZATION");
+      startingWFCType            = prm.get("STARTING WFC");
+      computeEnergyEverySCF      = prm.get_bool("COMPUTE ENERGY EACH ITER");
+      useEnergyResidualTolerance = prm.get_bool("USE ENERGY RESIDUAL METRIC");
 
       prm.enter_subsection("LOW RANK DIELECM PRECOND");
       {
@@ -1611,7 +1689,8 @@ namespace dftfe
         useMixedPrecSubspaceRotRR = prm.get_bool("USE MIXED PREC RR_SR");
         useMixedPrecCommunOnlyXTHXCGSO =
           prm.get_bool("USE MIXED PREC COMMUN ONLY XTX XTHX");
-        useMixedPrecCheby = prm.get_bool("USE MIXED PREC CHEBY");
+        useSinglePrecCommunCheby = prm.get_bool("USE SINGLE PREC COMMUN CHEBY");
+        useSinglePrecCheby       = prm.get_bool("USE SINGLE PREC CHEBY");
         overlapComputeCommunCheby =
           prm.get_bool("OVERLAP COMPUTE COMMUN CHEBY");
         overlapComputeCommunOrthoRR =
@@ -1936,7 +2015,7 @@ namespace dftfe
         useMixedPrecCGS_O                   = true;
         useMixedPrecCGS_SR                  = true;
         useMixedPrecXTHXSpectrumSplit       = true;
-        useMixedPrecCheby                   = true;
+        useSinglePrecCommunCheby            = true;
         reuseLanczosUpperBoundFromFirstCall = true;
       }
 
@@ -1968,12 +2047,9 @@ namespace dftfe
 #if !defined(DFTFE_WITH_CUDA_NCCL) && !defined(DFTFE_WITH_HIP_RCCL)
     useDCCL = false;
 #endif
-
-    if (useMixedPrecCheby)
-      AssertThrow(
-        useELPA,
-        dealii::ExcMessage(
-          "DFT-FE Error: USE ELPA must be set to true for USE MIXED PREC CHEBY."));
+#if !defined(DFTFE_WITH_DEVICE_AWARE_MPI)
+    useDeviceDirectAllReduce = useDCCL && useDeviceDirectAllReduce;
+#endif
 
     if (verbosity >= 5)
       computeEnergyEverySCF = true;
@@ -2014,6 +2090,20 @@ namespace dftfe
 
     if (numCoreWfcRR == 0)
       spectrumSplitStartingScfIter = 10000;
+
+    if (numCoreWfcRR != 0)
+      useSinglePrecCheby = false;
+
+    // checking if the XC type is compatible with
+    // overlap compute communication cheby
+
+    bool isHubbard = (XCType.substr(XCType.size() - 2) == "+U");
+    bool isLocalXC =
+      (XCType.substr(0, 3) == "LDA") || (XCType.substr(0, 3) == "GGA");
+    if (isHubbard || !isLocalXC)
+      {
+        overlapComputeCommunCheby = false;
+      }
   }
 
 

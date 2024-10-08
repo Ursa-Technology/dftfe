@@ -36,8 +36,8 @@ namespace dftfe
   public:
     unsigned int finiteElementPolynomialOrder,
       finiteElementPolynomialOrderElectrostatics, n_refinement_steps,
-      numberEigenValues, xc_id, spinPolarized, nkx, nky, nkz, offsetFlagX,
-      offsetFlagY, offsetFlagZ;
+      numberEigenValues, spinPolarized, nkx, nky, nkz, offsetFlagX, offsetFlagY,
+      offsetFlagZ;
     unsigned int chebyshevOrder, numPass, numSCFIterations,
       maxLinearSolverIterations, mixingHistory, npool,
       numberWaveFunctionsForEstimate, numLevels,
@@ -45,12 +45,16 @@ namespace dftfe
 
     bool        poissonGPU;
     bool        vselfGPU;
+    std::string XCType;
     std::string modelXCInputFile;
+    std::string auxBasisTypeXC;
+    std::string auxBasisDataXC;
 
     double radiusAtomBall, mixingParameter, spinMixingEnhancementFactor;
     bool   adaptAndersonMixingParameter;
     double absLinearSolverTolerance, selfConsistentSolverTolerance, TVal,
-      start_magnetization, absLinearSolverToleranceHelmholtz;
+      selfConsistentSolverEnergyTolerance, start_magnetization,
+      absLinearSolverToleranceHelmholtz;
 
     bool isPseudopotential, periodicX, periodicY, periodicZ, useSymm,
       timeReversal, pseudoTestsFlag, constraintMagnetization, writeDosFile,
@@ -59,6 +63,8 @@ namespace dftfe
 
     double netCharge;
 
+    /** parameters for functional tests **/
+    std::string functionalTestName;
     /** parameters for LRD preconditioner **/
 
     double      startingNormLRDLargeDamping;
@@ -84,7 +90,7 @@ namespace dftfe
       restaFermiWavevector;
     std::string optimizationMode, mixingMethod, ionOptSolver, cellOptSolver;
 
-
+    std::string  hubbardFileName;
     bool         isIonForce, isCellStress, isBOMD;
     bool         nonSelfConsistentForce, meshAdaption;
     double       forceRelaxTol, stressRelaxTol, toleranceKinetic;
@@ -100,6 +106,7 @@ namespace dftfe
     bool reproducible_output;
 
     bool writeWfcSolutionFields;
+    bool printKE;
 
     bool writeDensitySolutionFields;
 
@@ -114,6 +121,7 @@ namespace dftfe
     unsigned int subspaceRotDofsBlockSize;
     unsigned int nbandGrps;
     bool         computeEnergyEverySCF;
+    bool         useEnergyResidualTolerance;
     unsigned int scalapackParalProcs;
     unsigned int scalapackBlockSize;
     unsigned int natoms;
@@ -133,10 +141,10 @@ namespace dftfe
     bool         createConstraintsFromSerialDofhandler;
     bool         bandParalOpt;
     bool         useDevice;
-    bool         useTF32Device;
     bool         deviceFineGrainedTimings;
     bool         allowFullCPUMemSubspaceRot;
-    bool         useMixedPrecCheby;
+    bool         useSinglePrecCommunCheby;
+    bool         useSinglePrecCheby;
     bool         overlapComputeCommunCheby;
     bool         overlapComputeCommunOrthoRR;
     bool         autoDeviceBlockSizes;

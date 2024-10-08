@@ -15,7 +15,7 @@ OMP_NUM_THREADS=1
 MPICH_GPU_SUPPORT_ENABLED=1
 LD_LIBRARY_PATH = $LD_LIBRARY_PATH:$WD/env2/lib
 LD_LIBRARY_PATH = $LD_LIBRARY_PATH:$WD/env2/lib64
-module load nccl/2.15.5-ofi
+module load nccl
 
 srun ./dftfe parameterFileN2_1.prm > outputN2_1
 srun ./dftfe parameterFileN2_2.prm > outputN2_2
@@ -29,3 +29,4 @@ srun ./dftfe parameterFileMg2x_11.prm > outputMg2x_11
 srun ./dftfe parameterFileMg2x_14.prm > outputMg2x_14
 srun ./dftfe parameterFileMg2x_15.prm > outputMg2x_15
 srun ./dftfe parameterFileMg2x_16.prm > outputMg2x_16
+srun ./dftfe PtAu_hubb.prm            > output_PtAu_hubb

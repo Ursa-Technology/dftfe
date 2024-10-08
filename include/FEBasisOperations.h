@@ -21,7 +21,6 @@
 #include <MultiVector.h>
 #include <headers.h>
 #include <constraintMatrixInfo.h>
-#include <constraintMatrixInfoDevice.h>
 #include <DeviceTypeConfig.h>
 #include <BLASWrapper.h>
 
@@ -92,6 +91,8 @@ namespace dftfe
         tempCellMatrixBlock;
       mutable dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
         zeroIndexVec;
+      mutable dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        tempCellValuesBlockCoeff;
       std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
         d_BLASWrapperPtr;
 
@@ -163,17 +164,11 @@ namespace dftfe
              const bool          isResizeTempStorageForInerpolation = true,
              const bool          isResizeTempStorageForCellMatrices = false);
 
-      // private:
-#if defined(DFTFE_WITH_DEVICE)
-      using constraintInfoClass =
-        typename std::conditional<memorySpace ==
-                                    dftfe::utils::MemorySpace::DEVICE,
-                                  dftUtils::constraintMatrixInfoDevice,
-                                  dftUtils::constraintMatrixInfo>::type;
-#else
-      using constraintInfoClass = dftUtils::constraintMatrixInfo;
-#endif
+      dftfe::utils::MemoryStorage<dftfe::global_size_type,
+                                  dftfe::utils::MemorySpace::HOST> &
+      getFlattenedMapsHost();
 
+      // private:
 
 
       /**
@@ -262,6 +257,14 @@ namespace dftfe
                                    const bool ceoffType = false);
 
       /**
+       * @brief Computes the stiffness matrix
+       * \grad Ni . \grad Ni.
+       */
+      void
+      computeStiffnessVector(const bool basisType = true,
+                             const bool ceoffType = false);
+
+      /**
        * @brief Resizes the internal temp storage to be sufficient for the vector and cell block sizes provided in reinit.
        */
       void
@@ -274,6 +277,11 @@ namespace dftfe
       unsigned int
       nQuadsPerCell() const;
 
+      /**
+       * @brief Number of vectors set in reinit.
+       */
+      unsigned int
+      nVectors() const;
       /**
        * @brief Number of DoFs per cell for the dofHandlerID set in init.
        */
@@ -678,6 +686,30 @@ namespace dftfe
       massVectorBasisData() const;
 
       /**
+       * @brief diagonal stiffness matrix in ValueTypeBasisData
+       */
+      const dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace> &
+      stiffnessVectorBasisData() const;
+
+      /**
+       * @brief diagonal inverse stiffness matrix in ValueTypeBasisData
+       */
+      const dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace> &
+      inverseStiffnessVectorBasisData() const;
+
+      /**
+       * @brief diagonal inverse sqrt stiffness matrix in ValueTypeBasisData
+       */
+      const dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace> &
+      inverseSqrtStiffnessVectorBasisData() const;
+
+      /**
+       * @brief diagonal sqrt stiffness matrix in ValueTypeBasisData
+       */
+      const dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace> &
+      sqrtStiffnessVectorBasisData() const;
+
+      /**
        * @brief returns 2 if all cells on current processor are Cartesian,
        * 1 if all cells on current processor are affine and 0 otherwise.
        */
@@ -720,6 +752,17 @@ namespace dftfe
                                 const unsigned int numMultiVecs = 1) const;
 
       /**
+       * @brief Creates single precision scratch multivectors.
+       * @param[in] vecBlockSize Number of vectors in the multivector.
+       * @param[out] numMultiVecs number of scratch multivectors needed with
+       * this vecBlockSize.
+       */
+      void
+      createScratchMultiVectorsSinglePrec(
+        const unsigned int vecBlockSize,
+        const unsigned int numMultiVecs = 1) const;
+
+      /**
        * @brief Clears scratch multivectors.
        */
       void
@@ -734,6 +777,18 @@ namespace dftfe
       dftfe::linearAlgebra::MultiVector<ValueTypeBasisCoeff, memorySpace> &
       getMultiVector(const unsigned int vecBlockSize,
                      const unsigned int index = 0) const;
+
+      /**
+       * @brief Gets single precision scratch multivectors.
+       * @param[in] vecBlockSize Number of vectors in the multivector.
+       * @param[out] numMultiVecs index of the multivector among those with the
+       * same vecBlockSize.
+       */
+      dftfe::linearAlgebra::MultiVector<
+        typename dftfe::dataTypes::singlePrecType<ValueTypeBasisCoeff>::type,
+        memorySpace> &
+      getMultiVectorSinglePrec(const unsigned int vecBlockSize,
+                               const unsigned int index = 0) const;
 
       /**
        * @brief Apply constraints on given multivector.
@@ -761,8 +816,8 @@ namespace dftfe
 
 
 
-      std::vector<constraintInfoClass> d_constraintInfo;
-      unsigned int                     d_nOMPThreads;
+      std::vector<dftUtils::constraintMatrixInfo<memorySpace>> d_constraintInfo;
+      unsigned int                                             d_nOMPThreads;
       std::vector<const dealii::AffineConstraints<ValueTypeBasisData> *>
         *                                              d_constraintsVector;
       const dealii::MatrixFree<3, ValueTypeBasisData> *d_matrixFreeDataPtr;
@@ -864,6 +919,48 @@ namespace dftfe
           dftfe::linearAlgebra::MultiVector<ValueTypeBasisCoeff, memorySpace>>>
         scratchMultiVectors;
 
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_cellStiffnessVectorBasisType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_cellInverseStiffnessVectorBasisType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_cellSqrtStiffnessVectorBasisType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_cellInverseSqrtStiffnessVectorBasisType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_inverseSqrtStiffnessVectorBasisType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_sqrtStiffnessVectorBasisType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_inverseStiffnessVectorBasisType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisData, memorySpace>
+        d_stiffnessVectorBasisType;
+
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_cellInverseStiffnessVectorCoeffType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_cellInverseSqrtStiffnessVectorCoeffType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_cellStiffnessVectorCoeffType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_cellSqrtStiffnessVectorCoeffType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_inverseSqrtStiffnessVectorCoeffType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_sqrtStiffnessVectorCoeffType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_stiffnessVectorCoeffType;
+      dftfe::utils::MemoryStorage<ValueTypeBasisCoeff, memorySpace>
+        d_inverseStiffnessVectorCoeffType;
+
+
+      mutable std::map<
+        unsigned int,
+        std::vector<dftfe::linearAlgebra::MultiVector<
+          typename dftfe::dataTypes::singlePrecType<ValueTypeBasisCoeff>::type,
+          memorySpace>>>
+        scratchMultiVectorsSinglePrec;
+
       std::vector<unsigned int> d_quadratureIDsVector;
       unsigned int              d_quadratureID;
       unsigned int              d_quadratureIndex;
@@ -914,7 +1011,9 @@ namespace dftfe
         ValueTypeBasisCoeff *quadratureValues,
         ValueTypeBasisCoeff *quadratureGradients,
         dftfe::linearAlgebra::MultiVector<ValueTypeBasisCoeff, memorySpace>
-          &nodalData) const;
+          &nodalData,
+        dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
+          &mapQuadIdToProcId) const;
 
       /**
        * @brief Get cell level nodal data from process level nodal data.
@@ -997,7 +1096,9 @@ namespace dftfe
         const ValueTypeBasisCoeff *quadratureValues,
         const ValueTypeBasisCoeff *quadratureGradients,
         dftfe::linearAlgebra::MultiVector<ValueTypeBasisCoeff, memorySpace>
-          &                                         nodalData,
+          &nodalData,
+        dftfe::utils::MemoryStorage<dftfe::global_size_type, memorySpace>
+          &                                         mapQuadIdToProcId,
         const std::pair<unsigned int, unsigned int> cellRange) const;
 
 
@@ -1035,7 +1136,5 @@ namespace dftfe
     };
   } // end of namespace basis
 } // end of namespace dftfe
-// #include "../utils/FEBasisOperations.t.cc"
-// #include "../utils/FEBasisOperationsKernels.t.cc"
 
 #endif // dftfeBasisOperations_h

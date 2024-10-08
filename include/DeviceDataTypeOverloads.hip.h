@@ -717,6 +717,17 @@ namespace dftfe
     }
 
 
+    inline bool
+    makeDataTypeDeviceCompatible(bool a)
+    {
+      return a;
+    }
+
+    inline bool *
+    makeDataTypeDeviceCompatible(bool *a)
+    {
+      return a;
+    }
   } // namespace utils
 
 } // namespace dftfe

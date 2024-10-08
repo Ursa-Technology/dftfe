@@ -190,7 +190,6 @@ namespace dftfe
   {
     d_dofHandlerPRefined.distribute_dofs(d_dofHandlerPRefined.get_fe());
     d_dofHandlerRhoNodal.distribute_dofs(d_dofHandlerRhoNodal.get_fe());
-
     d_supportPointsPRefined.clear();
     dealii::DoFTools::map_dofs_to_support_points(dealii::MappingQ1<3, 3>(),
                                                  d_dofHandlerPRefined,
@@ -307,7 +306,6 @@ namespace dftfe
                                                     0.0);
         computing_timer.leave_subsection("Create atom bins");
       }
-
     MPI_Barrier(d_mpiCommParent);
     init_bins = MPI_Wtime() - init_bins;
     if (d_dftParamsPtr->verbosity >= 4)
@@ -336,7 +334,7 @@ namespace dftfe
     d_constraintsVectorElectro.push_back(&d_constraintsForPhiPrimeElectro);
     d_phiPrimeDofHandlerIndexElectro = d_constraintsVectorElectro.size() - 1;
 
-
+#ifdef DFTFE_WITH_CUSTOMIZED_DEALII
     if (d_dftParamsPtr->constraintsParallelCheck)
       {
         dealii::IndexSet locally_active_dofs_debug;
@@ -355,6 +353,7 @@ namespace dftfe
           dealii::ExcMessage(
             "DFT-FE Error: Constraints are not consistent in parallel."));
       }
+#endif
 
     // Fill dofHandler vector
     std::vector<const dealii::DoFHandler<3> *> matrixFreeDofHandlerVectorInput;
@@ -369,7 +368,6 @@ namespace dftfe
                         d_constraintsVectorElectro,
                         true);
     d_forceDofHandlerIndexElectro = d_constraintsVectorElectro.size() - 1;
-
 
     std::vector<dealii::Quadrature<1>> quadratureVector;
     quadratureVector.push_back(dealii::QGauss<1>(
@@ -402,6 +400,7 @@ namespace dftfe
                                     d_constraintsVectorElectro,
                                     quadratureVector,
                                     additional_data);
+
     if (recomputeBasisData)
       {
         if (!vselfPerturbationUpdateForStress)
@@ -410,8 +409,18 @@ namespace dftfe
             dftfe::basis::UpdateFlags updateFlagsAll =
               dftfe::basis::update_values | dftfe::basis::update_jxw |
               dftfe::basis::update_inversejacobians |
-              dftfe::basis::update_gradients | dftfe::basis::update_quadpoints |
-              dftfe::basis::update_transpose;
+              dftfe::basis::update_gradients | dftfe::basis::update_quadpoints;
+
+            dftfe::basis::UpdateFlags updateFlagsDensity =
+              dftfe::basis::update_values | dftfe::basis::update_jxw;
+
+            dftfe::basis::UpdateFlags updateFlagsLPSP =
+              dftfe::basis::update_values | dftfe::basis::update_jxw;
+
+            dftfe::basis::UpdateFlags updateFlagsphiTotAX =
+              d_dftParamsPtr->useDevice && FEOrder != FEOrderElectro ?
+                dftfe::basis::update_gradients :
+                dftfe::basis::update_default;
 
             std::vector<unsigned int> quadratureIndices{
               d_densityQuadratureIdElectro,
@@ -419,10 +428,10 @@ namespace dftfe
               d_smearedChargeQuadratureIdElectro,
               d_phiTotAXQuadratureIdElectro};
             std::vector<dftfe::basis::UpdateFlags> updateFlags{
-              updateFlagsAll,
-              updateFlagsAll,
+              updateFlagsDensity,
+              updateFlagsLPSP,
               dftfe::basis::update_quadpoints,
-              updateFlagsAll};
+              updateFlagsphiTotAX};
             d_basisOperationsPtrElectroHost->init(d_matrixFreeDataPRefined,
                                                   d_constraintsVectorElectro,
                                                   d_baseDofHandlerIndexElectro,
@@ -479,7 +488,6 @@ namespace dftfe
           }
       }
 #endif
-
     //
     // locate atom core nodes
     //

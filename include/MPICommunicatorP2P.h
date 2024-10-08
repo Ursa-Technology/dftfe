@@ -58,22 +58,6 @@ namespace dftfe
       };
 
 
-      template <typename T>
-      struct singlePrecType
-      {
-        typedef T type;
-      };
-      template <>
-      struct singlePrecType<double>
-      {
-        typedef float type;
-      };
-      template <>
-      struct singlePrecType<std::complex<double>>
-      {
-        typedef std::complex<float> type;
-      };
-
       template <typename ValueType, MemorySpace memorySpace>
       class MPICommunicatorP2P
       {
@@ -108,6 +92,24 @@ namespace dftfe
         accumulateAddLocallyOwnedEnd(
           MemoryStorage<ValueType, memorySpace> &dataArray);
 
+        /*
+         * @Brief This function copies the value from the ghost nodes
+         * to its corresponding local node
+         */
+        void
+        accumulateInsertLocallyOwned(
+          MemoryStorage<ValueType, memorySpace> &dataArray,
+          const size_type                        communicationChannel = 0);
+
+        void
+        accumulateInsertLocallyOwnedBegin(
+          MemoryStorage<ValueType, memorySpace> &dataArray,
+          const size_type                        communicationChannel = 0);
+
+        void
+        accumulateInsertLocallyOwnedEnd(
+          MemoryStorage<ValueType, memorySpace> &dataArray);
+
         std::shared_ptr<const MPIPatternP2P<memorySpace>>
         getMPIPatternP2P() const;
 
@@ -136,10 +138,14 @@ namespace dftfe
 
         MemoryStorage<float, memorySpace> d_tempFloatImagArrayForAtomics;
 
-        MemoryStorage<typename singlePrecType<ValueType>::type, memorySpace>
+        MemoryStorage<
+          typename dftfe::dataTypes::singlePrecType<ValueType>::type,
+          memorySpace>
           d_sendRecvBufferSinglePrec;
 
-        MemoryStorage<typename singlePrecType<ValueType>::type, memorySpace>
+        MemoryStorage<
+          typename dftfe::dataTypes::singlePrecType<ValueType>::type,
+          memorySpace>
           d_ghostDataCopySinglePrec;
 
 #ifdef DFTFE_WITH_DEVICE
@@ -149,17 +155,20 @@ namespace dftfe
         std::shared_ptr<MemoryStorage<ValueType, MemorySpace::HOST_PINNED>>
           d_sendRecvBufferHostPinnedPtr;
 
-        std::shared_ptr<MemoryStorage<typename singlePrecType<ValueType>::type,
-                                      MemorySpace::HOST_PINNED>>
+        std::shared_ptr<MemoryStorage<
+          typename dftfe::dataTypes::singlePrecType<ValueType>::type,
+          MemorySpace::HOST_PINNED>>
           d_ghostDataCopySinglePrecHostPinnedPtr;
 
-        std::shared_ptr<MemoryStorage<typename singlePrecType<ValueType>::type,
-                                      MemorySpace::HOST_PINNED>>
+        std::shared_ptr<MemoryStorage<
+          typename dftfe::dataTypes::singlePrecType<ValueType>::type,
+          MemorySpace::HOST_PINNED>>
           d_sendRecvBufferSinglePrecHostPinnedPtr;
 #endif // DFTFE_WITH_DEVICE
 
         std::vector<MPI_Request> d_requestsUpdateGhostValues;
         std::vector<MPI_Request> d_requestsAccumulateAddLocallyOwned;
+        std::vector<MPI_Request> d_requestsAccumulateInsertLocallyOwned;
         MPI_Comm                 d_mpiCommunicator;
 #ifdef DFTFE_WITH_DEVICE
         dftfe::utils::deviceStream_t d_deviceCommStream;

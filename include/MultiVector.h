@@ -496,6 +496,9 @@ namespace dftfe
       size_type
       numVectors() const;
 
+      const Storage &
+      getData() const;
+
     private:
       std::unique_ptr<Storage> d_storage;
       size_type                d_localSize;
@@ -522,5 +525,5 @@ namespace dftfe
 
   } // end of namespace linearAlgebra
 } // end of namespace dftfe
-#include "../src/linAlg/MultiVector.t.cc"
+#include "MultiVector.t.cc"
 #endif // dftfeMultiVector_h

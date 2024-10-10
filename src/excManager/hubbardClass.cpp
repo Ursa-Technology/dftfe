@@ -26,6 +26,11 @@
 #include "AtomCenteredPseudoWavefunctionSpline.h"
 #include "AuxDensityMatrixFE.h"
 
+#include "CompositeData.h"
+#include "MPIWriteOnFile.h"
+#include "NodalData.h"
+
+
 #if defined(DFTFE_WITH_DEVICE)
 #  include "deviceKernelsGeneric.h"
 #endif
@@ -847,6 +852,12 @@ namespace dftfe
     unsigned int interPoolId =
       dealii::Utilities::MPI::this_mpi_process(d_mpi_comm_interPool);
 
+    const std::vector<unsigned int> atomIdsInProc =
+      d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
+
+    std::vector<unsigned int> atomicNumber =
+      d_atomicProjectorFnsContainer->getAtomicNumbers();
+
     if( (bandGroupTaskId == 0) && (interPoolId == 0))
       {
         std::vector<std::shared_ptr<dftfe::dftUtils::CompositeData>> data(0);
@@ -869,7 +880,7 @@ namespace dftfe
                 for (unsigned int iOrb = 0; iOrb < numSphericalFunc*numSphericalFunc; iOrb++)
                   {
                     double occVal = d_occupationMatrix
-                                      [HubbardOccFieldType::Out][
+                                      [HubbardOccFieldType::In][
                                         spinIndex * d_numTotalOccMatrixEntriesPerSpin +
                                         d_OccMatrixEntryStartForAtom[d_procLocalAtomId[iAtom]] + iOrb];
                     nodeVals.push_back(occVal);
@@ -903,7 +914,7 @@ namespace dftfe
   void
   hubbard<ValueType, memorySpace>::readHubbOccFromFile()
   {
-
+	  pcout<<" Reading hubbard occupation number \n";
     const std::string filename = "HubbardOccData.chk";
     std::ifstream hubbOccInputFile(filename);
 
@@ -921,6 +932,10 @@ namespace dftfe
         mapGlobalIdToProcLocalId[globalId] = iAtom;
       }
 
+
+    const std::vector<unsigned int> atomIdsInProcessor =
+          d_atomicProjectorFnsContainer->getAtomIdsInCurrentProcess();
+
     std::vector<double> hubbOccTemp;
     hubbOccTemp.resize(d_maxOccMatSizePerAtom * d_numSpins);
     for( unsigned int iGlobalAtomInd = 0; iGlobalAtomInd < d_totalNumHubbAtoms;
@@ -934,10 +949,15 @@ namespace dftfe
             hubbOccInputFile >> hubbOccTemp[iOrb];
           }
 
-        if( mapGlobalIdToProcLocalId.find(globalId) != mapGlobalIdToProcLocalId.end())
+        if( mapGlobalIdToProcLocalId.find(globalAtomIndexFromFile) != mapGlobalIdToProcLocalId.end())
           {
 
-            unsigned int iAtom = mapGlobalIdToProcLocalId.find(globalId)->second;
+            unsigned int iAtom = mapGlobalIdToProcLocalId.find(globalAtomIndexFromFile)->second;
+	    const unsigned int atomId     = atomIdsInProcessor[iAtom];
+	    const unsigned int hubbardIds = d_mapAtomToHubbardIds[atomId];
+
+            const unsigned int numSphericalFunc =
+              d_hubbardSpeciesData[hubbardIds].numberSphericalFunc;
 
             for (unsigned int spinIndex = 0; spinIndex < d_numSpins; spinIndex++)
               {
@@ -945,13 +965,15 @@ namespace dftfe
                   {
                     d_occupationMatrix[HubbardOccFieldType::In][
                         spinIndex * d_numTotalOccMatrixEntriesPerSpin +
-                        d_OccMatrixEntryStartForAtom[d_procLocalAtomId[iAtom]] + iOrb] =
+                        d_OccMatrixEntryStartForAtom[iAtom] + iOrb] =
                       hubbOccTemp[spinIndex*numSphericalFunc*numSphericalFunc + iOrb];
                   }
               }
           }
       }
     hubbOccInputFile.close();
+
+    computeCouplingMatrix();
   }
 
   template <typename ValueType, dftfe::utils::MemorySpace memorySpace>

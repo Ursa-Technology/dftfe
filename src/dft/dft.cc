@@ -1420,10 +1420,6 @@ namespace dftfe
                     dealii::ExcMessage(
                       "single prec in cheby is not compatible with hubbard "));
 
-        AssertThrow(d_dftParamsPtr->solverMode != "NSCF",
-                    dealii::ExcMessage(
-                      "Hubbard correction is not implemented for NSCF mode"));
-
         init_hubbOp = MPI_Wtime() - init_hubbOp ;
 
         if (d_dftParamsPtr->verbosity >= 2)

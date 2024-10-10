@@ -1029,6 +1029,18 @@ namespace dftfe
     // matrix_free_data.get_quadrature(d_densityQuadratureId);
     d_dispersionCorr.computeDispresionCorrection(atomLocations,
                                                  d_domainBoundingVectors);
+    
+    
+    computeFractionalOccupancies();
+
+    d_excManagerPtr->getExcSSDFunctionalObj()
+          ->updateWaveFunctionDependentFuncDerWrtPsi(d_auxDensityMatrixXCOutPtr,
+                                                     d_kPointWeights);
+
+    d_excManagerPtr->getExcSSDFunctionalObj()
+          ->computeWaveFunctionDependentExcEnergy(d_auxDensityMatrixXCOutPtr,
+                                                  d_kPointWeights);
+    
     const double totalEnergy = energyCalc.computeEnergy(
       d_basisOperationsPtrHost,
       d_basisOperationsPtrElectroHost,

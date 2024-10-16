@@ -695,19 +695,16 @@ namespace dftfe
         if (d_dftParams.floatingNuclearCharges)
           {
 #ifdef USE_COMPLEX
-            // TODO this will also throw an error for hubbard
             accumulateForceContributionGammaAtomsFloating(
               forceContributionFnlGammaAtomsHubbard, d_forceAtomsFloatingKPoints);
 #else
-	    std::cout<<" Inside hubbard force accum \n";
-            // TODO this will also throw an error for hubbard
             accumulateForceContributionGammaAtomsFloating(
               forceContributionFnlGammaAtomsHubbard, d_forceAtomsFloating);
 #endif
           }
         else
           distributeForceContributionFnlGammaAtoms(
-            forceContributionFnlGammaAtomsHubbard); // TODO this will throw an error for hubbard
+            forceContributionFnlGammaAtomsHubbard);
       }
 
 

@@ -466,7 +466,7 @@ namespace dftfe
 
     d_expectationOfHubbardPotential += d_hubbardEnergy;
 
-    if (d_verbosity >= 2)
+    if ((d_verbosity >= 2) || (d_dftParamsPtr->computeEnergyEverySCF))
       {
         pcout << " Hubbard energy = " << d_hubbardEnergy << "\n";
         pcout << " Hubbard energy correction = "

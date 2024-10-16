@@ -138,7 +138,6 @@ namespace dftfe
 
                     const unsigned int numberPseudoWaveFunctions =
                       numberPseudoWaveFunctionsPerAtom[iAtom];
-                    // std::cout<<startingPseudoWfcIdFlattened <<std::endl;
                     std::vector<dataTypes::number> temp2(3);
                     for (unsigned int q = 0; q < numQuadPoints; ++q)
                       {
@@ -201,9 +200,6 @@ namespace dftfe
                           dftPtr->d_kPointWeights[kPoint] * 2.0 *
                           dftfe::utils::realPart(F[2]);
 
-                        // std::cout<<F[0] <<std::endl;
-                        // std::cout<<F[1] <<std::endl;
-                        // std::cout<<F[2] <<std::endl;
                       } // quad-loop
                   }     // kpoint loop
               }         // non-trivial cell check

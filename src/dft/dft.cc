@@ -1404,18 +1404,6 @@ namespace dftfe
                     dealii::ExcMessage(
                       "LRDM preconditioner is not compatible with hubbard "));
 
-        // band group parallelization data structures
-        const unsigned int numberBandGroups =
-          dealii::Utilities::MPI::n_mpi_processes(interBandGroupComm);
-
-        AssertThrow(numberBandGroups == 1,
-                    dealii::ExcMessage(
-                      "Band parallelisation is not compatible with hubbard "));
-
-        AssertThrow(
-          d_dftParamsPtr->overlapComputeCommunCheby == false,
-          dealii::ExcMessage(
-            "overlap compute communication in cheby is not compatible with hubbard "));
         AssertThrow(d_dftParamsPtr->useSinglePrecCheby == false,
                     dealii::ExcMessage(
                       "single prec in cheby is not compatible with hubbard "));
@@ -4037,6 +4025,19 @@ namespace dftfe
 
     d_freeEnergy = d_groundStateEnergy - d_entropicEnergy;
 
+    if (d_dftParamsPtr->verbosity >= 1)
+    {
+    if ((d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+         ExcFamilyType::DFTPlusU) ||
+        (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+         ExcFamilyType::HYBRID) ||
+        (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+         ExcFamilyType::MGGA))
+    {
+	    pcout<<" Non local part of Exc energy = "<<d_excManagerPtr->getExcSSDFunctionalObj()
+                     ->getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi()<<"\n";
+    }
+  }
     if (d_dftParamsPtr->verbosity >= 1)
       pcout << "Total free energy: " << d_freeEnergy << std::endl;
 

@@ -367,8 +367,6 @@ namespace dftfe
     //
     // read coordinates
     //
-    if (d_dftParamsPtr->meshSizesFile != "")
-      dftUtils::readFile(d_meshSizes, d_dftParamsPtr->meshSizesFile);
     if (d_dftParamsPtr->periodicX || d_dftParamsPtr->periodicY ||
         d_dftParamsPtr->periodicZ)
       {
@@ -762,7 +760,7 @@ namespace dftfe
         numElectronsDown = numElectrons - numElectronsUp;
         //
         int netMagnetization = std::round(static_cast<double>(numElectrons) *
-                                          d_dftParamsPtr->start_magnetization);
+                                          d_dftParamsPtr->tot_magnetization);
         //
         while ((numElectronsUp - numElectronsDown) < std::abs(netMagnetization))
           {
@@ -1130,7 +1128,6 @@ namespace dftfe
         d_mesh.generateCoarseMeshesForRestart(
           atomLocations,
           d_imagePositionsTrunc,
-          d_meshSizes,
           d_imageIdsTrunc,
           d_nearestAtomDistances,
           d_domainBoundingVectors,
@@ -1144,7 +1141,6 @@ namespace dftfe
         d_mesh.generateSerialUnmovedAndParallelMovedUnmovedMesh(
           atomLocations,
           d_imagePositionsTrunc,
-          d_meshSizes,
           d_imageIdsTrunc,
           d_nearestAtomDistances,
           d_domainBoundingVectors,
@@ -3485,12 +3481,8 @@ namespace dftfe
             pcout << std::endl
                   << "number of electrons: " << integralRhoValue << std::endl;
           }
-
-        if (d_dftParamsPtr->verbosity >= 1 &&
-            d_dftParamsPtr->spinPolarized == 1)
-          pcout << std::endl
-                << "net magnetization: "
-                << totalMagnetization(d_densityOutQuadValues[1]) << std::endl;
+        if (d_dftParamsPtr->verbosity > 0)
+          totalMagnetization(d_densityOutQuadValues[1]);
 
         //
         // phiTot with rhoOut
@@ -3987,6 +3979,9 @@ namespace dftfe
 
     if (d_dftParamsPtr->verbosity >= 1)
       pcout << "Total free energy: " << d_freeEnergy << std::endl;
+
+    if (d_dftParamsPtr->verbosity >= 0 && d_dftParamsPtr->spinPolarized == 1)
+      totalMagnetization(d_densityOutQuadValues[1]);
 
     // This step is required for interpolating rho from current mesh to the
     // new mesh in case of atomic relaxation

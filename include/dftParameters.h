@@ -53,7 +53,7 @@ namespace dftfe
     double radiusAtomBall, mixingParameter, spinMixingEnhancementFactor;
     bool   adaptAndersonMixingParameter;
     double absLinearSolverTolerance, selfConsistentSolverTolerance, TVal,
-      selfConsistentSolverEnergyTolerance, start_magnetization,
+      selfConsistentSolverEnergyTolerance, tot_magnetization,
       absLinearSolverToleranceHelmholtz;
 
     bool isPseudopotential, periodicX, periodicY, periodicZ, useSymm,

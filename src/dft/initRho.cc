@@ -416,7 +416,7 @@ namespace dftfe
                 if (!d_constraintsRhoNodal.is_constrained(dofID))
                   {
                     d_densityInNodalValues[1].local_element(dof) =
-                      d_dftParamsPtr->start_magnetization *
+                      d_dftParamsPtr->tot_magnetization *
                       d_densityInNodalValues[0].local_element(dof);
                   }
               }
@@ -587,9 +587,8 @@ namespace dftfe
                 if (d_dftParamsPtr->spinPolarized == 1)
                   {
                     if (d_dftParamsPtr->constraintMagnetization)
-                      magInValuesPtr[q] =
-                        (d_dftParamsPtr->start_magnetization) *
-                        (std::abs(rhoValueAtQuadPt));
+                      magInValuesPtr[q] = (d_dftParamsPtr->tot_magnetization) *
+                                          (std::abs(rhoValueAtQuadPt));
                     else
                       magInValuesPtr[q] = magZValueAtQuadPt;
                   }
@@ -841,13 +840,13 @@ namespace dftfe
                         if (d_dftParamsPtr->constraintMagnetization)
                           {
                             gradMagInValuesPtr[3 * q + 0] =
-                              d_dftParamsPtr->start_magnetization *
+                              d_dftParamsPtr->tot_magnetization *
                               gradRhoXValueAtQuadPt;
                             gradMagInValuesPtr[3 * q + 1] =
-                              d_dftParamsPtr->start_magnetization *
+                              d_dftParamsPtr->tot_magnetization *
                               gradRhoYValueAtQuadPt;
                             gradMagInValuesPtr[3 * q + 2] =
-                              d_dftParamsPtr->start_magnetization *
+                              d_dftParamsPtr->tot_magnetization *
                               gradRhoZValueAtQuadPt;
                           }
                         else

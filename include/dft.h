@@ -1104,7 +1104,7 @@ namespace dftfe
     /**
      *@brief Computes net magnetization from the difference of local spin densities
      */
-    double
+    void
     totalMagnetization(
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
         &magQuadValues);

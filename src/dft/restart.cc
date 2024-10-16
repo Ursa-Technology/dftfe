@@ -144,7 +144,7 @@ namespace dftfe
              i++)
           {
             d_magInNodalValuesRead.local_element(i) =
-              (d_dftParamsPtr->start_magnetization) *
+              (d_dftParamsPtr->tot_magnetization) *
               d_rhoInNodalValuesRead.local_element(i);
           }
       }

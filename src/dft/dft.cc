@@ -3481,7 +3481,7 @@ namespace dftfe
             pcout << std::endl
                   << "number of electrons: " << integralRhoValue << std::endl;
           }
-        if (d_dftParamsPtr->verbosity > 0)
+        if (d_dftParamsPtr->verbosity > 0 && d_dftParamsPtr->spinPolarized == 1)
           totalMagnetization(d_densityOutQuadValues[1]);
 
         //

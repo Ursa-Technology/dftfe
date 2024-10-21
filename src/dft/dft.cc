@@ -165,7 +165,7 @@ namespace dftfe
     , d_mixingScheme(mpi_comm_parent, mpi_comm_domain, dftParams.verbosity)
   {
     d_nOMPThreads = 1;
-    d_useHubbard = false;
+    d_useHubbard  = false;
     if (const char *penv = std::getenv("DFTFE_NUM_THREADS"))
       {
         try
@@ -1351,7 +1351,7 @@ namespace dftfe
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
   void
-    dftClass<FEOrder, FEOrderElectro, memorySpace>::initHubbardOperator()
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::initHubbardOperator()
   {
     if (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
         ExcFamilyType::DFTPlusU)
@@ -1408,12 +1408,11 @@ namespace dftfe
                     dealii::ExcMessage(
                       "single prec in cheby is not compatible with hubbard "));
 
-        init_hubbOp = MPI_Wtime() - init_hubbOp ;
+        init_hubbOp = MPI_Wtime() - init_hubbOp;
 
         if (d_dftParamsPtr->verbosity >= 2)
           pcout << "Time taken for hubbard class initialization: "
                 << init_hubbOp << std::endl;
-
       }
   }
 
@@ -1616,8 +1615,7 @@ namespace dftfe
 
     if (d_useHubbard)
       {
-        dftfe::utils::MemoryStorage<double,
-                                    dftfe::utils::MemorySpace::HOST>
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
           &hubbOccIn = d_hubbardClassPtr->getOccMatIn();
 
         initHubbardOperator();
@@ -3758,9 +3756,7 @@ namespace dftfe
               {
                 d_hubbardClassPtr->writeHubbOccToFile();
               }
-
           }
-
       }
 
     if (d_dftParamsPtr->saveRhoData &&
@@ -4026,18 +4022,20 @@ namespace dftfe
     d_freeEnergy = d_groundStateEnergy - d_entropicEnergy;
 
     if (d_dftParamsPtr->verbosity >= 1)
-    {
-    if ((d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
-         ExcFamilyType::DFTPlusU) ||
-        (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
-         ExcFamilyType::HYBRID) ||
-        (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
-         ExcFamilyType::MGGA))
-    {
-	    pcout<<" Non local part of Exc energy = "<<d_excManagerPtr->getExcSSDFunctionalObj()
-                     ->getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi()<<"\n";
-    }
-  }
+      {
+        if ((d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+             ExcFamilyType::DFTPlusU) ||
+            (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+             ExcFamilyType::HYBRID) ||
+            (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+             ExcFamilyType::MGGA))
+          {
+            pcout << " Non local part of Exc energy = "
+                  << d_excManagerPtr->getExcSSDFunctionalObj()
+                       ->getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi()
+                  << "\n";
+          }
+      }
     if (d_dftParamsPtr->verbosity >= 1)
       pcout << "Total free energy: " << d_freeEnergy << std::endl;
 

@@ -38,12 +38,13 @@ namespace dftfe
                            C_num1DQuadNLPSP<FEOrder>() *
                              C_numCopies1DQuadNLPSP(),
                            3> &            forceEvalNLP,
-      const std::shared_ptr<AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
-      nonLocalOp,
-      unsigned int numNonLocalAtomsCurrentProcess,
-      const std::vector<int> & globalChargeIdNonLocalAtoms,
-      const std::vector<unsigned int> & numberPseudoWaveFunctionsPerAtom,
-      const unsigned int                   cell,
+      const std::shared_ptr<
+        AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
+                                       nonLocalOp,
+      unsigned int                     numNonLocalAtomsCurrentProcess,
+      const std::vector<int> &         globalChargeIdNonLocalAtoms,
+      const std::vector<unsigned int> &numberPseudoWaveFunctionsPerAtom,
+      const unsigned int               cell,
       const std::map<dealii::CellId, unsigned int> &cellIdToCellNumberMap,
 #ifdef USE_COMPLEX
       const std::vector<dataTypes::number>
@@ -76,7 +77,8 @@ namespace dftfe
 
         // FIXME should use the appropriate map from oncvClassPtr
         // instead of assuming all atoms are nonlocal atoms
-        const int globalChargeIdNonLocalAtom = globalChargeIdNonLocalAtoms[iAtom];
+        const int globalChargeIdNonLocalAtom =
+          globalChargeIdNonLocalAtoms[iAtom];
 
         // if map entry corresponding to current nonlocal atom id is empty,
         // initialize it to zero
@@ -95,13 +97,11 @@ namespace dftfe
             const unsigned int elementId =
               cellIdToCellNumberMap.find(subCellPtr->id())->second;
             for (unsigned int i = 0;
-                 i < (nonLocalOp
-                        ->getCellIdToAtomIdsLocalCompactSupportMap())
+                 i < (nonLocalOp->getCellIdToAtomIdsLocalCompactSupportMap())
                        .find(elementId)
                        ->second.size();
                  i++)
-              if ((nonLocalOp
-                     ->getCellIdToAtomIdsLocalCompactSupportMap())
+              if ((nonLocalOp->getCellIdToAtomIdsLocalCompactSupportMap())
                     .find(elementId)
                     ->second[i] == iAtom)
                 {
@@ -126,8 +126,7 @@ namespace dftfe
                         nonLocalOp
                           ->getTotalNonTrivialSphericalFnsOverAllCells() *
                         numQuadPoints +
-                      (nonLocalOp
-                         ->getNonTrivialSphericalFnsCellStartIndex())
+                      (nonLocalOp->getNonTrivialSphericalFnsCellStartIndex())
                           [elementId] *
                         numQuadPoints +
                       (nonLocalOp
@@ -233,12 +232,13 @@ namespace dftfe
         dealii::Tensor<1, 3, dealii::VectorizedArray<double>>> &FVectQuads,
       const dealii::MatrixFree<3, double> &                     matrixFreeData,
       const unsigned int                                        numQuadPoints,
-      const std::shared_ptr<AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
-                                                    nonLocalOp,
-      const unsigned int numNonLocalAtomsCurrentProcess,
-      const std::vector<int> & globalChargeIdNonLocalAtoms,
-      const std::vector<unsigned int> & numberPseudoWaveFunctionsPerAtom,
-      const unsigned int                                        cell,
+      const std::shared_ptr<
+        AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
+                                       nonLocalOp,
+      const unsigned int               numNonLocalAtomsCurrentProcess,
+      const std::vector<int> &         globalChargeIdNonLocalAtoms,
+      const std::vector<unsigned int> &numberPseudoWaveFunctionsPerAtom,
+      const unsigned int               cell,
       const std::map<dealii::CellId, unsigned int> &cellIdToCellNumberMap,
       const std::vector<dataTypes::number> &        zetaDeltaVQuadsFlattened,
       const std::vector<dataTypes::number>
@@ -274,13 +274,11 @@ namespace dftfe
             const unsigned int elementId =
               cellIdToCellNumberMap.find(subCellPtr->id())->second;
             for (unsigned int i = 0;
-                 i < (nonLocalOp
-                        ->getCellIdToAtomIdsLocalCompactSupportMap())
+                 i < (nonLocalOp->getCellIdToAtomIdsLocalCompactSupportMap())
                        .find(elementId)
                        ->second.size();
                  i++)
-              if ((nonLocalOp
-                     ->getCellIdToAtomIdsLocalCompactSupportMap())
+              if ((nonLocalOp->getCellIdToAtomIdsLocalCompactSupportMap())
                     .find(elementId)
                     ->second[i] == iAtom)
                 {
@@ -299,8 +297,7 @@ namespace dftfe
                         (nonLocalOp
                            ->getTotalNonTrivialSphericalFnsOverAllCells()) *
                         numQuadPoints +
-                      (nonLocalOp
-                         ->getNonTrivialSphericalFnsCellStartIndex())
+                      (nonLocalOp->getNonTrivialSphericalFnsCellStartIndex())
                           [elementId] *
                         numQuadPoints +
                       (nonLocalOp
@@ -382,7 +379,7 @@ namespace dftfe
         std::vector<double> forceContributionFnlGammaiAtomGlobal(3);
         std::vector<double> forceContributionFnlGammaiAtomLocal(3, 0.0);
 
-        //TODO this will throw an error for hubbard
+        // TODO this will throw an error for hubbard
         if (forceContributionFnlGammaAtoms.find(iAtom) !=
             forceContributionFnlGammaAtoms.end())
           {

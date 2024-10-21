@@ -284,17 +284,16 @@ namespace dftfe
                                                             beta,
                                                             C,
                                                             int(ldc));
-      
-      
-      if(status != CUBLAS_STATUS_SUCCESS)
-      {
-	      std::cout << boost::stacktrace::stacktrace();
-      
-	      std::cout<<" m = "<<m<<" n = "<<n<<" k = "<<k<<" lda = "<<lda<<" ldb = "<<ldb<<" ldc = "<<ldc<<"\n";
-      
-      
-      
-      }
+
+
+      if (status != CUBLAS_STATUS_SUCCESS)
+        {
+          std::cout << boost::stacktrace::stacktrace();
+
+          std::cout << " m = " << m << " n = " << n << " k = " << k
+                    << " lda = " << lda << " ldb = " << ldb << " ldc = " << ldc
+                    << "\n";
+        }
 
       DEVICEBLAS_API_CHECK(status);
     }

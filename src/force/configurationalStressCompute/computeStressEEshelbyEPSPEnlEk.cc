@@ -223,7 +223,7 @@ namespace dftfe
         std::vector<dataTypes::number>
           projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattened;
 
-	std::vector<dataTypes::number>
+        std::vector<dataTypes::number>
           projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard;
 
 #ifdef USE_COMPLEX
@@ -284,8 +284,8 @@ namespace dftfe
               dftPtr->d_BLASWrapperPtr,
               dftPtr->d_oncvClassPtr,
               dftPtr->d_hubbardClassPtr,
-	      dftPtr->d_useHubbard,
-	      dftPtr->d_eigenVectorsFlattenedDevice.begin(),
+              dftPtr->d_useHubbard,
+              dftPtr->d_eigenVectorsFlattenedDevice.begin(),
               d_dftParams.spinPolarized,
               spinIndex,
               dftPtr->eigenValues,
@@ -299,12 +299,12 @@ namespace dftfe
               elocWfcEshelbyTensorQuadValuesH.data(),
               projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattened
                 .data(),
-	      projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard
+              projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard
                 .data(),
 #  ifdef USE_COMPLEX
               projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened
                 .data(),
-	      projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard
+              projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard
                 .data(),
 #  endif
               d_mpiCommParent,
@@ -331,7 +331,7 @@ namespace dftfe
               dftPtr->d_nlpspQuadratureId,
               dftPtr->d_BLASWrapperPtrHost,
               dftPtr->d_oncvClassPtr,
-	      dftPtr->d_hubbardClassPtr,
+              dftPtr->d_hubbardClassPtr,
               dftPtr->d_useHubbard,
               dftPtr->d_eigenVectorsFlattenedHost.begin(),
               d_dftParams.spinPolarized,
@@ -347,12 +347,12 @@ namespace dftfe
               elocWfcEshelbyTensorQuadValuesH.data(),
               projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattened
                 .data(),
-	      projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard
+              projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard
                 .data(),
 #ifdef USE_COMPLEX
               projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened
                 .data(),
-	      projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard
+              projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard
                 .data(),
 #endif
               d_mpiCommParent,
@@ -448,30 +448,39 @@ namespace dftfe
                         jxwQuadsVect[iSubCell];
                   }
 
-                if(isPseudopotential )
+                if (isPseudopotential)
                   {
-
                     const unsigned int numNonLocalAtomsCurrentProcessPsP =
-                      (dftPtr->d_oncvClassPtr->getTotalNumberOfAtomsInCurrentProcessor());
+                      (dftPtr->d_oncvClassPtr
+                         ->getTotalNumberOfAtomsInCurrentProcessor());
 
-                    std::vector<int> nonLocalAtomIdPsP ;
+                    std::vector<int> nonLocalAtomIdPsP;
                     nonLocalAtomIdPsP.resize(numNonLocalAtomsCurrentProcessPsP);
 
-                    std::vector<unsigned int> numberPseudoWaveFunctionsPerAtomPsP;
-                    numberPseudoWaveFunctionsPerAtomPsP.resize(numNonLocalAtomsCurrentProcessPsP);
+                    std::vector<unsigned int>
+                      numberPseudoWaveFunctionsPerAtomPsP;
+                    numberPseudoWaveFunctionsPerAtomPsP.resize(
+                      numNonLocalAtomsCurrentProcessPsP);
 
-                    for(unsigned int iAtom = 0 ; iAtom < numNonLocalAtomsCurrentProcessPsP;
+                    for (unsigned int iAtom = 0;
+                         iAtom < numNonLocalAtomsCurrentProcessPsP;
                          iAtom++)
                       {
-                        nonLocalAtomIdPsP[iAtom] = dftPtr->d_oncvClassPtr->getAtomIdInCurrentProcessor(iAtom);
+                        nonLocalAtomIdPsP[iAtom] =
+                          dftPtr->d_oncvClassPtr->getAtomIdInCurrentProcessor(
+                            iAtom);
 
-                        numberPseudoWaveFunctionsPerAtomPsP[iAtom] = dftPtr->d_oncvClassPtr
-                                                                       ->getTotalNumberOfSphericalFunctionsForAtomId(
-                                                                         nonLocalAtomIdPsP[iAtom]);
+                        numberPseudoWaveFunctionsPerAtomPsP[iAtom] =
+                          dftPtr->d_oncvClassPtr
+                            ->getTotalNumberOfSphericalFunctionsForAtomId(
+                              nonLocalAtomIdPsP[iAtom]);
                       }
 
-                    const std::shared_ptr<AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
-                      oncvNonLocalOp = dftPtr->d_oncvClassPtr->getNonLocalOperator();
+                    const std::shared_ptr<
+                      AtomicCenteredNonLocalOperator<dataTypes::number,
+                                                     memorySpace>>
+                      oncvNonLocalOp =
+                        dftPtr->d_oncvClassPtr->getNonLocalOperator();
 
                     stressEnlElementalContribution(
                       d_stressKPoints,
@@ -492,25 +501,31 @@ namespace dftfe
                       d_dftParams.spinPolarized == 1);
                   }
 
-                if(useHubbard )
+                if (useHubbard)
                   {
-
-
                     const unsigned int numNonLocalAtomsCurrentProcessHubbard =
                       (dftPtr->d_hubbardClassPtr->getNonLocalOperator()
                          ->getTotalAtomInCurrentProcessor());
 
-                    std::vector<unsigned int> numberPseudoWaveFunctionsPerAtomHubbard;
-                    numberPseudoWaveFunctionsPerAtomHubbard.resize(numNonLocalAtomsCurrentProcessHubbard);
-                    for(unsigned int iAtom = 0 ; iAtom < numNonLocalAtomsCurrentProcessHubbard;
+                    std::vector<unsigned int>
+                      numberPseudoWaveFunctionsPerAtomHubbard;
+                    numberPseudoWaveFunctionsPerAtomHubbard.resize(
+                      numNonLocalAtomsCurrentProcessHubbard);
+                    for (unsigned int iAtom = 0;
+                         iAtom < numNonLocalAtomsCurrentProcessHubbard;
                          iAtom++)
                       {
-                        numberPseudoWaveFunctionsPerAtomHubbard[iAtom] = dftPtr->d_hubbardClassPtr
-                                                                           ->getTotalNumberOfSphericalFunctionsForAtomId(iAtom);
+                        numberPseudoWaveFunctionsPerAtomHubbard[iAtom] =
+                          dftPtr->d_hubbardClassPtr
+                            ->getTotalNumberOfSphericalFunctionsForAtomId(
+                              iAtom);
                       }
 
-                    const std::shared_ptr<AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
-                      hubbardNonLocalOp = dftPtr->d_hubbardClassPtr->getNonLocalOperator();
+                    const std::shared_ptr<
+                      AtomicCenteredNonLocalOperator<dataTypes::number,
+                                                     memorySpace>>
+                      hubbardNonLocalOp =
+                        dftPtr->d_hubbardClassPtr->getNonLocalOperator();
 
                     stressEnlElementalContribution(
                       d_stressKPoints,

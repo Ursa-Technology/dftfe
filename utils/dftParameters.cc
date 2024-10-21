@@ -799,7 +799,7 @@ namespace dftfe
 
         prm.declare_entry(
           "SPIN MIXING ENHANCEMENT FACTOR",
-          "4.0",
+          "1.0",
           dealii::Patterns::Double(-1e-12, 100.0),
           "[Standard] Scales the mixing parameter for the spin densities as SPIN MIXING ENHANCEMENT FACTOR times MIXING PARAMETER. This parameter is not used for LOW\_RANK\_DIELECM\_PRECOND mixing method.");
 

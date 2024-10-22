@@ -27,15 +27,16 @@ namespace dftfe
             dftfe::utils::MemorySpace memorySpace>
   void forceClass<FEOrder, FEOrderElectro, memorySpace>::
     stressEnlElementalContribution(
-      dealii::Tensor<2, 3, double> &                stressContribution,
-      const dealii::MatrixFree<3, double> &         matrixFreeData,
-      const unsigned int                            numQuadPoints,
-      const std::vector<double> &                   jxwQuadsSubCells,
-      const unsigned int                            cell,
-      const unsigned int numNonLocalAtomsCurrentProcess,
-      const std::shared_ptr<AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
-                                                    nonLocalOp,
-      const std::vector<unsigned int> & numberPseudoWaveFunctionsPerAtom,
+      dealii::Tensor<2, 3, double> &       stressContribution,
+      const dealii::MatrixFree<3, double> &matrixFreeData,
+      const unsigned int                   numQuadPoints,
+      const std::vector<double> &          jxwQuadsSubCells,
+      const unsigned int                   cell,
+      const unsigned int                   numNonLocalAtomsCurrentProcess,
+      const std::shared_ptr<
+        AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
+                                       nonLocalOp,
+      const std::vector<unsigned int> &numberPseudoWaveFunctionsPerAtom,
       const std::map<dealii::CellId, unsigned int> &cellIdToCellNumberMap,
       const std::vector<dataTypes::number> &zetalmDeltaVlProductDistImageAtoms,
 #ifdef USE_COMPLEX
@@ -62,7 +63,6 @@ namespace dftfe
 
     for (int iAtom = 0; iAtom < numNonLocalAtomsCurrentProcess; ++iAtom)
       {
-
         for (unsigned int iSubCell = 0; iSubCell < numSubCells; ++iSubCell)
           {
             subCellPtr = matrixFreeData.get_cell_iterator(cell, iSubCell);
@@ -70,13 +70,11 @@ namespace dftfe
             const unsigned int elementId =
               cellIdToCellNumberMap.find(subCellPtr->id())->second;
             for (unsigned int i = 0;
-                 i < (nonLocalOp
-                        ->getCellIdToAtomIdsLocalCompactSupportMap())
+                 i < (nonLocalOp->getCellIdToAtomIdsLocalCompactSupportMap())
                        .find(elementId)
                        ->second.size();
                  i++)
-              if ((nonLocalOp
-                     ->getCellIdToAtomIdsLocalCompactSupportMap())
+              if ((nonLocalOp->getCellIdToAtomIdsLocalCompactSupportMap())
                     .find(elementId)
                     ->second[i] == iAtom)
                 {
@@ -100,8 +98,7 @@ namespace dftfe
                         (nonLocalOp
                            ->getTotalNonTrivialSphericalFnsOverAllCells()) *
                         numQuadPoints +
-                      (nonLocalOp
-                         ->getNonTrivialSphericalFnsCellStartIndex())
+                      (nonLocalOp->getNonTrivialSphericalFnsCellStartIndex())
                           [elementId] *
                         numQuadPoints +
                       (nonLocalOp

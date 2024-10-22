@@ -737,7 +737,7 @@ namespace dftfe
     void
     initHubbardOperator();
 
-      void
+    void
     determineAtomsOfInterstPseudopotential(
       const std::vector<std::vector<double>> &atomCoordinates);
 

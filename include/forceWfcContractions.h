@@ -41,10 +41,10 @@ namespace dftfe
       const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
         &BLASWrapperPtr,
       std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>>
-                                              oncvClassPtr,
-      std::shared_ptr<hubbard<dataTypes::number,memorySpace>> hubbardClassPtr,
-      const bool useHubbard,
-      const dataTypes::number *               X,
+                                                               oncvClassPtr,
+      std::shared_ptr<hubbard<dataTypes::number, memorySpace>> hubbardClassPtr,
+      const bool                                               useHubbard,
+      const dataTypes::number *                                X,
       const unsigned int                      spinPolarizedFlag,
       const unsigned int                      spinIndex,
       const std::vector<std::vector<double>> &eigenValuesH,
@@ -63,8 +63,8 @@ namespace dftfe
 #ifdef USE_COMPLEX
       dataTypes::number
         *projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedH,
-      dataTypes::number
-        *projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard,
+      dataTypes::number *
+        projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard,
 #endif
       const MPI_Comm &     mpiCommParent,
       const MPI_Comm &     interBandGroupComm,

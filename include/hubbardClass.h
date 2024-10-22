@@ -239,27 +239,30 @@ namespace dftfe
       AtomicCenteredNonLocalOperator<ValueType, memorySpace>>
     getNonLocalOperator();
 
-    unsigned int getTotalNumberOfSphericalFunctionsForAtomId(unsigned int iAtom);
+    unsigned int
+    getTotalNumberOfSphericalFunctionsForAtomId(unsigned int iAtom);
 
-    unsigned int getGlobalAtomId(unsigned int iAtom);
+    unsigned int
+    getGlobalAtomId(unsigned int iAtom);
 
-
-    /*
-        * @brief Write the hubbard occupation numbers to a
-        * file. Used for nscf calculations.
-    */
-    void writeHubbOccToFile();
 
     /*
-        * @brief Read the hubbard occupation numbers from a file.
-        * Used for nscf calculations.
+     * @brief Write the hubbard occupation numbers to a
+     * file. Used for nscf calculations.
      */
-    void readHubbOccFromFile();
+    void
+    writeHubbOccToFile();
+
+    /*
+     * @brief Read the hubbard occupation numbers from a file.
+     * Used for nscf calculations.
+     */
+    void
+    readHubbOccFromFile();
 
 
   private:
-
-    std::map<unsigned int , unsigned int> d_mapHubbardAtomToGlobalAtomId;
+    std::map<unsigned int, unsigned int> d_mapHubbardAtomToGlobalAtomId;
 
     unsigned int d_totalNumHubbAtoms;
     void

@@ -259,27 +259,29 @@ namespace dftfe
   void
   KohnShamHamiltonianOperator<memorySpace>::resetExtPotHamFlag()
   {
-	  d_isExternalPotCorrHamiltonianComputed = false;
+    d_isExternalPotCorrHamiltonianComputed = false;
   }
 
   template <dftfe::utils::MemorySpace memorySpace>
   void
   KohnShamHamiltonianOperator<memorySpace>::resetKohnShamOp()
   {
-	  resetExtPotHamFlag();
-    if ( d_useHubbard)
-    {
-	    std::shared_ptr<ExcDFTPlusU<dataTypes::number, memorySpace>>
+    resetExtPotHamFlag();
+    if (d_useHubbard)
+      {
+        std::shared_ptr<ExcDFTPlusU<dataTypes::number, memorySpace>>
           excHubbPtr = std::dynamic_pointer_cast<
             ExcDFTPlusU<dataTypes::number, memorySpace>>(
             d_excManagerPtr->getSSDSharedObj());
 
         d_hubbardClassPtr = excHubbPtr->getHubbardClass();
-        
-	d_hubbardClassPtr->initialiseFlattenedDataStructure(d_numVectorsInternal);
 
-        d_hubbardClassPtr->initialiseCellWaveFunctionPointers(d_numVectorsInternal);
-    }
+        d_hubbardClassPtr->initialiseFlattenedDataStructure(
+          d_numVectorsInternal);
+
+        d_hubbardClassPtr->initialiseCellWaveFunctionPointers(
+          d_numVectorsInternal);
+      }
   }
 
 

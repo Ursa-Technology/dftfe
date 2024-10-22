@@ -160,11 +160,11 @@ namespace dftfe
     const std::vector<double> &             kPointWeights,
     const std::vector<std::vector<double>> &domainBoundaries)
   {
-    d_hubbardClassPtr =
-      std::make_shared<hubbard<ValueType, memorySpace>>(mpi_comm_parent,
-                                                        mpi_comm_domain,
-                                                        mpi_comm_interPool,
-                                                        mpi_comm_interBandGroup);
+    d_hubbardClassPtr = std::make_shared<hubbard<ValueType, memorySpace>>(
+      mpi_comm_parent,
+      mpi_comm_domain,
+      mpi_comm_interPool,
+      mpi_comm_interBandGroup);
 
     d_hubbardClassPtr->init(basisOperationsMemPtr,
                             basisOperationsHostPtr,

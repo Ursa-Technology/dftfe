@@ -66,7 +66,7 @@ namespace dftfe
     void
     resetExtPotHamFlag();
 
-    void 
+    void
     resetKohnShamOp();
 
 

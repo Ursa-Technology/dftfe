@@ -528,16 +528,17 @@ namespace dftfe
         const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
           &BLASWrapperPtr,
         std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>>
-                           oncvClassPtr,
-        std::shared_ptr<hubbard<dataTypes::number,memorySpace>> hubbardClassPtr,
+          oncvClassPtr,
+        std::shared_ptr<hubbard<dataTypes::number, memorySpace>>
+                           hubbardClassPtr,
         const unsigned int kPointIndex,
         const unsigned int spinIndex,
         dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
           &flattenedArrayBlock,
         dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
-          &                      projectorKetTimesVector,
+          &projectorKetTimesVector,
         dftfe::linearAlgebra::MultiVector<dataTypes::number, memorySpace>
-         &projectorKetTimesVectorHubbard,
+          &                      projectorKetTimesVectorHubbard,
         const dataTypes::number *X,
         const dftfe::utils::MemoryStorage<double, memorySpace> &eigenValues,
         const dftfe::utils::MemoryStorage<double, memorySpace>
@@ -551,11 +552,11 @@ namespace dftfe
         const dftfe::utils::MemoryStorage<unsigned int, memorySpace>
           &nonTrivialIdToElemIdMap,
         const dftfe::utils::MemoryStorage<unsigned int, memorySpace>
-          &                projecterKetTimesFlattenedVectorLocalIds,
+          &projecterKetTimesFlattenedVectorLocalIds,
         const dftfe::utils::MemoryStorage<unsigned int, memorySpace>
           &nonTrivialIdToElemIdMapHubbard,
         const dftfe::utils::MemoryStorage<unsigned int, memorySpace>
-         &                projecterKetTimesFlattenedVectorLocalIdsHubbard,
+          &                projecterKetTimesFlattenedVectorLocalIdsHubbard,
         const unsigned int startingVecId,
         const unsigned int N,
         const unsigned int numPsi,
@@ -595,17 +596,17 @@ namespace dftfe
           *projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedH,
         dftfe::utils::MemoryStorage<dataTypes::number, memorySpace> &
           projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedBlockHubbard,
-        dataTypes::number
-          *projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard,
+        dataTypes::number *
+          projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard,
 #endif
         dataTypes::number *
-                           projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTemp,
+          projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTemp,
         dataTypes::number *
-          projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTempHubbard,
+                           projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTempHubbard,
         const unsigned int cellsBlockSize,
         const unsigned int innerBlockSizeEnlp,
         const bool         isPsp,
-	const unsigned int innerBlockSizeHubbard,
+        const unsigned int innerBlockSizeHubbard,
         const bool         useHubbard,
         const bool         isFloatingChargeForces,
         const bool         addEk)
@@ -686,33 +687,35 @@ namespace dftfe
               CouplingStructure::diagonal,
               oncvClassPtr->getCouplingMatrix(),
               projectorKetTimesVector);
-/*
+            /*
 
-            dftfe::utils::MemoryStorage<dataTypes::number,
-                                        dftfe::utils::MemorySpace::HOST>
-              projectorKetTimesVectorHostData;
+                        dftfe::utils::MemoryStorage<dataTypes::number,
+                                                    dftfe::utils::MemorySpace::HOST>
+                          projectorKetTimesVectorHostData;
 
-            projectorKetTimesVectorHostData.resize(projectorKetTimesVector.getData().size());
+                        projectorKetTimesVectorHostData.resize(projectorKetTimesVector.getData().size());
 
-            projectorKetTimesVectorHostData.copyFrom(projectorKetTimesVector.getData());
+                        projectorKetTimesVectorHostData.copyFrom(projectorKetTimesVector.getData());
 
-            double projectorKetTimesVectorHostDataNorm = 0.0;
+                        double projectorKetTimesVectorHostDataNorm = 0.0;
 
-            for( unsigned int i = 0; i < projectorKetTimesVectorHostData.size(); i++)
-              {
-                projectorKetTimesVectorHostDataNorm += projectorKetTimesVectorHostData.data()[i]*
-                                                       projectorKetTimesVectorHostData.data()[i];
-              }
+                        for( unsigned int i = 0; i <
+               projectorKetTimesVectorHostData.size(); i++)
+                          {
+                            projectorKetTimesVectorHostDataNorm +=
+               projectorKetTimesVectorHostData.data()[i]*
+                                                                   projectorKetTimesVectorHostData.data()[i];
+                          }
 
-            std::cout<<" projectorKetTimesVectorHostDataNorm = "<<projectorKetTimesVectorHostDataNorm<<"\n";
-*/
-
+                        std::cout<<" projectorKetTimesVectorHostDataNorm =
+               "<<projectorKetTimesVectorHostDataNorm<<"\n";
+            */
           }
 
         if (useHubbard)
           {
-		  flattenedArrayBlock.updateGhostValues();
-        basisOperationsPtr->distribute(flattenedArrayBlock);
+            flattenedArrayBlock.updateGhostValues();
+            basisOperationsPtr->distribute(flattenedArrayBlock);
 
             hubbardClassPtr->getNonLocalOperator()->applyVCconjtransOnX(
               flattenedArrayBlock,
@@ -721,39 +724,42 @@ namespace dftfe
               hubbardClassPtr->getCouplingMatrix(spinIndex),
               projectorKetTimesVectorHubbard);
 
-	    /*
-            dftfe::utils::MemoryStorage<dataTypes::number,
-                                        dftfe::utils::MemorySpace::HOST>
-              projectorKetTimesVectorHubbardHostData;
+            /*
+                  dftfe::utils::MemoryStorage<dataTypes::number,
+                                              dftfe::utils::MemorySpace::HOST>
+                    projectorKetTimesVectorHubbardHostData;
 
-            projectorKetTimesVectorHubbardHostData.resize(projectorKetTimesVectorHubbard.getData().size());
+                  projectorKetTimesVectorHubbardHostData.resize(projectorKetTimesVectorHubbard.getData().size());
 
-            projectorKetTimesVectorHubbardHostData.copyFrom(projectorKetTimesVectorHubbard.getData());
+                  projectorKetTimesVectorHubbardHostData.copyFrom(projectorKetTimesVectorHubbard.getData());
 
-            double projectorKetTimesVectorHubbardHostDataNorm = 0.0;
+                  double projectorKetTimesVectorHubbardHostDataNorm = 0.0;
 
-            for( unsigned int i = 0; i < projectorKetTimesVectorHubbardHostData.size(); i++)
-              {
-		std::cout<<" i = "<<i<<" HubbardHostData = "<<projectorKetTimesVectorHubbardHostData.data()[i]<<"\n";
-                projectorKetTimesVectorHubbardHostDataNorm += projectorKetTimesVectorHubbardHostData.data()[i]*
-                                                              projectorKetTimesVectorHubbardHostData.data()[i];
-              }
+                  for( unsigned int i = 0; i <
+          projectorKetTimesVectorHubbardHostData.size(); i++)
+                    {
+          std::cout<<" i = "<<i<<" HubbardHostData =
+          "<<projectorKetTimesVectorHubbardHostData.data()[i]<<"\n";
+                      projectorKetTimesVectorHubbardHostDataNorm +=
+          projectorKetTimesVectorHubbardHostData.data()[i]*
+                                                                    projectorKetTimesVectorHubbardHostData.data()[i];
+                    }
 
-            std::cout<<" projectorKetTimesVectorHubbardHostDataNorm = "<<projectorKetTimesVectorHubbardHostDataNorm<<"\n";
-*/
-
+                  std::cout<<" projectorKetTimesVectorHubbardHostDataNorm =
+          "<<projectorKetTimesVectorHubbardHostDataNorm<<"\n";
+      */
           }
 
-            // dftfe::utils::deviceSynchronize();
-            // MPI_Barrier(d_mpiCommParent);
-            // kernel2_time = MPI_Wtime() - kernel2_time;
+        // dftfe::utils::deviceSynchronize();
+        // MPI_Barrier(d_mpiCommParent);
+        // kernel2_time = MPI_Wtime() - kernel2_time;
 
 
-            // dftfe::utils::deviceSynchronize();
-            // MPI_Barrier(d_mpiCommParent);
-            // double kernel3_time = MPI_Wtime();
+        // dftfe::utils::deviceSynchronize();
+        // MPI_Barrier(d_mpiCommParent);
+        // double kernel3_time = MPI_Wtime();
 
-        if(isPsp || useHubbard)
+        if (isPsp || useHubbard)
           {
             interpolatePsiGradPsiNlpQuads(basisOperationsPtr,
                                           nlpspQuadratureId,
@@ -768,65 +774,65 @@ namespace dftfe
 
 
 
-            if (totalNonTrivialPseudoWfcs > 0)
-              {
-                nlpPsiContraction(
-                  BLASWrapperPtr,
-                  psiQuadsNLP,
-                  gradPsiQuadsNLP,
-                  partialOccupancies,
-                  onesVecNLP,
-                  projectorKetTimesVector.data(),
-                  nonTrivialIdToElemIdMap,
-                  projecterKetTimesFlattenedVectorLocalIds,
-                  numCells,
-                  numQuadsNLP,
-                  numPsi,
-                  totalNonTrivialPseudoWfcs,
-                  innerBlockSizeEnlp,
-                  nlpContractionContribution,
-                  projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedBlock,
-                  projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedH,
+        if (totalNonTrivialPseudoWfcs > 0)
+          {
+            nlpPsiContraction(
+              BLASWrapperPtr,
+              psiQuadsNLP,
+              gradPsiQuadsNLP,
+              partialOccupancies,
+              onesVecNLP,
+              projectorKetTimesVector.data(),
+              nonTrivialIdToElemIdMap,
+              projecterKetTimesFlattenedVectorLocalIds,
+              numCells,
+              numQuadsNLP,
+              numPsi,
+              totalNonTrivialPseudoWfcs,
+              innerBlockSizeEnlp,
+              nlpContractionContribution,
+              projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedBlock,
+              projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedH,
 #ifdef USE_COMPLEX
-                  projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedBlock,
-                  projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedH,
+              projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedBlock,
+              projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedH,
 #endif
-                  projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTemp);
-              }
+              projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTemp);
+          }
 
-            if (totalNonTrivialHubbardProjectors > 0)
-              {
-                nlpPsiContraction(
-                  BLASWrapperPtr,
-                  psiQuadsNLP,
-                  gradPsiQuadsNLP,
-                  partialOccupancies,
-                  onesVecNLP,
-                  projectorKetTimesVectorHubbard.data(),
-                  nonTrivialIdToElemIdMapHubbard,
-                  projecterKetTimesFlattenedVectorLocalIdsHubbard,
-                  numCells,
-                  numQuadsNLP,
-                  numPsi,
-                  totalNonTrivialHubbardProjectors,
-                  innerBlockSizeHubbard,
-                  contractionContributionHubbard,
-                  projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedBlockHubbard,
-                  projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHHubbard,
+        if (totalNonTrivialHubbardProjectors > 0)
+          {
+            nlpPsiContraction(
+              BLASWrapperPtr,
+              psiQuadsNLP,
+              gradPsiQuadsNLP,
+              partialOccupancies,
+              onesVecNLP,
+              projectorKetTimesVectorHubbard.data(),
+              nonTrivialIdToElemIdMapHubbard,
+              projecterKetTimesFlattenedVectorLocalIdsHubbard,
+              numCells,
+              numQuadsNLP,
+              numPsi,
+              totalNonTrivialHubbardProjectors,
+              innerBlockSizeHubbard,
+              contractionContributionHubbard,
+              projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedBlockHubbard,
+              projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHHubbard,
 #ifdef USE_COMPLEX
-                  projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedBlockHubbard,
-                  projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard,
+              projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedBlockHubbard,
+              projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard,
 #endif
-                  projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTempHubbard);
-              }
+              projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTempHubbard);
+          }
 
-            // dftfe::utils::deviceSynchronize();
-            // MPI_Barrier(d_mpiCommParent);
-            // kernel3_time = MPI_Wtime() - kernel3_time;
+        // dftfe::utils::deviceSynchronize();
+        // MPI_Barrier(d_mpiCommParent);
+        // kernel3_time = MPI_Wtime() - kernel3_time;
 
-            // if (this_process==0 && dftParameters::verbosity>=5)
-            //	 std::cout<<"Time for nlpPsiContractionD inside blocked loop:
-            //"<<kernel3_time<<std::endl;
+        // if (this_process==0 && dftParameters::verbosity>=5)
+        //	 std::cout<<"Time for nlpPsiContractionD inside blocked loop:
+        //"<<kernel3_time<<std::endl;
       }
 
     } // namespace
@@ -842,10 +848,10 @@ namespace dftfe
       const std::shared_ptr<dftfe::linearAlgebra::BLASWrapper<memorySpace>>
         &BLASWrapperPtr,
       std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>>
-                                              oncvClassPtr,
-      std::shared_ptr<hubbard<dataTypes::number,memorySpace>> hubbardClassPtr,
-      const bool useHubbard,
-      const dataTypes::number *               X,
+                                                               oncvClassPtr,
+      std::shared_ptr<hubbard<dataTypes::number, memorySpace>> hubbardClassPtr,
+      const bool                                               useHubbard,
+      const dataTypes::number *                                X,
       const unsigned int                      spinPolarizedFlag,
       const unsigned int                      spinIndex,
       const std::vector<std::vector<double>> &eigenValuesH,
@@ -864,8 +870,8 @@ namespace dftfe
 #ifdef USE_COMPLEX
       dataTypes::number
         *projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedH,
-      dataTypes::number
-        *projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard,
+      dataTypes::number *
+        projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard,
 #endif
       const MPI_Comm &     mpiCommParent,
       const MPI_Comm &     interBandGroupComm,
@@ -1024,8 +1030,8 @@ namespace dftfe
         std::min((unsigned int)10, totalNonTrivialHubbardProjectors);
       dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
         contractionContributionHubbard(innerBlockSizeHubbard * numQuadsNLP * 3 *
-                                     blockSize,
-                                   dataTypes::number(0.0));
+                                         blockSize,
+                                       dataTypes::number(0.0));
       dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
         projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedBlockHubbard;
       dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
@@ -1045,11 +1051,13 @@ namespace dftfe
                     dataTypes::number(0.0));
 #ifdef USE_COMPLEX
           projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedBlockHubbard
-            .resize(innerBlockSizeHubbard * numQuadsNLP, dataTypes::number(0.0));
+            .resize(innerBlockSizeHubbard * numQuadsNLP,
+                    dataTypes::number(0.0));
 #endif
           projecterKetTimesFlattenedVectorLocalIdsHubbard.resize(
             totalNonTrivialHubbardProjectors, 0.0);
-          nonTrivialIdToElemIdMapHubbard.resize(totalNonTrivialHubbardProjectors, 0);
+          nonTrivialIdToElemIdMapHubbard.resize(
+            totalNonTrivialHubbardProjectors, 0);
 
 
 
@@ -1107,7 +1115,8 @@ namespace dftfe
                 projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHHubbard +
                   kPoint * totalNonTrivialHubbardProjectors * numQuadsNLP * 3,
                 projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHHubbard +
-                  (kPoint + 1) * totalNonTrivialHubbardProjectors * numQuadsNLP * 3,
+                  (kPoint + 1) * totalNonTrivialHubbardProjectors *
+                    numQuadsNLP * 3,
                 dataTypes::number(0.0));
 
 #ifdef USE_COMPLEX
@@ -1135,8 +1144,8 @@ namespace dftfe
 
               if (useHubbard)
                 hubbardClassPtr->getNonLocalOperator()
-                  ->initialiseFlattenedDataStructure(currentBlockSize,
-                                                     projectorKetTimesVectorHubbard);
+                  ->initialiseFlattenedDataStructure(
+                    currentBlockSize, projectorKetTimesVectorHubbard);
 
 
               if ((ivec + currentBlockSize) <=
@@ -1232,7 +1241,8 @@ namespace dftfe
                       kPoint * totalNonTrivialPseudoWfcs * numQuadsNLP * 3,
                     projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedBlockHubbard,
                     projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHHubbard +
-                      kPoint * totalNonTrivialHubbardProjectors * numQuadsNLP * 3,
+                      kPoint * totalNonTrivialHubbardProjectors * numQuadsNLP *
+                        3,
 #ifdef USE_COMPLEX
                     projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedBlock,
                     projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedH +
@@ -1303,10 +1313,11 @@ namespace dftfe
         &BLASWrapperPtr,
       std::shared_ptr<
         dftfe::oncvClass<dataTypes::number, dftfe::utils::MemorySpace::DEVICE>>
-                                              oncvClassPtr,
-      std::shared_ptr<hubbard<dataTypes::number,dftfe::utils::MemorySpace::DEVICE>>
+        oncvClassPtr,
+      std::shared_ptr<
+        hubbard<dataTypes::number, dftfe::utils::MemorySpace::DEVICE>>
                                               hubbardClassPtr,
-      const bool useHubbard,
+      const bool                              useHubbard,
       const dataTypes::number *               X,
       const unsigned int                      spinPolarizedFlag,
       const unsigned int                      spinIndex,
@@ -1326,8 +1337,8 @@ namespace dftfe
 #  ifdef USE_COMPLEX
       dataTypes::number
         *projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedH,
-      dataTypes::number
-        *projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard,
+      dataTypes::number *
+        projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard,
 #  endif
       const MPI_Comm &     mpiCommParent,
       const MPI_Comm &     interBandGroupComm,
@@ -1351,11 +1362,11 @@ namespace dftfe
         &BLASWrapperPtr,
       std::shared_ptr<
         dftfe::oncvClass<dataTypes::number, dftfe::utils::MemorySpace::HOST>>
-                                              oncvClassPtr,
-      std::shared_ptr<hubbard<dataTypes::number,dftfe::utils::MemorySpace::HOST>>
-                                              hubbardClassPtr,
-      const bool useHubbard,
-      const dataTypes::number *               X,
+                                                                oncvClassPtr,
+      std::shared_ptr<hubbard<dataTypes::number,
+                              dftfe::utils::MemorySpace::HOST>> hubbardClassPtr,
+      const bool                                                useHubbard,
+      const dataTypes::number *                                 X,
       const unsigned int                      spinPolarizedFlag,
       const unsigned int                      spinIndex,
       const std::vector<std::vector<double>> &eigenValuesH,
@@ -1374,8 +1385,8 @@ namespace dftfe
 #ifdef USE_COMPLEX
       dataTypes::number
         *projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedH,
-      dataTypes::number
-        *projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard,
+      dataTypes::number *
+        projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHHubbard,
 #endif
       const MPI_Comm &     mpiCommParent,
       const MPI_Comm &     interBandGroupComm,

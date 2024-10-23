@@ -24,9 +24,6 @@
 #include <cublas_v2.h>
 #include "BLASWrapperDeviceKernels.cc"
 
-// TODO delete after debugging
-#include <boost/stacktrace.hpp>
-
 namespace dftfe
 {
   namespace linearAlgebra
@@ -285,15 +282,6 @@ namespace dftfe
                                                             C,
                                                             int(ldc));
 
-
-      if (status != CUBLAS_STATUS_SUCCESS)
-        {
-          std::cout << boost::stacktrace::stacktrace();
-
-          std::cout << " m = " << m << " n = " << n << " k = " << k
-                    << " lda = " << lda << " ldb = " << ldb << " ldc = " << ldc
-                    << "\n";
-        }
 
       DEVICEBLAS_API_CHECK(status);
     }

@@ -5591,7 +5591,7 @@ namespace dftfe
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
   std::shared_ptr<hubbard<dataTypes::number, memorySpace>>
-  getHubbardClassPtr()
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getHubbardClassPtr()
   {
     return d_hubbardClassPtr;
   }
@@ -5599,7 +5599,7 @@ namespace dftfe
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
-  bool  isHubbardCorrectionsUsed()
+  bool  dftClass<FEOrder, FEOrderElectro, memorySpace>::isHubbardCorrectionsUsed()
   {
     return d_useHubbard;
   }

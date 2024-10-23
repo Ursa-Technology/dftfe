@@ -5590,6 +5590,24 @@ namespace dftfe
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
+  std::shared_ptr<hubbard<dataTypes::number, memorySpace>>
+  getHubbardClassPtr()
+  {
+    return d_hubbardClassPtr;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  bool  isHubbardCorrectionsUsed()
+  {
+    return d_useHubbard;
+  }
+
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
   void
   dftClass<FEOrder, FEOrderElectro, memorySpace>::updateAuxDensityXCMatrix(
     const std::vector<

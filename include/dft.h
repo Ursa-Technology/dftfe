@@ -722,6 +722,17 @@ namespace dftfe
     void
     computeFractionalOccupancies();
 
+    /**
+     *@brief Returns the shared ptr to hubbard class
+     */
+    std::shared_ptr<hubbard<dataTypes::number, memorySpace>>
+          getHubbardClassPtr();
+
+    /**
+     *@brief Function to check if hubbard corrections is being used
+     */
+    bool  isHubbardCorrectionsUsed();
+
   private:
     /**
      * @brief generate image charges and update k point cartesian coordinates based

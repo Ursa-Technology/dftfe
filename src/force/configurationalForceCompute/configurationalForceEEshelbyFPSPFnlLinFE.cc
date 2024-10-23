@@ -247,11 +247,11 @@ namespace dftfe
 #endif
           }
 
-        if (dftPtr->d_useHubbard)
+        if (dftPtr->isHubbardCorrectionsUsed())
           {
             projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard
               .resize(numKPoints *
-                        dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                        dftPtr->getHubbardClassPtr()->getNonLocalOperator()
                           ->getTotalNonTrivialSphericalFnsOverAllCells() *
                         numQuadPointsNLP * 3,
                       dataTypes::number(0.0));
@@ -259,7 +259,7 @@ namespace dftfe
 #ifdef USE_COMPLEX
             projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard
               .resize(numKPoints *
-                        dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                        dftPtr->getHubbardClassPtr()->getNonLocalOperator()
                           ->getTotalNonTrivialSphericalFnsOverAllCells() *
                         numQuadPointsNLP,
                       dataTypes::number(0.0));
@@ -279,8 +279,8 @@ namespace dftfe
               dftPtr->d_nlpspQuadratureId,
               dftPtr->d_BLASWrapperPtr,
               dftPtr->d_oncvClassPtr,
-              dftPtr->d_hubbardClassPtr,
-              dftPtr->d_useHubbard,
+              dftPtr->getHubbardClassPtr(),
+              dftPtr->isHubbardCorrectionsUsed(),
               dftPtr->d_eigenVectorsFlattenedDevice.begin(),
               d_dftParams.spinPolarized,
               spinIndex,
@@ -309,31 +309,7 @@ namespace dftfe
               d_dftParams.floatingNuclearCharges,
               false,
               d_dftParams);
-            /*
-                        double
-               projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbardNorm
-               = 0.0; for ( unsigned int i= 0 ; i <
-               projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard.size();
-               i++)
-                          {
-                            projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbardNorm
-               +=
-               projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard[i]*
-                                                                                                                 projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard[i];
-                          }
 
-                        MPI_Allreduce(MPI_IN_PLACE,
-                                      &projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbardNorm,
-                                      1,
-                                      MPI_DOUBLE,
-                                      MPI_SUM,
-                                      dftPtr->mpi_communicator);
-
-                        std::cout<<" Norm of
-               projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbardNorm
-               =
-               "<<projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbardNorm<<"\n";
-            */
             MPI_Barrier(d_mpiCommParent);
             device_time = MPI_Wtime() - device_time;
 
@@ -353,8 +329,8 @@ namespace dftfe
               dftPtr->d_nlpspQuadratureId,
               dftPtr->d_BLASWrapperPtrHost,
               dftPtr->d_oncvClassPtr,
-              dftPtr->d_hubbardClassPtr,
-              dftPtr->d_useHubbard,
+              dftPtr->getHubbardClassPtr(),
+              dftPtr->isHubbardCorrectionsUsed(),
               dftPtr->d_eigenVectorsFlattenedHost.begin(),
               d_dftParams.spinPolarized,
               spinIndex,
@@ -589,14 +565,14 @@ namespace dftfe
               }     // macro cell loop
           }         // pseudopotential check
 
-        if (dftPtr->d_useHubbard)
+        if (dftPtr->isHubbardCorrectionsUsed())
           {
             dealii::AlignedVector<
               dealii::Tensor<1, 3, dealii::VectorizedArray<double>>>
               FVectHubbardQuads(numQuadPointsNLP, zeroTensor3);
 
             const unsigned int numNonLocalAtomsCurrentProcessHubbard =
-              (dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+              (dftPtr->getHubbardClassPtr()->getNonLocalOperator()
                  ->getTotalAtomInCurrentProcessor());
 
             std::vector<int> nonLocalAtomIdHubbard,
@@ -613,16 +589,16 @@ namespace dftfe
                  iAtom++)
               {
                 globalChargeIdNonLocalAtomHubbard[iAtom] =
-                  dftPtr->d_hubbardClassPtr->getGlobalAtomId(iAtom);
+                  dftPtr->getHubbardClassPtr()->getGlobalAtomId(iAtom);
                 numberPseudoWaveFunctionsPerAtomHubbard[iAtom] =
-                  dftPtr->d_hubbardClassPtr
+                  dftPtr->getHubbardClassPtr()
                     ->getTotalNumberOfSphericalFunctionsForAtomId(iAtom);
               }
 
             const std::shared_ptr<
               AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
               hubbardNonLocalOp =
-                dftPtr->d_hubbardClassPtr->getNonLocalOperator();
+                dftPtr->getHubbardClassPtr()->getNonLocalOperator();
 
             for (unsigned int cell = 0; cell < matrixFreeData.n_cell_batches();
                  ++cell)
@@ -643,7 +619,7 @@ namespace dftfe
 #ifdef USE_COMPLEX
                   projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard,
 #endif
-                  dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                  dftPtr->getHubbardClassPtr()->getNonLocalOperator()
                     ->getAtomCenteredKpointIndexedSphericalFnQuadValues(),
                   projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard);
 
@@ -660,7 +636,7 @@ namespace dftfe
                       numberPseudoWaveFunctionsPerAtomHubbard,
                       cell,
                       cellIdToCellNumberMap,
-                      dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                      dftPtr->getHubbardClassPtr()->getNonLocalOperator()
                         ->getAtomCenteredKpointIndexedSphericalFnQuadValues(),
                       projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard);
 
@@ -682,7 +658,7 @@ namespace dftfe
 #endif
                   } // no floating charges check
               }     // macro cell loop
-          }         // d_useHubbard check
+          }         // isHubbardCorrectionsUsed() check
       }             // spin index
 
     // add global Fnl contribution due to Gamma(Rj) to the configurational force
@@ -712,7 +688,7 @@ namespace dftfe
             forceContributionFnlGammaAtoms);
       }
 
-    if (dftPtr->d_useHubbard)
+    if (dftPtr->isHubbardCorrectionsUsed())
       {
         if (d_dftParams.spinPolarized == 1)
           for (auto &iter : forceContributionFnlGammaAtomsHubbard)

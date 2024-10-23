@@ -77,7 +77,7 @@ namespace dftfe
 
     const bool isPseudopotential = d_dftParams.isPseudopotential;
 
-    const bool useHubbard = dftPtr->d_useHubbard;
+    const bool useHubbard = dftPtr->isHubbardCorrectionsUsed();
 
     dealii::FEEvaluation<
       3,
@@ -256,7 +256,7 @@ namespace dftfe
           {
             projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHubbard
               .resize(numKPoints *
-                        dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                        dftPtr->getHubbardClassPtr()->getNonLocalOperator()
                           ->getTotalNonTrivialSphericalFnsOverAllCells() *
                         numQuadPointsNLP * 3,
                       dataTypes::number(0.0));
@@ -264,7 +264,7 @@ namespace dftfe
 #ifdef USE_COMPLEX
             projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard
               .resize(numKPoints *
-                        dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                        dftPtr->getHubbardClassPtr()->getNonLocalOperator()
                           ->getTotalNonTrivialSphericalFnsOverAllCells() *
                         numQuadPointsNLP,
                       dataTypes::number(0.0));
@@ -283,8 +283,8 @@ namespace dftfe
               dftPtr->d_nlpspQuadratureId,
               dftPtr->d_BLASWrapperPtr,
               dftPtr->d_oncvClassPtr,
-              dftPtr->d_hubbardClassPtr,
-              dftPtr->d_useHubbard,
+              dftPtr->getHubbardClassPtr(),
+              dftPtr->isHubbardCorrectionsUsed(),
               dftPtr->d_eigenVectorsFlattenedDevice.begin(),
               d_dftParams.spinPolarized,
               spinIndex,
@@ -331,8 +331,8 @@ namespace dftfe
               dftPtr->d_nlpspQuadratureId,
               dftPtr->d_BLASWrapperPtrHost,
               dftPtr->d_oncvClassPtr,
-              dftPtr->d_hubbardClassPtr,
-              dftPtr->d_useHubbard,
+              dftPtr->getHubbardClassPtr(),
+              dftPtr->isHubbardCorrectionsUsed(),
               dftPtr->d_eigenVectorsFlattenedHost.begin(),
               d_dftParams.spinPolarized,
               spinIndex,
@@ -504,7 +504,7 @@ namespace dftfe
                 if (useHubbard)
                   {
                     const unsigned int numNonLocalAtomsCurrentProcessHubbard =
-                      (dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                      (dftPtr->getHubbardClassPtr()->getNonLocalOperator()
                          ->getTotalAtomInCurrentProcessor());
 
                     std::vector<unsigned int>
@@ -516,7 +516,7 @@ namespace dftfe
                          iAtom++)
                       {
                         numberPseudoWaveFunctionsPerAtomHubbard[iAtom] =
-                          dftPtr->d_hubbardClassPtr
+                          dftPtr->getHubbardClassPtr()
                             ->getTotalNumberOfSphericalFunctionsForAtomId(
                               iAtom);
                       }
@@ -525,7 +525,7 @@ namespace dftfe
                       AtomicCenteredNonLocalOperator<dataTypes::number,
                                                      memorySpace>>
                       hubbardNonLocalOp =
-                        dftPtr->d_hubbardClassPtr->getNonLocalOperator();
+                        dftPtr->getHubbardClassPtr()->getNonLocalOperator();
 
                     stressEnlElementalContribution(
                       d_stressKPoints,
@@ -537,7 +537,7 @@ namespace dftfe
                       hubbardNonLocalOp,
                       numberPseudoWaveFunctionsPerAtomHubbard,
                       cellIdToCellNumberMap,
-                      dftPtr->d_hubbardClassPtr->getNonLocalOperator()
+                      dftPtr->getHubbardClassPtr()->getNonLocalOperator()
                         ->getAtomCenteredKpointTimesSphericalFnTimesDistFromAtomQuadValues(),
 #ifdef USE_COMPLEX
                       projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHubbard,

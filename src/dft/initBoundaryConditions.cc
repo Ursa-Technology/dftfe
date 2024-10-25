@@ -227,11 +227,11 @@ namespace dftfe
       dealii::QIterated<1>(dealii::QGauss<1>(C_num1DQuadLPSP<FEOrder>()),
                            C_numCopies1DQuadLPSP()));
     quadratureVector.push_back(dealii::QGauss<1>(C_num1DQuad<FEOrder>()));
-    quadratureVector.push_back(
-      dealii::QIterated<1>(dealii::QGauss<1>(1),10));
-
     // SparsityPattern VEctor
     quadratureVector.push_back(dealii::QGauss<1>(8));
+    quadratureVector.push_back(
+      dealii::QIterated<1>(dealii::QGauss<1>(1),8));
+    
     d_densityQuadratureId         = 0;
     d_nlpspQuadratureId           = 1;
     d_gllQuadratureId             = 2;

@@ -1456,7 +1456,7 @@ namespace dftfe
     // print out adaptive mesh metrics and check mesh generation synchronization
     // across pools
     //
-    if (d_dftParams.verbosity >= 4)
+    if (d_dftParams.verbosity >= 1)
       {
         pcout << "Triangulation generation summary: " << std::endl
               << " num elements: "

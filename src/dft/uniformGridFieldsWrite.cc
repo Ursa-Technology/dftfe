@@ -115,7 +115,6 @@ namespace dftfe
     const dealii::Quadrature<3> &quadratureFormula =
       matrix_free_data.get_quadrature(d_uniformGridQuadratureId);
     const unsigned int n_q_points = quadratureFormula.size();
-
     typename dealii::DoFHandler<3>::active_cell_iterator
       cell = dofHandler.begin_active(),
       endc = dofHandler.end();

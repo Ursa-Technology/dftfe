@@ -388,12 +388,14 @@ namespace dftfe
         dealii::QIterated<1>(dealii::QGauss<1>(C_num1DQuadSmearedCharge()),
                              C_numCopies1DQuadSmearedCharge()));
     quadratureVector.push_back(dealii::QGauss<1>(FEOrderElectro + 1));
-
+    quadratureVector.push_back(
+      dealii::QIterated<1>(dealii::QGauss<1>(1),10));
 
     d_densityQuadratureIdElectro       = 0;
     d_lpspQuadratureIdElectro          = 1;
     d_smearedChargeQuadratureIdElectro = 2;
     d_phiTotAXQuadratureIdElectro      = 3;
+    d_uniformGridQuadratureIdElectro   = 4;
 
     d_matrixFreeDataPRefined.reinit(dealii::MappingQ1<3, 3>(),
                                     matrixFreeDofHandlerVectorInput,
@@ -426,12 +428,14 @@ namespace dftfe
               d_densityQuadratureIdElectro,
               d_lpspQuadratureIdElectro,
               d_smearedChargeQuadratureIdElectro,
-              d_phiTotAXQuadratureIdElectro};
+              d_phiTotAXQuadratureIdElectro,
+              d_uniformGridQuadratureIdElectro};
             std::vector<dftfe::basis::UpdateFlags> updateFlags{
               updateFlagsDensity,
               updateFlagsLPSP,
               dftfe::basis::update_quadpoints,
-              updateFlagsphiTotAX};
+              updateFlagsphiTotAX,
+              updateFlagsDensity};
             d_basisOperationsPtrElectroHost->init(d_matrixFreeDataPRefined,
                                                   d_constraintsVectorElectro,
                                                   d_baseDofHandlerIndexElectro,

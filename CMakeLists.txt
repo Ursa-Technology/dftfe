@@ -54,6 +54,7 @@ SET(TARGET_SRC
   ./src/dft/densityCalculator.cc
   ./src/dft/computeAuxProjectedDensityMatrixFromPSI.cc
   ./src/dft/densityFirstOrderResponseCalculator.cc
+  ./src/dft/uniformGridFieldsWrite.cc
   ./src/dft/applyMultipoleDirichletBC.cc
   ./src/excManager/excDensityLDAClass.cpp
   ./src/excManager/excDensityGGAClass.cpp

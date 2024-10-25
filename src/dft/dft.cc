@@ -1980,6 +1980,8 @@ namespace dftfe
     if (d_dftParamsPtr->writeLocalizationLengths)
       compute_localizationLength("localizationLengths.out");
 
+    computeAndPrintUniformGridFields();
+
     if (d_dftParamsPtr->verbosity >= 1)
       pcout
         << std::endl

@@ -227,6 +227,9 @@ namespace dftfe
       dealii::QIterated<1>(dealii::QGauss<1>(C_num1DQuadLPSP<FEOrder>()),
                            C_numCopies1DQuadLPSP()));
     quadratureVector.push_back(dealii::QGauss<1>(C_num1DQuad<FEOrder>()));
+    quadratureVector.push_back(
+      dealii::QIterated<1>(dealii::QGauss<1>(1),10));
+
     // SparsityPattern VEctor
     quadratureVector.push_back(dealii::QGauss<1>(8));
     d_densityQuadratureId         = 0;
@@ -235,6 +238,7 @@ namespace dftfe
     d_lpspQuadratureId            = 3;
     d_feOrderPlusOneQuadratureId  = 4;
     d_sparsityPatternQuadratureId = 5;
+    d_uniformGridQuadratureId    = 6;
 
     double init_force;
     MPI_Barrier(d_mpiCommParent);
@@ -299,14 +303,16 @@ namespace dftfe
               d_gllQuadratureId,
               d_lpspQuadratureId,
               d_feOrderPlusOneQuadratureId,
-              d_sparsityPatternQuadratureId};
+              d_sparsityPatternQuadratureId,
+              d_uniformGridQuadratureId};
             std::vector<dftfe::basis::UpdateFlags> updateFlags{
               updateFlagsAll,
               updateFlagsAll,
               updateFlagsGLL,
               updateFlagsLPSP,
               updateFlagsfeOrderPlusOne,
-              updateFlagssparsityPattern};
+              updateFlagssparsityPattern,
+              updateFlagsAll};
             d_basisOperationsPtrHost->init(matrix_free_data,
                                            d_constraintsVector,
                                            d_densityDofHandlerIndex,
@@ -408,11 +414,13 @@ namespace dftfe
             std::vector<unsigned int> quadratureIndices{
               d_nlpspQuadratureId,
               d_densityQuadratureId,
-              d_feOrderPlusOneQuadratureId};
+              d_feOrderPlusOneQuadratureId,
+              d_uniformGridQuadratureId};
             std::vector<dftfe::basis::UpdateFlags> updateFlags{
               updateFlagsAll,
               updateFlagsAll,
-              updateFlagsGradientsAndInvJacobians};
+              updateFlagsGradientsAndInvJacobians,
+              updateFlagsAll};
             d_basisOperationsPtrDevice->init(matrix_free_data,
                                              d_constraintsVector,
                                              d_densityDofHandlerIndex,

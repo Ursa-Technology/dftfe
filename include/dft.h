@@ -1484,6 +1484,8 @@ namespace dftfe
     unsigned int                  d_densityQuadratureId;
     unsigned int                  d_densityQuadratureIdElectro;
     unsigned int                  d_sparsityPatternQuadratureId;
+    unsigned int                  d_uniformGridQuadratureId;
+    unsigned int                  d_uniformGridQuadratureIdElectro;    
     unsigned int                  d_nOMPThreads;
     dealii::MatrixFree<3, double> matrix_free_data, d_matrixFreeDataPRefined;
     std::shared_ptr<
@@ -1933,6 +1935,8 @@ namespace dftfe
       chebyshevOrthogonalizedSubspaceIterationSolver &subspaceIterationSolver,
       std::vector<double> &                           residualNormWaveFunctions,
       unsigned int                                    ipass);
+
+    void computeAndPrintUniformGridFields();
 
     std::shared_ptr<hubbard<dataTypes::number, memorySpace>> d_hubbardClassPtr;
     bool                                                     d_useHubbard;

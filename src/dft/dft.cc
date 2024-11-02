@@ -165,6 +165,7 @@ namespace dftfe
     , d_mixingScheme(mpi_comm_parent, mpi_comm_domain, dftParams.verbosity)
   {
     d_nOMPThreads = 1;
+    d_useHubbard  = false;
     if (const char *penv = std::getenv("DFTFE_NUM_THREADS"))
       {
         try
@@ -1322,6 +1323,12 @@ namespace dftfe
                                     d_kPointWeights.size(),
                                   true);
 
+
+    initHubbardOperator();
+    if (d_useHubbard && d_dftParamsPtr->loadRhoData)
+      {
+        d_hubbardClassPtr->readHubbOccFromFile();
+      }
     initializeKohnShamDFTOperator();
 
     d_netFloatingDispSinceLastCheckForSmearedChargeOverlaps.clear();
@@ -1329,6 +1336,76 @@ namespace dftfe
       atomLocations.size() * 3, 0.0);
 
     computingTimerStandard.leave_subsection("KSDFT problem initialization");
+  }
+
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  void
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::initHubbardOperator()
+  {
+    if (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+        ExcFamilyType::DFTPlusU)
+      {
+        double init_hubbOp;
+        MPI_Barrier(d_mpiCommParent);
+        init_hubbOp = MPI_Wtime();
+
+        std::shared_ptr<ExcDFTPlusU<dataTypes::number, memorySpace>>
+          excHubbPtr = std::dynamic_pointer_cast<
+            ExcDFTPlusU<dataTypes::number, memorySpace>>(
+            d_excManagerPtr->getSSDSharedObj());
+
+        excHubbPtr->initialiseHubbardClass(
+          d_mpiCommParent,
+          mpi_communicator,
+          interpoolcomm,
+          interBandGroupComm,
+          getBasisOperationsMemSpace(),
+          getBasisOperationsHost(),
+          getBLASWrapperMemSpace(),
+          getBLASWrapperHost(),
+          d_densityDofHandlerIndex,
+          d_nlpspQuadratureId,
+          d_sparsityPatternQuadratureId,
+          d_numEigenValues, // The total number of waveFunctions that are passed
+                            // to the operator
+          d_dftParamsPtr->spinPolarized == 1 ? 2 : 1,
+          *d_dftParamsPtr,
+          d_dftfeScratchFolderName,
+          false, // singlePrecNonLocalOperator
+          true,  // updateNonlocalSparsity
+          atomLocations,
+          atomLocationsFractional,
+          d_imageIds,
+          d_imagePositions,
+          d_kPointCoordinates,
+          d_kPointWeights,
+          d_domainBoundingVectors);
+
+        d_hubbardClassPtr = excHubbPtr->getHubbardClass();
+
+        d_useHubbard = true;
+
+        AssertThrow(d_nOMPThreads == 1,
+                    dealii::ExcMessage(
+                      "open mp is not compatible with hubbard "));
+
+        AssertThrow(d_dftParamsPtr->mixingMethod != "LOW_RANK_DIELECM_PRECOND",
+                    dealii::ExcMessage(
+                      "LRDM preconditioner is not compatible with hubbard "));
+
+        AssertThrow(d_dftParamsPtr->useSinglePrecCheby == false,
+                    dealii::ExcMessage(
+                      "single prec in cheby is not compatible with hubbard "));
+
+        init_hubbOp = MPI_Wtime() - init_hubbOp;
+
+        if (d_dftParamsPtr->verbosity >= 2)
+          pcout << "Time taken for hubbard class initialization: "
+                << init_hubbOp << std::endl;
+      }
   }
 
   template <unsigned int              FEOrder,
@@ -1527,6 +1604,16 @@ namespace dftfe
     d_isFirstFilteringCall.resize((d_dftParamsPtr->spinPolarized + 1) *
                                     d_kPointWeights.size(),
                                   true);
+
+    if (d_useHubbard)
+      {
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+          &hubbOccIn = d_hubbardClassPtr->getOccMatIn();
+
+        initHubbardOperator();
+
+        d_hubbardClassPtr->setInOccMatrix(hubbOccIn);
+      }
 
     double init_ksoperator;
     MPI_Barrier(d_mpiCommParent);
@@ -1923,74 +2010,6 @@ namespace dftfe
     if (d_kohnShamDFTOperatorsInitialized)
       finalizeKohnShamDFTOperator();
 
-    d_useHubbard = false;
-    if (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
-        ExcFamilyType::DFTPlusU)
-      {
-        std::shared_ptr<ExcDFTPlusU<dataTypes::number, memorySpace>>
-          excHubbPtr = std::dynamic_pointer_cast<
-            ExcDFTPlusU<dataTypes::number, memorySpace>>(
-            d_excManagerPtr->getSSDSharedObj());
-
-        excHubbPtr->initialiseHubbardClass(
-          d_mpiCommParent,
-          mpi_communicator,
-          interpoolcomm,
-          getBasisOperationsMemSpace(),
-          getBasisOperationsHost(),
-          getBLASWrapperMemSpace(),
-          getBLASWrapperHost(),
-          d_densityDofHandlerIndex,
-          d_nlpspQuadratureId,
-          d_sparsityPatternQuadratureId,
-          d_numEigenValues, // The total number of waveFunctions that are passed
-                            // to the operator
-          d_dftParamsPtr->spinPolarized == 1 ? 2 : 1,
-          *d_dftParamsPtr,
-          d_dftfeScratchFolderName,
-          false, // singlePrecNonLocalOperator
-          true,  // updateNonlocalSparsity
-          atomLocations,
-          atomLocationsFractional,
-          d_imageIds,
-          d_imagePositions,
-          d_kPointCoordinates,
-          d_kPointWeights,
-          d_domainBoundingVectors);
-
-        hubbardPtr = excHubbPtr->getHubbardClass();
-
-        d_useHubbard = true;
-
-        AssertThrow(d_nOMPThreads == 1,
-                    dealii::ExcMessage(
-                      "open mp is not compatible with hubbard "));
-
-        AssertThrow(d_dftParamsPtr->mixingMethod != "LOW_RANK_DIELECM_PRECOND",
-                    dealii::ExcMessage(
-                      "LRDM preconditioner is not compatible with hubbard "));
-
-        // band group parallelization data structures
-        const unsigned int numberBandGroups =
-          dealii::Utilities::MPI::n_mpi_processes(interBandGroupComm);
-
-        AssertThrow(numberBandGroups == 1,
-                    dealii::ExcMessage(
-                      "Band parallelisation is not compatible with hubbard "));
-
-        AssertThrow(
-          d_dftParamsPtr->overlapComputeCommunCheby == false,
-          dealii::ExcMessage(
-            "overlap compute communication in cheby is not compatible with hubbard "));
-        AssertThrow(d_dftParamsPtr->useSinglePrecCheby == false,
-                    dealii::ExcMessage(
-                      "single prec in cheby is not compatible with hubbard "));
-
-        AssertThrow(d_dftParamsPtr->solverMode != "NSCF",
-                    dealii::ExcMessage(
-                      "Hubbard correction is not implemented for NSCF mode"));
-      }
-
 
 #ifdef DFTFE_WITH_DEVICE
     if constexpr (dftfe::utils::MemorySpace::DEVICE == memorySpace)
@@ -2110,7 +2129,7 @@ namespace dftfe
   dftClass<FEOrder, FEOrderElectro, memorySpace>::
     reInitializeKohnShamDFTOperator()
   {
-    d_kohnShamDFTOperatorPtr->resetExtPotHamFlag();
+    d_kohnShamDFTOperatorPtr->resetKohnShamOp();
   }
 
   //
@@ -2620,11 +2639,11 @@ namespace dftfe
                   {
                     dftfe::utils::MemoryStorage<double,
                                                 dftfe::utils::MemorySpace::HOST>
-                      &hubbOccIn = hubbardPtr->getOccMatIn();
+                      &hubbOccIn = d_hubbardClassPtr->getOccMatIn();
 
                     dftfe::utils::MemoryStorage<double,
                                                 dftfe::utils::MemorySpace::HOST>
-                      &hubbOccRes = hubbardPtr->getOccMatRes();
+                      &hubbOccRes = d_hubbardClassPtr->getOccMatRes();
                     d_mixingScheme.addVariableToInHist(
                       mixingVariable::hubbardOccupation,
                       hubbOccIn.data(),
@@ -2676,7 +2695,7 @@ namespace dftfe
                     dftfe::utils::MemoryStorage<double,
                                                 dftfe::utils::MemorySpace::HOST>
                       &hubbOccMatAfterMixing =
-                        hubbardPtr->getHubbMatrixForMixing();
+                        d_hubbardClassPtr->getHubbMatrixForMixing();
 
                     std::fill(hubbOccMatAfterMixing.begin(),
                               hubbOccMatAfterMixing.end(),
@@ -2687,7 +2706,7 @@ namespace dftfe
                       hubbOccMatAfterMixing.data(),
                       hubbOccMatAfterMixing.size());
 
-                    hubbardPtr->setInOccMatrix(hubbOccMatAfterMixing);
+                    d_hubbardClassPtr->setInOccMatrix(hubbOccMatAfterMixing);
                   }
 
 
@@ -3719,12 +3738,25 @@ namespace dftfe
 
         if (d_dftParamsPtr->saveRhoData && scfIter % 10 == 0 &&
             d_dftParamsPtr->solverMode == "GS")
-          saveTriaInfoAndRhoNodalData();
+          {
+            saveTriaInfoAndRhoNodalData();
+            if (d_useHubbard)
+              {
+                d_hubbardClassPtr->writeHubbOccToFile();
+              }
+          }
       }
 
     if (d_dftParamsPtr->saveRhoData &&
         !(d_dftParamsPtr->solverMode == "GS" && scfIter % 10 == 0))
-      saveTriaInfoAndRhoNodalData();
+      {
+        saveTriaInfoAndRhoNodalData();
+        if (d_useHubbard)
+          {
+            d_hubbardClassPtr->writeHubbOccToFile();
+          }
+      }
+
 
 
     if (scfIter == d_dftParamsPtr->numSCFIterations)
@@ -3977,6 +4009,21 @@ namespace dftfe
 
     d_freeEnergy = d_groundStateEnergy - d_entropicEnergy;
 
+    if (d_dftParamsPtr->verbosity >= 1)
+      {
+        if ((d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+             ExcFamilyType::DFTPlusU) ||
+            (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+             ExcFamilyType::HYBRID) ||
+            (d_excManagerPtr->getExcSSDFunctionalObj()->getExcFamilyType() ==
+             ExcFamilyType::MGGA))
+          {
+            pcout << " Non local part of Exc energy = "
+                  << d_excManagerPtr->getExcSSDFunctionalObj()
+                       ->getExpectationOfWaveFunctionDependentExcFuncDerWrtPsi()
+                  << "\n";
+          }
+      }
     if (d_dftParamsPtr->verbosity >= 1)
       pcout << "Total free energy: " << d_freeEnergy << std::endl;
 
@@ -5530,6 +5577,24 @@ namespace dftfe
   {
     return d_bCellNonTrivialAtomIds;
   }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  std::shared_ptr<hubbard<dataTypes::number, memorySpace>>
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::getHubbardClassPtr()
+  {
+    return d_hubbardClassPtr;
+  }
+
+  template <unsigned int              FEOrder,
+            unsigned int              FEOrderElectro,
+            dftfe::utils::MemorySpace memorySpace>
+  bool  dftClass<FEOrder, FEOrderElectro, memorySpace>::isHubbardCorrectionsUsed()
+  {
+    return d_useHubbard;
+  }
+
 
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,

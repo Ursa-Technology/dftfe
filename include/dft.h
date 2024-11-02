@@ -722,6 +722,17 @@ namespace dftfe
     void
     computeFractionalOccupancies();
 
+    /**
+     *@brief Returns the shared ptr to hubbard class
+     */
+    std::shared_ptr<hubbard<dataTypes::number, memorySpace>>
+          getHubbardClassPtr();
+
+    /**
+     *@brief Function to check if hubbard corrections is being used
+     */
+    bool  isHubbardCorrectionsUsed();
+
   private:
     /**
      * @brief generate image charges and update k point cartesian coordinates based
@@ -729,6 +740,13 @@ namespace dftfe
      */
     void
     initImageChargesUpdateKPoints(bool flag = true);
+
+    /**
+     * @brief Checks if the Exc functional requires Hubbard correction
+     * and sets up the Hubbard class if required.
+     */
+    void
+    initHubbardOperator();
 
     void
     determineAtomsOfInterstPseudopotential(
@@ -1916,7 +1934,7 @@ namespace dftfe
       std::vector<double> &                           residualNormWaveFunctions,
       unsigned int                                    ipass);
 
-    std::shared_ptr<hubbard<dataTypes::number, memorySpace>> hubbardPtr;
+    std::shared_ptr<hubbard<dataTypes::number, memorySpace>> d_hubbardClassPtr;
     bool                                                     d_useHubbard;
   };
 

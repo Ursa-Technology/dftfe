@@ -1,7 +1,7 @@
 set VERBOSITY=0
 set MEM OPT MODE=true
 set REPRODUCIBLE OUTPUT=true
-set SOLVER MODE=GEOOPT
+set SOLVER MODE=GS
 
 subsection Geometry
   set NATOMS=2
@@ -10,9 +10,7 @@ subsection Geometry
   set DOMAIN VECTORS FILE = @SOURCE_DIR@/bccFe_domainVectors.inp
   subsection Optimization
     set CELL STRESS = true
-    set CELL CONSTRAINT TYPE = 1
-    set OPTIMIZATION MODE = CELL
-    set STRESS TOL = 6e-5
+    set ION FORCE = true
   end
 end
 

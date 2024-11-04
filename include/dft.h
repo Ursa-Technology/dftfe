@@ -726,12 +726,13 @@ namespace dftfe
      *@brief Returns the shared ptr to hubbard class
      */
     std::shared_ptr<hubbard<dataTypes::number, memorySpace>>
-          getHubbardClassPtr();
+    getHubbardClassPtr();
 
     /**
      *@brief Function to check if hubbard corrections is being used
      */
-    bool  isHubbardCorrectionsUsed();
+    bool
+    isHubbardCorrectionsUsed();
 
   private:
     /**

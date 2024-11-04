@@ -5590,7 +5590,8 @@ namespace dftfe
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
-  bool  dftClass<FEOrder, FEOrderElectro, memorySpace>::isHubbardCorrectionsUsed()
+  bool
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::isHubbardCorrectionsUsed()
   {
     return d_useHubbard;
   }

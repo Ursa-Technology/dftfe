@@ -368,18 +368,13 @@ namespace dftfe
     //
     // read coordinates
     //
-    unsigned int numberColumnsCoordinatesFile =
-      d_dftParamsPtr->useMeshSizesFromAtomsFile ? 7 : 5;
-
     if (d_dftParamsPtr->periodicX || d_dftParamsPtr->periodicY ||
         d_dftParamsPtr->periodicZ)
       {
         //
         // read fractionalCoordinates of atoms in periodic case
         //
-        dftUtils::readFile(numberColumnsCoordinatesFile,
-                           atomLocations,
-                           d_dftParamsPtr->coordinatesFile);
+        dftUtils::readFile(atomLocations, d_dftParamsPtr->coordinatesFile);
         AssertThrow(
           d_dftParamsPtr->natoms == atomLocations.size(),
           dealii::ExcMessage(
@@ -423,9 +418,7 @@ namespace dftfe
       }
     else
       {
-        dftUtils::readFile(numberColumnsCoordinatesFile,
-                           atomLocations,
-                           d_dftParamsPtr->coordinatesFile);
+        dftUtils::readFile(atomLocations, d_dftParamsPtr->coordinatesFile);
 
         AssertThrow(
           d_dftParamsPtr->natoms == atomLocations.size(),
@@ -767,9 +760,8 @@ namespace dftfe
         numElectronsUp   = std::ceil(static_cast<double>(numElectrons) / 2.0);
         numElectronsDown = numElectrons - numElectronsUp;
         //
-        int netMagnetization =
-          std::round(2.0 * static_cast<double>(numElectrons) *
-                     d_dftParamsPtr->start_magnetization);
+        int netMagnetization = std::round(static_cast<double>(numElectrons) *
+                                          d_dftParamsPtr->tot_magnetization);
         //
         while ((numElectronsUp - numElectronsDown) < std::abs(netMagnetization))
           {
@@ -3508,12 +3500,8 @@ namespace dftfe
             pcout << std::endl
                   << "number of electrons: " << integralRhoValue << std::endl;
           }
-
-        if (d_dftParamsPtr->verbosity >= 1 &&
-            d_dftParamsPtr->spinPolarized == 1)
-          pcout << std::endl
-                << "net magnetization: "
-                << totalMagnetization(d_densityOutQuadValues[1]) << std::endl;
+        if (d_dftParamsPtr->verbosity > 0 && d_dftParamsPtr->spinPolarized == 1)
+          totalMagnetization(d_densityOutQuadValues[1]);
 
         //
         // phiTot with rhoOut
@@ -4038,6 +4026,9 @@ namespace dftfe
       }
     if (d_dftParamsPtr->verbosity >= 1)
       pcout << "Total free energy: " << d_freeEnergy << std::endl;
+
+    if (d_dftParamsPtr->verbosity >= 0 && d_dftParamsPtr->spinPolarized == 1)
+      totalMagnetization(d_densityOutQuadValues[1]);
 
     // This step is required for interpolating rho from current mesh to the
     // new mesh in case of atomic relaxation
@@ -5599,7 +5590,8 @@ namespace dftfe
   template <unsigned int              FEOrder,
             unsigned int              FEOrderElectro,
             dftfe::utils::MemorySpace memorySpace>
-  bool  dftClass<FEOrder, FEOrderElectro, memorySpace>::isHubbardCorrectionsUsed()
+  bool
+  dftClass<FEOrder, FEOrderElectro, memorySpace>::isHubbardCorrectionsUsed()
   {
     return d_useHubbard;
   }

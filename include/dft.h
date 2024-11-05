@@ -726,12 +726,13 @@ namespace dftfe
      *@brief Returns the shared ptr to hubbard class
      */
     std::shared_ptr<hubbard<dataTypes::number, memorySpace>>
-          getHubbardClassPtr();
+    getHubbardClassPtr();
 
     /**
      *@brief Function to check if hubbard corrections is being used
      */
-    bool  isHubbardCorrectionsUsed();
+    bool
+    isHubbardCorrectionsUsed();
 
   private:
     /**
@@ -1122,7 +1123,7 @@ namespace dftfe
     /**
      *@brief Computes net magnetization from the difference of local spin densities
      */
-    double
+    void
     totalMagnetization(
       const dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
         &magQuadValues);
@@ -1296,7 +1297,7 @@ namespace dftfe
 
     /// FIXME: remove atom type atributes from atomLocations
     std::vector<std::vector<double>> atomLocations, atomLocationsFractional,
-      d_reciprocalLatticeVectors, d_domainBoundingVectors;
+      d_reciprocalLatticeVectors, d_domainBoundingVectors, d_meshSizes;
     std::vector<std::vector<double>> d_atomLocationsInterestPseudopotential;
     std::map<unsigned int, unsigned int>
                                      d_atomIdPseudopotentialInterestToGlobalId;

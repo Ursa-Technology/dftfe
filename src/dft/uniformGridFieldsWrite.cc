@@ -23,6 +23,7 @@
 //
 #include <dft.h>
 #include <densityCalculator.h>
+#include <kineticEnergyDensityCalculator.h>
 #include <fileReaders.h>
 #include <dftUtils.h>
 #include <fileReaders.h>
@@ -64,6 +65,7 @@ namespace dftfe
          ++iComp)
       gradDensityUniformGridQuadValues[iComp].resize(3 * nQuadsPerCell * nCells);
 
+//compute electron-density
 #ifdef DFTFE_WITH_DEVICE
         if (d_dftParamsPtr->useDevice)
           computeRhoFromPSI(&d_eigenVectorsFlattenedDevice,
@@ -110,6 +112,49 @@ namespace dftfe
                             interBandGroupComm,
                             *d_dftParamsPtr,
                             false);
+
+//compute kinetic energy density
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+          kineticEnergyDensityValues;
+#ifdef DFTFE_WITH_DEVICE
+    if (d_dftParamsPtr->useDevice)
+      computeKineticEnergyDensity(*d_BLASWrapperPtr,
+                                  &d_eigenVectorsFlattenedDevice,
+                                  d_numEigenValues,
+                                  eigenValues,
+                                  fermiEnergy,
+                                  fermiEnergyUp,
+                                  fermiEnergyDown,
+                                  d_basisOperationsPtrDevice,
+                                  d_uniformGridQuadratureId,
+                                  d_kPointCoordinates,
+                                  d_kPointWeights,
+                                  kineticEnergyDensityValues,
+                                  d_mpiCommParent,
+                                  interpoolcomm,
+                                  interBandGroupComm,
+                                  mpi_communicator,
+                                  *d_dftParamsPtr);
+#endif
+    if (!d_dftParamsPtr->useDevice)
+      computeKineticEnergyDensity(*d_BLASWrapperPtrHost,
+                                  &d_eigenVectorsFlattenedHost,
+                                  d_numEigenValues,
+                                  eigenValues,
+                                  fermiEnergy,
+                                  fermiEnergyUp,
+                                  fermiEnergyDown,
+                                  d_basisOperationsPtrHost,
+                                  d_uniformGridQuadratureId,
+                                  d_kPointCoordinates,
+                                  d_kPointWeights,
+                                  kineticEnergyDensityValues,
+                                  d_mpiCommParent,
+                                  interpoolcomm,
+                                  interBandGroupComm,
+                                  mpi_communicator,
+                                  *d_dftParamsPtr);
+
 
  
     const dealii::Quadrature<3> &quadratureFormula =
@@ -222,6 +267,9 @@ namespace dftfe
                   const double *cellRhoValues =
                     densityUniformGridQuadValues[0].data() + icell * n_q_points;
 
+                  const double *cellkineticEdValues =
+                    kineticEnergyDensityValues.data() + icell * n_q_points;
+
                   for (unsigned int q_point = 0; q_point < n_q_points;
                        ++q_point)
                     {
@@ -238,6 +286,7 @@ namespace dftfe
 
                       quadVals.push_back(cellRhoValues[q_point]*perBohr3ToPerAng3);
 
+                      quadVals.push_back(cellkineticEdValues[q_point]*HaToEv);
                       data.push_back(
                         std::make_shared<dftUtils::QuadDataCompositeWrite>(
                           quadVals));

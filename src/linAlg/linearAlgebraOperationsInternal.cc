@@ -21,7 +21,9 @@
 #include <dftUtils.h>
 #include <linearAlgebraOperations.h>
 #include <linearAlgebraOperationsInternal.h>
-
+#ifdef DFTFE_WITH_DEVICE
+#  include <DeviceAPICalls.h>
+#endif
 /** @file linearAlgebraOperationsInternal.cc
  *  @brief Contains small internal functions used in linearAlgebraOperations
  *
@@ -146,6 +148,19 @@ namespace dftfe
             AssertThrow(error == ELPA_OK,
                         dealii::ExcMessage("DFT-FE Error: ELPA Error."));
 
+            elpa_set(elpaHandle,
+                     "blacs_context",
+                     processGrid->get_blacs_context(),
+                     &error);
+            AssertThrow(error == ELPA_OK,
+                        dealii::ExcMessage("DFT-FE Error: ELPA Error."));
+
+            if ((processGrid->get_process_grid_rows()) * blockSize != na)
+              {
+                elpa_set(elpaHandle, "cannon_for_generalized", 0, &error);
+                AssertThrow(error == ELPA_OK,
+                            dealii::ExcMessage("DFT-FE Error: ELPA Error."));
+              }
 
             /* Setup */
             AssertThrow(elpa_setup(elpaHandle) == ELPA_OK,
@@ -200,6 +215,24 @@ namespace dftfe
                 AssertThrow(error == ELPA_OK,
                             dealii::ExcMessage("DFT-FE Error: ELPA Error."));
 #  endif
+                if ((processGrid->get_process_grid_rows()) * blockSize != na)
+                  {
+                    elpa_set(elpaHandle, "gpu_cannon", 0, &error);
+                    AssertThrow(error == ELPA_OK,
+                                dealii::ExcMessage(
+                                  "DFT-FE Error: ELPA Error."));
+                  }
+
+                int gpuID = 0;
+                dftfe::utils::getDevice(&gpuID);
+
+                elpa_set_integer(elpaHandle, "use_gpu_id", gpuID, &error);
+                AssertThrow(error == ELPA_OK,
+                            dealii::ExcMessage("DFT-FE Error: ELPA Error."));
+
+                error = elpa_setup_gpu(elpaHandle);
+                AssertThrow(error == ELPA_OK,
+                            dealii::ExcMessage("DFT-FE Error: ELPA Error."));
               }
 #endif
 

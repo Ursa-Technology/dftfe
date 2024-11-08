@@ -142,14 +142,14 @@ withComplex=OFF
 dealiiDir=$dealiiPetscRealDir
 echo -e "${Blu}Building Real executable in $build_type mode...${RCol}"
 mkdir -p real && cd real
-cmake_configure "$SRC" && make -j8
+cmake_configure "$SRC" && make -j2
 cd ..
 
 withComplex=ON
 dealiiDir=$dealiiPetscComplexDir
 echo -e "${Blu}Building Complex executable in $build_type mode...${RCol}"
 mkdir -p complex && cd complex
-cmake_configure "$SRC" && make -j8
+cmake_configure "$SRC" && make -j2
 cd ..
 
 echo -e "${Blu}Build complete.${RCol}"

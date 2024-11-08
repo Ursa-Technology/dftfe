@@ -1265,6 +1265,7 @@ namespace dftfe
 
     void
     updateAuxDensityXCMatrix(
+      const unsigned int densityQuadratureId,
       const std::vector<
         dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
         &densityQuadValues,
@@ -1935,6 +1936,32 @@ namespace dftfe
       chebyshevOrthogonalizedSubspaceIterationSolver &subspaceIterationSolver,
       std::vector<double> &                           residualNormWaveFunctions,
       unsigned int                                    ipass);
+
+    void
+    initCoreRhoUniformQuad(
+      const unsigned int                             uniformQuadratureId,
+      const dealii::MatrixFree<3, double> &          _matrix_free_data,
+      std::map<dealii::CellId, std::vector<double>> &rhoCoreUniformQuad,
+      std::map<dealii::CellId, std::vector<double>> &gradRhoCoreUniformQuad);
+
+    void
+    computeXCEnergyDensityUniformQuad(
+      const std::shared_ptr<
+        dftfe::basis::FEBasisOperations<dataTypes::number,
+                                        double,
+                                        dftfe::utils::MemorySpace::HOST>>
+        &                                            basisOperationsPtr,
+      const unsigned int                             quadratureId,
+      const std::shared_ptr<excManager<memorySpace>> excManagerPtr,
+      const std::vector<
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+        &densityOutValues,
+      const std::vector<
+        dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
+        &gradDensityOutValues,
+      std::shared_ptr<AuxDensityMatrix<memorySpace>>
+              auxDensityXCOutRepresentationPtr,
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST> &xcEnergyDensity);
 
     void computeAndPrintUniformGridFields();
 

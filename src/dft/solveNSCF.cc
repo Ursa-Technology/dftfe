@@ -370,7 +370,8 @@ namespace dftfe
             std::vector<std::vector<double>>(
               d_kPointWeights.size(), std::vector<double>(d_numEigenValues)));
 
-        updateAuxDensityXCMatrix(d_densityInQuadValues,
+        updateAuxDensityXCMatrix(d_densityQuadratureId,
+                                 d_densityInQuadValues,
                                  d_gradDensityInQuadValues,
                                  d_rhoCore,
                                  d_gradRhoCore,
@@ -657,7 +658,8 @@ namespace dftfe
         for (unsigned int kPoint = 0; kPoint < d_kPointWeights.size(); ++kPoint)
           residualNormWaveFunctionsAllkPoints[kPoint].resize(d_numEigenValues);
 
-        updateAuxDensityXCMatrix(d_densityInQuadValues,
+        updateAuxDensityXCMatrix(d_densityQuadratureId,
+                                 d_densityInQuadValues,
                                  d_gradDensityInQuadValues,
                                  d_rhoCore,
                                  d_gradRhoCore,
@@ -882,7 +884,8 @@ namespace dftfe
 
     computing_timer.leave_subsection("compute rho");
 
-    updateAuxDensityXCMatrix(d_densityOutQuadValues,
+    updateAuxDensityXCMatrix(d_densityQuadratureId,
+                             d_densityOutQuadValues,
                              d_gradDensityOutQuadValues,
                              d_rhoCore,
                              d_gradRhoCore,

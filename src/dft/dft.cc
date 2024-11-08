@@ -2953,7 +2953,8 @@ namespace dftfe
                       d_numEigenValues :
                       d_numEigenValuesRR)));
 
-            updateAuxDensityXCMatrix(d_densityInQuadValues,
+            updateAuxDensityXCMatrix(d_densityQuadratureId,
+                                     d_densityInQuadValues,
                                      d_gradDensityInQuadValues,
                                      d_rhoCore,
                                      d_gradRhoCore,
@@ -3243,7 +3244,8 @@ namespace dftfe
                   d_numEigenValues :
                   d_numEigenValuesRR);
 
-            updateAuxDensityXCMatrix(d_densityInQuadValues,
+            updateAuxDensityXCMatrix(d_densityQuadratureId,
+                                     d_densityInQuadValues,
                                      d_gradDensityInQuadValues,
                                      d_rhoCore,
                                      d_gradRhoCore,
@@ -3627,7 +3629,8 @@ namespace dftfe
             computing_timer.leave_subsection("phiTot solve");
           }
 
-        updateAuxDensityXCMatrix(d_densityOutQuadValues,
+        updateAuxDensityXCMatrix(d_densityQuadratureId,
+                                 d_densityOutQuadValues,
                                  d_gradDensityOutQuadValues,
                                  d_rhoCore,
                                  d_gradRhoCore,
@@ -3809,7 +3812,8 @@ namespace dftfe
           }
       }
 
-    updateAuxDensityXCMatrix(d_densityOutQuadValues,
+    updateAuxDensityXCMatrix(d_densityQuadratureId,
+                             d_densityOutQuadValues,
                              d_gradDensityOutQuadValues,
                              d_rhoCore,
                              d_gradRhoCore,
@@ -5612,6 +5616,7 @@ namespace dftfe
             dftfe::utils::MemorySpace memorySpace>
   void
   dftClass<FEOrder, FEOrderElectro, memorySpace>::updateAuxDensityXCMatrix(
+    const unsigned int densityQuadratureId,
     const std::vector<
       dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>>
       &densityQuadValues,
@@ -5633,7 +5638,7 @@ namespace dftfe
        densityFamilyType::GGA);
 
     const bool isGGA = isGradDensityDataDependent;
-    d_basisOperationsPtrHost->reinit(0, 0, d_densityQuadratureId);
+    d_basisOperationsPtrHost->reinit(0, 0, densityQuadratureId);
     const unsigned int totalLocallyOwnedCells =
       d_basisOperationsPtrHost->nCells();
     const unsigned int nQuadsPerCell =

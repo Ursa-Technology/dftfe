@@ -260,7 +260,8 @@ namespace dftfe
       {
         computing_timer.enter_subsection("VEffPrime Computation");
 
-        updateAuxDensityXCMatrix(d_densityInQuadValues,
+        updateAuxDensityXCMatrix(d_densityQuadratureId,
+                                 d_densityInQuadValues,
                                  d_gradDensityInQuadValues,
                                  d_rhoCore,
                                  d_gradRhoCore,

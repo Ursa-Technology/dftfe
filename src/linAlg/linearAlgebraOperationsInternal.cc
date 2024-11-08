@@ -155,7 +155,7 @@ namespace dftfe
             AssertThrow(error == ELPA_OK,
                         dealii::ExcMessage("DFT-FE Error: ELPA Error."));
 
-            if ((processGrid->get_process_grid_rows()) * blockSize != na)
+            if ((processGrid->get_process_grid_rows()) * blockSize > na)
               {
                 elpa_set(elpaHandle, "cannon_for_generalized", 0, &error);
                 AssertThrow(error == ELPA_OK,
@@ -215,13 +215,6 @@ namespace dftfe
                 AssertThrow(error == ELPA_OK,
                             dealii::ExcMessage("DFT-FE Error: ELPA Error."));
 #  endif
-                if ((processGrid->get_process_grid_rows()) * blockSize != na)
-                  {
-                    elpa_set(elpaHandle, "gpu_cannon", 0, &error);
-                    AssertThrow(error == ELPA_OK,
-                                dealii::ExcMessage(
-                                  "DFT-FE Error: ELPA Error."));
-                  }
 
                 int gpuID = 0;
                 dftfe::utils::getDevice(&gpuID);
@@ -229,10 +222,13 @@ namespace dftfe
                 elpa_set_integer(elpaHandle, "use_gpu_id", gpuID, &error);
                 AssertThrow(error == ELPA_OK,
                             dealii::ExcMessage("DFT-FE Error: ELPA Error."));
-
-                error = elpa_setup_gpu(elpaHandle);
-                AssertThrow(error == ELPA_OK,
-                            dealii::ExcMessage("DFT-FE Error: ELPA Error."));
+                if (!dftParams.reproducible_output)
+                  {
+                    error = elpa_setup_gpu(elpaHandle);
+                    AssertThrow(error == ELPA_OK,
+                                dealii::ExcMessage(
+                                  "DFT-FE Error: ELPA Error."));
+                  }
               }
 #endif
 

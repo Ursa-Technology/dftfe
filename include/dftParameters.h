@@ -79,7 +79,7 @@ namespace dftfe
 
     std::string coordinatesFile, domainBoundingVectorsFile, kPointDataFile,
       ionRelaxFlagsFile, orthogType, algoType, pseudoPotentialFile,
-      restartFolder, meshSizesFile;
+      tensorOpType, restartFolder, meshSizesFile;
 
     std::string coordinatesGaussianDispFile;
 

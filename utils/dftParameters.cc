@@ -1043,6 +1043,11 @@ namespace dftfe
             "false",
             dealii::Patterns::Bool(),
             "[Advanced] Use a modified single precision algorithm for Chebyshev filtering. This cannot be used in conjunction with spectrum splitting. Default setting is false.");
+          prm.declare_entry(
+            "TENSOR OP TYPE SINGLE PREC CHEBY",
+            "FP32",
+            dealii::Patterns::Selection("FP32|TF32"),
+            "[Advanced] Tensor operation datatype for the modified single precision algorithm for Chebyshev filtering, this only used on Nvidia GPUs with compute capability greater than 80. Default setting is FP32.");
 
           prm.declare_entry(
             "OVERLAP COMPUTE COMMUN CHEBY",
@@ -1690,6 +1695,7 @@ namespace dftfe
           prm.get_bool("USE MIXED PREC COMMUN ONLY XTX XTHX");
         useSinglePrecCommunCheby = prm.get_bool("USE SINGLE PREC COMMUN CHEBY");
         useSinglePrecCheby       = prm.get_bool("USE SINGLE PREC CHEBY");
+        tensorOpType             = prm.get("TENSOR OP TYPE SINGLE PREC CHEBY");
         overlapComputeCommunCheby =
           prm.get_bool("OVERLAP COMPUTE COMMUN CHEBY");
         overlapComputeCommunOrthoRR =

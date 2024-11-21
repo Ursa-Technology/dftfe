@@ -24,6 +24,7 @@
 #include <dft.h>
 #include <densityCalculator.h>
 #include <kineticEnergyDensityCalculator.h>
+#include <nonlocalPspEnergyDensityWfcContractions.h>
 #include <fileReaders.h>
 #include <dftUtils.h>
 #include <fileReaders.h>
@@ -406,6 +407,273 @@ namespace dftfe
 
   template <unsigned int FEOrder, unsigned int FEOrderElectro,dftfe::utils::MemorySpace memorySpace>
   void
+  dftClass<FEOrder, FEOrderElectro,memorySpace>::computeNonlocalPspEnergyDensity(
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      &nonlocalPspEnergyDensityValues)
+  {
+    const double spinPolarizedFactor =
+      (d_dftParamsPtr->spinPolarized == 1) ? 1.0 : 2.0;
+	  
+    //computeUniformQuadZetalmDeltaVl();
+    const dealii::Quadrature<3> &quadrature =
+      matrix_free_data.get_quadrature(d_uniformGridQuadratureId);
+
+    const unsigned int numPhysicalCells = matrix_free_data.n_physical_cells();
+    const unsigned int nQuadsPerCell = quadrature.size();
+
+    const unsigned int localVectorSize =
+      matrix_free_data.get_vector_partitioner()->locally_owned_size();
+
+    nonlocalPspEnergyDensityValues.clear();
+    nonlocalPspEnergyDensityValues.resize(numPhysicalCells*nQuadsPerCell,0);
+
+
+    std::vector<std::vector<double>> partialOccupancies(
+      d_kPointWeights.size(),
+      std::vector<double>((1 + d_dftParamsPtr->spinPolarized) *
+                            d_numEigenValues,
+                          0.0));
+    for (unsigned int spinIndex = 0;
+         spinIndex < (1 + d_dftParamsPtr->spinPolarized);
+         ++spinIndex)
+      for (unsigned int kPoint = 0; kPoint < d_kPointWeights.size(); ++kPoint)
+        for (unsigned int iWave = 0; iWave < d_numEigenValues; ++iWave)
+          {
+            const double eigenValue =
+              eigenValues[kPoint][d_numEigenValues * spinIndex + iWave];
+            partialOccupancies[kPoint][d_numEigenValues * spinIndex + iWave] =
+              dftUtils::getPartialOccupancy(eigenValue,
+                                            fermiEnergy,
+                                            C_kb,
+                                            d_dftParamsPtr->TVal);
+
+            if (d_dftParamsPtr->constraintMagnetization)
+              {
+                partialOccupancies[kPoint]
+                                  [d_numEigenValues * spinIndex + iWave] = 1.0;
+                if (spinIndex == 0)
+                  {
+                    if (eigenValue > fermiEnergyUp)
+                      partialOccupancies[kPoint][d_numEigenValues * spinIndex +
+                                                 iWave] = 0.0;
+                  }
+                else if (spinIndex == 1)
+                  {
+                    if (eigenValue > fermiEnergyDown)
+                      partialOccupancies[kPoint][d_numEigenValues * spinIndex +
+                                                 iWave] = 0.0;
+                  }
+              }
+          }
+
+
+
+    for (unsigned int spinIndex = 0;
+         spinIndex < (1 + d_dftParamsPtr->spinPolarized);
+         ++spinIndex)
+      {
+        std::vector<dataTypes::number>
+          projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened(
+            d_kPointWeights.size() * d_oncvClassPtr->getNonLocalOperator()
+                          ->getTotalNonTrivialSphericalFnsOverAllCells() *
+              nQuadsPerCell,
+            dataTypes::number(0.0));
+
+#if defined(DFTFE_WITH_DEVICE)
+        if (d_dftParamsPtr->useDevice)
+          {
+            nonlocalPspEnergyDensityWfcContractionsAllH(
+              d_basisOperationsPtrDevice,
+              d_uniformGridQuadratureId,
+              d_BLASWrapperPtr,
+              d_oncvClassPtr,
+              d_eigenVectorsFlattenedDevice.begin(),
+              d_dftParams.spinPolarized,
+              spinIndex,
+              eigenValues,
+              partialOccupancies,
+              d_kPointCoordinates,
+              localVectorSize,
+              d_numEigenValues,
+              numPhysicalCells,
+              nQuadsPerCell,
+              projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened
+                .data(),
+              d_mpiCommParent,
+              interBandGroupComm,
+              *d_dftParamsPtr);            
+          }
+        else
+#endif
+          {
+            nonlocalPspEnergyDensityWfcContractionsAllH(
+              d_basisOperationsPtrHost,
+              d_uniformGridQuadratureId,
+              d_BLASWrapperPtrHost,
+              d_oncvClassPtr,
+              d_eigenVectorsFlattenedHost.begin(),
+              d_dftParamsPtr->spinPolarized,
+              spinIndex,
+              eigenValues,
+              partialOccupancies,
+              d_kPointCoordinates,
+              localVectorSize,
+              d_numEigenValues,
+              numPhysicalCells,
+              nQuadsPerCell,
+              projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened
+                .data(),
+              d_mpiCommParent,
+              interBandGroupComm,
+              *d_dftParamsPtr);
+          }
+
+      d_oncvClassPtr->initialise(d_basisOperationsPtrHost,
+#if defined(DFTFE_WITH_DEVICE)
+                                 d_basisOperationsPtrDevice,
+#endif
+                                 d_BLASWrapperPtrHost,
+#if defined(DFTFE_WITH_DEVICE)
+                                 d_BLASWrapperPtr,
+#endif
+                                 d_densityQuadratureId,
+                                 d_lpspQuadratureId,
+                                 d_sparsityPatternQuadratureId,
+                                 d_uniformGridQuadratureId,
+                                 d_densityQuadratureIdElectro,
+                                 d_excManagerPtr,
+                                 atomLocations,
+                                 d_numEigenValues,
+                                 d_dftParamsPtr->useSinglePrecCheby);
+
+        d_oncvClassPtr->initialiseNonLocalContribution(
+          d_atomLocationsInterestPseudopotential,
+          d_imageIdsTrunc,
+          d_imagePositionsTrunc,
+          d_kPointWeights,  
+          d_kPointCoordinates,
+          false);
+
+        const unsigned int numberGlobalAtoms = atomLocations.size();
+
+        const unsigned int numNonLocalAtomsCurrentProcess =
+          d_oncvClassPtr->getNonLocalOperator()
+                 ->getTotalAtomInCurrentProcessor();
+            
+        std::vector<int> nonLocalAtomId, globalChargeIdNonLocalAtom;
+        nonLocalAtomId.resize(numNonLocalAtomsCurrentProcess);
+        globalChargeIdNonLocalAtom.resize(
+              numNonLocalAtomsCurrentProcess);
+
+        std::vector<unsigned int> numberPseudoWaveFunctionsPerAtom;
+        numberPseudoWaveFunctionsPerAtom.resize(
+          numNonLocalAtomsCurrentProcess);
+
+        const std::shared_ptr<
+          AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
+          oncvNonLocalOp = d_oncvClassPtr->getNonLocalOperator();
+
+        for (unsigned int iAtom = 0;
+             iAtom < numNonLocalAtomsCurrentProcess;
+             iAtom++)
+          {
+            nonLocalAtomId[iAtom] =
+              d_oncvClassPtr->getAtomIdInCurrentProcessor(iAtom);
+            globalChargeIdNonLocalAtom[iAtom] =
+              d_atomIdPseudopotentialInterestToGlobalId
+                .find(nonLocalAtomId[iAtom])
+                ->second;
+            numberPseudoWaveFunctionsPerAtom[iAtom] =
+              d_oncvClassPtr
+                ->getTotalNumberOfSphericalFunctionsForAtomId(
+                  nonLocalAtomId[iAtom]);
+          }
+
+        typename dealii::DoFHandler<3>::active_cell_iterator
+          cell = dofHandler.begin_active(),
+          endc = dofHandler.end();
+        unsigned int icell=0;
+        for (; cell != endc; ++cell)
+          if (cell->is_locally_owned())
+            {
+              double *nonlocalPspEnergyDensityValuesCell =
+                    nonlocalPspEnergyDensityValues.data() + icell *nQuadsPerCell;
+
+              for (int iAtom = 0; iAtom < numNonLocalAtomsCurrentProcess;
+                   ++iAtom)
+                {
+                  bool               isPseudoWfcsAtomInCell = false;
+                  const unsigned int elementId =
+                    d_basisOperationsPtrHost->cellIndex(cell->id());
+
+                  for (unsigned int i = 0;
+                       i <  (oncvNonLocalOp->getCellIdToAtomIdsLocalCompactSupportMap()).find
+                             (elementId)->second
+                               .size();
+                       i++)
+                    if ((oncvNonLocalOp->getCellIdToAtomIdsLocalCompactSupportMap()).find
+                          (elementId)->second[i] == iAtom)
+                      {
+                        isPseudoWfcsAtomInCell = true;
+                        break;
+                      }
+
+                  if (isPseudoWfcsAtomInCell)
+                    {
+                      for (unsigned int kPoint = 0;
+                           kPoint < d_kPointWeights.size();
+                           ++kPoint)
+                        {
+                          std::vector<double> kcoord(3, 0.0);
+                          kcoord[0] = d_kPointCoordinates[kPoint * 3 + 0];
+                          kcoord[1] = d_kPointCoordinates[kPoint * 3 + 1];
+                          kcoord[2] = d_kPointCoordinates[kPoint * 3 + 2];
+
+                          const unsigned int startingPseudoWfcIdFlattened =
+                            kPoint *
+                              oncvNonLocalOp
+                                ->getTotalNonTrivialSphericalFnsOverAllCells() *
+                              nQuadsPerCell +
+                            (oncvNonLocalOp->getNonTrivialSphericalFnsCellStartIndex())
+                                [elementId] *
+                              nQuadsPerCell +
+                            (oncvNonLocalOp
+                               ->getAtomIdToNonTrivialSphericalFnCellStartIndex())
+                                .find(iAtom)
+                                ->second[elementId] *
+                              nQuadsPerCell;
+
+                          const unsigned int numberPseudoWaveFunctions =
+                            numberPseudoWaveFunctionsPerAtom[iAtom];
+                          for (unsigned int q = 0; q < nQuadsPerCell; ++q)
+                              for (unsigned int iPseudoWave = 0;
+                                   iPseudoWave < numberPseudoWaveFunctions;
+                                   ++iPseudoWave)
+                                { 
+                                  const dataTypes::number temp1 =
+                                    d_oncvClassPtr->getNonLocalOperator()->getAtomCenteredKpointIndexedSphericalFnQuadValues()[startingPseudoWfcIdFlattened +
+                                       iPseudoWave * nQuadsPerCell + q];
+
+                                  const dataTypes::number temp2 =
+                                    projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened
+                                      [startingPseudoWfcIdFlattened +
+                                       iPseudoWave * nQuadsPerCell + q];
+
+
+                                  nonlocalPspEnergyDensityValuesCell[q] +=
+                                    spinPolarizedFactor * dftfe::utils::realPart(temp1 * temp2)*d_kPointWeights[kPoint];
+                                }// pseudowavefunctions loop
+                        }//kpoint loop
+                    }     // non-trivial cell check
+                }         // atoms loop
+                icell++;
+            }             // cell loop
+      }                   // spin index
+  }
+
+
+  template <unsigned int FEOrder, unsigned int FEOrderElectro,dftfe::utils::MemorySpace memorySpace>
+  void
   dftClass<FEOrder, FEOrderElectro,memorySpace>::computeAndPrintUniformGridFields()
   {
     std::map<dealii::CellId, std::vector<double>> uniformGridQuadPoints;
@@ -566,6 +834,14 @@ namespace dftfe
                                       xcEnergyDensityValues);
 
 
+    //
+    // compute nonlocal psp energy density values
+    //
+    dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+          nonlocalPspEnergyDensityValues;
+    computeNonlocalPspEnergyDensity(nonlocalPspEnergyDensityValues);
+
+
 
     const dealii::Quadrature<3> &quadratureFormula =
       matrix_free_data.get_quadrature(d_uniformGridQuadratureId);
@@ -683,6 +959,9 @@ namespace dftfe
                   const double * xcEnergyDensityValuesCell =
                       xcEnergyDensityValues.data() + icell * n_q_points;
 
+                  const double * nonlocalPspEnergyDensityValuesCell =
+                      nonlocalPspEnergyDensityValues.data() + icell * n_q_points;
+
                   for (unsigned int q_point = 0; q_point < n_q_points;
                        ++q_point)
                     {
@@ -703,6 +982,9 @@ namespace dftfe
 
                       quadVals.push_back(
                           xcEnergyDensityValuesCell[q_point]*HaPerBohr3ToeVPerAng3);
+
+                      quadVals.push_back(
+                          nonlocalPspEnergyDensityValuesCell[q_point]*HaPerBohr3ToeVPerAng3);
 
                       data.push_back(
                         std::make_shared<dftUtils::QuadDataCompositeWrite>(

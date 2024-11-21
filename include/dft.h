@@ -1945,6 +1945,11 @@ namespace dftfe
       std::map<dealii::CellId, std::vector<double>> &gradRhoCoreUniformQuad);
 
     void
+    computeNonlocalPspEnergyDensity(
+      dftfe::utils::MemoryStorage<double, dftfe::utils::MemorySpace::HOST>
+      &nonlocalPspEnergyDensityValues);
+
+    void
     computeXCEnergyDensityUniformQuad(
       const std::shared_ptr<
         dftfe::basis::FEBasisOperations<dataTypes::number,

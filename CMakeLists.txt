@@ -56,6 +56,7 @@ SET(TARGET_SRC
   ./src/dft/densityFirstOrderResponseCalculator.cc
   ./src/dft/uniformGridFieldsWrite.cc
   ./src/dft/applyMultipoleDirichletBC.cc
+  ./src/dft/nonlocalPspEnergyDensityWfcContractions.cc  
   ./src/excManager/excDensityLDAClass.cpp
   ./src/excManager/excDensityGGAClass.cpp
   ./src/excManager/excDensityLLMGGAClass.cpp

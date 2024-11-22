@@ -473,8 +473,6 @@ namespace dftfe
           nQuadsPerCell,
         dataTypes::number(0.0));
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    std::cout<<"check1a: "<<std::endl;
     for (unsigned int spinIndex = 0;
          spinIndex < (1 + d_dftParamsPtr->spinPolarized);
          ++spinIndex)
@@ -533,8 +531,6 @@ namespace dftfe
           }
       }
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    std::cout<<"check1b: "<<std::endl;
     std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>> oncvClassPtrTemp=
           std::make_shared<dftfe::oncvClass<dataTypes::number, memorySpace>>(
             mpi_communicator, // domain decomposition communicator
@@ -565,8 +561,6 @@ namespace dftfe
                                atomLocations,
                                d_numEigenValues,
                                d_dftParamsPtr->useSinglePrecCheby);
-    MPI_Barrier(MPI_COMM_WORLD);
-    std::cout<<"check2a: "<<std::endl;
     oncvClassPtrTemp->initialiseNonLocalContribution(
       d_atomLocationsInterestPseudopotential,
       d_imageIdsTrunc,
@@ -575,8 +569,6 @@ namespace dftfe
       d_kPointCoordinates,
       true);
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    std::cout<<"check2b: "<<std::endl;
 
 
     const unsigned int numNonLocalAtomsCurrentProcess =  
@@ -695,9 +687,6 @@ namespace dftfe
                 icell++;
             }             // cell loop
       }                   // spin index
-
-      MPI_Barrier(MPI_COMM_WORLD);
-      std::cout<<"check3: "<<std::endl;            
   }
 
 
@@ -862,8 +851,6 @@ namespace dftfe
                                       auxDensityMatrixXCOutUniformQuadPtr,
                                       xcEnergyDensityValues);
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    std::cout<<"check 0"<<std::endl;
     //
     // compute nonlocal psp energy density values
     //
@@ -881,7 +868,9 @@ namespace dftfe
       endc = dofHandler.end();
 
     double integralElectronDensity = 0;
-
+    double kineticEnergyFromUniformGrid = 0;
+    double xcEnergyFromUniformGrid = 0;
+    double nonlocalPspEnergyFromUniformGrid = 0;
 
     dealii::FEValues<3> feValues(dofHandler.get_fe(),
                                  quadratureFormula,
@@ -911,6 +900,15 @@ namespace dftfe
           const double *cellRhoValues =
                   densityUniformGridQuadValues[0].data() + icell * n_q_points;
 
+          const double *cellkineticEdValues =
+            kineticEnergyDensityValues.data() + icell * n_q_points;
+
+          const double * xcEnergyDensityValuesCell =
+              xcEnergyDensityValues.data() + icell * n_q_points;
+
+          const double * nonlocalPspEnergyDensityValuesCell =
+              nonlocalPspEnergyDensityValues.data() + icell * n_q_points;
+
           for (unsigned int q_point = 0; q_point < n_q_points; ++q_point)
             {
               const dealii::Point<3> &quadPoint =
@@ -924,8 +922,9 @@ namespace dftfe
 
 
               integralElectronDensity += cellRhoValues[q_point] * jxw;
-
-
+              kineticEnergyFromUniformGrid +=cellkineticEdValues[q_point] * jxw;
+              xcEnergyFromUniformGrid +=xcEnergyDensityValuesCell[q_point] * jxw;
+              nonlocalPspEnergyFromUniformGrid +=nonlocalPspEnergyDensityValuesCell[q_point] * jxw;
             }
           icell++;
         }
@@ -943,6 +942,35 @@ namespace dftfe
     pcout << "integral electron density on uniform quad grid: "
           << integralElectronDensity << std::endl;
 
+    MPI_Allreduce(MPI_IN_PLACE,
+                  &kineticEnergyFromUniformGrid ,
+                  1,
+                  MPI_DOUBLE,
+                  MPI_SUM,
+                  mpi_communicator);
+
+    MPI_Allreduce(MPI_IN_PLACE,
+                  &xcEnergyFromUniformGrid ,
+                  1,
+                  MPI_DOUBLE,
+                  MPI_SUM,
+                  mpi_communicator);
+
+    MPI_Allreduce(MPI_IN_PLACE,
+                  &nonlocalPspEnergyFromUniformGrid,
+                  1,
+                  MPI_DOUBLE,
+                  MPI_SUM,
+                  mpi_communicator);    
+
+    pcout << "kineticEnergyFromUniformGrid: "
+          << kineticEnergyFromUniformGrid << std::endl;
+
+    pcout << "xcEnergyFromUniformGrid: "
+          << xcEnergyFromUniformGrid << std::endl;
+
+    pcout << "nonlocalPspEnergyFromUniformGrid: "
+          << nonlocalPspEnergyFromUniformGrid << std::endl;
 
     const std::string Path = "uniformGridFieldsData.txt";
 

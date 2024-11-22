@@ -91,8 +91,6 @@ namespace dftfe
           &BLASWrapperPtr,
         const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
           &psiQuadsNLP,
-        const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
-          &gradPsiQuadsNLP,
         const dftfe::utils::MemoryStorage<double, memorySpace>
           &partialOccupancies,
         const dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
@@ -114,7 +112,7 @@ namespace dftfe
         dataTypes::number
           *projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedH,
         dataTypes::number *
-          projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTemp)
+          projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHPinnedTemp)
       {
         const int blockSizeNlp    = innerBlockSizeEnlp;
         const int numberBlocksNlp = totalNonTrivialPseudoWfcs / blockSizeNlp;
@@ -192,7 +190,7 @@ namespace dftfe
                                              memorySpace>::
                   copy(
                     currentBlockSizeNlp * numQuadsNLP,
-                    projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTemp,
+                    projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHPinnedTemp,
                     projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedBlock
                       .data());
 
@@ -201,7 +199,7 @@ namespace dftfe
                      i++)
                   projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedH
                     [startingIdNlp * numQuadsNLP + i] +=
-                    projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTemp
+                    projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHPinnedTemp
                       [i];
               }
           }
@@ -257,7 +255,7 @@ namespace dftfe
         dataTypes::number
           *projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedH,
         dataTypes::number *
-          projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTemp,
+          projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHPinnedTemp,
         const unsigned int cellsBlockSize,
         const unsigned int innerBlockSizeEnlp)
       {
@@ -309,7 +307,6 @@ namespace dftfe
             nlpPsiContraction(
               BLASWrapperPtr,
               psiQuadsNLP,
-              gradPsiQuadsNLP,
               partialOccupancies,
               onesVecNLP,
               projectorKetTimesVector.data(),
@@ -323,7 +320,7 @@ namespace dftfe
               nlpContractionContribution,
               projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedBlock,
               projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedH,
-              projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTemp);
+              projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHPinnedTemp);
           }
       }
 
@@ -404,37 +401,30 @@ namespace dftfe
       const unsigned int innerBlockSizeEnlp =
         std::min((unsigned int)10, totalNonTrivialPseudoWfcs);
       dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
-        nlpContractionContribution(innerBlockSizeEnlp * numQuadsNLP * 3 *
+        nlpContractionContribution(innerBlockSizeEnlp * numQuadsNLP *
                                      blockSize,
                                    dataTypes::number(0.0));
       dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
         projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedBlock;
-      dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
-        projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedBlock;
       dftfe::utils::MemoryStorage<unsigned int, memorySpace>
         projecterKetTimesFlattenedVectorLocalIds;
       dftfe::utils::MemoryStorage<unsigned int, memorySpace>
         nonTrivialIdToElemIdMap;
       dftfe::utils::MemoryStorage<dataTypes::number,
                                   dftfe::utils::MemorySpace::HOST>
-        projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTemp;
+        projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHPinnedTemp;
       if (totalNonTrivialPseudoWfcs > 0)
         {
-          projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedBlock
-            .resize(innerBlockSizeEnlp * numQuadsNLP * 3,
-                    dataTypes::number(0.0));
-#ifdef USE_COMPLEX
           projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedBlock
             .resize(innerBlockSizeEnlp * numQuadsNLP, dataTypes::number(0.0));
-#endif
           projecterKetTimesFlattenedVectorLocalIds.resize(
             totalNonTrivialPseudoWfcs, 0.0);
           nonTrivialIdToElemIdMap.resize(totalNonTrivialPseudoWfcs, 0);
 
 
 
-          projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTemp
-            .resize(innerBlockSizeEnlp * numQuadsNLP * 3, 0);
+          projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHPinnedTemp
+            .resize(innerBlockSizeEnlp * numQuadsNLP, 0);
 
           dftfe::utils::
             MemoryTransfer<memorySpace, dftfe::utils::MemorySpace::HOST>::copy(
@@ -451,7 +441,6 @@ namespace dftfe
                   ->getSphericalFnTimesVectorFlattenedVectorLocalIds()[0]));
 
         }
-
 
       const unsigned numKPoints = kPointCoordinates.size() / 3;
       for (unsigned int kPoint = 0; kPoint < numKPoints; ++kPoint)
@@ -519,7 +508,6 @@ namespace dftfe
                          partialOccupancies.data(),
                          &blockedPartialOccupancies[0]);
 
-
                   nonlocalPspEnergyDensityWfcContractionsKernelsAll(
                     basisOperationsPtr,
                     nlpspQuadratureId,
@@ -552,14 +540,13 @@ namespace dftfe
                     projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedBlock,
                     projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedH +
                       kPoint * totalNonTrivialPseudoWfcs * numQuadsNLP,
-                    projectorKetTimesPsiTimesVTimesPartOccContractionGradPsiQuadsFlattenedHPinnedTemp
+                    projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattenedHPinnedTemp
                       .data(),
                     cellsBlockSize,
                     innerBlockSizeEnlp);
                 } // band parallelization
             }     // ivec loop
         } // k point loop
-
     }
 
 

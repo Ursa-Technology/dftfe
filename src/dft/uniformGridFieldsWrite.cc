@@ -466,19 +466,19 @@ namespace dftfe
               }
           }
 
+    std::vector<dataTypes::number>
+      projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened(
+        (1 + d_dftParamsPtr->spinPolarized)*d_kPointWeights.size() * d_oncvClassPtr->getNonLocalOperator()
+                      ->getTotalNonTrivialSphericalFnsOverAllCells() *
+          nQuadsPerCell,
+        dataTypes::number(0.0));
 
-
+    MPI_Barrier(MPI_COMM_WORLD);
+    std::cout<<"check1a: "<<std::endl;
     for (unsigned int spinIndex = 0;
          spinIndex < (1 + d_dftParamsPtr->spinPolarized);
          ++spinIndex)
       {
-        std::vector<dataTypes::number>
-          projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened(
-            d_kPointWeights.size() * d_oncvClassPtr->getNonLocalOperator()
-                          ->getTotalNonTrivialSphericalFnsOverAllCells() *
-              nQuadsPerCell,
-            dataTypes::number(0.0));
-
 #if defined(DFTFE_WITH_DEVICE)
         if (d_dftParamsPtr->useDevice)
           {
@@ -498,7 +498,9 @@ namespace dftfe
               numPhysicalCells,
               nQuadsPerCell,
               projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened
-                .data(),
+                .data()+spinIndex*d_kPointWeights.size() * d_oncvClassPtr->getNonLocalOperator()
+                      ->getTotalNonTrivialSphericalFnsOverAllCells() *
+          nQuadsPerCell,
               d_mpiCommParent,
               interBandGroupComm,
               *d_dftParamsPtr);            
@@ -522,73 +524,98 @@ namespace dftfe
               numPhysicalCells,
               nQuadsPerCell,
               projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened
-                .data(),
+                .data()+spinIndex*d_kPointWeights.size() * d_oncvClassPtr->getNonLocalOperator()
+                      ->getTotalNonTrivialSphericalFnsOverAllCells() *
+          nQuadsPerCell,
               d_mpiCommParent,
               interBandGroupComm,
               *d_dftParamsPtr);
           }
+      }
 
-      d_oncvClassPtr->initialise(d_basisOperationsPtrHost,
+    MPI_Barrier(MPI_COMM_WORLD);
+    std::cout<<"check1b: "<<std::endl;
+    std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>> oncvClassPtrTemp=
+          std::make_shared<dftfe::oncvClass<dataTypes::number, memorySpace>>(
+            mpi_communicator, // domain decomposition communicator
+            d_dftfeScratchFolderName,
+            atomTypes,
+            d_dftParamsPtr->floatingNuclearCharges,
+            d_nOMPThreads,
+            d_atomTypeAtributes,
+            d_dftParamsPtr->reproducible_output,
+            d_dftParamsPtr->verbosity,
+            d_dftParamsPtr->useDevice,
+            d_dftParamsPtr->memOptMode);
+    
+    oncvClassPtrTemp->initialise(d_basisOperationsPtrHost,
 #if defined(DFTFE_WITH_DEVICE)
-                                 d_basisOperationsPtrDevice,
+                               d_basisOperationsPtrDevice,
 #endif
-                                 d_BLASWrapperPtrHost,
+                               d_BLASWrapperPtrHost,
 #if defined(DFTFE_WITH_DEVICE)
-                                 d_BLASWrapperPtr,
+                               d_BLASWrapperPtr,
 #endif
-                                 d_densityQuadratureId,
-                                 d_lpspQuadratureId,
-                                 d_sparsityPatternQuadratureId,
-                                 d_uniformGridQuadratureId,
-                                 d_densityQuadratureIdElectro,
-                                 d_excManagerPtr,
-                                 atomLocations,
-                                 d_numEigenValues,
-                                 d_dftParamsPtr->useSinglePrecCheby);
+                               d_densityQuadratureId,
+                               d_lpspQuadratureId,
+                               d_sparsityPatternQuadratureId,
+                               d_uniformGridQuadratureId,
+                               d_densityQuadratureIdElectro,
+                               d_excManagerPtr,
+                               atomLocations,
+                               d_numEigenValues,
+                               d_dftParamsPtr->useSinglePrecCheby);
+    MPI_Barrier(MPI_COMM_WORLD);
+    std::cout<<"check2a: "<<std::endl;
+    oncvClassPtrTemp->initialiseNonLocalContribution(
+      d_atomLocationsInterestPseudopotential,
+      d_imageIdsTrunc,
+      d_imagePositionsTrunc,
+      d_kPointWeights,  
+      d_kPointCoordinates,
+      true);
 
-        d_oncvClassPtr->initialiseNonLocalContribution(
-          d_atomLocationsInterestPseudopotential,
-          d_imageIdsTrunc,
-          d_imagePositionsTrunc,
-          d_kPointWeights,  
-          d_kPointCoordinates,
-          false);
+    MPI_Barrier(MPI_COMM_WORLD);
+    std::cout<<"check2b: "<<std::endl;
 
-        const unsigned int numberGlobalAtoms = atomLocations.size();
 
-        const unsigned int numNonLocalAtomsCurrentProcess =
-          d_oncvClassPtr->getNonLocalOperator()
-                 ->getTotalAtomInCurrentProcessor();
-            
-        std::vector<int> nonLocalAtomId, globalChargeIdNonLocalAtom;
-        nonLocalAtomId.resize(numNonLocalAtomsCurrentProcess);
-        globalChargeIdNonLocalAtom.resize(
-              numNonLocalAtomsCurrentProcess);
-
-        std::vector<unsigned int> numberPseudoWaveFunctionsPerAtom;
-        numberPseudoWaveFunctionsPerAtom.resize(
+    const unsigned int numNonLocalAtomsCurrentProcess =  
+      oncvClassPtrTemp->getNonLocalOperator()
+             ->getTotalAtomInCurrentProcessor();
+        
+    std::vector<int> nonLocalAtomId, globalChargeIdNonLocalAtom;
+    nonLocalAtomId.resize(numNonLocalAtomsCurrentProcess);
+    globalChargeIdNonLocalAtom.resize(
           numNonLocalAtomsCurrentProcess);
 
-        const std::shared_ptr<
-          AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
-          oncvNonLocalOp = d_oncvClassPtr->getNonLocalOperator();
+    std::vector<unsigned int> numberPseudoWaveFunctionsPerAtom;
+    numberPseudoWaveFunctionsPerAtom.resize(
+      numNonLocalAtomsCurrentProcess);
 
-        for (unsigned int iAtom = 0;
-             iAtom < numNonLocalAtomsCurrentProcess;
-             iAtom++)
-          {
-            nonLocalAtomId[iAtom] =
-              d_oncvClassPtr->getAtomIdInCurrentProcessor(iAtom);
-            globalChargeIdNonLocalAtom[iAtom] =
-              d_atomIdPseudopotentialInterestToGlobalId
-                .find(nonLocalAtomId[iAtom])
-                ->second;
-            numberPseudoWaveFunctionsPerAtom[iAtom] =
-              d_oncvClassPtr
-                ->getTotalNumberOfSphericalFunctionsForAtomId(
-                  nonLocalAtomId[iAtom]);
-          }
+    const std::shared_ptr<
+      AtomicCenteredNonLocalOperator<dataTypes::number, memorySpace>>
+      oncvNonLocalOp =oncvClassPtrTemp->getNonLocalOperator();
 
+    for (unsigned int iAtom = 0;
+         iAtom < numNonLocalAtomsCurrentProcess;
+         iAtom++)
+      {
+        nonLocalAtomId[iAtom] =
+         oncvClassPtrTemp->getAtomIdInCurrentProcessor(iAtom);
+        globalChargeIdNonLocalAtom[iAtom] =
+          d_atomIdPseudopotentialInterestToGlobalId
+            .find(nonLocalAtomId[iAtom])
+            ->second;
+        numberPseudoWaveFunctionsPerAtom[iAtom] =
+          oncvClassPtrTemp
+            ->getTotalNumberOfSphericalFunctionsForAtomId(
+              nonLocalAtomId[iAtom]);
+      }
+
+    for (unsigned int spinIndex = 0;
+         spinIndex < (1 + d_dftParamsPtr->spinPolarized);
+         ++spinIndex)
+      {
         typename dealii::DoFHandler<3>::active_cell_iterator
           cell = dofHandler.begin_active(),
           endc = dofHandler.end();
@@ -651,13 +678,12 @@ namespace dftfe
                                    ++iPseudoWave)
                                 { 
                                   const dataTypes::number temp1 =
-                                    d_oncvClassPtr->getNonLocalOperator()->getAtomCenteredKpointIndexedSphericalFnQuadValues()[startingPseudoWfcIdFlattened +
+                                  oncvClassPtrTemp->getNonLocalOperator()->getAtomCenteredKpointIndexedSphericalFnQuadValues()[startingPseudoWfcIdFlattened +
                                        iPseudoWave * nQuadsPerCell + q];
 
                                   const dataTypes::number temp2 =
                                     projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened
-                                      [startingPseudoWfcIdFlattened +
-                                       iPseudoWave * nQuadsPerCell + q];
+                                      [spinIndex*d_kPointWeights.size()*oncvClassPtrTemp->getNonLocalOperator()->getTotalNonTrivialSphericalFnsOverAllCells() *nQuadsPerCell+startingPseudoWfcIdFlattened +iPseudoWave * nQuadsPerCell + q];
 
 
                                   nonlocalPspEnergyDensityValuesCell[q] +=
@@ -669,6 +695,9 @@ namespace dftfe
                 icell++;
             }             // cell loop
       }                   // spin index
+
+      MPI_Barrier(MPI_COMM_WORLD);
+      std::cout<<"check3: "<<std::endl;            
   }
 
 
@@ -833,7 +862,8 @@ namespace dftfe
                                       auxDensityMatrixXCOutUniformQuadPtr,
                                       xcEnergyDensityValues);
 
-
+    MPI_Barrier(MPI_COMM_WORLD);
+    std::cout<<"check 0"<<std::endl;
     //
     // compute nonlocal psp energy density values
     //

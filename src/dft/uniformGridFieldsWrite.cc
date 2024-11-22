@@ -400,8 +400,7 @@ namespace dftfe
           cDensityOutDataOut);
 
         for (unsigned int iQuad = 0; iQuad < nQuadsPerCell; ++iQuad)
-            xcEnergyDensity[iQuad]=xEnergyDensityOut[iQuad]+cEnergyDensityOut[iQuad];
-
+            xcEnergyDensity[iCell * nQuadsPerCell + iQuad]=xEnergyDensityOut[iQuad]+cEnergyDensityOut[iQuad];
       } // cell loop
   }
 

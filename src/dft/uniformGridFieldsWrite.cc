@@ -465,6 +465,44 @@ namespace dftfe
               }
           }
 
+    std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>> oncvClassPtrTemp=
+          std::make_shared<dftfe::oncvClass<dataTypes::number, memorySpace>>(
+            mpi_communicator, // domain decomposition communicator
+            d_dftfeScratchFolderName,
+            atomTypes,
+            d_dftParamsPtr->floatingNuclearCharges,
+            d_nOMPThreads,
+            d_atomTypeAtributes,
+            d_dftParamsPtr->reproducible_output,
+            d_dftParamsPtr->verbosity,
+            d_dftParamsPtr->useDevice,
+            d_dftParamsPtr->memOptMode);
+
+    oncvClassPtrTemp->initialise(d_basisOperationsPtrHost,
+#if defined(DFTFE_WITH_DEVICE)
+                               d_basisOperationsPtrDevice,
+#endif
+                               d_BLASWrapperPtrHost,
+#if defined(DFTFE_WITH_DEVICE)
+                               d_BLASWrapperPtr,
+#endif
+                               d_densityQuadratureId,
+                               d_lpspQuadratureId,
+                               d_sparsityPatternQuadratureId,
+                               d_uniformGridQuadratureId,
+                               d_densityQuadratureIdElectro,
+                               d_excManagerPtr,
+                               atomLocations,
+                               d_numEigenValues,
+                               d_dftParamsPtr->useSinglePrecCheby);
+    oncvClassPtrTemp->initialiseNonLocalContribution(
+      d_atomLocationsInterestPseudopotential,
+      d_imageIdsTrunc,
+      d_imagePositionsTrunc,
+      d_kPointWeights,  
+      d_kPointCoordinates,
+      true);
+
     std::vector<dataTypes::number>
       projectorKetTimesPsiTimesVTimesPartOccContractionPsiQuadsFlattened(
         (1 + d_dftParamsPtr->spinPolarized)*d_kPointWeights.size() * d_oncvClassPtr->getNonLocalOperator()
@@ -529,45 +567,6 @@ namespace dftfe
               *d_dftParamsPtr);
           }
       }
-
-    std::shared_ptr<dftfe::oncvClass<dataTypes::number, memorySpace>> oncvClassPtrTemp=
-          std::make_shared<dftfe::oncvClass<dataTypes::number, memorySpace>>(
-            mpi_communicator, // domain decomposition communicator
-            d_dftfeScratchFolderName,
-            atomTypes,
-            d_dftParamsPtr->floatingNuclearCharges,
-            d_nOMPThreads,
-            d_atomTypeAtributes,
-            d_dftParamsPtr->reproducible_output,
-            d_dftParamsPtr->verbosity,
-            d_dftParamsPtr->useDevice,
-            d_dftParamsPtr->memOptMode);
-    
-    oncvClassPtrTemp->initialise(d_basisOperationsPtrHost,
-#if defined(DFTFE_WITH_DEVICE)
-                               d_basisOperationsPtrDevice,
-#endif
-                               d_BLASWrapperPtrHost,
-#if defined(DFTFE_WITH_DEVICE)
-                               d_BLASWrapperPtr,
-#endif
-                               d_densityQuadratureId,
-                               d_lpspQuadratureId,
-                               d_sparsityPatternQuadratureId,
-                               d_uniformGridQuadratureId,
-                               d_densityQuadratureIdElectro,
-                               d_excManagerPtr,
-                               atomLocations,
-                               d_numEigenValues,
-                               d_dftParamsPtr->useSinglePrecCheby);
-    oncvClassPtrTemp->initialiseNonLocalContribution(
-      d_atomLocationsInterestPseudopotential,
-      d_imageIdsTrunc,
-      d_imagePositionsTrunc,
-      d_kPointWeights,  
-      d_kPointCoordinates,
-      true);
-
 
 
     const unsigned int numNonLocalAtomsCurrentProcess =  

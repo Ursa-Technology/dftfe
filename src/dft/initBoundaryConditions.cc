@@ -230,7 +230,7 @@ namespace dftfe
     // SparsityPattern VEctor
     quadratureVector.push_back(dealii::QGauss<1>(8));
     quadratureVector.push_back(
-      dealii::QIterated<1>(dealii::QGauss<1>(1),8));
+      dealii::QIterated<1>(dealii::QGauss<1>(1),10));
     
     d_densityQuadratureId         = 0;
     d_nlpspQuadratureId           = 1;

@@ -389,7 +389,7 @@ namespace dftfe
                              C_numCopies1DQuadSmearedCharge()));
     quadratureVector.push_back(dealii::QGauss<1>(FEOrderElectro + 1));
     quadratureVector.push_back(
-      dealii::QIterated<1>(dealii::QGauss<1>(1),8));
+      dealii::QIterated<1>(dealii::QGauss<1>(1),10));
 
     d_densityQuadratureIdElectro       = 0;
     d_lpspQuadratureIdElectro          = 1;

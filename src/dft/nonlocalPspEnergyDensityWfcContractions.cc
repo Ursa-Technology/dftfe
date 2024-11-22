@@ -399,7 +399,7 @@ namespace dftfe
                   ->getTotalNonTrivialSphericalFnsOverAllCells();
 
       const unsigned int innerBlockSizeEnlp =
-        std::min((unsigned int)10, totalNonTrivialPseudoWfcs);
+        std::min((unsigned int)2, totalNonTrivialPseudoWfcs);
       dftfe::utils::MemoryStorage<dataTypes::number, memorySpace>
         nlpContractionContribution(innerBlockSizeEnlp * numQuadsNLP *
                                      blockSize,

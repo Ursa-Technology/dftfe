@@ -909,9 +909,7 @@ namespace dftfe
       }
 
     if (d_dftParamsPtr->verbosity >= 1 && d_dftParamsPtr->spinPolarized == 1)
-      pcout << std::endl
-            << "net magnetization: "
-            << totalMagnetization(d_densityOutQuadValues[1]) << std::endl;
+      totalMagnetization(d_densityOutQuadValues[1]);
 
 
     local_timer.stop();
